@@ -1,0 +1,21 @@
+4 February 2003, Version 0.2.0
+- Windows port;
+- Write track to .wav file in Win32 version;
+- Meaningful measure units for vibrato and reverb effects (ms and percents);
+- HTML documentation; launch browser from a program to see the doc;
+- Tremolo bugfix: certain values of the effect params caused array bound
+  error and segfault;
+- Added icon ;-)
+- Major code cleanups for easier maintenance.
+
+25 March 2002, Version 0.1.0-beta 3
+- removed clip function from distortion - it sounds pretty bad;
+- effect control pop-ups cannot be closed from window manager;
+- updated doc.
+
+11 March 2002, Version 0.1.0-beta 2
+- bugfix with main window destroy code;
+- restrict to overwrite existing files by track_write() when in setuid root mode.
+
+11 January 2001, Version 0.1.0-beta 1
+- Initial release.
