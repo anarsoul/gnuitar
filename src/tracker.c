@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2001/03/25 17:42:32  fonin
+ * open() can overwrite existing files from now, because program switches back to real user priorities after start.
+ *
  * Revision 1.2  2001/01/14 21:28:42  fonin
  * Fix: track write could overwrite existing files if executing in suid root mode.
  *
@@ -34,7 +37,7 @@ static int      fin_size = 0;
 void
 tracker_out(const char *outfile)
 {
-    fout = open(outfile, O_NONBLOCK | O_WRONLY | O_EXCL | O_CREAT, 0644);
+    fout = open(outfile, O_NONBLOCK | O_WRONLY | O_CREAT, 0644);
     if (ioctl(fout, O_NONBLOCK, 0) == -1)
 	perror("ioctl");
 

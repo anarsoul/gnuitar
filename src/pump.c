@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2001/03/25 17:42:32  fonin
+ * open() can overwrite existing files from now, because program switches back to real user priorities after start.
+ *
  * Revision 1.3  2001/03/25 12:10:06  fonin
  * Text messages begin from newline rather than end with it.
  *
@@ -171,23 +174,16 @@ save_pump(char *fname)
     int             i;
     int             fd = 0;
 
-    /*
-     * This is root suid program, so we won't write over/truncate 
-     * existing files (/etc/passwd or /etc/shadow for example)
-     */
     fprintf(stderr, "\nWriting profile (%s)...", fname);
-    if ((fd = open(fname, O_WRONLY | O_CREAT | O_EXCL	/*
-							 * O_TRUNC | O_APPEND
-							 */ ,
-		   S_IREAD | S_IWRITE)) < 0) {
+    if ((fd = open(fname, O_WRONLY | O_CREAT, S_IREAD | S_IWRITE)) < 0) {
 	perror("Save failed");
 	return;
     }
     /*
      * Chown file to one who launched us
      */
-    chown(fname, getuid(), getgid());
-
+/*    chown(fname, getuid(), getgid());
+*/
     /*
      * writing signature 
      */
