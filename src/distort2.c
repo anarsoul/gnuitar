@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2003/04/16 13:58:39  fonin
+ * - trying to guess the lookup directory;
+ * - filling the lookup table with constant 32767 by default.
+ *
  * Revision 1.2  2003/04/12 20:00:56  fonin
  * Stupid bugfix (forgot to move forward buffer pointer
  * in the filter function); "level" control taken out.
@@ -30,6 +34,7 @@
  */
 
 #include <stdlib.h>
+#include <sys/stat.h>
 #ifndef _WIN32
 #    include <unistd.h>
 #    include <fcntl.h>
@@ -39,58 +44,67 @@
 #include "distort2.h"
 #include "gui.h"
 
-SAMPLE      tube[MAX_SAMPLE+1];	/* distortion lookup table */
+SAMPLE          tube[MAX_SAMPLE + 1];	/* distortion lookup table */
+static char     lookup_dir[255] = "";
 
 void            distort2_filter(struct effect *p, struct data_block *db);
 
-void load_distort2_lookup(int r1, int r2, int sr) {
-    char filename[255]="";
-    char tmp[255]="";
-    int in;
-    int i;
+void
+load_distort2_lookup(int r1, int r2, int sr)
+{
+    char            filename[255] = "";
+    char            tmp[255] = "";
+    int             in;
+    int             i;
+    struct stat     lookup_stat;
 
-    strcpy(filename,"distort2/distort2lookup_");
-//    sprintf(tmp,"%i",sr);
-    strcat(filename,"44100");
-    strncat(filename,tmp,255);
-    strcat(filename,"_");
-    sprintf(tmp,"%i",r1);
-    strncat(filename,tmp,255);
-    strcat(filename,"_");
-    sprintf(tmp,"%i",r2);
-    strncat(filename,tmp,255);
-    in=open(filename,O_RDONLY);
-    if(in==-1) {
+    for (i = 0; i < MAX_SAMPLE; i++)
+	tube[i] = 32767;
+
+    strncpy(filename, lookup_dir, 255);
+    strncat(filename, "/distort2lookup_");
+    // sprintf(tmp,"%i",sr);
+    strcat(filename, "44100");
+    strncat(filename, tmp, 255);
+    strcat(filename, "_");
+    sprintf(tmp, "%i", r1);
+    strncat(filename, tmp, 255);
+    strcat(filename, "_");
+    sprintf(tmp, "%i", r2);
+    strncat(filename, tmp, 255);
+
+    in = open(filename, O_RDONLY);
+    if (in == -1) {
 	perror("open");
 	return;
     }
-    memset(tube,0,sizeof(tube));
-    read(in,tube,sizeof(tube));
-/*    printf("\n");
-    for(i=0;i<=255;i++)
-        printf("%i=%i;",i,tube[i]);*/
+
+    fstat(in, &lookup_stat);
+    read(in, tube, lookup_stat.st_size);
 }
 
 void
 update_distort2_r1(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->r1 = (int) adj->value;
-printf("\nr1=%i",params->r1);
-    load_distort2_lookup(params->r1,params->r2,sample_rate);
+    params->r1 = (int) adj->value / 5;
+    params->r1 -= params->r1 % 2;
+    if (params->r1 == 0)
+	params->r1 = 1;
+    load_distort2_lookup(params->r1, params->r2, sample_rate);
 }
 
 void
 update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 {
     params->r2 = (int) adj->value * 4.8;
-    params->r2-=params->r2 % 10;
-    params->r2+=50;
-printf("\nr2=%i",params->r2);
-    load_distort2_lookup(params->r1,params->r2,sample_rate);
+    params->r2 -= params->r2 % 10;
+    params->r2 += 50;
+    load_distort2_lookup(params->r1, params->r2, sample_rate);
 }
 
 void
-update_distort2_lowpass(GtkAdjustment * adj, struct distort2_params *params)
+update_distort2_lowpass(GtkAdjustment * adj,
+			struct distort2_params *params)
 {
     params->lowpass = (int) adj->value;
 }
@@ -143,7 +157,7 @@ distort2_init(struct effect *p)
 
     adj_drive = gtk_adjustment_new((pdistort->r2 + 50) / 4.8,
 				   1.0, 101.0, 1, 1, 1);
-    drive_label = gtk_label_new("Drive\n%");
+    drive_label = gtk_label_new("Colour\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -161,9 +175,8 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_r1 =
-	gtk_adjustment_new(pdistort->r1, 1.0, 101, 1.0, 1.0, 1.0);
-    r1_label = gtk_label_new("R1\n%");
+    adj_r1 = gtk_adjustment_new(pdistort->r1 * 5, 1.0, 101, 1.0, 1.0, 1.0);
+    r1_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), r1_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -216,7 +229,8 @@ distort2_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Distortion 2"));
+    gtk_window_set_title(GTK_WINDOW(p->control),
+			 (gchar *) ("Distortion 2"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
@@ -237,14 +251,15 @@ distort2_filter(struct effect *p, struct data_block *db)
 
     RC_highpass(db->data, db->len, &(dp->fd));
 
-    /* process signal */
+    /*
+     * process signal 
+     */
     while (count) {
-	int tmp;
-	tmp=*s;
-	if(tmp>0 && tmp<MAX_SAMPLE) {
+	int             tmp;
+	tmp = *s;
+	if (tmp > 0 && tmp < MAX_SAMPLE) {
 	    *s = tube[tmp];
-	}
-	else if(tmp<0 && tmp>-MAX_SAMPLE) {
+	} else if (tmp < 0 && tmp > -MAX_SAMPLE) {
 	    *s = -tube[-tmp];
 	}
 	s++;
@@ -297,6 +312,11 @@ void
 distort2_create(struct effect *p)
 {
     struct distort2_params *ap;
+    int             i;
+    char           *lookup_dirs[] = { "/usr/share/gnuitar/distort2",
+	"/usr/share/gnuitar-" VERSION "/distort2",
+	"./distort2"
+    };
 
     p->params =
 	(struct distort2_params *) malloc(sizeof(struct distort2_params));
@@ -313,11 +333,22 @@ distort2_create(struct effect *p)
     ap->r2 = 510;
     ap->r1 = 1;
     ap->lowpass = 350;
-    ap->noisegate = 3000;
+    ap->noisegate = 6000;
 
     RC_setup(10, 1.5, &(ap->fd));
     RC_set_freq(ap->lowpass, &(ap->fd));
     RC_setup(10, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
-    load_distort2_lookup(ap->r1,ap->r2,sample_rate);
+
+    /*
+     * Find the lookup directory 
+     */
+    for (i = 0; i < 3; i++) {
+	if (access(lookup_dirs[i], R_OK | X_OK) == 0) {
+	    strncpy(lookup_dir, lookup_dirs[i], 255);
+	    break;
+	}
+    }
+
+    load_distort2_lookup(ap->r1, ap->r2, sample_rate);
 }
