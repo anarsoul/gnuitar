@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2003/01/30 21:31:34  fonin
+ * - worked around the Win32-GTK bug with non-ASCII characters in Win32 build;
+ * - show only filename in the bank list, instead of full path;
+ * - get rid of rnd_window_pos()
+ *
  * Revision 1.6  2003/01/29 19:34:00  fonin
  * Win32 port.
  *
@@ -105,21 +110,6 @@ void
 quit(GtkWidget * widget, gpointer data)
 {
     gtk_main_quit();
-    pump_stop();
-
-    tracker_done();
-}
-
-
-void
-rnd_window_pos(GtkWindow * wnd)
-{
-/*    int             x,
-                    y;
-    srand(time(NULL));
-    x = 1 + (int) (800.0 * rand() / (RAND_MAX + 1.0));
-    y = 1 + (int) (600.0 * rand() / (RAND_MAX + 1.0));
-    gtk_widget_set_uposition(GTK_WIDGET(wnd), x, y);*/
 }
 
 void
@@ -319,33 +309,49 @@ add_pressed(GtkWidget * widget, gpointer data)
     }
 }
 
+/* callback for gtk_set_pointer_data_full() */
+void free_clist_ptr(gpointer data) {
+    if(data!=NULL)
+	free(data);
+}
+
+
 void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
-    char           *fname;
+    char           *fname,*name;
 #ifdef _WIN32
     int		    str_len,i;
+    char            drive[_MAX_DRIVE],
+		    dir[_MAX_DIR],
+		    ext[_MAX_EXT];
 #endif
 
-    fname = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+    name = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+    fname=(char*)malloc(strlen(name)*sizeof(char)+1);
+    if(fname!=NULL)
+	strcpy(fname,name);
 
 #ifdef _WIN32
     /*
      * GTK for Windows have a bug related to non-ascii characters
-     * in the strings. We replace all non-ascii chars to ? character,
-     * but we are unable now to switch to that bank
+     * in the strings. We replace all non-ascii chars to ? character.
      */
-    str_len=strlen(fname);
+    _splitpath(fname,drive,dir,name,ext);
+    str_len=strlen(name);
     for(i=0;i<str_len;i++)
-	if(!isascii(fname[i])) {
-//	    fname[i]='?';
+	if(!isascii(name[i])) {
+	    name[i]='?';
 	}
+#else
+    name=basename(fname);
 #endif
-
-    gtk_clist_append(GTK_CLIST(bank), &fname);
-    gtk_widget_destroy(GTK_WIDGET(filesel));
+    gtk_clist_append(GTK_CLIST(bank), &name);
     gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5,
 		     1.0);
+    gtk_clist_set_row_data_full(GTK_CLIST(bank),GTK_CLIST(bank)->rows-1,
+	    fname,free_clist_ptr);
+    gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
 void
@@ -380,7 +386,7 @@ bank_switch_pressed(GtkWidget * widget, gpointer data)
 	bank_row = 0;
     else
 	bank_row++;
-    gtk_clist_get_text(GTK_CLIST(bank), bank_row, 0, &fname);
+    fname=gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
     load_pump(fname);
 }
 
@@ -607,7 +613,6 @@ init_gui(void)
     gtk_table_attach(GTK_TABLE(tbl), tracker, 0, 1, 5, 6,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 0, 0);
 
-
     gtk_signal_connect(GTK_OBJECT(bank_add), "clicked",
 		       GTK_SIGNAL_FUNC(bank_add_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(bank_switch), "clicked",
@@ -629,4 +634,8 @@ init_gui(void)
 
 
     gtk_widget_show_all(mainWnd);
+}
+
+void gui_done(void) {
+    gtk_widget_destroy(mainWnd);
 }
