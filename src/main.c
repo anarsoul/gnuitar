@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:21:53  fonin
- * Initial revision
+ * Revision 1.2  2001/03/25 12:10:06  fonin
+ * Text messages begin from newline rather than end with it.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:21:53  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -85,53 +88,53 @@ main(int argc, char **argv)
 
 
     if ((fd = open("/dev/dsp", O_RDWR)) == -1) {
-	fprintf(stderr, "Cannot open audio device!\n");
+	fprintf(stderr, "\nCannot open audio device!");
 	return -1;
     }
 
     i = 0x7fff0008;
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
-	fprintf(stderr, "Cannot setup fragments!\n");
+	fprintf(stderr, "\nCannot setup fragments!");
 	close(fd);
 	return -1;
     }
 
     if (ioctl(fd, SNDCTL_DSP_SETDUPLEX, 0) == -1) {
-	fprintf(stderr, "Cannot setup fullduplex audio!\n");
+	fprintf(stderr, "\nCannot setup fullduplex audio!");
 	close(fd);
 	return -1;
     }
 
     if (ioctl(fd, SNDCTL_DSP_GETCAPS, &i) == -1) {
-	fprintf(stderr, "Cannot get soundcard capabilities!\n");
+	fprintf(stderr, "\nCannot get soundcard capabilities!");
 	close(fd);
 	return -1;
     }
 
     if (!(i & DSP_CAP_DUPLEX)) {
 	fprintf(stderr,
-		"Sorry but your soundcard isn't full duplex capable!\n");
+		"\nSorry but your soundcard isn't full duplex capable!");
 	close(fd);
 	return -1;
     }
 
     i = AFMT_S16_LE;
     if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
-	fprintf(stderr, "Cannot setup 16 bit audio!\n");
+	fprintf(stderr, "\nCannot setup 16 bit audio!");
 	close(fd);
 	return -1;
     }
 
     i = 0;
     if (ioctl(fd, SNDCTL_DSP_STEREO, &i) == -1) {
-	fprintf(stderr, "Cannot setup mono audio!\n");
+	fprintf(stderr, "\nCannot setup mono audio!");
 	close(fd);
 	return -1;
     }
 
     i = SAMPLE_RATE;
     if (ioctl(fd, SNDCTL_DSP_SPEED, &i) == -1) {
-	fprintf(stderr, "Cannot setup sampling frequency %dHz!\n", i);
+	fprintf(stderr, "\nCannot setup sampling frequency %dHz!", i);
 	close(fd);
 	return -1;
     }
@@ -147,8 +150,8 @@ main(int argc, char **argv)
 
     if (sched_setscheduler(0, SCHED_FIFO, &p)) {
 	printf
-	    ("Failed to set scheduler priority. (Are you running as root?)\n");
-	printf("Continuing with default priority\n");
+	    ("\nFailed to set scheduler priority. (Are you running as root?)");
+	printf("\nContinuing with default priority");
     }
 
     if (pthread_create(&audio_thread, NULL, audio_thread_start, NULL)) {

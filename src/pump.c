@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2001/03/25 12:10:06  fonin
+ * Text messages begin from newline rather than end with it.
+ *
  * Revision 1.2  2001/01/13 10:02:35  fonin
  * Fix: setuid root program shouldnt overwrite existing files.
  *
@@ -108,9 +111,9 @@ pump_start(int argc, char **argv)
 
     if (argc == 1) {
 	int             k = 0;
-	printf("Possible effects:\n");
+	printf("\nPossible effects:");
 	while (effect_list[k].str) {
-	    printf("  %s\n", effect_list[k].str);
+	    printf("\n  %s", effect_list[k].str);
 	    k++;
 	}
     }
@@ -121,10 +124,10 @@ pump_start(int argc, char **argv)
 	}
 	if (effect_list[k].str) {
 	    create_f[j++] = effect_list[k].create_f;
-	    printf("adding %s\n", effect_list[k].str);
+	    printf("\nadding %s", effect_list[k].str);
 	    gtk_clist_append(GTK_CLIST(processor), &effect_list[k].str);
 	} else {
-	    printf("%s is not a known effect\n", argv[i]);
+	    printf("\n%s is not a known effect", argv[i]);
 	}
     }
     create_f[j++] = NULL;
@@ -173,17 +176,17 @@ save_pump(char *fname)
      * existing files (/etc/passwd or /etc/shadow for example)
      */
     fprintf(stderr, "\nWriting profile (%s)...", fname);
-    if (
-	(fd =
-	 open(fname, O_WRONLY | O_CREAT | O_EXCL /*O_TRUNC | O_APPEND*/,
-	      S_IREAD | S_IWRITE)) < 0) {
+    if ((fd = open(fname, O_WRONLY | O_CREAT | O_EXCL	/*
+							 * O_TRUNC | O_APPEND
+							 */ ,
+		   S_IREAD | S_IWRITE)) < 0) {
 	perror("Save failed");
 	return;
     }
     /*
      * Chown file to one who launched us
      */
-    chown(fname,getuid(),getgid());
+    chown(fname, getuid(), getgid());
 
     /*
      * writing signature 
