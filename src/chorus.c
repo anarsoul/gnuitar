@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2003/01/30 21:35:29  fonin
+ * Got rid of rnd_window_pos().
+ *
  * Revision 1.4  2003/01/29 19:34:00  fonin
  * Win32 port.
  *
@@ -143,7 +146,6 @@ chorus_init(struct effect *p)
      * GUI Init
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
-    rnd_window_pos(GTK_WINDOW(p->control));
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
