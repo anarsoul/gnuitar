@@ -167,6 +167,10 @@ SOURCE=.\src\distort.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\distort2.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\echo.c
 # ADD CPP /W3
 # End Source File
@@ -178,6 +182,10 @@ SOURCE=.\src\gui.c
 # Begin Source File
 
 SOURCE=.\src\main.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\noise.c
 # End Source File
 # Begin Source File
 
@@ -249,11 +257,19 @@ SOURCE=.\src\distort.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\distort2.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\echo.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\gui.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\noise.h
 # End Source File
 # Begin Source File
 

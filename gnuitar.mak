@@ -1,7 +1,7 @@
 # Microsoft Developer Studio Generated NMAKE File, Based on gnuitar.dsp
 !IF "$(CFG)" == ""
 CFG=gnuitar - Win32 Release
-!MESSAGE No configuration specified. Defaulting to gnuitar - Win32 Release.
+!MESSAGE No configuration specified. Defaulting to gnuitar - Win32 Debug.
 !ENDIF 
 
 !IF "$(CFG)" != "gnuitar - Win32 Release" && "$(CFG)" != "gnuitar - Win32 Debug" && "$(CFG)" != "gnuitar - Win32 Demo" && "$(CFG)" != "gnuitar - Win32 Release 586"
@@ -9,7 +9,7 @@ CFG=gnuitar - Win32 Release
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "gnuitar.mak" CFG="gnuitar - Win32 Debug"
+!MESSAGE NMAKE /f "gnuitar.mak" CFG="gnuitar - Win32 Release"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -26,6 +26,9 @@ NULL=
 !ELSE 
 NULL=nul
 !ENDIF 
+
+CPP=cl.exe
+RSC=rc.exe
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
@@ -44,10 +47,12 @@ CLEAN :
 	-@erase "$(INTDIR)\chorus.obj"
 	-@erase "$(INTDIR)\delay.obj"
 	-@erase "$(INTDIR)\distort.obj"
+	-@erase "$(INTDIR)\distort2.obj"
 	-@erase "$(INTDIR)\echo.obj"
 	-@erase "$(INTDIR)\gnuitar.res"
 	-@erase "$(INTDIR)\gui.obj"
 	-@erase "$(INTDIR)\main.obj"
+	-@erase "$(INTDIR)\noise.obj"
 	-@erase "$(INTDIR)\phasor.obj"
 	-@erase "$(INTDIR)\pump.obj"
 	-@erase "$(INTDIR)\rcfilter.obj"
@@ -63,40 +68,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-RSC=rc.exe
 RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
@@ -122,7 +94,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\tremolo.obj" \
 	"$(INTDIR)\utils.obj" \
 	"$(INTDIR)\vibrato.obj" \
-	"$(INTDIR)\gnuitar.res"
+	"$(INTDIR)\gnuitar.res" \
+	"$(INTDIR)\distort2.obj" \
+	"$(INTDIR)\noise.obj"
 
 "$(OUTDIR)\gnuitar.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -151,6 +125,8 @@ CLEAN :
 	-@erase "$(INTDIR)\delay.sbr"
 	-@erase "$(INTDIR)\distort.obj"
 	-@erase "$(INTDIR)\distort.sbr"
+	-@erase "$(INTDIR)\distort2.obj"
+	-@erase "$(INTDIR)\distort2.sbr"
 	-@erase "$(INTDIR)\echo.obj"
 	-@erase "$(INTDIR)\echo.sbr"
 	-@erase "$(INTDIR)\gnuitar.res"
@@ -158,6 +134,8 @@ CLEAN :
 	-@erase "$(INTDIR)\gui.sbr"
 	-@erase "$(INTDIR)\main.obj"
 	-@erase "$(INTDIR)\main.sbr"
+	-@erase "$(INTDIR)\noise.obj"
+	-@erase "$(INTDIR)\noise.sbr"
 	-@erase "$(INTDIR)\phasor.obj"
 	-@erase "$(INTDIR)\phasor.sbr"
 	-@erase "$(INTDIR)\pump.obj"
@@ -186,40 +164,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-RSC=rc.exe
 RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "_DEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
@@ -240,7 +185,9 @@ BSC32_SBRS= \
 	"$(INTDIR)\tracker.sbr" \
 	"$(INTDIR)\tremolo.sbr" \
 	"$(INTDIR)\utils.sbr" \
-	"$(INTDIR)\vibrato.sbr"
+	"$(INTDIR)\vibrato.sbr" \
+	"$(INTDIR)\distort2.sbr" \
+	"$(INTDIR)\noise.sbr"
 
 "$(OUTDIR)\gnuitar.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -267,7 +214,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\tremolo.obj" \
 	"$(INTDIR)\utils.obj" \
 	"$(INTDIR)\vibrato.obj" \
-	"$(INTDIR)\gnuitar.res"
+	"$(INTDIR)\gnuitar.res" \
+	"$(INTDIR)\distort2.obj" \
+	"$(INTDIR)\noise.obj"
 
 "$(OUTDIR)\gnuitar.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -291,10 +240,12 @@ CLEAN :
 	-@erase "$(INTDIR)\chorus.obj"
 	-@erase "$(INTDIR)\delay.obj"
 	-@erase "$(INTDIR)\distort.obj"
+	-@erase "$(INTDIR)\distort2.obj"
 	-@erase "$(INTDIR)\echo.obj"
 	-@erase "$(INTDIR)\gnuitar.res"
 	-@erase "$(INTDIR)\gui.obj"
 	-@erase "$(INTDIR)\main.obj"
+	-@erase "$(INTDIR)\noise.obj"
 	-@erase "$(INTDIR)\phasor.obj"
 	-@erase "$(INTDIR)\pump.obj"
 	-@erase "$(INTDIR)\rcfilter.obj"
@@ -310,40 +261,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-RSC=rc.exe
 RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
@@ -369,7 +287,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\tremolo.obj" \
 	"$(INTDIR)\utils.obj" \
 	"$(INTDIR)\vibrato.obj" \
-	"$(INTDIR)\gnuitar.res"
+	"$(INTDIR)\gnuitar.res" \
+	"$(INTDIR)\distort2.obj" \
+	"$(INTDIR)\noise.obj"
 
 "$(OUTDIR)\gnuitar.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -393,10 +313,12 @@ CLEAN :
 	-@erase "$(INTDIR)\chorus.obj"
 	-@erase "$(INTDIR)\delay.obj"
 	-@erase "$(INTDIR)\distort.obj"
+	-@erase "$(INTDIR)\distort2.obj"
 	-@erase "$(INTDIR)\echo.obj"
 	-@erase "$(INTDIR)\gnuitar.res"
 	-@erase "$(INTDIR)\gui.obj"
 	-@erase "$(INTDIR)\main.obj"
+	-@erase "$(INTDIR)\noise.obj"
 	-@erase "$(INTDIR)\phasor.obj"
 	-@erase "$(INTDIR)\pump.obj"
 	-@erase "$(INTDIR)\rcfilter.obj"
@@ -412,8 +334,42 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "NDEBUG" 
+BSC32=bscmake.exe
+BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
+BSC32_SBRS= \
+	
+LINK32=link.exe
+LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\gnuitar.pdb" /machine:I386 /out:"$(OUTDIR)\gnuitar.exe" 
+LINK32_OBJS= \
+	"$(INTDIR)\autowah.obj" \
+	"$(INTDIR)\backbuf.obj" \
+	"$(INTDIR)\chorus.obj" \
+	"$(INTDIR)\delay.obj" \
+	"$(INTDIR)\distort.obj" \
+	"$(INTDIR)\echo.obj" \
+	"$(INTDIR)\gui.obj" \
+	"$(INTDIR)\main.obj" \
+	"$(INTDIR)\phasor.obj" \
+	"$(INTDIR)\pump.obj" \
+	"$(INTDIR)\rcfilter.obj" \
+	"$(INTDIR)\reverb.obj" \
+	"$(INTDIR)\sustain.obj" \
+	"$(INTDIR)\tracker.obj" \
+	"$(INTDIR)\tremolo.obj" \
+	"$(INTDIR)\utils.obj" \
+	"$(INTDIR)\vibrato.obj" \
+	"$(INTDIR)\gnuitar.res" \
+	"$(INTDIR)\distort2.obj" \
+	"$(INTDIR)\noise.obj"
+
+"$(OUTDIR)\gnuitar.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+    $(LINK32) @<<
+  $(LINK32_FLAGS) $(LINK32_OBJS)
+<<
+
+!ENDIF 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -444,41 +400,6 @@ CPP_PROJ=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
    $(CPP) @<<
    $(CPP_PROJ) $< 
 <<
-
-RSC=rc.exe
-RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "NDEBUG" 
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
-BSC32_SBRS= \
-	
-LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\gnuitar.pdb" /machine:I386 /out:"$(OUTDIR)\gnuitar.exe" 
-LINK32_OBJS= \
-	"$(INTDIR)\autowah.obj" \
-	"$(INTDIR)\backbuf.obj" \
-	"$(INTDIR)\chorus.obj" \
-	"$(INTDIR)\delay.obj" \
-	"$(INTDIR)\distort.obj" \
-	"$(INTDIR)\echo.obj" \
-	"$(INTDIR)\gui.obj" \
-	"$(INTDIR)\main.obj" \
-	"$(INTDIR)\phasor.obj" \
-	"$(INTDIR)\pump.obj" \
-	"$(INTDIR)\rcfilter.obj" \
-	"$(INTDIR)\reverb.obj" \
-	"$(INTDIR)\sustain.obj" \
-	"$(INTDIR)\tracker.obj" \
-	"$(INTDIR)\tremolo.obj" \
-	"$(INTDIR)\utils.obj" \
-	"$(INTDIR)\vibrato.obj" \
-	"$(INTDIR)\gnuitar.res"
-
-"$(OUTDIR)\gnuitar.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
-    $(LINK32) @<<
-  $(LINK32_FLAGS) $(LINK32_OBJS)
-<<
-
-!ENDIF 
 
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
@@ -711,6 +632,38 @@ CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ENDIF 
 
+SOURCE=.\src\distort2.c
+
+!IF  "$(CFG)" == "gnuitar - Win32 Release"
+
+
+"$(INTDIR)\distort2.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
+
+
+"$(INTDIR)\distort2.obj"	"$(INTDIR)\distort2.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
+
+
+"$(INTDIR)\distort2.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
+
+
+"$(INTDIR)\distort2.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
 SOURCE=.\src\echo.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
@@ -826,6 +779,38 @@ SOURCE=.\src\main.c
 
 
 "$(INTDIR)\main.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\src\noise.c
+
+!IF  "$(CFG)" == "gnuitar - Win32 Release"
+
+
+"$(INTDIR)\noise.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
+
+
+"$(INTDIR)\noise.obj"	"$(INTDIR)\noise.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
+
+
+"$(INTDIR)\noise.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
+
+
+"$(INTDIR)\noise.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
