@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:21:06  fonin
- * Initial revision
+ * Revision 1.2  2001/03/25 12:10:49  fonin
+ * Effect window control ignores delete event.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:21:06  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -36,7 +39,8 @@ backbuff_add(struct backBuf *b, BUF_TYPE d)
     b->storage[b->curpos] = d;
 }
 
-BUF_TYPE backbuff_get(struct backBuf *b, unsigned int Delay)
+BUF_TYPE
+backbuff_get(struct backBuf *b, unsigned int Delay)
 {
     int             getpos;
     assert(Delay < b->nstor);

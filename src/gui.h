@@ -18,6 +18,8 @@
 void            rnd_window_pos(GtkWindow * wnd);
 void
                 init_gui(void);
+gint delete_event(GtkWidget* widget, GdkEvent* event, gpointer data);
+
 extern GtkWidget *processor;
 
 #endif

@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:22:31  fonin
- * Initial revision
+ * Revision 1.2  2001/03/25 12:10:50  fonin
+ * Effect window control ignores delete event.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:22:31  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -32,7 +35,8 @@ update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 					 (double) params->vibrato_amplitude
 					 * sin(2 * M_PI * ((double)
 							   i / (double)
-							   params->vibrato_phase_buffer_size)));
+							   params->
+							   vibrato_phase_buffer_size)));
     }
 
 }
@@ -72,6 +76,9 @@ vibrato_init(struct effect *p)
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     rnd_window_pos(GTK_WINDOW(p->control));
+
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
@@ -205,7 +212,8 @@ vibrato_load(struct effect *p, int fd)
 	vp->phase_buffer[i] = (int) (
 				     (double) vp->vibrato_amplitude *
 				     sin(2 * M_PI * ((double) i / (double)
-						     vp->vibrato_phase_buffer_size)));
+						     vp->
+						     vibrato_phase_buffer_size)));
     }
 
     if (p->toggle == 0) {
@@ -242,11 +250,11 @@ vibrato_create(struct effect *p)
     pvibrato->vibrato_phase = 0;
 
     for (i = 0; i < pvibrato->vibrato_phase_buffer_size; i++) {
-	pvibrato->phase_buffer[i] = (int) (
-					   (double)
+	pvibrato->phase_buffer[i] = (int) ((double)
 					   pvibrato->vibrato_amplitude *
 					   sin(2 * M_PI * ((double)
 							   i / (double)
-							   pvibrato->vibrato_phase_buffer_size)));
+							   pvibrato->
+							   vibrato_phase_buffer_size)));
     }
 }

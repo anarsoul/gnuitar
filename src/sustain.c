@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:22:19  fonin
- * Initial revision
+ * Revision 1.2  2001/03/25 12:10:49  fonin
+ * Effect window control ignores delete event.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:22:19  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -76,6 +79,10 @@ sustain_init(struct effect *p)
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     rnd_window_pos(GTK_WINDOW(p->control));
+
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
+
     gtk_window_set_position(GTK_WINDOW(p->control), GTK_WIN_POS_CENTER);
 
     parmTable = gtk_table_new(4, 8, FALSE);

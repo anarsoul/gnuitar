@@ -14,8 +14,8 @@ struct distort_params {
     int             sat,
                     level,
                     drive,
-                    lastval;
-    short           clip;
+                    lastval,
+		    noisegate;
     int             lowpass;
     struct filter_data fd;
     struct filter_data noise;

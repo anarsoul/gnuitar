@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2001/03/25 12:10:49  fonin
+ * Effect window control ignores delete event.
+ *
  * Revision 1.2  2001/01/13 10:02:12  fonin
  * Initial filter is passthru
  *
@@ -76,8 +79,11 @@ phasor_init(struct effect *p)
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     rnd_window_pos(GTK_WINDOW(p->control));
-    parmTable = gtk_table_new(4, 8, FALSE);
 
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
+
+    parmTable = gtk_table_new(4, 8, FALSE);
 
 
     adj_speed = gtk_adjustment_new(pphasor->speed,
@@ -177,13 +183,17 @@ phasor_filter(struct effect *p, struct data_block *db)
 
     LC_filter(db->data, db->len, HIGHPASS, pp->f, &(pp->fd));
 
-    /* RC_bandpass(db->data, db->len, &(pp->fd)); */
+    /*
+     * RC_bandpass(db->data, db->len, &(pp->fd)); 
+     */
 
     pp->f += pp->df;
     if (pp->f >= pp->freq_high || pp->f <= pp->freq_low)
 	pp->df = -pp->df;
 
-    /* RC_set_freq(pp->f, &(pp->fd)); */
+    /*
+     * RC_set_freq(pp->f, &(pp->fd)); 
+     */
 }
 
 void

@@ -129,9 +129,11 @@ reverb_init(struct effect *p)
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     rnd_window_pos(GTK_WINDOW(p->control));
+
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
+
     parmTable = gtk_table_new(2, 8, FALSE);
-
-
 
     adj_delay = gtk_adjustment_new(preverb->delay,
 				   1.0, 256, 1.0, 1.0, 1.0);

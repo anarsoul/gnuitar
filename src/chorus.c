@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:21:15  fonin
- * Initial revision
+ * Revision 1.2  2001/03/25 12:10:49  fonin
+ * Effect window control ignores delete event.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:21:15  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -111,6 +114,9 @@ chorus_init(struct effect *p)
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     rnd_window_pos(GTK_WINDOW(p->control));
+
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
@@ -287,7 +293,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tmp /= 256;
 	switch (cp->mode) {
 	case 0:		/*
-				 * chorus 
+				 * * chorus 
 				 */
 	    dly = MaxDly * (1024 + sinLookUp[(int) cp->ang]);
 	    dly /= 2048;
@@ -298,7 +304,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 		dly = 0;
 	    break;
 	case 1:		/*
-				 * flange 
+				 * * flange 
 				 */
 	    dly = 16 * MaxDly * (1024 + sinLookUp[(int) Ang] / 16);
 	    dly /= 2048;

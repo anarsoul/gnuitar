@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:22:26  fonin
- * Initial revision
+ * Revision 1.2  2001/03/25 12:10:50  fonin
+ * Effect window control ignores delete event.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:22:26  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -66,6 +69,10 @@ tremolo_init(struct effect *p)
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     rnd_window_pos(GTK_WINDOW(p->control));
+
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
+
     parmTable = gtk_table_new(2, 8, FALSE);
 
     adj_speed = gtk_adjustment_new(ptremolo->tremolo_speed,
@@ -253,12 +260,12 @@ tremolo_create(struct effect *p)
     ptremolo->tremolo_phase = 0;
 
     for (i = 0; i < ptremolo->tremolo_phase_buffer_size; i++) {
-	ptremolo->phase_buffer[i] = (int) (
-					   (double)
+	ptremolo->phase_buffer[i] = (int) ((double)
 					   ptremolo->tremolo_amplitude *
 					   sin(2 * M_PI * ((double)
 							   i / (double)
-							   ptremolo->tremolo_phase_buffer_size)));
+							   ptremolo->
+							   tremolo_phase_buffer_size)));
     }
     ptremolo->index = 0;
 }
