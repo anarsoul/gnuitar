@@ -26,21 +26,18 @@
 #include <gtk/gtk.h>
 
 #ifndef _WIN32
-typedef gint16  SAMPLE;
+typedef short   SAMPLE;
 #else
 typedef short   SAMPLE;
-#define NBUFFERS 512		/* number of input/output sound buffers */
+#define MAX_BUFFERS	1024	/* number of input/output sound buffers */
 #endif
+typedef signed char SAMPLE8;
+#define MAX_SAMPLE 32767
 
-#define NCHANNELS 1
-#ifdef _WIN32
-#define BUFFER_SIZE 2560	/* approx. 60ms @44100 rate this is the
-				 * initial delay of the sound driver of my 
-				 * AWE64 */
-#else
-#define BUFFER_SIZE 256		/* For Linux, we use 4ms fragments */
-#endif
-#define SAMPLE_RATE 44100	/* 48000 produces more noise */
+#define MIN_BUFFER_SIZE 128
+#define MAX_BUFFER_SIZE 65536
+#define MAX_CHANNELS 2
+#define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
 #define EFFECT_AMOUNT 9
 
@@ -79,6 +76,14 @@ struct effect_creator {
     char           *str;
     void            (*create_f) (struct effect *);
 };
+
+extern unsigned short nchannels;
+extern unsigned int sample_rate;
+extern unsigned short bits;
+extern unsigned int buffer_size;
+#ifdef _WIN32
+extern unsigned int nbuffers;
+#endif
 
 extern unsigned short audio_lock;
 extern int      n;

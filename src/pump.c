@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2003/03/09 21:12:41  fonin
+ * New variables for new "change sampling params" feature.
+ *
  * Revision 1.9  2003/02/05 21:10:10  fonin
  * Cleanup before release.
  *
@@ -90,6 +93,14 @@ extern void     initSinLookUp(void);	/*
 					 * from chorus.c 
 					 */
 
+unsigned short  nchannels = 1;
+unsigned int    sample_rate = MAX_SAMPLE_RATE;
+unsigned short  bits = 16;
+unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
+#ifdef _WIN32
+unsigned int    nbuffers = MAX_BUFFERS;
+#endif
+
 int
 pump_sample(int *s, int size)
 {
@@ -140,9 +151,6 @@ pump_start(int argc, char **argv)
                     j;
 
     void            (*create_f[10]) (struct effect *);
-    /*
-     * =    { monitor_create, echo_create, chorus_create, NULL };
-     */
 
     initSinLookUp();
 
