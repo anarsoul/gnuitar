@@ -1,0 +1,14 @@
+Q: It seems GNUitar works, but I can't hear effects applied 
+   to my guitar sound. "Pure" sound of the guitar is send to the speakers,
+   but with no applied effects. I hear native effects' noise, and it 
+   seems like there is zero input signal send to effects.
+A: Make sure your line input or microphone input levels is not muted.
+   Use regular mixer program to adjust input levels.
+
+Q: GNUitar noises terribly !
+A: You should adjust your mixer properly. Set the line input to maximum level,
+   wave out and master volume to middle level, and then start to decrease
+   master volume until the noise will become minimal. Increase volume
+   on your external amplifier.
+   The reason of problem is that most soundcards have bad signal/noise ratio
+   in full-duplex mode.
