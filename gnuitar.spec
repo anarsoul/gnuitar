@@ -6,9 +6,9 @@ Summary: a GTK+ based guitar processor. Includes such effects as reverberator, s
 Name: gnuitar
 Version: %{ver}
 Release: %{rel}
-Source: http://ziet.zhitomir.ua/~fonin/projects/gnuitar/gnuitar-%{ver}.tar.gz
+Source: http://ns2.ziet.zhitomir.ua/~fonin/projects/gnuitar/gnuitar-%{ver}.tar.gz
 Copyright: GPL
-URL: http://ziet.zhitomir.ua/~fonin/downloads.php
+URL: http://ns2.ziet.zhitomir.ua/~fonin/downloads.php#gnuitar
 Requires: gtk+ >= 1.2.6
 Group: Applications/Multimedia
 Packager: Max V. Rudensky <fonin@ziet.zhitomir.ua>
