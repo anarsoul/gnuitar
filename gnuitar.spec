@@ -1,4 +1,4 @@
-%define ver 0.2.0
+%define ver 0.2.1
 %define rel 1
 %define prefix /usr
 
@@ -50,7 +50,16 @@ rm -rf ${RPM_BUILD_ROOT}
 %prefix/*
 
 %changelog
+* Thu Mar 13 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
+- Release 0.2.1
+- Change sampling params from the interface;
+- Meaningful measure units (%, ms) for every slider control;
+- New phasor option - turn on bandpass filter;
+- A lot of code cleanups;
+- Delay was fixed to reset memory on "Time" slider update;
+- Minor documentation updates.
 * Thu Feb 6 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
+- Release 0.2.0
 - Windows port;
 - Write track to .wav file in Win32 version;
 - Meaningful measure units for vibrato and reverb effects (ms and percents);
@@ -62,6 +71,7 @@ rm -rf ${RPM_BUILD_ROOT}
 - Added icon ;-)
 - Major code cleanups for easier maintenance.
 * Sun Mar 25 2001 Max Rudensky	<fonin@ziet.zhitomir.ua>
+- Release 0.1.0-b3 aka 0.1.3
 - Removed "Clip" function from distortion. I found it ambiguous and 
   not elegant.
 - Make effect control windows ignore "delete_event", to prevent 
@@ -74,9 +84,10 @@ rm -rf ${RPM_BUILD_ROOT}
   (file open error if the file already exists) through the code 
   replaced with simply O_CREAT (file will be overwritten).
 * Sun Mar 11 2001 Max Rudensky	<fonin@ziet.zhitomir.ua>
+- Release 0.1.0-b2 aka 0.1.2
 - Fixed closing main window. There was a bug - after close application 
 still was in memory.
 * Thu Jan 01 2001 Max Rudensky <fonin@ziet.zhitomir.ua>
-- First release
+- First release (0.1.0)
 
 # end of file
