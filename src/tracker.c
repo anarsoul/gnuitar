@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:22:22  fonin
- * Initial revision
+ * Revision 1.2  2001/01/14 21:28:42  fonin
+ * Fix: track write could overwrite existing files if executing in suid root mode.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:22:22  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -31,13 +34,10 @@ static int      fin_size = 0;
 void
 tracker_out(const char *outfile)
 {
-    fout = open(outfile, O_NONBLOCK | O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    fout = open(outfile, O_NONBLOCK | O_WRONLY | O_EXCL | O_CREAT, 0644);
     if (ioctl(fout, O_NONBLOCK, 0) == -1)
 	perror("ioctl");
 
-    /*
-     * fout = fopen(outfile, "w"); if (fout == NULL) { perror(outfile); }
-     */
 }
 
 void
@@ -62,13 +62,7 @@ tracker_done()
 {
     if (fout > 0)
 	close(fout);
-    /*
-     * if (fin) fclose(fin); 
-     */
 
-    /*
-     * if (fout!=-1) close(fout);
-     */
     if (fin != -1)
 	close(fin);
 
