@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Tracker module - write samples to file
- * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/02/03 11:39:25  fonin
+ * Copyright year changed.
+ *
  * Revision 1.5  2003/01/29 19:34:00  fonin
  * Win32 port.
  *
@@ -57,8 +60,9 @@
 #ifndef _WIN32
 static int      fout = -1;
 #else
-static HMMIO    fout=NULL;
-static MMCKINFO data,riff;
+static HMMIO    fout = NULL;
+static MMCKINFO data,
+                riff;
 #endif
 
 void
@@ -69,38 +73,41 @@ tracker_out(const char *outfile)
     if (ioctl(fout, O_NONBLOCK, 0) == -1)
 	perror("ioctl");
 #else
-    MMCKINFO fmt;
-    WAVEFORMATEX format;
+    MMCKINFO        fmt;
+    WAVEFORMATEX    format;
 
-    ZeroMemory(&riff,sizeof(MMCKINFO));
-    ZeroMemory(&fmt,sizeof(MMCKINFO));
-    ZeroMemory(&format,sizeof(WAVEFORMATEX));
+    ZeroMemory(&riff, sizeof(MMCKINFO));
+    ZeroMemory(&fmt, sizeof(MMCKINFO));
+    ZeroMemory(&format, sizeof(WAVEFORMATEX));
 
-    fout = mmioOpen(outfile,NULL,MMIO_CREATE|MMIO_WRITE);
-    if(fout!=NULL) {
-	riff.fccType=mmioFOURCC('W','A','V','E');
-	if(mmioCreateChunk(fout,&riff,MMIO_CREATERIFF)!=MMSYSERR_NOERROR) {
-	    fprintf(stderr,"\nCreating RIFF chunk failed.");
+    fout = mmioOpen(outfile, NULL, MMIO_CREATE | MMIO_WRITE);
+    if (fout != NULL) {
+	riff.fccType = mmioFOURCC('W', 'A', 'V', 'E');
+	if (mmioCreateChunk(fout, &riff, MMIO_CREATERIFF) !=
+	    MMSYSERR_NOERROR) {
+	    fprintf(stderr, "\nCreating RIFF chunk failed.");
 	    return;
 	}
-	fmt.ckid=mmioStringToFOURCC("fmt",0);
-	if(mmioCreateChunk(fout,&fmt,0)!=MMSYSERR_NOERROR) {
-	    fprintf(stderr,"\nCreating FMT chunk failed.");
+	fmt.ckid = mmioStringToFOURCC("fmt", 0);
+	if (mmioCreateChunk(fout, &fmt, 0) != MMSYSERR_NOERROR) {
+	    fprintf(stderr, "\nCreating FMT chunk failed.");
 	    return;
 	}
 	format.wFormatTag = WAVE_FORMAT_PCM;
 	format.nChannels = NCHANNELS;
 	format.nSamplesPerSec = SAMPLE_RATE;
 	format.wBitsPerSample = 16;
-	format.nBlockAlign = format.nChannels * (format.wBitsPerSample / 8);
-	format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+	format.nBlockAlign =
+	    format.nChannels * (format.wBitsPerSample / 8);
+	format.nAvgBytesPerSec =
+	    format.nSamplesPerSec * format.nBlockAlign;
 	format.cbSize = 0;
-	mmioWrite(fout,&format,sizeof(WAVEFORMATEX)-2);
-	mmioAscend(fout,&fmt,0);
-	ZeroMemory(&data,sizeof(MMCKINFO));
-	data.ckid=/*data.fccType=*/mmioFOURCC('d','a','t','a');
-	if(mmioCreateChunk(fout,&data,0)!=MMSYSERR_NOERROR) {
-	    fprintf(stderr,"\nCreating data chunk failed.");
+	mmioWrite(fout, &format, sizeof(WAVEFORMATEX) - 2);
+	mmioAscend(fout, &fmt, 0);
+	ZeroMemory(&data, sizeof(MMCKINFO));
+	data.ckid = /* data.fccType= */ mmioFOURCC('d', 'a', 't', 'a');
+	if (mmioCreateChunk(fout, &data, 0) != MMSYSERR_NOERROR) {
+	    fprintf(stderr, "\nCreating data chunk failed.");
 	    return;
 	}
     }
@@ -114,10 +121,10 @@ tracker_done()
     if (fout > 0)
 	close(fout);
 #else
-    if(fout!=NULL) {
-	mmioAscend(fout,&data,0);
-	mmioAscend(fout,&riff,0);
-	mmioClose(fout,0);
+    if (fout != NULL) {
+	mmioAscend(fout, &data, 0);
+	mmioAscend(fout, &riff, 0);
+	mmioClose(fout, 0);
     }
 #endif
 }
@@ -126,7 +133,7 @@ tracker_done()
 void
 track_write(int *s, int count)
 {
-    SAMPLE          tmp[BUFFER_SIZE/sizeof(SAMPLE)];
+    SAMPLE          tmp[BUFFER_SIZE / sizeof(SAMPLE)];
 
     int             i;
 
@@ -138,7 +145,7 @@ track_write(int *s, int count)
 #ifndef _WIN32
     write(fout, tmp, sizeof(SAMPLE) * count);
 #else
-    if(fout!=NULL)
-	mmioWrite(fout,tmp,sizeof(SAMPLE)*count);
+    if (fout != NULL)
+	mmioWrite(fout, tmp, sizeof(SAMPLE) * count);
 #endif
 }

@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Main module
- * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/02/03 11:39:25  fonin
+ * Copyright year changed.
+ *
  * Revision 1.8  2003/01/31 15:18:04  fonin
  * Few cleanups, more comments; start recording AFTER all input buffers are
  * queued.
@@ -88,33 +91,28 @@ HANDLE          audio_thread;
 DWORD           thread_id;
 #endif
 
-static int      stop = 0;	/* in Windows version, stop has
-				 * special values:
-				 * 0 - recording/playback is on
-				 * 1 - playback is paused
-				 * 2 - exit thread
-				 * 3 - recording started,
-				 *     begin playback now
-				 * For UNIX:
-				 * 0 - recording/playback is on
-				 * 1 - exit thread
-				 */
+static int      stop = 0;	/* in Windows version, stop has special
+				 * values: 0 - recording/playback is on 1
+				 * - playback is paused 2 - exit thread 3
+				 * - recording started, begin playback now
+				 * For UNIX: 0 - recording/playback is on 1 
+				 * - exit thread */
 #ifndef _WIN32
 int             fd;
 #else
-HWAVEIN         in;		/* input sound handle       */
-HWAVEOUT        out;		/* output sound handle      */
+HWAVEIN         in;		/* input sound handle */
+HWAVEOUT        out;		/* output sound handle */
 MMRESULT        err;
 			/*
 			 * We use N WAVEHDR's for recording (ie,
 			 * double-buffering)
 			 */
-WAVEHDR         wave_header[NBUFFERS];	/* input header   */
+WAVEHDR         wave_header[NBUFFERS];	/* input header */
 WAVEHDR         write_header[NBUFFERS];	/* output headers */
 char            cur_wr_hdr[NBUFFERS];	/* available write headers array */
-char            wrbuf[BUFFER_SIZE * NBUFFERS];	/* write buffers  */
+char            wrbuf[BUFFER_SIZE * NBUFFERS];	/* write buffers */
 char            rdbuf[BUFFER_SIZE * NBUFFERS];	/* receive buffer */
-int             procbuf[BUFFER_SIZE];	/* procesing buffer       */
+int             procbuf[BUFFER_SIZE];	/* procesing buffer */
 
 void            serror(DWORD err, TCHAR * str);
 #endif
@@ -124,7 +122,7 @@ char            version[32] = "GNUitar $Name$";
 #ifndef _WIN32
 void           *
 #else
-DWORD WINAPI
+DWORD           WINAPI
 #endif
 audio_thread_start(void *V)
 {
@@ -198,7 +196,7 @@ audio_thread_start(void *V)
 		    for (i = 0; i < count; i++) {
 			procbuf[i] =
 			    ((SAMPLE *) (((WAVEHDR *) msg.lParam)->
-					lpData))[i];
+					 lpData))[i];
 		    }
 
 
@@ -222,7 +220,7 @@ audio_thread_start(void *V)
 			    if (W > 32767)
 				W = 32767;
 			    ((SAMPLE *) (write_header[hdr_avail].
-					lpData))[i] = W;
+					 lpData))[i] = W;
 			}
 
 			err =
@@ -235,7 +233,7 @@ audio_thread_start(void *V)
 		    } else
 			printf("\nbuffer overrun.");
 		} else {
-//		    printf("\nbuffer underrun.");
+		    // printf("\nbuffer underrun.");
 		}
 		/*
 		 * Now we need to requeue this buffer so the driver can
@@ -308,9 +306,13 @@ serror(DWORD err, TCHAR * str)
 
 #endif
 
-/* graceful application shutdown */
-void die(void) {
-    int i;
+/*
+ * graceful application shutdown 
+ */
+void
+die(void)
+{
+    int             i;
 
     stop = 2;
     pump_stop();
@@ -349,12 +351,17 @@ void die(void) {
 /*
  * Calculate base-2 logarithm of the value, up to 512k
  */
-short log2(int x) {
-    int pow[]={1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,
-	       65536,131072,262144,524288};
-    int i;
-    for(i=0;i<sizeof(pow)/sizeof(int);i++) {
-	if(pow[i]==x)
+short
+log2(int x)
+{
+    int             pow[] =
+	{ 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,
+16384, 32768,
+	65536, 131072, 262144, 524288
+    };
+    int             i;
+    for (i = 0; i < sizeof(pow) / sizeof(int); i++) {
+	if (pow[i] == x)
 	    return i;
     }
     return 0;
@@ -363,10 +370,12 @@ short log2(int x) {
 
 #ifdef DEMO
 #   ifdef _WIN32
-VOID CALLBACK expired(HWND  hwnd, UINT msg, UINT timer_id, DWORD time) {
+VOID CALLBACK
+expired(HWND hwnd, UINT msg, UINT timer_id, DWORD time)
+{
     gtk_main_quit();
     die();
-    printf("%s",DEMO_MSG);
+    printf("%s", DEMO_MSG);
     exit(10);
 }
 
@@ -432,7 +441,7 @@ main(int argc, char **argv)
 	return -1;
     }
 
-    i = NCHANNELS-1;
+    i = NCHANNELS - 1;
     if (ioctl(fd, SNDCTL_DSP_STEREO, &i) == -1) {
 	fprintf(stderr, "\nCannot setup mono audio!");
 	close(fd);
@@ -455,7 +464,10 @@ main(int argc, char **argv)
      */
     srand(time(NULL));
 #   ifdef _WIN32
-    SetTimer(GetActiveWindow(),DEMO_TIMER,(unsigned int)(1000*60*10+1000*60*5*rand()/(RAND_MAX+1.0)),expired);
+    SetTimer(GetActiveWindow(), DEMO_TIMER,
+	     (unsigned int) (1000 * 60 * 10 +
+			     1000 * 60 * 5 * rand() / (RAND_MAX + 1.0)),
+	     expired);
 #   else
 #   endif
 #endif
@@ -468,12 +480,17 @@ main(int argc, char **argv)
      */
     stop = 1;
 
-    /* set high priority to the process */
-/*    if(!SetPriorityClass(GetCurrentProcess(),HIGH_PRIORITY_CLASS)) {
-	fprintf(stderr,"\nFailed to set realtime priority to process: %s.",GetLastError());
-    }
-*/
-    /* create audio thread */
+    /*
+     * set high priority to the process 
+     */
+    /*
+     * if(!SetPriorityClass(GetCurrentProcess(),HIGH_PRIORITY_CLASS)) {
+     * fprintf(stderr,"\nFailed to set realtime priority to process:
+     * %s.",GetLastError()); } 
+     */
+    /*
+     * create audio thread 
+     */
     audio_thread =
 	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_thread_start, 0,
 		     0, &thread_id);
@@ -482,13 +499,19 @@ main(int argc, char **argv)
 		GetLastError());
 	return (-1);
     }
-    /* set realtime priority to the thread */
-    if(!SetThreadPriority(audio_thread,THREAD_PRIORITY_TIME_CRITICAL)) {
-	fprintf(stderr,"\nFailed to set realtime priority to thread: %s. Continuing with default priority.",GetLastError());
+    /*
+     * set realtime priority to the thread 
+     */
+    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
+	fprintf(stderr,
+		"\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
+		GetLastError());
     }
     CloseHandle(audio_thread);
 
-    /* set audio parameters - sampling rate, number of channels etc. */
+    /*
+     * set audio parameters - sampling rate, number of channels etc. 
+     */
     format.wFormatTag = WAVE_FORMAT_PCM;
     format.nChannels = NCHANNELS;
     format.nSamplesPerSec = SAMPLE_RATE;

@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Pump module - processing sound
- * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,22 +26,21 @@
 #include <gtk/gtk.h>
 
 #ifndef _WIN32
-typedef gint16 SAMPLE;
+typedef gint16  SAMPLE;
 #else
-typedef short SAMPLE;
+typedef short   SAMPLE;
 #define NBUFFERS 512		/* number of input/output sound buffers */
 #endif
 
 #define NCHANNELS 1
 #ifdef _WIN32
-#define BUFFER_SIZE 2560	/* approx. 60ms @44100 rate
-				 * this is the initial delay
-				 * of the sound driver of my AWE64
-				 */
+#define BUFFER_SIZE 2560	/* approx. 60ms @44100 rate this is the
+				 * initial delay of the sound driver of my 
+				 * AWE64 */
 #else
 #define BUFFER_SIZE 256		/* For Linux, we use 4ms fragments */
 #endif
-#define SAMPLE_RATE 44100	/* 48000 produces more noise       */
+#define SAMPLE_RATE 44100	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
 #define EFFECT_AMOUNT 9
 

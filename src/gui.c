@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2003/02/03 11:39:25  fonin
+ * Copyright year changed.
+ *
  * Revision 1.9  2003/02/03 11:36:38  fonin
  * Add icon to the main window on startup.
  *
@@ -295,7 +298,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 
     if (n < MAX_EFFECTS && effects_row >= 0
 	&& effects_row <= EFFECT_AMOUNT) {
-	tmp_effect=(struct effect *) malloc(sizeof(struct effect));
+	tmp_effect = (struct effect *) malloc(sizeof(struct effect));
 	effect_list[effects_row].create_f(tmp_effect);
 	tmp_effect->proc_init(tmp_effect);
 
@@ -309,7 +312,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	} else {
 	    idx = n++;
 	}
-	effects[idx]=tmp_effect;
+	effects[idx] = tmp_effect;
 	audio_lock = 0;
 
 	gtk_clist_insert(GTK_CLIST(processor), idx,
@@ -319,9 +322,13 @@ add_pressed(GtkWidget * widget, gpointer data)
     }
 }
 
-/* callback for gtk_set_pointer_data_full() */
-void free_clist_ptr(gpointer data) {
-    if(data!=NULL)
+/*
+ * callback for gtk_set_pointer_data_full() 
+ */
+void
+free_clist_ptr(gpointer data)
+{
+    if (data != NULL)
 	free(data);
 }
 
@@ -329,38 +336,40 @@ void free_clist_ptr(gpointer data) {
 void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
-    char           *fname,*name;
+    char           *fname,
+                   *name;
 #ifdef _WIN32
-    int		    str_len,i;
+    int             str_len,
+                    i;
     char            drive[_MAX_DRIVE],
-		    dir[_MAX_DIR],
-		    ext[_MAX_EXT];
+                    dir[_MAX_DIR],
+                    ext[_MAX_EXT];
 #endif
 
     name = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
-    fname=(char*)malloc(strlen(name)*sizeof(char)+1);
-    if(fname!=NULL)
-	strcpy(fname,name);
+    fname = (char *) malloc(strlen(name) * sizeof(char) + 1);
+    if (fname != NULL)
+	strcpy(fname, name);
 
 #ifdef _WIN32
     /*
      * GTK for Windows have a bug related to non-ascii characters
      * in the strings. We replace all non-ascii chars to ? character.
      */
-    _splitpath(fname,drive,dir,name,ext);
-    str_len=strlen(name);
-    for(i=0;i<str_len;i++)
-	if(!isascii(name[i])) {
-	    name[i]='?';
+    _splitpath(fname, drive, dir, name, ext);
+    str_len = strlen(name);
+    for (i = 0; i < str_len; i++)
+	if (!isascii(name[i])) {
+	    name[i] = '?';
 	}
 #else
-    name=basename(fname);
+    name = basename(fname);
 #endif
     gtk_clist_append(GTK_CLIST(bank), &name);
     gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5,
 		     1.0);
-    gtk_clist_set_row_data_full(GTK_CLIST(bank),GTK_CLIST(bank)->rows-1,
-	    fname,free_clist_ptr);
+    gtk_clist_set_row_data_full(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1,
+				fname, free_clist_ptr);
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
@@ -396,7 +405,7 @@ bank_switch_pressed(GtkWidget * widget, gpointer data)
 	bank_row = 0;
     else
 	bank_row++;
-    fname=gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
+    fname = gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
     load_pump(fname);
 }
 
@@ -500,9 +509,10 @@ init_gui(void)
     char           *bank_titles[] = { "Processor bank", NULL };
 
 #ifdef _WIN32
-    HICON           app_icon,small_icon;
-    HWND	    window;
-    HMODULE	    me;
+    HICON           app_icon,
+                    small_icon;
+    HWND            window;
+    HMODULE         me;
 #else
     GdkPixmap      *app_icon;
     GdkBitmap      *mask;
@@ -657,20 +667,19 @@ init_gui(void)
      * Attach icon to the window
      */
 #ifdef _WIN32
-    window=GetActiveWindow();
-    me=GetModuleHandle(NULL);
-    app_icon=LoadIcon(me, MAKEINTRESOURCE(APP_ICON));
-    small_icon=LoadIcon(me, MAKEINTRESOURCE(SMALL_ICON));
-    if(app_icon)
-	SendMessage(window, WM_SETICON, ICON_BIG, (LPARAM)app_icon);
-    if(small_icon)
-	SendMessage(window, WM_SETICON, ICON_SMALL, (LPARAM)small_icon);
+    window = GetActiveWindow();
+    me = GetModuleHandle(NULL);
+    app_icon = LoadIcon(me, MAKEINTRESOURCE(APP_ICON));
+    small_icon = LoadIcon(me, MAKEINTRESOURCE(SMALL_ICON));
+    if (app_icon)
+	SendMessage(window, WM_SETICON, ICON_BIG, (LPARAM) app_icon);
+    if (small_icon)
+	SendMessage(window, WM_SETICON, ICON_SMALL, (LPARAM) small_icon);
 
 #else
-    style=gtk_widget_get_style(mainWnd);
-    app_icon=gdk_pixmap_create_from_xpm_d(mainWnd->window,&mask,
-			&style->white,gnuitar_xpm);
-    gdk_window_set_icon(mainWnd->window,mainWnd->window,app_icon,mask);
+    style = gtk_widget_get_style(mainWnd);
+    app_icon = gdk_pixmap_create_from_xpm_d(mainWnd->window, &mask,
+					    &style->white, gnuitar_xpm);
+    gdk_window_set_icon(mainWnd->window, mainWnd->window, app_icon, mask);
 #endif
 }
-

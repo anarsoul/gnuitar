@@ -20,14 +20,16 @@
  * $Id$
  */
 
-/* {{NO_DEPENDENCIES}}
- * Microsoft Developer Studio generated include file.
- * Used by gnuitar.rc
+/*
+ * {{NO_DEPENDENCIES}} Microsoft Developer Studio generated include file.
+ * Used by gnuitar.rc 
  */
 #define APP_ICON                        101
 #define SMALL_ICON                      102
 
-/* Next default values for new objects */
+/*
+ * Next default values for new objects 
+ */
 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS

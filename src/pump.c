@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Pump module - processeing sound
- * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2003/02/03 11:39:25  fonin
+ * Copyright year changed.
+ *
  * Revision 1.6  2003/01/29 19:34:00  fonin
  * Win32 port.
  *
