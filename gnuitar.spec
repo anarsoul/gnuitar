@@ -49,6 +49,14 @@ rm -rf ${RPM_BUILD_ROOT}
 %{prefix}/share/%{name}/*
 
 %changelog
+* Sun Mar 25 2001 Max Rudensky	<fonin@ziet.zhitomir.ua>
+- Removed "Clip" function from distortion. I found it ambiguous and 
+  not elegant.
+- Make effect control windows ignore "delete_event", to prevent 
+  accidentally close.
+- Bank clist widget width auto-resizing
+- Few entries in TODO
+- Added section "BUGS" to README
 * Sun Mar 11 2001 Max Rudensky	<fonin@ziet.zhitomir.ua>
 - Fixed closing main window. There was a bug - after close application 
 still was in memory.
