@@ -408,8 +408,8 @@ reverb_create(struct effect *p)
 		      (int) ((SAMPLE_RATE * sizeof(int) / BUFFER_SIZE) /
 			     4 + 1));
 
-    dr->delay = 15.0f;
-    dr->wet = 128.0f;
-    dr->dry = 200.0f;
-    dr->regen = 0.0f;
+    dr->delay = 125.0f;
+    dr->wet = 80.0f;
+    dr->dry = 254.0f;
+    dr->regen = 100.0f;
 }

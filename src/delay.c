@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/01/31 19:45:45  fonin
+ * Better effect presets.
+ *
  * Revision 1.5  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -325,10 +328,10 @@ delay_create(struct effect *p)
      */
 
     pdelay->delay_size = MAX_SIZE;
-    pdelay->delay_decay = 700;
-    pdelay->delay_start = 5000;
-    pdelay->delay_step = 5000;
-    pdelay->delay_count = 2;
+    pdelay->delay_decay = 550;
+    pdelay->delay_start = 11300;
+    pdelay->delay_step = 11300;
+    pdelay->delay_count = 8;
 
     pdelay->history = (int *) malloc(MAX_SIZE * sizeof(int));
     pdelay->idelay = (int *) malloc(MAX_COUNT * sizeof(int));
