@@ -1,0 +1,49 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/main.c)
+
+PACKAGE=gnuitar
+
+dnl version number
+MAJOR_VERSION=0
+MINOR_VERSION=1
+MICRO_VERSION=0
+dnl INTERFACE_AGE=1
+dnl BINARY_AGE=1
+EXTRA_VERSION=
+VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION$EXTRA_VERSION
+
+AM_INIT_AUTOMAKE($PACKAGE,$VERSION,no-define)
+AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
+AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
+
+dnl Specify a header configuration file
+dnl AM_CONFIG_HEADER(config.h)
+
+dnl Checks for programs.
+AC_ARG_PROGRAM
+AC_PROG_CC
+AC_PROG_INSTALL
+
+dnl Checks for libraries.
+AM_PATH_GLIB(1.2.6,,
+	AC_MSG_ERROR(Test for GLIB failed. See the file 'INSTALL' for help.),
+	gthread)
+AM_PATH_GTK(1.2.6,,
+	AC_MSG_ERROR(Test for GTK failed. See the file 'INSTALL' for help.))
+
+dnl Replace `main' with a function in -lm:
+AC_CHECK_LIB(m, main)
+dnl Replace `main' with a function in -lpthread:
+AC_CHECK_LIB(pthread, main)
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+dnl Checks for library functions.
+AC_PROG_GCC_TRADITIONAL
+
+AC_OUTPUT(Makefile src/Makefile effects/Makefile)

@@ -1,0 +1,20 @@
+English readers, the text below is in Russian (KOI-8 encoding)
+
+- gzip track file on the fly
++ разбрасывать окошки с регуляторами случайно
++ лучший внешний вид регуляторов
++- tracker
++ показывать в главном окне порядок эффектов
++ редактировать порядок (менять, добав/удал)
++ банк профилей
++ записывать профили эффектов в файл
++ читать профили эффектов из файла и переключать по SPACE
++ chorus controls
++ phaser controls
+- equalizer
+- code lickup:
+  + unused variables
+  - ifndef
+  + indent
+  - dead code
+  - int functions don't returns anything

@@ -1,0 +1,58 @@
+				GNUitar
+			Guitar processor software
+
+(C) 2000,2001 Max V.Rudensky <fonin@ziet.zhitomir.ua>
+
+GNUitar is a realtime sound effects software that allows 
+you to use your Linux box as guitar processor. It's has GTK+ based 
+interface.
+
+Program is based on 2 works:
+    o Ele 0.1 by Morris Slutsky
+      http://www-personal.umich.edu/~mslutsky/elepage/index.html
+    o Guitar FX Processor by Marin Vlah
+      http://fly.srk.fer.hr/~mvlah/fx_processor.html
+
+Most part of effects were shamelessly stolen from these programs
+and wrapped into GUI widgets. Distortion was taken from ELE and 
+improved by great Me, enjoy you guys :)
+
+
+REQUIREMENTS
+~~~~~~~~~~~~
+
+You will need
+    o GTK+ version 1.2.6 or fresher
+    o full-duplex sound card
+
+Program works fine on my Pentium II/433.
+It was tested only on single computer, volunteers for extended tests ?
+
+gnuitar executable file should have suid bit to process sound with 
+realtime priority; otherwise you'll hear glitches and delays while 
+switching between windows.
+ 
+See INSTALL file for common installation notes. I'm too lazy to 
+write my own one.
+
+
+FEATURES
+~~~~~~~~
+
+You can write track of what you play to a file. Just click
+checkbox "Write track" at the bottom of program window, enter 
+filename and play. Don't forget that continiuos track write 
+can overfill your hard drive.
+The track file format is raw data, word length, signed,
+48000 Hz sampling rate, 1 channel. You can convert it with 
+SoX program like this
+
+    sox -w -s -c 1 -r 48000 track.raw track.wav, 
+
+and then to MP3:
+
+    bladeenc track.wav
+
+Sox is available at http://home.sprynet.com/~cbagwell/sox.html, 
+and Bladeenc is at http://home8.swipnet.se/~w-82625.
+
