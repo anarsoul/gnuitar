@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2003/03/09 21:10:12  fonin
+ * - new toggle button to start/stop recording;
+ * - new menu item for sampling params;
+ * - new dialog for sampling params.
+ *
  * Revision 1.13  2003/02/05 21:07:39  fonin
  * Fix: when a the write track checkbox is clicked, and then action is cancelled,
  * checkbox remained toggled.
@@ -72,6 +77,7 @@
 #        define  R_OK 04
 #    endif
 #    include <io.h>
+#    include <stdio.h>
 #    include <ctype.h>
 #    include <string.h>
 #    include <windows.h>
@@ -79,18 +85,34 @@
 #    include "resource.h"
 #else
 #    include <unistd.h>
+#    include <pthread.h>
 #    include "gnuitar.xpm"
 #endif
 
 #include "gui.h"
 #include "pump.h"
 #include "tracker.h"
+#include "utils.h"
 
 void            bank_start_save(GtkWidget * widget, gpointer data);
 void            bank_start_load(GtkWidget * widget, gpointer data);
+void            sample_dlg(GtkWidget * widget, gpointer data);
+void            update_sampling_params(GtkWidget * widget,
+				       gpointer sparams);
 void            quit(GtkWidget * widget, gpointer data);
 void            about_dlg(void);
 void            help_contents(void);
+/*
+ * These externs are from main.c 
+ */
+extern int      init_sound();
+extern void     close_sound();
+#ifndef _WIN32
+extern pthread_mutex_t mutex;
+extern pthread_cond_t suspend;
+#else
+extern HANDLE   audio_thread;
+#endif
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -100,12 +122,16 @@ static GtkItemFactoryEntry mainGui_menu[] = {
     {"/File/_Save Layout", "<control>S", (GtkSignalFunc) bank_start_save,
      0, NULL},
     {"/File/sep1", NULL, NULL, 0, "<Separator>"},
-    {"/File/E_xit", NULL, (GtkSignalFunc) quit, 0, NULL},
+    {"/File/E_xit", "<control>Q", (GtkSignalFunc) quit, 0, NULL},
+    {"/_Options", "<alt>O", NULL, 0, "<Branch>"},
+    {"/Options/O_ptions", "<control>P",
+     (GtkSignalFunc) sample_dlg, 0, NULL},
     {"/_Help", NULL, NULL, 0, "<LastBranch>"},
     {"/_Help/Contents", NULL, (GtkSignalFunc) help_contents, 0, NULL},
     {"/_Help/About", NULL, (GtkSignalFunc) about_dlg, 0, NULL}
 };
 GtkWidget      *mainWnd;
+GtkItemFactory *item_factory;
 GtkWidget      *tbl;
 GtkWidget      *menuBar;
 GtkWidget      *processor;
@@ -121,6 +147,7 @@ GtkWidget      *down;
 GtkWidget      *del;
 GtkWidget      *add;
 GtkWidget      *tracker;
+GtkWidget      *start;
 gint            curr_row = -1;	/* 
 				 * current row in processor list 
 				 */
@@ -132,6 +159,30 @@ gint            bank_row = -1;	/*
 				 */
 
 extern unsigned short write_track;
+
+char           *
+my_itoa(int i)
+{
+    switch (i) {
+    case 48000:
+	return "48000";
+    case 44100:
+	return "44100";
+    case 22050:
+	return "22050";
+    case 16000:
+	return "16000";
+    case 8:
+	return "8";
+    case 16:
+	return "16";
+    case 1:
+	return "1";
+    case 2:
+	return "2";
+    }
+    return "";
+}
 
 /*
  * Cleaning and quit from application
@@ -197,6 +248,7 @@ about_dlg(void)
     gtk_signal_connect_object(GTK_OBJECT(ok_button), "clicked",
 			      GTK_SIGNAL_FUNC(gtk_widget_destroy),
 			      GTK_OBJECT(about));
+    gtk_widget_grab_focus(ok_button);
 
     gtk_widget_show_all(about);
 }
@@ -611,10 +663,250 @@ tracker_pressed(GtkWidget * widget, gpointer data)
     }
 }
 
+typedef struct SAMPLE_PARAMS {
+    GtkWidget      *rate;
+    GtkWidget      *channels;
+    GtkWidget      *bits;
+    GtkWidget      *latency;
+    GtkWidget      *dialog;
+    GtkWidget      *latency_label;
+} sample_params;
+
+void
+update_latency_label(GtkWidget * widget, gpointer sparams)
+{
+    char            tmp[256];
+    int             bufsize,
+                    n,
+                    sr;
+#ifndef _WIN32
+    static int      old_bufsize = 0;
+#endif
+
+    sample_params  *sp = (sample_params *) sparams;
+    bufsize =
+	gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
+#ifndef _WIN32
+    /*
+     * OSS cannot accept buffer size that is not a level of 2 
+     */
+    while (log2(bufsize) == 0) {
+	if (bufsize > old_bufsize) {
+	    bufsize += MIN_BUFFER_SIZE;
+	} else {
+	    bufsize -= MIN_BUFFER_SIZE;
+	}
+    }
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(sp->latency), bufsize);
+    old_bufsize = bufsize;
+#endif
+    n = atoi(gtk_entry_get_text
+	     (GTK_ENTRY(GTK_COMBO(sp->channels)->entry)));
+    sr = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
+    sprintf(tmp, "latency = %.2fms", bufsize * 1000.0 / (sr * n));
+    gtk_label_set_text(GTK_LABEL(sp->latency_label), tmp);
+}
+
+/*
+ * Sampling parameters dialog
+ */
+void
+sample_dlg(GtkWidget * widget, gpointer data)
+{
+    static sample_params sparams;
+    GtkWidget      *vpack0;
+    GtkWidget      *hpack1;
+    GtkWidget      *hpack2;
+    GtkWidget      *hpack3;
+    GtkWidget      *rate_label;
+    GtkWidget      *bits_label;
+    GtkWidget      *channels_label;
+    GtkWidget      *latency_label;
+    GtkWidget      *ok;
+    GtkWidget      *cancel;
+    GtkWidget      *group;
+    GtkWidget      *vpack,
+                   *buttons_pack;
+    GList          *sample_rates = NULL;
+    GList          *bits_list = NULL;
+    GList          *channels_list = NULL;
+    GtkObject      *latency_adj;
+    char            tmp[256];
+    GtkSpinButton  *dummy1;
+    GtkEntry       *dummy2;
+
+    sparams.dialog = gtk_window_new(GTK_WINDOW_DIALOG);
+    gtk_widget_set_usize(sparams.dialog, 320, 200);
+    gtk_container_set_border_width(GTK_CONTAINER(sparams.dialog), 5);
+    vpack = gtk_vbox_new(FALSE, 20);
+
+    group = gtk_frame_new("Sampling Parameters");
+    gtk_container_add(GTK_CONTAINER(sparams.dialog), vpack);
+    gtk_box_pack_start(GTK_BOX(vpack), group, TRUE, TRUE, 0);
+
+    vpack0 = gtk_vbox_new(TRUE, 3);
+    gtk_container_add(GTK_CONTAINER(group), vpack0);
+    gtk_container_set_border_width(GTK_CONTAINER(vpack0), 3);
+    gtk_window_set_title(GTK_WINDOW(sparams.dialog),
+			 "Sampling Parameters");
+    hpack1 = gtk_hbox_new(FALSE, 1);
+    gtk_box_pack_start(GTK_BOX(vpack0), hpack1, TRUE, TRUE, 1);
+    hpack2 = gtk_hbox_new(FALSE, 1);
+    gtk_box_pack_start(GTK_BOX(vpack0), hpack2, TRUE, TRUE, 1);
+    hpack3 = gtk_hbox_new(FALSE, 1);
+    gtk_box_pack_start(GTK_BOX(vpack0), hpack3, TRUE, TRUE, 1);
+
+    rate_label = gtk_label_new("Sampling Rate:");
+    gtk_box_pack_start(GTK_BOX(hpack1), rate_label, TRUE, FALSE, 1);
+
+    sparams.rate = gtk_combo_new();
+    sample_rates = g_list_append(sample_rates, "48000");
+    sample_rates = g_list_append(sample_rates, "44100");
+    sample_rates = g_list_append(sample_rates, "22050");
+    sample_rates = g_list_append(sample_rates, "16000");
+    gtk_combo_set_popdown_strings(GTK_COMBO(sparams.rate), sample_rates);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.rate)->entry),
+		       my_itoa(sample_rate));
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.rate)->entry),
+			   FALSE);
+    gtk_widget_set_usize(sparams.rate, 70, 0);
+    gtk_box_pack_start(GTK_BOX(hpack1), sparams.rate, TRUE, FALSE, 0);
+
+    channels_label = gtk_label_new("  Channels:");
+    gtk_box_pack_start(GTK_BOX(hpack1), channels_label, TRUE, FALSE, 1);
+    sparams.channels = gtk_combo_new();
+    channels_list = g_list_append(channels_list, "2");
+    channels_list = g_list_append(channels_list, "1");
+    gtk_combo_set_popdown_strings(GTK_COMBO(sparams.channels),
+				  channels_list);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.channels)->entry),
+			   FALSE);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.channels)->entry),
+		       my_itoa(nchannels));
+    gtk_widget_set_usize(sparams.channels, 40, 0);
+    gtk_box_pack_start(GTK_BOX(hpack1), sparams.channels, TRUE, FALSE, 1);
+
+    bits_label = gtk_label_new("Bits:");
+    gtk_box_pack_start(GTK_BOX(hpack2), bits_label, TRUE, FALSE, 1);
+    sparams.bits = gtk_combo_new();
+    bits_list = g_list_append(bits_list, "16");
+    bits_list = g_list_append(bits_list, "8");
+    gtk_combo_set_popdown_strings(GTK_COMBO(sparams.bits), bits_list);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
+		       my_itoa(bits));
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
+			   FALSE);
+    gtk_widget_set_sensitive(GTK_WIDGET(sparams.bits), FALSE);
+    gtk_widget_set_usize(sparams.bits, 40, 0);
+    gtk_box_pack_start(GTK_BOX(hpack2), sparams.bits, TRUE, FALSE, 1);
+
+    latency_label = gtk_label_new("Fragment size:");
+    gtk_box_pack_start(GTK_BOX(hpack2), latency_label, TRUE, FALSE, 1);
+    latency_adj =
+	gtk_adjustment_new(buffer_size, MIN_BUFFER_SIZE, MAX_BUFFER_SIZE,
+			   MIN_BUFFER_SIZE, MIN_BUFFER_SIZE, 0);
+    sparams.latency =
+	gtk_spin_button_new(GTK_ADJUSTMENT(latency_adj), 1, 0);
+    dummy1 = GTK_SPIN_BUTTON(sparams.latency);
+    dummy2 = &(dummy1->entry);
+    gtk_entry_set_editable(dummy2, FALSE);
+    gtk_widget_set_usize(sparams.latency, 70, 0);
+    gtk_box_pack_start(GTK_BOX(hpack2), sparams.latency, FALSE, FALSE, 1);
+    sprintf(tmp, "latency = %.2fms",
+	    buffer_size * 1000.0 / (sample_rate * nchannels));
+    sparams.latency_label = gtk_label_new(tmp);
+    gtk_label_set_justify(GTK_LABEL(sparams.latency_label),
+			  GTK_JUSTIFY_LEFT);
+    gtk_box_pack_end(GTK_BOX(hpack3), sparams.latency_label, TRUE, TRUE,
+		     1);
+
+    buttons_pack = gtk_hbox_new(FALSE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(buttons_pack), 15);
+    ok = gtk_button_new_with_label("OK");
+    gtk_box_pack_start(GTK_BOX(buttons_pack), ok, TRUE, FALSE, 0);
+
+    gtk_signal_connect(GTK_OBJECT(ok), "clicked",
+		       GTK_SIGNAL_FUNC(update_sampling_params), &sparams);
+    gtk_signal_connect(GTK_OBJECT(latency_adj), "value_changed",
+		       GTK_SIGNAL_FUNC(update_latency_label), &sparams);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.channels)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
+		       &sparams);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.rate)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
+		       &sparams);
+
+    cancel = gtk_button_new_with_label("Cancel");
+    gtk_box_pack_start(GTK_BOX(buttons_pack), cancel, TRUE, FALSE, 0);
+    gtk_signal_connect_object(GTK_OBJECT(cancel), "clicked",
+			      GTK_SIGNAL_FUNC(gtk_widget_destroy),
+			      GTK_OBJECT(sparams.dialog));
+    gtk_box_pack_start(GTK_BOX(vpack), buttons_pack, TRUE, TRUE, 0);
+    gtk_widget_grab_focus(ok);
+
+    gtk_widget_show_all(sparams.dialog);
+}
+
+void
+update_sampling_params(GtkWidget * dialog, gpointer sparams)
+{
+    sample_params  *sp = (sample_params *) sparams;
+
+    buffer_size =
+	gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
+    bits = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->bits)->entry)));
+    nchannels =
+	atoi(gtk_entry_get_text
+	     (GTK_ENTRY(GTK_COMBO(sp->channels)->entry)));
+    sample_rate =
+	atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
+    gtk_widget_destroy(GTK_WIDGET(sp->dialog));
+}
+
+void
+start_stop(GtkWidget * widget, gpointer data)
+{
+    int             error;
+    if (GTK_TOGGLE_BUTTON(widget)->active) {
+#ifndef _WIN32
+	pthread_mutex_lock(&mutex);
+#endif
+	if ((error = init_sound()) != ERR_NOERROR) {
+#ifndef _WIN32
+	    pthread_cond_signal(&suspend);
+	    pthread_mutex_unlock(&mutex);
+#endif
+	    exit(error);
+	}
+	audio_lock = 0;
+#ifndef _WIN32
+	pthread_cond_signal(&suspend);
+	pthread_mutex_unlock(&mutex);
+#else
+	ResumeThread(audio_thread);
+#endif
+	gtk_widget_set_sensitive(GTK_WIDGET
+				 (gtk_item_factory_get_widget
+				  (item_factory, "/Options/Options")),
+				 FALSE);
+	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "STOP");
+    } else {
+	audio_lock = 1;
+	close_sound();
+#ifdef _WIN32
+	SuspendThread(audio_thread);
+#endif
+	gtk_widget_set_sensitive(GTK_WIDGET
+				 (gtk_item_factory_get_widget
+				  (item_factory, "/Options/Options")),
+				 TRUE);
+	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "START");
+    }
+}
+
 void
 init_gui(void)
 {
-    GtkItemFactory *item_factory;
     GtkAccelGroup  *accel_group;
     int             i;
     gint            nmenu_items =
@@ -622,6 +914,7 @@ init_gui(void)
     char           *processor_titles[] = { "Current effects", NULL };
     char           *effects_titles[] = { "Known effects", NULL };
     char           *bank_titles[] = { "Processor bank", NULL };
+    GdkFont        *new_font;
 
 #ifdef _WIN32
     HICON           app_icon,
@@ -631,8 +924,8 @@ init_gui(void)
 #else
     GdkPixmap      *app_icon;
     GdkBitmap      *mask;
-    GtkStyle       *style;
 #endif
+    GtkStyle       *style;
 
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(mainWnd, 500, 370);
@@ -646,39 +939,23 @@ init_gui(void)
      */
     accel_group = gtk_accel_group_new();
 
-    /*
-     * This function initializes the item factory. Param 1: The type of menu
-     * - can be GTK_TYPE_MENU_BAR, GTK_TYPE_MENU, or GTK_TYPE_OPTION_MENU.
-     * Param 2: The path of the menu. Param 3: A pointer to a
-     * gtk_accel_group.  The item factory sets up the accelerator table while 
-     * generating menus. 
-     */
-
     item_factory = gtk_item_factory_new(GTK_TYPE_MENU_BAR, "<main>",
 					accel_group);
-
-    /*
-     * This function generates the menu items. Pass the item factory, the
-     * number of items in the array, the array itself, and any callback data
-     * for the the menu items. 
-     */
     gtk_item_factory_create_items(item_factory, nmenu_items, mainGui_menu,
 				  NULL);
-
-    /*
-     * Attach the new accelerator group to the window. 
-     */
     gtk_window_add_accel_group(GTK_WINDOW(mainWnd), accel_group);
-
-    /*
-     * Finally, return the actual menu bar created by the item factory. 
-     */
     menuBar = gtk_item_factory_get_widget(item_factory, "<main>");
 
     gtk_table_attach(GTK_TABLE(tbl), menuBar, 0, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(0), 0, 0);
+    /*
+     * disable options menu 
+     */
+    gtk_widget_set_sensitive(GTK_WIDGET
+			     (gtk_item_factory_get_widget
+			      (item_factory, "/Options/Options")), FALSE);
 
 
     processor = gtk_clist_new_with_titles(1, processor_titles);
@@ -729,39 +1006,52 @@ init_gui(void)
     gtk_container_add(GTK_CONTAINER(mainWnd), tbl);
     gtk_window_set_title(GTK_WINDOW(mainWnd), MAINGUI_TITLE);
 
-    bank_add = gtk_button_new_with_label("Add >>");
+    bank_add = gtk_button_new_with_label("Add Preset >>");
+    style = gtk_widget_get_style(bank_add);
+    new_font =
+	gdk_fontset_load
+	("-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*");
+    if (new_font != NULL) {
+	gdk_font_unref(style->font);
+	style->font = new_font;
+	gtk_widget_set_style(bank_add, style);
+    }
+
     bank_switch = gtk_button_new_with_label("SWITCH");
     up = gtk_button_new_with_label("Up");
     down = gtk_button_new_with_label("Down");
     del = gtk_button_new_with_label("Delete");
     add = gtk_button_new_with_label("<< Add");
     tracker = gtk_check_button_new_with_label("Write track");
+    start = gtk_toggle_button_new_with_label("STOP");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
 
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
-		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 0, 0);
-    gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 2, 4,
-		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_EXPAND |
-					GTK_FILL),
-		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_EXPAND |
-					GTK_FILL), 0, 0);
+		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
+    gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 3, 4, 
+	__GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 
+	__GTKATTACHOPTIONS(GTK_SHRINK |	GTK_FILL), 5, 5);
+    gtk_table_attach(GTK_TABLE(tbl), start, 0, 1, 2, 3, 
+	__GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 
+	__GTKATTACHOPTIONS(GTK_SHRINK |	GTK_FILL), 5, 5);
+
     gtk_table_attach(GTK_TABLE(tbl), up, 2, 3, 1, 2, __GTKATTACHOPTIONS(0),
-		     __GTKATTACHOPTIONS(0), 0, 0);
-
+		     __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), down, 2, 3, 2, 3,
-		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 0, 0);
-
+		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), del, 2, 3, 3, 4,
-		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 0, 0);
-
+		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), add, 4, 5, 1, 2,
-		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 0, 0);
+		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), tracker, 0, 1, 5, 6,
-		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 0, 0);
+		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
 
     gtk_signal_connect(GTK_OBJECT(bank_add), "clicked",
 		       GTK_SIGNAL_FUNC(bank_add_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(bank_switch), "clicked",
 		       GTK_SIGNAL_FUNC(bank_switch_pressed), NULL);
+    gtk_signal_connect(GTK_OBJECT(start), "clicked",
+		       GTK_SIGNAL_FUNC(start_stop), NULL);
     gtk_signal_connect(GTK_OBJECT(up), "clicked",
 		       GTK_SIGNAL_FUNC(up_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(down), "clicked",
