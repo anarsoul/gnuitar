@@ -236,6 +236,35 @@ decay     - this controls how the repeated sound is fading out
 count     - number of repeats
 size      - controls delay time
 
+7.7. Distortion 2
+
+Another cool distortion. Emulates Ibanez TS9 pedal.
+You need to install gnuitar-distort2 package to change drive/colour controls.
+
+drive      - power of effect
+colour     - can't tell what is it :-)
+lowpass    - low-band filter that can be used to change the sound feel.
+
+7.8. Noise Gate
+
+Simple noise reduction effect. Should be used BEFORE distortion.
+
+threshold    - minimal volume of the sound required to pass signal
+               to the output.
+hold         - if the signal is below threshold during this time,
+               it will be muted. Should be as low as possible.
+release time - if the signal is below threshold, the playback
+               is not muted immediately but fades out this time instead
+attack       - if the signal is above the trheshold, it will fade in
+               this time. Ususally should be 0, but having it
+	       non-zero will produce interesting effect just like the
+	       violin sound.
+hysteresis   - the threshold required to turn off the playback when
+               it is already asound (the regular threshold affects
+	       only the growing signal, while hysteresis
+	       affects fading signal). Should not be larger than
+	       the threshold.
+
 8. Bugs
 
  o Windows version is not very stable yet. There could be problems

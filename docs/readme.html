@@ -254,6 +254,39 @@ echo attempts to achieve a large hall echo.
 <li>size      - controls delay time</li>
 </ul>
 
+<h2><a name=distort2>Distortion 2</a></h2>
+
+<p>Another cool distortion. Emulates Ibanez TS9 pedal.
+You need to install gnuitar-distort2 package to change drive/colour controls.
+
+<ul>
+<li>drive      - power of effect</li>
+<li>colour     - can't tell what is it :-)</li>
+<li>lowpass    - low-band filter that can be used to change the sound feel</li>
+</ul>
+
+<h2><a name=noise>Noise Gate</a></h2>
+
+<p>Simple noise reduction effect. Should be used BEFORE distortion.
+
+<ul>
+<li>threshold    - minimal volume of the sound required to pass signal
+                   to the output.</li>
+<li>hold         - if the signal is below threshold during this time,
+                   it will be muted. Should be as low as possible.</li>
+<li>release time - if the signal is below threshold, the playback
+                   is not muted immediately but fades out this time instead</li>
+<li>attack       - if the signal is above the trheshold, it will fade in
+                   this time. Ususally should be 0, but having it
+		   non-zero will produce interesting effect just like the
+		   violin sound.</li>
+<li>hysteresis   - the threshold required to turn off the playback when
+                   it is already asound (the regular threshold affects
+		   only the growing signal, while hysteresis
+		   affects fading signal). Should not be larger than
+		   the threshold.</li>
+</ul>
+
 <h1><a name=bugs>Bugs</a></h1>
 
 <ul>
