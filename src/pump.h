@@ -33,8 +33,15 @@ typedef short SAMPLE;
 #endif
 
 #define NCHANNELS 1
-#define BUFFER_SIZE 128*2
-#define SAMPLE_RATE 44100
+#ifdef _WIN32
+#define BUFFER_SIZE 2560	/* approx. 60ms @44100 rate
+				 * this is the initial delay
+				 * of the sound driver of my AWE64
+				 */
+#else
+#define BUFFER_SIZE 256		/* For Linux, we use 4ms fragments */
+#endif
+#define SAMPLE_RATE 44100	/* 48000 produces more noise       */
 #define MAX_EFFECTS 50
 #define EFFECT_AMOUNT 9
 
