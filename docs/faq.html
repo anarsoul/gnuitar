@@ -51,5 +51,26 @@
    <li>use the effect "sustain" as a pre-amp. Set "Gate" and "Sustain"
      parameters to 100%.</li>
    </ul>
+<br>
+<b>Q:</b> The latency is poor. Is there a way to improve it ?<br>
+<b>Q:</b> How do I fight the buffer overruns ?<br>
+<b>Q:</b> How do I achieve the best performance ?<br>
+<b>A:</b>
+<ul>
+   <li>The lower is the sampling rate, the better is the latency. Drawback is
+     the sound quality.</li>
+   <li>The lower is the fragment size, the better is the latency. Drawback is the
+     higher system load.</li>
+   <li>The hearable periodic scratches (DirectSound output) can be fixed
+     by decreasing the overrun threshold (sampling params dialog).</li>
+   <li>Increase the fragment size and decrease the sampling rate on
+     low-end CPU, to gain the best latency/overruns/load ratio.</li>
+   <li>On Windows, prefer WDM drivers, if possible. Try both MME and
+     DirectSound playback; choose which is the best.</li>
+   <li>Prefer Linux over Windows. Properly tuned Linux kernel has 10-100 times 
+     better latency on the same hardware.</li>
+   <li>Make gnuitar executable setuid root on UNIX, to allow it run with
+     increased priority.</li>
+</ul>
 </body>
 </html>

@@ -67,6 +67,26 @@ Windows have complex problems with latency when processing audio in real time,
 mostly because of its non-uniform drivers architecture.
 GNUitar latency on Windows is much higher than on Linux. The real latency
 is very depend on sound board driver.
+
+GNUitar for Windows has two playback methods:
+ o Playback via MME
+ o Playback via DirectSound
+
+The first method uses the standard MME API (functions waveOut*()).
+The second method requires DirectX to be installed and uses DirectSound
+for playback. The method can be switched from the sampling parameters dialog,
+by checking/unchecking the "Playback via DirectSound" checkbox.
+
+DirectSound playback shows the best results that are almost close to
+Linux performance. The MME playback exists for compatibility purposes,
+and for another reason. If a driver is not optimized for DirectSound,
+Windows will automatically emulate DirectSound output using the MME devices.
+If a WDM driver is used (see below), DirectSound support is not implemented
+by the driver developer but by the operating system. MME playback support exists
+specially for this case, when the output via DirectSound is emulated by OS.
+
+4.3. Windows Sound Drivers Overview
+
 There are few kinds of sound drivers for Windows: old VXD (Win95/98),
 NT4-kernel style, and modern WDM drivers that were introduced in Windows 98/SE.
 Currently GNUitar uses common MME API (MME=MultiMedia Extension) that is
@@ -75,14 +95,41 @@ much lower latency. Therefore, avoid VXD drivers; use modern WDM drivers
 instead, if possible.
 
 The difference in latency between two kinds of drivers is really noticeable:
-I had 100ms up to ~400ms on Pentium III/850/ISA AWE64/VXD,
-and ~60ms on Pentium MMX/166/Yamaha OPL3/WDM laptop.
+I had 100ms up to ~400ms on Pentium III/850/ISA AWE64/VXD/MME playback,
+and ~60ms on Pentium MMX/166/Yamaha OPL3/WDM/MME playback laptop.
 Try to re-launch GNUitar few times, if the initial latency is bad.
 
 The kind of bus (PCI/ISA) of the sound card does not affect
 the latency very much, the deal is with OS and its architecture.
 So do not through away your old ISA Sound Blaster and replace it with
 modern sound card, first try it on Linux !
+
+4.4. How To Control Latency
+The latency can be controlled with a high degree from the GNUitar interface.
+There is a settings dialog that can be called from the
+``Options->Sampling Parameters'' menu (or by ``Ctrl-P'').
+There is an option called "Fragment Size". The greater is the fragment size,
+the greater is the latency, BUT... You might want to increase fragment size
+on low-end computers, to decrease the system load and number of buffer overruns
+(drops). The buffer overrun is the immediate result of the bad performance.
+Buffer overruns have a hearable effect of a scratches, sometimes
+periodic (ten overruns per second produce a 10 Hz tone).
+
+General notes on how to achieve the best performance:
+ o The lower is the sampling rate, the better is the latency. Drawback is
+   the sound quality.
+ o The lower is the fragment size, the better is the latency. Drawback is the
+   higher system load.
+ o The hearable periodic scratches (DirectSound output) can be fixed
+   by decreasing the overrun threshold (sampling params dialog).
+ o Increase the fragment size and decrease the sampling rate on
+   low-end CPU, to gain the best latency/overruns/load ratio.
+ o On Windows, prefer WDM drivers, if possible. Try both MME and
+   DirectSound playback; choose which is the best.
+ o Prefer Linux over Windows. Properly tuned Linux kernel has 10-100 times 
+   better latency on the same hardware.
+ o Make gnuitar executable setuid root on UNIX, to allow it run with
+   increased priority.
 
 5. Installation
 
@@ -104,14 +151,17 @@ settings, you can load/save using "File" menu.
 Big "Switch" button is used to switch layouts. In this manner,
 you can change current sound by one mouse/keyboard click.
 
+Big "START/STOP" button is used to start/stop playback.
+You may want to press it few times if you experience buffer overruns
+or broken sound output.
+
 You can write track of what you play to a file. Just click
 check-box "Write track" at the bottom of program window, enter 
 filename and play. Don't forget that continuous track write 
 can fill out your hard drive.
-The track file format is raw data, word length, signed,
-44100 Hz sampling rate, 1 channel. In the future, sampling format may change,
-however you will always be informed about actual format.
-You can convert it with SoX program like this
+The track file format is raw data, word length, signed
+(the sampling rate and mono/stereo are controlled from the sampling parameters
+dialog). You can convert it with SoX program like this
 
     sox -w -s -c 1 -r 44100 track.raw track.wav, 
 
@@ -188,7 +238,10 @@ size      - controls delay time
 
 8. Bugs
 
-Probably they are there :-) Send bug reports to fonin@ziet.zhitomir.ua
+ o Windows version is not very stable yet. There could be problems
+   with memory leaks and with sound initialisation/closing.
+
+Send bug reports to fonin@ziet.zhitomir.ua
 
 9. About Free Software Development
 
@@ -224,7 +277,7 @@ guitar processors licenses and the hardware effects cost).
 
 11. Order Information - Windows Users
 
-To be done.
+Send your order to the email fonin@ziet.zhitomir.ua.
 
 12. Related Links
 

@@ -43,3 +43,22 @@ A: You should adjust your mixer properly. Set the line input to maximum level,
      distorted by effects.
    o use the effect "sustain" as a pre-amp. Set "Gate" and "Sustain"
      parameters to 100%.
+
+Q: The latency is poor. Is there a way to improve it ?
+Q: How do I fight the buffer overruns ?
+Q: How do I achieve the best performance ?
+A:
+   o The lower is the sampling rate, the better is the latency. Drawback is
+     the sound quality.
+   o The lower is the fragment size, the better is the latency. Drawback is the
+     higher system load.
+   o The hearable periodic scratches (DirectSound output) can be fixed
+     by decreasing the overrun threshold (sampling params dialog).
+   o Increase the fragment size and decrease the sampling rate on
+     low-end CPU, to gain the best latency/overruns/load ratio.
+   o On Windows, prefer WDM drivers, if possible. Try both MME and
+     DirectSound playback; choose which is the best.
+   o Prefer Linux over Windows. Properly tuned Linux kernel has 10-100 times 
+     better latency on the same hardware.
+   o Make gnuitar executable setuid root on UNIX, to allow it run with
+     increased priority.
