@@ -33,10 +33,10 @@ extern void     echo_create(struct effect *);
 struct echo_params {
     int             echo_size,
                     echo_decay,
-                    buffer_count;
-    int           **history,
-                   *index,
-                   *size,
+                    buffer_count;	/* number of buffers */
+    int           **history,	/* array[MAX_ECHO_COUNT] of history */
+                   *index,	/* array[MAX_ECHO_COUNT] of history index */
+                   *size,	/* size of one buffer */
                    *factor;
 };
 
