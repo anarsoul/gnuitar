@@ -1,7 +1,7 @@
 				GNUitar
 			Guitar processor software
 
-(C) 2000-2003 Max V.Rudensky <fonin@ziet.zhitomir.ua>
+(C) 2000-2004 Max V.Rudensky <fonin@omnistaronline.com>
 
 1. What is GNUitar ?
 
@@ -22,7 +22,8 @@ to compile it yourself; see section 10 "Legal Issues").
 2. Download
 
 http://freshmeat.net/projects/gnuitar
-http://ns2.ziet.zhitomir.ua/~fonin/downloads.php
+http://sourceforge.net/projects/gnuitar
+http://www.omnistaronline.com/~fonin/downloads.php
 
 3. Requirements
 
@@ -270,7 +271,7 @@ hysteresis   - the threshold required to turn off the playback when
  o Windows version is not very stable yet. There could be problems
    with memory leaks and with sound initialisation/closing.
 
-Send bug reports to fonin@ziet.zhitomir.ua
+Send bug reports to fonin@omnistaronline.com
 
 9. About Free Software Development
 
@@ -280,7 +281,7 @@ successful free software project has an active userbase behind it. This
 means that your comments, ideas and bug reports are extremely
 important. If something doesn't work, or some feature is missing,
 please mail me about it. Thank you in advance! You can send GNUitar
-related mails to me at mailto:fonin@ziet.zhitomir.ua.
+related mails to me at mailto:fonin@omnistaronline.com.
 
 10. Legal Issues
 
@@ -306,12 +307,13 @@ guitar processors licenses and the hardware effects cost).
 
 11. Order Information - Windows Users
 
-Send your order to the email fonin@ziet.zhitomir.ua.
+Follow this link:
+https://www2.2checkout.com/2co/buyer/purchase?sid=225737&quantity=1&product_id=1
 
 12. Related Links
 
 http://freshmeat.net/projects/gnuitar and
-http://ziet.zhitomir.ua/~fonin/downloads.php - GNUitar project pages
+http://www.omnistaronline.com/~fonin/downloads.php - GNUitar project pages
 http://linux-sound.org - excellent categorized list of Unix sound software
 http://home.sprynet.com/~cbagwell/sox.html - SoX playback/record/processing
   software
@@ -319,6 +321,6 @@ http://home8.swipnet.se/~w-82625 - BladeEnc, free MP3 encoder
 
 13. Author
 
-Max Rudensky <fonin@ziet.zhitomir.ua>
+Max Rudensky <fonin@omnistaronline.com>
 	     <fonin@yahoo.com>
-	     http://ziet.zhitomir.ua/~fonin
+	     http://www.omnistaronline.com/~fonin
