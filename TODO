@@ -1,6 +1,5 @@
 For 0.1.0 Release
-- extensively testing to find security issues (like symlinking /etc/shadow to 
-  /dev/dsp or read /etc/shadow as bank profile), memory leaks etc.
+- extensively testing to find security issues, memory leaks etc.
 - about box and logo
 - documentation
 
