@@ -14,11 +14,6 @@ Group: Applications/Multimedia
 Packager: Max V. Rudensky <fonin@ziet.zhitomir.ua>
 BuildRoot: /var/tmp/%{name}-root
 
-%changelog
-* Thu Jan 01 2001 Max Rudensky <fonin@ziet.zhitomir.ua>
-- First release
-
-
 %description
 This is a guitar effects software that allows you to 
 use your Linux box as guitar processor.
@@ -41,7 +36,8 @@ CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=%{prefix}
 make
 
 %install
-make prefix=${RPM_BUILD_ROOT}%{prefix} install
+rm -rf $RPM_BUILD_ROOT
+make install prefix=${RPM_BUILD_ROOT}%{prefix}
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
@@ -50,4 +46,10 @@ rm -rf ${RPM_BUILD_ROOT}
 %defattr(-,root,root)
 %doc COPYING ChangeLog TODO README AUTHORS
 %attr(4755,root,root) %{prefix}/bin/gnuitar
-# %{prefix}/share/%{name}-%{ver}/effects/*
+%{prefix}/share/%{name}/*
+
+%changelog
+* Thu Jan 01 2001 Max Rudensky <fonin@ziet.zhitomir.ua>
+- First release
+
+# end of file

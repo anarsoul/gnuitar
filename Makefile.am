@@ -1,6 +1,6 @@
 SUBDIRS = src effects
 
-EXTRA_DIST = gnuitar.spec TODO README AUTHORS ChangeLog COPYING
+EXTRA_DIST = gnuitar.spec
 
 BZIP2_ENV = -9
 
