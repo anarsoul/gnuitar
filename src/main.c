@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2003/02/11 21:45:03  fonin
+ * URL fixes.
+ *
  * Revision 1.11  2003/02/05 21:10:10  fonin
  * Cleanup before release.
  *
@@ -80,7 +83,7 @@
 #define DEMO_MSG "\n\nThis is the demo version of the GNUitar program." \
     "\nYou may download the full version as a source distribution" \
     "\nfrom http://freshmeat.net/projects/gnuitar" \
-    "\nor purchase binary package from http://ziet.zhitomir.ua/~fonin/order.php\n"
+    "\nor purchase binary package from http://ns2.ziet.zhitomir.ua/~fonin/order.php\n"
 #    ifdef _WIN32
 #        define DEMO_TIMER 1
 #    endif

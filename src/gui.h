@@ -42,7 +42,7 @@
 		    "under Library GNU Public License (LGPL).\n\n"
 #define COPYRIGHT   "GNUitar "VERSION"\n" \
 		    "Copyright (C) 2000,2001,2003 Max Rudensky <fonin@ziet.zhitomir.ua>\n" \
-		    "http://ziet.zhitomir.ua/~fonin/\n"
+		    "http://ns2.ziet.zhitomir.ua/~fonin/\n"
 void
                 init_gui(void);
 gint            delete_event(GtkWidget * widget, GdkEvent * event,
