@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/03/12 20:55:35  fonin
+ * - meaningful measure units;
+ * - code cleanup.
+ *
  * Revision 1.8  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -62,8 +66,11 @@ void            phasor_filter(struct effect *p, struct data_block *db);
 void
 update_phasor_speed(GtkAdjustment * adj, struct phasor_params *params)
 {
-    params->speed = (float) adj->value;
-    params->df = params->speed;
+    params->df =
+	(params->freq_high -
+	 params->freq_low) * 1000.0 * buffer_size / (sample_rate *
+						     nchannels *
+						     (float) adj->value);
 }
 
 void
@@ -90,7 +97,6 @@ toggle_phasor(void *bullshit, struct effect *p)
 	p->toggle = 1;
     }
 }
-
 
 void
 phasor_init(struct effect *p)
@@ -123,9 +129,12 @@ phasor_init(struct effect *p)
     parmTable = gtk_table_new(4, 8, FALSE);
 
 
-    adj_speed = gtk_adjustment_new(pphasor->speed,
-				   1.0, 256, 1.0, 1.0, 1.0);
-    speed_label = gtk_label_new("speed");
+    adj_speed = gtk_adjustment_new((pphasor->freq_high -
+				    pphasor->freq_low) * 1000 *
+				   buffer_size / (sample_rate * nchannels *
+						  pphasor->df), 5.0, 2000,
+				   1.0, 10.0, 1.0);
+    speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -148,7 +157,7 @@ phasor_init(struct effect *p)
     adj_freq_low =
 	gtk_adjustment_new(pphasor->freq_low, 100.0, 2500.0, 1.0, 1.0,
 			   1.0);
-    freq_low_label = gtk_label_new("freq_low");
+    freq_low_label = gtk_label_new("Freq.low\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freq_low_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -171,7 +180,7 @@ phasor_init(struct effect *p)
     adj_freq_high =
 	gtk_adjustment_new(pphasor->freq_high, 250.0, 5000.0, 1.0, 1.0,
 			   1.0);
-    freq_high_label = gtk_label_new("freq_high");
+    freq_high_label = gtk_label_new("Freq.high\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freq_high_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -220,17 +229,13 @@ phasor_filter(struct effect *p, struct data_block *db)
 
     LC_filter(db->data, db->len, HIGHPASS, pp->f, &(pp->fd));
 
-    /*
-     * RC_bandpass(db->data, db->len, &(pp->fd)); 
-     */
+    /* RC_bandpass(db->data, db->len, &(pp->fd)); */
 
     pp->f += pp->df;
     if (pp->f >= pp->freq_high || pp->f <= pp->freq_low)
 	pp->df = -pp->df;
 
-    /*
-     * RC_set_freq(pp->f, &(pp->fd)); 
-     */
+    RC_set_freq(pp->f, &(pp->fd));
 }
 
 void
@@ -251,7 +256,7 @@ phasor_save(struct effect *p, int fd)
 
     write(fd, &pp->freq_low, sizeof(pp->freq_low));
     write(fd, &pp->freq_high, sizeof(pp->freq_high));
-    write(fd, &pp->speed, sizeof(pp->speed));
+    write(fd, &pp->df, sizeof(pp->df));
 }
 
 void
@@ -263,9 +268,8 @@ phasor_load(struct effect *p, int fd)
 
     read(fd, &pp->freq_low, sizeof(pp->freq_low));
     read(fd, &pp->freq_high, sizeof(pp->freq_high));
-    read(fd, &pp->speed, sizeof(pp->speed));
+    read(fd, &pp->df, sizeof(pp->df));
     pp->f = pp->freq_low;
-    pp->df = pp->speed;
 
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -292,9 +296,8 @@ phasor_create(struct effect *p)
 
     pphasor->freq_low = 300.0;
     pphasor->freq_high = 2500.0;
-    pphasor->speed = 7.0;
     pphasor->f = pphasor->freq_low;
-    pphasor->df = pphasor->speed;
+    pphasor->df = 7.0;
 
     RC_setup(10, 1.5, &(pphasor->fd));
     RC_set_freq(pphasor->f, &(pphasor->fd));
