@@ -1,3 +1,15 @@
+28 March 2003, Version 0.3.0
+- DirectSound playback on Windows DRAMATICALLY improves the latency
+- Tooltips added for most major controls.
+
+13 March 2003, Version 0.2.1
+- Change sampling params from the interface;
+- Meaningful measure units (%, ms) for every slider control;
+- New phasor option - turn on bandpass filter;
+- A lot of code cleanups;
+- Delay was fixed to reset memory on "Time" slider update;
+- Minor documentation updates.
+
 6 February 2003, Version 0.2.0
 - Windows port;
 - Write track to .wav file in Win32 version;
