@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/03/12 20:54:04  fonin
+ * Better presets.
+ *
  * Revision 1.8  2003/03/11 22:04:00  fonin
  * Measure control sliders in standard units (ms, %).
  *
@@ -327,6 +330,6 @@ sustain_create(struct effect *p)
     psustain = (struct sustain_params *) p->params;
 
     psustain->noise = 40;
-    psustain->sust = 100;
-    psustain->threshold = 100;
+    psustain->sust = 256;
+    psustain->threshold = 256;
 }
