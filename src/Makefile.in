@@ -73,10 +73,10 @@ VERSION = @VERSION@
 bin_PROGRAMS = gnuitar
 gnuitar_SOURCES = main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	vibrato.c autowah.c phasor.c rcfilter.c \
-	gui.c distort.c sustain.c reverb.c backbuf.c \
+	gui.c distort.c sustain.c reverb.c backbuf.c utils.c \
 	pump.h chorus.h delay.h echo.h tracker.h tremolo.h \
 	vibrato.h autowah.h phasor.h rcfilter.h \
-	gui.h distort.h sustain.h reverb.h backbuf.h
+	gui.h distort.h sustain.h reverb.h backbuf.h utils.h
 
 
 INCLUDES = \
@@ -99,7 +99,7 @@ LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 gnuitar_OBJECTS =  main.o pump.o chorus.o delay.o echo.o tracker.o \
 tremolo.o vibrato.o autowah.o phasor.o rcfilter.o gui.o distort.o \
-sustain.o reverb.o backbuf.o
+sustain.o reverb.o backbuf.o utils.o
 gnuitar_DEPENDENCIES = 
 gnuitar_LDFLAGS = 
 CFLAGS = @CFLAGS@
@@ -116,7 +116,8 @@ GZIP_ENV = --best
 DEP_FILES =  .deps/autowah.P .deps/backbuf.P .deps/chorus.P \
 .deps/delay.P .deps/distort.P .deps/echo.P .deps/gui.P .deps/main.P \
 .deps/phasor.P .deps/pump.P .deps/rcfilter.P .deps/reverb.P \
-.deps/sustain.P .deps/tracker.P .deps/tremolo.P .deps/vibrato.P
+.deps/sustain.P .deps/tracker.P .deps/tremolo.P .deps/utils.P \
+.deps/vibrato.P
 SOURCES = $(gnuitar_SOURCES)
 OBJECTS = $(gnuitar_OBJECTS)
 
@@ -124,7 +125,7 @@ all: all-redirect
 .SUFFIXES:
 .SUFFIXES: .S .c .o .s
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --foreign src/Makefile
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
@@ -214,7 +215,7 @@ distdir: $(DISTFILES)
 	top_distdir=`cd $(top_distdir) && pwd`; \
 	distdir=`cd $(distdir) && pwd`; \
 	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu src/Makefile
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --foreign src/Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
