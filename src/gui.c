@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/01/30 21:32:25  fonin
+ * Removed gui_done()
+ *
  * Revision 1.7  2003/01/30 21:31:34  fonin
  * - worked around the Win32-GTK bug with non-ASCII characters in Win32 build;
  * - show only filename in the bank list, instead of full path;
@@ -635,7 +638,4 @@ init_gui(void)
 
     gtk_widget_show_all(mainWnd);
 }
-
-void gui_done(void) {
-    gtk_widget_destroy(mainWnd);
-}
+

@@ -33,7 +33,6 @@
 #define __GTKATTACHOPTIONS
 #endif
 
-void            rnd_window_pos(GtkWindow * wnd);
 void
                 init_gui(void);
 gint            delete_event(GtkWidget * widget, GdkEvent * event,
