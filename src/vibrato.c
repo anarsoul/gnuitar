@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/02/01 19:13:44  fonin
+ * Changed the units of slider bars from computer ones to ms and %
+ *
  * Revision 1.5  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -54,22 +57,14 @@ void
 void
 update_vibrato_speed(GtkAdjustment * adj, struct vibrato_params *params)
 {
-    params->vibrato_speed = (int) adj->value;
+    params->vibrato_speed = (int) ((float)adj->value*SAMPLE_RATE/1000);
 }
 
 void
 update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 {
     int             i;
-    params->vibrato_amplitude = (int) adj->value;
-    for (i = 0; i < params->vibrato_phase_buffer_size; i++) {
-	params->phase_buffer[i] = (int) ((double) params->vibrato_amplitude
-					 * sin(2 * M_PI * ((double)
-							   i / (double)
-							   params->
-							   vibrato_phase_buffer_size)));
-    }
-
+    params->vibrato_amplitude = adj->value*50.0/32767.0;
 }
 
 void
@@ -112,16 +107,17 @@ vibrato_init(struct effect *p)
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
-    adj_speed = gtk_adjustment_new(pvibrato->vibrato_speed,
-				   5000.0,
-				   MAX_VIBRATO_BUFSIZE, 0.1, 1.0, 1.0);
-    speed_label = gtk_label_new("Speed");
+    adj_speed = gtk_adjustment_new((float)pvibrato->vibrato_speed*1000/(SAMPLE_RATE),
+				   1.0,
+				   (float)((float)MAX_VIBRATO_BUFSIZE*1000/
+				  ((float)SAMPLE_RATE)),
+				    1.0, 1.0, 1.0);
+    speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
-
 
     gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
 		       GTK_SIGNAL_FUNC(update_vibrato_speed), pvibrato);
@@ -134,9 +130,9 @@ vibrato_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-    adj_ampl = gtk_adjustment_new(pvibrato->vibrato_amplitude,
-				  100.0, 5000.0, 1.0, 1.0, 1.0);
-    ampl_label = gtk_label_new("Amplitude");
+    adj_ampl = gtk_adjustment_new(pvibrato->vibrato_amplitude*32767/50,
+				  0.0, 100.0, 1.0, 1.0, 1.0);
+    ampl_label = gtk_label_new("Amplitude\n%");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -190,8 +186,8 @@ vibrato_filter(struct effect *p, struct data_block *db)
     vp = p->params;
 
     while (count) {
-	ratio = 1000 + vp->phase_buffer[vp->vibrato_phase];
-	*s = *s * ratio / 1000;
+	ratio = VIBRATO_THRESHOLD + vp->phase_buffer[vp->vibrato_phase] * vp->vibrato_amplitude;
+	*s = *s * ratio / VIBRATO_THRESHOLD;
 
 	vp->vibrato_phase++;
 	if (vp->vibrato_phase >= vp->vibrato_speed)
@@ -270,7 +266,7 @@ vibrato_create(struct effect *p)
 
     pvibrato = (struct vibrato_params *) p->params;
 
-    pvibrato->vibrato_amplitude = 800;
+    pvibrato->vibrato_amplitude = 800.0/32767;
     pvibrato->vibrato_speed = 8000;
     pvibrato->vibrato_phase_buffer_size = MAX_VIBRATO_BUFSIZE;
 
@@ -279,8 +275,7 @@ vibrato_create(struct effect *p)
     pvibrato->vibrato_phase = 0;
 
     for (i = 0; i < pvibrato->vibrato_phase_buffer_size; i++) {
-	pvibrato->phase_buffer[i] = (int) ((double)
-					   pvibrato->vibrato_amplitude *
+	pvibrato->phase_buffer[i] = (int) (32767.0 *
 					   sin(2 * M_PI * ((double)
 							   i / (double)
 							   pvibrato->
