@@ -31,7 +31,6 @@ extern void     phasor_create(struct effect *);
 struct phasor_params {
     float           freq_low;
     float           freq_high;
-    float           speed;
     float           f,
                     df;
     struct filter_data fd;
