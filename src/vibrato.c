@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/03/09 20:53:16  fonin
+ * Meaningful params "speed" and "amplitude". Structures were redesigned
+ * for new feature of on-the-fly change of sampling params.
+ *
  * Revision 1.8  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -49,8 +53,8 @@
 #ifndef _WIN32
 #    include <unistd.h>
 #else
-#    define M_PI 3.14159265358979323846E0
 #    include <io.h>
+#    include "utils.h"
 #endif
 #include "gui.h"
 
@@ -61,13 +65,13 @@ void
 update_vibrato_speed(GtkAdjustment * adj, struct vibrato_params *params)
 {
     params->vibrato_speed =
-	(int) ((float) adj->value * SAMPLE_RATE / 1000);
+	(int) ((float) sample_rate * nchannels * adj->value / 1000.0);
 }
 
 void
 update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 {
-    params->vibrato_amplitude = adj->value * 50.0 / 32767.0;
+    params->vibrato_amplitude = adj->value * 50.0 / MAX_SAMPLE;
 }
 
 void
@@ -111,10 +115,10 @@ vibrato_init(struct effect *p)
     parmTable = gtk_table_new(2, 8, FALSE);
 
     adj_speed =
-	gtk_adjustment_new((float) pvibrato->vibrato_speed * 1000 /
-			   (SAMPLE_RATE), 1.0,
-			   (float) ((float) MAX_VIBRATO_BUFSIZE * 1000 /
-				    ((float) SAMPLE_RATE)), 1.0, 1.0, 1.0);
+	gtk_adjustment_new(pvibrato->vibrato_speed * 1000.0 /
+			   (sample_rate * nchannels), 1.0,
+			   (MAX_VIBRATO_BUFSIZE * 1000.0 /
+			    (sample_rate * nchannels)), 1.0, 1.0, 1.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -133,8 +137,9 @@ vibrato_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-    adj_ampl = gtk_adjustment_new(pvibrato->vibrato_amplitude * 32767 / 50,
-				  0.0, 100.0, 1.0, 1.0, 1.0);
+    adj_ampl =
+	gtk_adjustment_new(pvibrato->vibrato_amplitude * MAX_SAMPLE / 50,
+			   0.0, 100.0, 1.0, 1.0, 1.0);
     ampl_label = gtk_label_new("Amplitude\n%");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -195,7 +200,9 @@ vibrato_filter(struct effect *p, struct data_block *db)
 	*s = *s * ratio / VIBRATO_THRESHOLD;
 
 	vp->vibrato_phase++;
-	if (vp->vibrato_phase >= vp->vibrato_speed)
+
+	if (vp->vibrato_phase >= vp->vibrato_speed ||
+	    vp->vibrato_phase > MAX_VIBRATO_BUFSIZE)
 	    vp->vibrato_phase = 0;
 
 	s++;
@@ -271,8 +278,8 @@ vibrato_create(struct effect *p)
 
     pvibrato = (struct vibrato_params *) p->params;
 
-    pvibrato->vibrato_amplitude = 800.0 / 32767;
-    pvibrato->vibrato_speed = 8000;
+    pvibrato->vibrato_amplitude = 800.0 / MAX_SAMPLE;
+    pvibrato->vibrato_speed = MAX_VIBRATO_BUFSIZE * 0.2 / nchannels;
     pvibrato->vibrato_phase_buffer_size = MAX_VIBRATO_BUFSIZE;
 
     pvibrato->phase_buffer =
@@ -280,7 +287,7 @@ vibrato_create(struct effect *p)
     pvibrato->vibrato_phase = 0;
 
     for (i = 0; i < pvibrato->vibrato_phase_buffer_size; i++) {
-	pvibrato->phase_buffer[i] = (int) (32767.0 *
+	pvibrato->phase_buffer[i] = (int) (MAX_SAMPLE *
 					   sin(2 * M_PI * ((double)
 							   i / (double)
 							   pvibrato->

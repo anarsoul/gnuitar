@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/03/09 20:53:16  fonin
+ * Meaningful params "speed" and "amplitude". Structures were redesigned
+ * for new feature of on-the-fly change of sampling params.
+ *
  * Revision 1.7  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -45,15 +49,15 @@
  *
  */
 
-#include "tremolo.h"
+#include "tremolo.h"		/* for M_PI */
 #include <math.h>
 #include <stdlib.h>
 #ifndef _WIN32
 #    include <unistd.h>
 #else
-#    define M_PI 3.14159265358979323846E0
 #    include <io.h>
 #endif
+#include "utils.h"
 #include "gui.h"
 
 void            tremolo_filter(struct effect *p, struct data_block *db);
@@ -61,14 +65,15 @@ void            tremolo_filter(struct effect *p, struct data_block *db);
 void
 update_tremolo_speed(GtkAdjustment * adj, struct tremolo_params *params)
 {
-    params->tremolo_speed = (int) adj->value;
-}
+    params->tremolo_speed =
+	(int) ((float) sample_rate * nchannels * adj->value / 1000.0);
+}
 
 void
 update_tremolo_amplitude(GtkAdjustment * adj,
 			 struct tremolo_params *params)
 {
-    params->tremolo_amplitude = (int) adj->value;
+    params->tremolo_amplitude = (int) adj->value * 20;
 }
 
 void
@@ -114,9 +119,12 @@ tremolo_init(struct effect *p)
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
-    adj_speed = gtk_adjustment_new(ptremolo->tremolo_speed,
-				   3000.0, 35500.0, 1.0, 1.0, 1.0);
-    speed_label = gtk_label_new("Speed");
+    adj_speed = gtk_adjustment_new(ptremolo->tremolo_speed * 1000.0 /
+				   (sample_rate * nchannels),
+				   1.0, (MAX_TREMOLO_BUFSIZE * 1000.0 /
+					 (sample_rate * nchannels)), 1.0,
+				   1.0, 1.0);
+    speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -135,9 +143,9 @@ tremolo_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-    adj_ampl = gtk_adjustment_new(ptremolo->tremolo_amplitude,
-				  1.0, 1000.0, 1.0, 1.0, 1.0);
-    ampl_label = gtk_label_new("Amplitude");
+    adj_ampl = gtk_adjustment_new(ptremolo->tremolo_amplitude / 20,
+				  1.0, 100.0, 1.0, 1.0, 1.0);
+    ampl_label = gtk_label_new("Amplitude\n%");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -184,7 +192,8 @@ tremolo_filter(struct effect *p, struct data_block *db)
     struct tremolo_params *tp;
     int             ef_index,
                    *s,
-                    count;
+                    count,
+                    currchannel = 0;
 
     tp = p->params;
 
@@ -192,31 +201,34 @@ tremolo_filter(struct effect *p, struct data_block *db)
     count = db->len;
 
     while (count) {
-	tp->history[tp->index++] = *s;	/* 
-					 * add sample to history 
-					 */
-	if (tp->index == tp->tremolo_size)
-	    tp->index = 0;	/* 
-				 * wrap around 
-				 */
+	tp->history[currchannel][tp->index[currchannel]++] = *s;	/* add 
+									 * sample 
+									 * to 
+									 * history 
+									 */
+	if (tp->index[currchannel] == tp->tremolo_size)
+	    tp->index[currchannel] = 0;	/* wrap around */
 
-	ef_index = tp->index;
-	if (tp->index < tp->tremolo_index)
+	ef_index = tp->index[currchannel];
+	if (tp->index[currchannel] < tp->tremolo_index[currchannel])
 	    ef_index += tp->tremolo_size;
 	tp->tremolo_phase++;
 	if (tp->tremolo_phase >= tp->tremolo_speed)
 	    tp->tremolo_phase = 0;
 
-	tp->tremolo_index =
+	tp->tremolo_index[currchannel] =
 	    ef_index - tp->tremolo_amplitude - tp->tremolo_amplitude -
 	    tp->phase_buffer[tp->tremolo_phase *
 			     tp->tremolo_phase_buffer_size /
 			     tp->tremolo_speed];
-	if (tp->tremolo_index >= tp->tremolo_size)
-	    tp->tremolo_index -= tp->tremolo_size;
-	if (tp->tremolo_index < 0)
-	    tp->tremolo_index = 0;
-	*s = tp->history[tp->tremolo_index];
+	if (tp->tremolo_index[currchannel] >= tp->tremolo_size)
+	    tp->tremolo_index[currchannel] -= tp->tremolo_size;
+	if (tp->tremolo_index[currchannel] < 0)
+	    tp->tremolo_index[currchannel] = 0;
+	*s = tp->history[currchannel][tp->tremolo_index[currchannel]];
+
+	if (nchannels > 1)
+	    currchannel = !currchannel;
 
 	s++;
 	count--;
@@ -227,10 +239,12 @@ void
 tremolo_done(struct effect *p)
 {
     struct tremolo_params *tp;
+    int             i;
 
     tp = (struct tremolo_params *) p->params;
 
-    free(tp->history);
+    for (i = 0; i < MAX_CHANNELS; i++)
+	free(tp->history[i]);
     free(tp->phase_buffer);
 
     free(tp);
@@ -285,17 +299,20 @@ tremolo_create(struct effect *p)
 
     ptremolo = (struct tremolo_params *) p->params;
 
-    ptremolo->tremolo_phase_buffer_size = 60000;
-    ptremolo->tremolo_size = 60000;
+    ptremolo->tremolo_phase_buffer_size = MAX_TREMOLO_BUFSIZE;
+    ptremolo->tremolo_size = MAX_TREMOLO_BUFSIZE;
     ptremolo->tremolo_amplitude = 25;
-    ptremolo->tremolo_speed = 8000;
+    ptremolo->tremolo_speed = MAX_TREMOLO_BUFSIZE * 0.2 / nchannels;
 
-    ptremolo->history =
-	(int *) malloc(ptremolo->tremolo_size * sizeof(int));
+    for (i = 0; i < MAX_CHANNELS; i++) {
+	ptremolo->index[i] = 0;
+	ptremolo->tremolo_index[i] = 0;
+	ptremolo->history[i] =
+	    (int *) malloc(ptremolo->tremolo_size * sizeof(int));
+    }
     ptremolo->phase_buffer =
 	(int *) malloc(ptremolo->tremolo_phase_buffer_size * sizeof(int));
 
-    ptremolo->tremolo_index = 0;
     ptremolo->tremolo_phase = 0;
 
     for (i = 0; i < ptremolo->tremolo_phase_buffer_size; i++) {
@@ -306,5 +323,4 @@ tremolo_create(struct effect *p)
 							   ptremolo->
 							   tremolo_phase_buffer_size)));
     }
-    ptremolo->index = 0;
 }

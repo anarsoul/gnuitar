@@ -25,7 +25,7 @@
 
 #include "pump.h"
 
-#define MAX_VIBRATO_BUFSIZE SAMPLE_RATE
+#define MAX_VIBRATO_BUFSIZE MAX_SAMPLE_RATE*MAX_CHANNELS
 #define VIBRATO_THRESHOLD 1500
 
 extern void     vibrato_create(struct effect *);
