@@ -3,6 +3,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.3  2004/10/21 11:13:45  dexterus
+ * Fixed calculus error
+ * Added support for any numer of channels
+ * iniline support delimited to Visual C
+ *
  * Revision 1.2  2003/12/28 10:16:08  fonin
  * Code lickup
  *
@@ -25,8 +30,9 @@ SetEqBiquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
                     om,
                     x;
     double          fi;
-    k = pow(10, G / 20);	// relative gain
-    om = 2 * PI * Fc / Fs;	// normalized frequency in radians
+    k = pow(10, G / 40);		// relative gain
+	BW = BW / ( Fc - BW /2 );	// bandwidth in octaves 
+    om = 2 * PI * Fc / Fs;		// normalized frequency in radians
     fi = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);	// stuff
     x = 1 + fi / k;		// b0
     f->a0 = (1 + fi * k) / x;
@@ -36,28 +42,17 @@ SetEqBiquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
     f->b2 = -(1 - fi / k) / x;
 }
 
-inline double
-doBiquad(double x, struct Biquad *f)
-{
-    double          y;
-    y = x * f->a0 + f->m0 * f->a1 + f->m1 * f->a2 + f->m2 * f->b1 +
-	f->m3 * f->b2;
-    f->m1 = f->m0;
-    f->m0 = x;
-    f->m3 = f->m2;
-    f->m2 = y;
-    return y;
-}
+#ifndef _MSC_VER															/* check if the compiler is not  Visual C */
+	double doBiquad(double x, struct Biquad *f, int channel)	/* so we must declare the fuction here  */
+	{
+		double          y, *mem;
+		mem = f->mem + (channel << 2);
+		y = x * f->a0 + mem[0] * f->a1 + mem[1] * f->a2 + mem[2] * f->b1 + mem[3] * f->b2;
+		mem[1] = mem[0];
+		mem[0] = x;
+		mem[3] = mem[2];
+		mem[2] = y;
+		return y;
+	}
+#endif
 
-inline double
-doBiquadC(double x, struct Biquad *f)
-{
-    double          y;
-    y = x * f->a0 + f->m0c * f->a1 + f->m1c * f->a2 + f->m2c * f->b1 +
-	f->m3c * f->b2;
-    f->m1c = f->m0c;
-    f->m0c = x;
-    f->m3c = f->m2c;
-    f->m2c = y;
-    return y;
-}
