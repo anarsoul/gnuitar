@@ -1,0 +1,53 @@
+[Config for BinMakefileAm]
+bin_program=gnuitar
+cxxflags=-O0 -g3 -Wall
+ldflags=\s
+
+[General]
+author=Max Rudensky
+configure_args=
+email=fonin@ziet.zhitomir.ua
+kdevprj_version=1.3
+make_options=-j1
+makefiles=Makefile.am,gnuitar/Makefile.am,gnuitar/docs/Makefile.am,gnuitar/docs/en/Makefile.am
+project_name=Gnuitar
+project_type=normal_empty
+sub_dir=gnuitar/
+version=0.2.1
+version_control=CVS
+
+[LFV Groups]
+Headers=*.h,*.hh,*.hxx,*.hpp,*.H
+Others=*
+Sources=*.cpp,*.c,*.cc,*.C,*.cxx,*.ec,*.ecpp,*.lxx,*.l++,*.ll,*.l
+User Interface=*.kdevdlg,*.ui,*.rc,*.dlg
+groups=Headers,Sources,User Interface,Others
+
+[Makefile.am]
+files=gnuitar.kdevprj,gnuitar.lsm
+sub_dirs=gnuitar
+type=normal
+
+[gnuitar.kdevprj]
+dist=true
+install=false
+install_location=
+type=DATA
+
+[gnuitar.lsm]
+dist=true
+install=false
+install_location=
+type=DATA
+
+[gnuitar/Makefile.am]
+sub_dirs=
+type=prog_main
+
+[gnuitar/docs/Makefile.am]
+sub_dirs=
+type=normal
+
+[gnuitar/docs/en/Makefile.am]
+sub_dirs=
+type=normal
