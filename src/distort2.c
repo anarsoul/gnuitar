@@ -20,36 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2003/04/12 20:00:56  fonin
+ * Stupid bugfix (forgot to move forward buffer pointer
+ * in the filter function); "level" control taken out.
+ *
  * Revision 1.1  2003/04/11 18:32:24  fonin
  * New distortion effect.
- *
- * Revision 1.9  2003/03/11 22:04:00  fonin
- * Measure control sliders in standard units (ms, %).
- *
- * Revision 1.8  2003/03/09 20:49:45  fonin
- * Structures were redesigned to allow to change sampling params.
- *
- * Revision 1.7  2003/02/03 11:39:25  fonin
- * Copyright year changed.
- *
- * Revision 1.6  2003/02/01 19:15:12  fonin
- * Use sizeof(variable) instead sizeof(type) in load/save procedures,
- * when reading/writing from file.
- *
- * Revision 1.5  2003/01/30 21:35:29  fonin
- * Got rid of rnd_window_pos().
- *
- * Revision 1.4  2003/01/29 19:34:00  fonin
- * Win32 port.
- *
- * Revision 1.3  2001/06/02 14:05:59  fonin
- * Added GNU disclaimer.
- *
- * Revision 1.2  2001/03/25 12:10:14  fonin
- * Removed clip functionality. Effect control window ignores delete event.
- *
- * Revision 1.1.1.1  2001/01/11 13:21:41  fonin
- * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -63,7 +39,7 @@
 #include "distort2.h"
 #include "gui.h"
 
-int      tube[MAX_SAMPLE];	/* distortion lookup table */
+SAMPLE      tube[MAX_SAMPLE+1];	/* distortion lookup table */
 
 void            distort2_filter(struct effect *p, struct data_block *db);
 
@@ -71,9 +47,11 @@ void load_distort2_lookup(int r1, int r2, int sr) {
     char filename[255]="";
     char tmp[255]="";
     int in;
+    int i;
 
     strcpy(filename,"distort2/distort2lookup_");
-    sprintf(tmp,"%i",sr);
+//    sprintf(tmp,"%i",sr);
+    strcat(filename,"44100");
     strncat(filename,tmp,255);
     strcat(filename,"_");
     sprintf(tmp,"%i",r1);
@@ -86,19 +64,19 @@ void load_distort2_lookup(int r1, int r2, int sr) {
 	perror("open");
 	return;
     }
+    memset(tube,0,sizeof(tube));
     read(in,tube,sizeof(tube));
+/*    printf("\n");
+    for(i=0;i<=255;i++)
+        printf("%i=%i;",i,tube[i]);*/
 }
 
 void
-update_distort2_level(GtkAdjustment * adj, struct distort2_params *params)
+update_distort2_r1(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->level = (int) adj->value * 2.56;
-}
-
-void
-update_distort2_sat(GtkAdjustment * adj, struct distort2_params *params)
-{
-//    params->sat = (int) adj->value * 300;
+    params->r1 = (int) adj->value;
+printf("\nr1=%i",params->r1);
+    load_distort2_lookup(params->r1,params->r2,sample_rate);
 }
 
 void
@@ -106,7 +84,7 @@ update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 {
     params->r2 = (int) adj->value * 4.8;
     params->r2-=params->r2 % 10;
-    params->r2=520 - params->r2;
+    params->r2+=50;
 printf("\nr2=%i",params->r2);
     load_distort2_lookup(params->r1,params->r2,sample_rate);
 }
@@ -139,13 +117,9 @@ distort2_init(struct effect *p)
     GtkWidget      *drive_label;
     GtkObject      *adj_drive;
 
-    GtkWidget      *sat;
-    GtkWidget      *sat_label;
-    GtkObject      *adj_sat;
-
-    GtkWidget      *level;
-    GtkWidget      *level_label;
-    GtkObject      *adj_level;
+    GtkWidget      *r1;
+    GtkWidget      *r1_label;
+    GtkObject      *adj_r1;
 
     GtkWidget      *lowpass;
     GtkWidget      *lowpass_label;
@@ -167,7 +141,7 @@ distort2_init(struct effect *p)
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
-    adj_drive = gtk_adjustment_new((pdistort->r2 - 520) / 4.8,
+    adj_drive = gtk_adjustment_new((pdistort->r2 + 50) / 4.8,
 				   1.0, 101.0, 1, 1, 1);
     drive_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
@@ -187,44 +161,22 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_level =
-	gtk_adjustment_new(pdistort->level / 2.56, 1.0, 101, 1.0, 1.0,
-			   1.0);
-    level_label = gtk_label_new("Level\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), level_label, 3, 4, 0, 1,
+    adj_r1 =
+	gtk_adjustment_new(pdistort->r1, 1.0, 101, 1.0, 1.0, 1.0);
+    r1_label = gtk_label_new("R1\n%");
+    gtk_table_attach(GTK_TABLE(parmTable), r1_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
 
-    gtk_signal_connect(GTK_OBJECT(adj_level), "value_changed",
-		       GTK_SIGNAL_FUNC(update_distort2_level), pdistort);
+    gtk_signal_connect(GTK_OBJECT(adj_r1), "value_changed",
+		       GTK_SIGNAL_FUNC(update_distort2_r1), pdistort);
 
-    level = gtk_vscale_new(GTK_ADJUSTMENT(adj_level));
+    r1 = gtk_vscale_new(GTK_ADJUSTMENT(adj_r1));
 
-    gtk_table_attach(GTK_TABLE(parmTable), level, 3, 4, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-
-    adj_sat =
-	gtk_adjustment_new(/*pdistort->sat / 300*/1, 1.0, 101, 1.0, 1.0, 1.0);
-    sat_label = gtk_label_new("Saturation\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), sat_label, 5, 6, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-
-
-    gtk_signal_connect(GTK_OBJECT(adj_sat), "value_changed",
-		       GTK_SIGNAL_FUNC(update_distort2_sat), pdistort);
-
-    sat = gtk_vscale_new(GTK_ADJUSTMENT(adj_sat));
-
-    gtk_table_attach(GTK_TABLE(parmTable), sat, 5, 6, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), r1, 3, 4, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -233,7 +185,7 @@ distort2_init(struct effect *p)
     adj_lowpass =
 	gtk_adjustment_new(pdistort->lowpass, 1.0, 3000, 1.0, 1.0, 1.0);
     lowpass_label = gtk_label_new("Lowpass\nHz");
-    gtk_table_attach(GTK_TABLE(parmTable), lowpass_label, 7, 8, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), lowpass_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -244,7 +196,7 @@ distort2_init(struct effect *p)
 
     lowpass = gtk_vscale_new(GTK_ADJUSTMENT(adj_lowpass));
 
-    gtk_table_attach(GTK_TABLE(parmTable), lowpass, 7, 8, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), lowpass, 5, 6, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -264,7 +216,7 @@ distort2_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Distortion"));
+    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Distortion 2"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
@@ -287,10 +239,15 @@ distort2_filter(struct effect *p, struct data_block *db)
 
     /* process signal */
     while (count) {
-	if(*s>0 && *s < MAX_SAMPLE)
-	    *s = tube[*s];
-	else if(s<0 && *s > -MAX_SAMPLE)
-	    *s = -tube[-*s];
+	int tmp;
+	tmp=*s;
+	if(tmp>0 && tmp<MAX_SAMPLE) {
+	    *s = tube[tmp];
+	}
+	else if(tmp<0 && tmp>-MAX_SAMPLE) {
+	    *s = -tube[-tmp];
+	}
+	s++;
 	count--;
     }
 
@@ -310,17 +267,11 @@ void
 distort2_save(struct effect *p, int fd)
 {
     struct distort2_params *ap;
-    short           tmp = 0;
 
     ap = (struct distort2_params *) p->params;
 
     write(fd, &ap->r1, sizeof(ap->r1));
-    write(fd, &ap->level, sizeof(ap->level));
     write(fd, &ap->r2, sizeof(ap->r2));
-    /*
-     * Fake write - for compatibility with old versions 
-     */
-    write(fd, &tmp, sizeof(tmp));
     write(fd, &ap->lowpass, sizeof(ap->lowpass));
 }
 
@@ -328,14 +279,11 @@ void
 distort2_load(struct effect *p, int fd)
 {
     struct distort2_params *ap;
-    short           tmp;
 
     ap = (struct distort2_params *) p->params;
 
     read(fd, &ap->r1, sizeof(ap->r1));
-    read(fd, &ap->level, sizeof(ap->level));
     read(fd, &ap->r2, sizeof(ap->r2));
-    read(fd, &tmp, sizeof(tmp));
     read(fd, &ap->lowpass, sizeof(ap->lowpass));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -362,12 +310,14 @@ distort2_create(struct effect *p)
     p->id = DISTORT2;
     p->proc_done = distort2_done;
 
-    ap->level = 100;
     ap->r2 = 510;
     ap->r1 = 1;
     ap->lowpass = 350;
+    ap->noisegate = 3000;
 
     RC_setup(10, 1.5, &(ap->fd));
     RC_set_freq(ap->lowpass, &(ap->fd));
+    RC_setup(10, 1, &(ap->noise));
+    RC_set_freq(ap->noisegate, &(ap->noise));
     load_distort2_lookup(ap->r1,ap->r2,sample_rate);
 }
