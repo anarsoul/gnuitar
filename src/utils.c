@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2003/04/16 18:40:56  fonin
+ * my_itoa() is defined for Windows also.
+ *
  * Revision 1.2  2003/04/11 18:33:56  fonin
  * my_itoa() moved to utils.h.
  *
@@ -49,6 +52,8 @@ log2(int x)
     return 0;
 }
 
+#endif
+
 char           *
 my_itoa(int i)
 {
@@ -72,5 +77,3 @@ my_itoa(int i)
     }
     return "";
 }
-
-#endif
