@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2003/03/09 20:58:47  fonin
+ * Redesign for the new "change sampling params" feature.
+ *
  * Revision 1.6  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -94,9 +97,9 @@ tracker_out(const char *outfile)
 	    return;
 	}
 	format.wFormatTag = WAVE_FORMAT_PCM;
-	format.nChannels = NCHANNELS;
-	format.nSamplesPerSec = SAMPLE_RATE;
-	format.wBitsPerSample = 16;
+	format.nChannels = nchannels;
+	format.nSamplesPerSec = sample_rate;
+	format.wBitsPerSample = bits;
 	format.nBlockAlign =
 	    format.nChannels * (format.wBitsPerSample / 8);
 	format.nAvgBytesPerSec =
@@ -105,7 +108,7 @@ tracker_out(const char *outfile)
 	mmioWrite(fout, &format, sizeof(WAVEFORMATEX) - 2);
 	mmioAscend(fout, &fmt, 0);
 	ZeroMemory(&data, sizeof(MMCKINFO));
-	data.ckid = /* data.fccType= */ mmioFOURCC('d', 'a', 't', 'a');
+	data.ckid = mmioFOURCC('d', 'a', 't', 'a');
 	if (mmioCreateChunk(fout, &data, 0) != MMSYSERR_NOERROR) {
 	    fprintf(stderr, "\nCreating data chunk failed.");
 	    return;
@@ -133,7 +136,7 @@ tracker_done()
 void
 track_write(int *s, int count)
 {
-    SAMPLE          tmp[BUFFER_SIZE / sizeof(SAMPLE)];
+    SAMPLE          tmp[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
 
     int             i;
 
