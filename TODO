@@ -4,19 +4,29 @@ TODO:
   - research latency time on different kinds of drivers and
     fragment sizes (for low-end computers)
 + в write/load процедурах делать не sizeof(тип), а sizeof(переменная)
-- disclaimer and copyright update in each source
++ disclaimer and copyright update in each source
++ LGPL notice everywhere
 - bug with GTK critical error on finish
-- icon for the program
++ icon for the program
+- перед релизом марафет в исходниках - dos2unix, indent и вручную все проверить.
++ win32 - при нажатии на write track, а затем cancel, чекбокс остается
+  нажатым.
 - more docs
-  - HTML docs and a convert script to produce text versions
-  - launch browser to show documentation from the GNUitar
+  + HTML docs and a convert script to produce text versions
+    + docs/makefile
+  + launch browser to show documentation from the GNUitar
+    + win32
+    + check for browsers and getenv("BROWSER")
+    + UNIX - искать доку в /usr/share/doc, /usr/local/doc, /usr/local/share,
+      /usr/doc, в текущей дире и на уровень выше
+    + windows - искать доку в текущей и в ..\docs
   + user documentation with effects description
-  - note on high priority thread and hangups
+  + note on high priority thread and hangups
   + legal issues
   - order info
-- meaningful names for effects
-  - measure all in standard SI units (ms, etc.)
-    +- reverb
++ meaningful names for effects
+  + measure all in standard SI units (ms, etc.)
+    + reverb
 + problems with banks list - does not support national characters
 + demo version
 + good effects presets
@@ -26,7 +36,10 @@ TODO:
 + graceful app shutdown (function die)
 
 0.2.1
+- convert the names of presets to UTF8 strings, before append it
+  to the bank list, as recommended by GTK-Win32 manual.
 - sample rate/fragments/stereo/bits controls on the fly
+- versioning of the presets
 - meaningful names for effects
   - measure all in standard SI units (ms, etc.)
     + vibrato
