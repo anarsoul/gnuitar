@@ -4,7 +4,7 @@
 (C) 2000,2001 Max V.Rudensky <fonin@ziet.zhitomir.ua>
 
 GNUitar is a real-time sound effects software that allows 
-you to use your Linux box as guitar processor. It's has GTK+ based 
+you to use your Linux box as guitar processor. It has GTK+ based 
 interface.
 
 Program is based on 2 works:
@@ -15,7 +15,7 @@ Program is based on 2 works:
 
 Most part of effects were shamelessly stolen from these programs
 and wrapped into GUI widgets. Distortion was taken from ELE and 
-improved by great Me, enjoy you guys :)
+improved by me.
 
 
 GETTING
@@ -25,7 +25,6 @@ http://ziet.zhitomir.ua/~fonin/code.html
 
 REQUIREMENTS
 ~~~~~~~~~~~~
-
 You will need
     o GTK+ version 1.2.6 or fresher
     o full-duplex sound card
@@ -43,7 +42,6 @@ write my own one.
 
 FEATURES
 ~~~~~~~~
-
 You can write track of what you play to a file. Just click
 check-box "Write track" at the bottom of program window, enter 
 filename and play. Don't forget that continuous track write 
@@ -67,3 +65,17 @@ THIS PROGRAM IS RUNNING SETUID ROOT, E.G. WITH SUPERUSER PRIVILEGES.
 NO WARRANTY ! USE ON YOUR OWN RISK !
 
 All file writes can't overwrite existing files.
+
+
+BUGS
+~~~~
+Program is in beta stage. Any feedback is appreciated. The simplest 
+way is to through out the program and find something else, but in such 
+a way you kill young projects.
+
+To request a new feature, or report a bug, or whatever else mail me 
+fonin@ziet.zhitomir.ua.
+
+
+Best regards,
+Max Rudensky.
