@@ -848,11 +848,13 @@ Optional Features:
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --disable-glibtest       Do not try to compile and run a test GLIB program
   --disable-gtktest       Do not try to compile and run a test GTK program
+  --enable-float          Do DSP processing in floats rather in int's
+  --enable-clip-everywhere    Clip sound to min/max possible value in every effect (by default only on output)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-gtk2	  Use GTK2 instead GTK (disabled by default)
+  --with-gtk2	          Use GTK2 instead GTK (disabled by default)
   --with-glib-prefix=PFX   Prefix where GLIB is installed (optional)
   --with-glib-exec-prefix=PFX Exec prefix where GLIB is installed (optional)
   --with-gtk-prefix=PFX   Prefix where GTK is installed (optional)
@@ -1278,7 +1280,7 @@ PACKAGE=gnuitar
 
 MAJOR_VERSION=0
 MINOR_VERSION=3
-MICRO_VERSION=1
+MICRO_VERSION=2
 EXTRA_VERSION=
 VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION$EXTRA_VERSION
 
@@ -5043,6 +5045,20 @@ echo "$as_me: error: Test for GTK2 failed. See the file 'INSTALL' for help." >&2
   rm -f conf.gtktest
 
 
+
+fi;
+
+# Check whether --enable-float or --disable-float was given.
+if test "${enable_float+set}" = set; then
+  enableval="$enable_float"
+   CONFIG_DEFS="$CONFIG_DEFS -DFLOAT_DSP"
+
+fi;
+
+# Check whether --enable-clip-everywhere or --disable-clip-everywhere was given.
+if test "${enable_clip_everywhere+set}" = set; then
+  enableval="$enable_clip_everywhere"
+   CONFIG_DEFS="$CONFIG_DEFS -DCLIP_EVERYWHERE"
 
 fi;
 
