@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2003/03/13 20:24:30  fonin
+ * New parameter "bandpass" - turn on bandpass function.
+ *
  * Revision 1.9  2003/03/12 20:55:35  fonin
  * - meaningful measure units;
  * - code cleanup.
@@ -99,6 +102,14 @@ toggle_phasor(void *bullshit, struct effect *p)
 }
 
 void
+toggle_bandpass(void *bullshit, struct effect *p)
+{
+    struct phasor_params *pp;
+    pp = (struct phasor_params *) p->params;
+    pp->bandpass = !pp->bandpass;
+}
+
+void
 phasor_init(struct effect *p)
 {
     struct phasor_params *pphasor;
@@ -115,6 +126,7 @@ phasor_init(struct effect *p)
     GtkObject      *adj_speed;
 
     GtkWidget      *button;
+    GtkWidget      *bandpass;
     GtkWidget      *parmTable;
     pphasor = p->params;
 
@@ -204,7 +216,7 @@ phasor_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_phasor), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 2, 3,
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 2, 2, 3,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
@@ -212,6 +224,20 @@ phasor_init(struct effect *p)
     if (p->toggle == 1) {
 	p->toggle = 0;
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
+    }
+
+    bandpass = gtk_check_button_new_with_label("Bandpass");
+    gtk_signal_connect(GTK_OBJECT(bandpass), "toggled",
+		       GTK_SIGNAL_FUNC(toggle_bandpass), p);
+
+    gtk_table_attach(GTK_TABLE(parmTable), bandpass, 3, 6, 2, 3,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    if (pphasor->bandpass == 1) {
+	pphasor->bandpass = 0;
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(bandpass), TRUE);
     }
 
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Phasor"));
@@ -229,7 +255,8 @@ phasor_filter(struct effect *p, struct data_block *db)
 
     LC_filter(db->data, db->len, HIGHPASS, pp->f, &(pp->fd));
 
-    /* RC_bandpass(db->data, db->len, &(pp->fd)); */
+    if (pp->bandpass)
+	RC_bandpass(db->data, db->len, &(pp->fd));
 
     pp->f += pp->df;
     if (pp->f >= pp->freq_high || pp->f <= pp->freq_low)
@@ -298,6 +325,7 @@ phasor_create(struct effect *p)
     pphasor->freq_high = 2500.0;
     pphasor->f = pphasor->freq_low;
     pphasor->df = 7.0;
+    pphasor->bandpass = 0;
 
     RC_setup(10, 1.5, &(pphasor->fd));
     RC_set_freq(pphasor->f, &(pphasor->fd));

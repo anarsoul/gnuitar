@@ -33,6 +33,7 @@ struct phasor_params {
     float           freq_high;
     float           f,
                     df;
+    short           bandpass;
     struct filter_data fd;
 };
 
