@@ -8,15 +8,19 @@ o Glib 1.2 for Windows
 o GNU libintl for Windows
 o GNU libiconv for Windows
 All the software except MSVC is free and can be downloaded from the site
-... (FIXME)
+http://www.gimp.org/win32
+OR
+http://www.gimp.org/~tml/gimp/win32
 
   Currently, the exact links are:
-libintl-0.10.40-tml-20020904.zip
-http://sourceforge.net/project/showfiles.php?group_id=25167 (libiconv)
-glib-2.2.0-20030112.zip
-glib-dev-2.2.0-20030112.zip
-gtk+-1.3.0-20030115.zip
-gtk+-dev-1.3.0-20030115.zip
+http://www.gimp.org/~tml/gimp/win32/libintl-0.10.40-tml-20020904.zip
+http://sourceforge.net/project/showfiles.php?group_id=25167 (general link
+							     for libiconv)
+http://cesnet.dl.sourceforge.net/sourceforge/gettext/libiconv-1.8-w32-1.bin.zip
+http://www.gimp.org/~tml/gimp/win32/glib-2.2.0-20030112.zip
+http://www.gimp.org/~tml/gimp/win32/glib-dev-2.2.0-20030112.zip
+http://www.gimp.org/~tml/gimp/win32/gtk+-1.3.0-20030115.zip
+http://www.gimp.org/~tml/gimp/win32/gtk+-dev-1.3.0-20030115.zip
 Please note that these links may change with the software updates.
 
   You need to prepare your build environment, before you start to compile.
