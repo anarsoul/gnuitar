@@ -72,6 +72,10 @@ TODO:
   + optimize loops in the audio thread
 
 0.3.1
++ noise gate
++ new overdrive effect
+
+0.3.2
 - WDM Kernel Streaming Win32, if such API exists (I'm in doubt)
 
 0.4.0
@@ -79,7 +83,6 @@ TODO:
 
 0.5.0
 - equalizer effect
-- noise reduction as separate effect
 
 0.6.0
 - tuner
