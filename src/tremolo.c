@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/02/01 19:15:12  fonin
+ * Use sizeof(variable) instead sizeof(type) in load/save procedures,
+ * when reading/writing from file.
+ *
  * Revision 1.5  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -240,8 +244,8 @@ tremolo_save(struct effect *p, int fd)
 
     tp = (struct tremolo_params *) p->params;
 
-    write(fd, &tp->tremolo_amplitude, sizeof(int));
-    write(fd, &tp->tremolo_speed, sizeof(int));
+    write(fd, &tp->tremolo_amplitude, sizeof(tp->tremolo_amplitude));
+    write(fd, &tp->tremolo_speed, sizeof(tp->tremolo_speed));
 }
 
 void
@@ -251,8 +255,8 @@ tremolo_load(struct effect *p, int fd)
 
     tp = (struct tremolo_params *) p->params;
 
-    read(fd, &tp->tremolo_amplitude, sizeof(int));
-    read(fd, &tp->tremolo_speed, sizeof(int));
+    read(fd, &tp->tremolo_amplitude, sizeof(tp->tremolo_amplitude));
+    read(fd, &tp->tremolo_speed, sizeof(tp->tremolo_speed));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

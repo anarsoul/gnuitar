@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2003/02/01 19:15:12  fonin
+ * Use sizeof(variable) instead sizeof(type) in load/save procedures,
+ * when reading/writing from file.
+ *
  * Revision 1.6  2003/01/31 19:45:45  fonin
  * Better effect presets.
  *
@@ -276,11 +280,11 @@ delay_save(struct effect *p, int fd)
 
     dp = (struct delay_params *) p->params;
 
-    write(fd, &dp->delay_size, sizeof(int));
-    write(fd, &dp->delay_decay, sizeof(int));
-    write(fd, &dp->delay_start, sizeof(int));
-    write(fd, &dp->delay_step, sizeof(short));
-    write(fd, &dp->delay_count, sizeof(int));
+    write(fd, &dp->delay_size, sizeof(dp->delay_size));
+    write(fd, &dp->delay_decay, sizeof(dp->delay_decay));
+    write(fd, &dp->delay_start, sizeof(dp->delay_start));
+    write(fd, &dp->delay_step, sizeof(dp->delay_step));
+    write(fd, &dp->delay_count, sizeof(dp->delay_count));
 }
 
 void
@@ -290,11 +294,11 @@ delay_load(struct effect *p, int fd)
 
     dp = (struct delay_params *) p->params;
 
-    read(fd, &dp->delay_size, sizeof(int));
-    read(fd, &dp->delay_decay, sizeof(int));
-    read(fd, &dp->delay_start, sizeof(int));
-    read(fd, &dp->delay_step, sizeof(short));
-    read(fd, &dp->delay_count, sizeof(int));
+    read(fd, &dp->delay_size, sizeof(dp->delay_size));
+    read(fd, &dp->delay_decay, sizeof(dp->delay_decay));
+    read(fd, &dp->delay_start, sizeof(dp->delay_start));
+    read(fd, &dp->delay_step, sizeof(dp->delay_step));
+    read(fd, &dp->delay_count, sizeof(dp->delay_count));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

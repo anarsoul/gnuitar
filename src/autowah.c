@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/02/01 19:15:12  fonin
+ * Use sizeof(variable) instead sizeof(type) in load/save procedures,
+ * when reading/writing from file.
+ *
  * Revision 1.5  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -329,13 +333,13 @@ autowah_save(struct effect *p, int fd)
 
     ap = (struct autowah_params *) p->params;
 
-    write(fd, &ap->freq_low, sizeof(float));
-    write(fd, &ap->freq_high, sizeof(float));
-    write(fd, &ap->speed, sizeof(float));
-    write(fd, &ap->wah_count, sizeof(int));
-    write(fd, &ap->f, sizeof(float));
-    write(fd, &ap->df, sizeof(float));
-    write(fd, &ap->mixx, sizeof(unsigned short));
+    write(fd, &ap->freq_low, sizeof(ap->freq_low));
+    write(fd, &ap->freq_high, sizeof(ap->freq_high));
+    write(fd, &ap->speed, sizeof(ap->speed));
+    write(fd, &ap->wah_count, sizeof(ap->wah_count));
+    write(fd, &ap->f, sizeof(ap->f));
+    write(fd, &ap->df, sizeof(ap->df));
+    write(fd, &ap->mixx, sizeof(ap->mixx));
 }
 
 void
@@ -345,13 +349,13 @@ autowah_load(struct effect *p, int fd)
 
     ap = (struct autowah_params *) p->params;
 
-    read(fd, &ap->freq_low, sizeof(float));
-    read(fd, &ap->freq_high, sizeof(float));
-    read(fd, &ap->speed, sizeof(float));
-    read(fd, &ap->wah_count, sizeof(int));
-    read(fd, &ap->f, sizeof(float));
-    read(fd, &ap->df, sizeof(float));
-    read(fd, &ap->mixx, sizeof(unsigned short));
+    read(fd, &ap->freq_low, sizeof(ap->freq_low));
+    read(fd, &ap->freq_high, sizeof(ap->freq_high));
+    read(fd, &ap->speed, sizeof(ap->speed));
+    read(fd, &ap->wah_count, sizeof(ap->wah_count));
+    read(fd, &ap->f, sizeof(ap->f));
+    read(fd, &ap->df, sizeof(ap->df));
+    read(fd, &ap->mixx, sizeof(ap->mixx));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

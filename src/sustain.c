@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/02/01 19:15:12  fonin
+ * Use sizeof(variable) instead sizeof(type) in load/save procedures,
+ * when reading/writing from file.
+ *
  * Revision 1.5  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -267,9 +271,9 @@ sustain_save(struct effect *p, int fd)
 
     sp = (struct sustain_params *) p->params;
 
-    write(fd, &sp->sust, sizeof(int));
-    write(fd, &sp->noise, sizeof(int));
-    write(fd, &sp->threshold, sizeof(int));
+    write(fd, &sp->sust, sizeof(sp->sust));
+    write(fd, &sp->noise, sizeof(sp->noise));
+    write(fd, &sp->threshold, sizeof(sp->threshold));
 }
 
 void
@@ -279,9 +283,9 @@ sustain_load(struct effect *p, int fd)
 
     sp = (struct sustain_params *) p->params;
 
-    read(fd, &sp->sust, sizeof(int));
-    read(fd, &sp->noise, sizeof(int));
-    read(fd, &sp->threshold, sizeof(int));
+    read(fd, &sp->sust, sizeof(sp->sust));
+    read(fd, &sp->noise, sizeof(sp->noise));
+    read(fd, &sp->threshold, sizeof(sp->threshold));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2003/02/01 19:15:12  fonin
+ * Use sizeof(variable) instead sizeof(type) in load/save procedures,
+ * when reading/writing from file.
+ *
  * Revision 1.6  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -242,9 +246,9 @@ phasor_save(struct effect *p, int fd)
 
     pp = (struct phasor_params *) p->params;
 
-    write(fd, &pp->freq_low, sizeof(float));
-    write(fd, &pp->freq_high, sizeof(float));
-    write(fd, &pp->speed, sizeof(float));
+    write(fd, &pp->freq_low, sizeof(pp->freq_low));
+    write(fd, &pp->freq_high, sizeof(pp->freq_high));
+    write(fd, &pp->speed, sizeof(pp->speed));
 }
 
 void
@@ -254,9 +258,9 @@ phasor_load(struct effect *p, int fd)
 
     pp = (struct phasor_params *) p->params;
 
-    read(fd, &pp->freq_low, sizeof(float));
-    read(fd, &pp->freq_high, sizeof(float));
-    read(fd, &pp->speed, sizeof(float));
+    read(fd, &pp->freq_low, sizeof(pp->freq_low));
+    read(fd, &pp->freq_high, sizeof(pp->freq_high));
+    read(fd, &pp->speed, sizeof(pp->speed));
     pp->f = pp->freq_low;
     pp->df = pp->speed;
 

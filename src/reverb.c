@@ -163,7 +163,7 @@ reverb_init(struct effect *p)
 
     adj_delay = gtk_adjustment_new(preverb->delay,
 				   1.0, 256, 1.0, 1.0, 1.0);
-    delay_label = gtk_label_new("delay");
+    delay_label = gtk_label_new("delay\nms");
     gtk_table_attach(GTK_TABLE(parmTable), delay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -362,10 +362,10 @@ reverb_save(struct effect *p, int fd)
 
     rp = (struct reverb_params *) p->params;
 
-    write(fd, &rp->dry, sizeof(int));
-    write(fd, &rp->wet, sizeof(int));
-    write(fd, &rp->regen, sizeof(int));
-    write(fd, &rp->delay, sizeof(int));
+    write(fd, &rp->dry, sizeof(rp->dry));
+    write(fd, &rp->wet, sizeof(rp->wet));
+    write(fd, &rp->regen, sizeof(rp->regen));
+    write(fd, &rp->delay, sizeof(rp->delay));
 }
 
 void
@@ -375,10 +375,10 @@ reverb_load(struct effect *p, int fd)
 
     rp = (struct reverb_params *) p->params;
 
-    read(fd, &rp->dry, sizeof(int));
-    read(fd, &rp->wet, sizeof(int));
-    read(fd, &rp->regen, sizeof(int));
-    read(fd, &rp->delay, sizeof(int));
+    read(fd, &rp->dry, sizeof(rp->dry));
+    read(fd, &rp->wet, sizeof(rp->wet));
+    read(fd, &rp->regen, sizeof(rp->regen));
+    read(fd, &rp->delay, sizeof(rp->delay));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/02/01 19:15:12  fonin
+ * Use sizeof(variable) instead sizeof(type) in load/save procedures,
+ * when reading/writing from file.
+ *
  * Revision 1.5  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -290,14 +294,14 @@ distort_save(struct effect *p, int fd)
 
     ap = (struct distort_params *) p->params;
 
-    write(fd, &ap->sat, sizeof(int));
-    write(fd, &ap->level, sizeof(int));
-    write(fd, &ap->drive, sizeof(int));
+    write(fd, &ap->sat, sizeof(ap->sat));
+    write(fd, &ap->level, sizeof(ap->level));
+    write(fd, &ap->drive, sizeof(ap->drive));
     /*
      * Fake write - for compatibility with old versions 
      */
-    write(fd, &tmp, sizeof(short));
-    write(fd, &ap->lowpass, sizeof(int));
+    write(fd, &tmp, sizeof(tmp));
+    write(fd, &ap->lowpass, sizeof(ap->lowpass));
 }
 
 void
@@ -308,11 +312,11 @@ distort_load(struct effect *p, int fd)
 
     ap = (struct distort_params *) p->params;
 
-    read(fd, &ap->sat, sizeof(int));
-    read(fd, &ap->level, sizeof(int));
-    read(fd, &ap->drive, sizeof(int));
-    read(fd, &tmp, sizeof(short));
-    read(fd, &ap->lowpass, sizeof(int));
+    read(fd, &ap->sat, sizeof(ap->sat));
+    read(fd, &ap->level, sizeof(ap->level));
+    read(fd, &ap->drive, sizeof(ap->drive));
+    read(fd, &tmp, sizeof(tmp));
+    read(fd, &ap->lowpass, sizeof(ap->lowpass));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

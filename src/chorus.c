@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/02/01 19:15:12  fonin
+ * Use sizeof(variable) instead sizeof(type) in load/save procedures,
+ * when reading/writing from file.
+ *
  * Revision 1.5  2003/01/30 21:35:29  fonin
  * Got rid of rnd_window_pos().
  *
@@ -409,12 +413,12 @@ chorus_save(struct effect *p, int fd)
 
     cp = (struct chorus_params *) p->params;
 
-    write(fd, &cp->wet, sizeof(int));
-    write(fd, &cp->dry, sizeof(int));
-    write(fd, &cp->depth, sizeof(int));
-    write(fd, &cp->mode, sizeof(short));
-    write(fd, &cp->speed, sizeof(int));
-    write(fd, &cp->regen, sizeof(int));
+    write(fd, &cp->wet, sizeof(cp->wet));
+    write(fd, &cp->dry, sizeof(cp->dry));
+    write(fd, &cp->depth, sizeof(cp->depth));
+    write(fd, &cp->mode, sizeof(cp->mode));
+    write(fd, &cp->speed, sizeof(cp->speed));
+    write(fd, &cp->regen, sizeof(cp->regen));
 }
 
 void
@@ -424,12 +428,12 @@ chorus_load(struct effect *p, int fd)
 
     cp = (struct chorus_params *) p->params;
 
-    read(fd, &cp->wet, sizeof(int));
-    read(fd, &cp->dry, sizeof(int));
-    read(fd, &cp->depth, sizeof(int));
-    read(fd, &cp->mode, sizeof(short));
-    read(fd, &cp->speed, sizeof(int));
-    read(fd, &cp->regen, sizeof(int));
+    read(fd, &cp->wet, sizeof(cp->wet));
+    read(fd, &cp->dry, sizeof(cp->dry));
+    read(fd, &cp->depth, sizeof(cp->depth));
+    read(fd, &cp->mode, sizeof(cp->mode));
+    read(fd, &cp->speed, sizeof(cp->speed));
+    read(fd, &cp->regen, sizeof(cp->regen));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {
