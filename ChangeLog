@@ -1,3 +1,19 @@
+2003-03-14 21:21  fonin
+
+	* gnuitar.dsp, gnuitar.mak: Updated windoze project files.
+
+2003-03-14 21:20  fonin
+
+	* src/: delay.c, echo.c: Unreferenced variables fixed.
+
+2003-03-13 22:37  fonin
+
+	* gnuitar.spec: Updated version and changelog.
+
+2003-03-13 22:29  fonin
+
+	* ChangeLog: Version 0.2.1.
+
 2003-03-13 22:29  fonin
 
 	* Makefile.in, configure, configure.in, src/Makefile.am,
