@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/01/31 15:18:04  fonin
+ * Few cleanups, more comments; start recording AFTER all input buffers are
+ * queued.
+ *
  * Revision 1.7  2003/01/30 21:33:31  fonin
  * - Added demo version code for Win32;
  * - NCHANNELS now is used in UNIX build.
@@ -84,11 +88,20 @@ HANDLE          audio_thread;
 DWORD           thread_id;
 #endif
 
-static int      stop = 0;
+static int      stop = 0;	/* in Windows version, stop has
+				 * special values:
+				 * 0 - recording/playback is on
+				 * 1 - playback is paused
+				 * 2 - exit thread
+				 * 3 - recording started,
+				 *     begin playback now
+				 * For UNIX:
+				 * 0 - recording/playback is on
+				 * 1 - exit thread
+				 */
 #ifndef _WIN32
 int             fd;
 #else
-#define NBUFFERS 512*2		/* number of input/output sound buffers */
 HWAVEIN         in;		/* input sound handle       */
 HWAVEOUT        out;		/* output sound handle      */
 MMRESULT        err;
@@ -159,7 +172,6 @@ audio_thread_start(void *V)
      */
     while (stop != 2) {
 	if (!GetMessage(&msg, 0, 0, 0)) {
-	    printf("\nWM_QUIT !\n");
 	    return 0;
 	}
 
@@ -168,7 +180,6 @@ audio_thread_start(void *V)
 	 */
 	switch (msg.message) {
 	case WM_QUIT:{
-		printf("\naudio thread - WM_QUIT\n");
 		return 0;
 	    }
 	    /*
@@ -221,7 +232,6 @@ audio_thread_start(void *V)
 			if (err) {
 			    serror(err, "\nwriting samples - ");
 			}
-			// printf("\nqueue buffer %d",hdr_avail);
 		    } else
 			printf("\nbuffer overrun.");
 		} else {
@@ -459,9 +469,10 @@ main(int argc, char **argv)
     stop = 1;
 
     /* set high priority to the process */
-    if(!SetPriorityClass(GetCurrentProcess(),HIGH_PRIORITY_CLASS)) {
+/*    if(!SetPriorityClass(GetCurrentProcess(),HIGH_PRIORITY_CLASS)) {
 	fprintf(stderr,"\nFailed to set realtime priority to process: %s.",GetLastError());
     }
+*/
     /* create audio thread */
     audio_thread =
 	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_thread_start, 0,
@@ -563,22 +574,17 @@ main(int argc, char **argv)
 	    stop = 2;
 	    exit(-1);
 	}
-	/*
-	 * we are recording now 
-	 */
-	if (i == 0) {
-	    /*
-	     * Start recording. Our secondary thread will now be receiving
-	     * and processing audio data
-	     */
-	    if ((err = waveInStart(in))) {
-		serror(err, "Error starting record!\n");
-		stop = 2;
-		exit(-1);
-	    }
-	    stop = 0;
-	}
     }
+    /*
+     * Start recording. Our secondary thread will now be receiving
+     * and processing audio data
+     */
+    if ((err = waveInStart(in))) {
+	serror(err, "Error starting record!\n");
+	stop = 2;
+	exit(-1);
+    }
+    stop = 0;
 
 #endif
 
