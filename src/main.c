@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2003/03/15 20:07:01  fonin
+ * Moved function expired(), fixed compilation error.
+ *
  * Revision 1.13  2003/03/09 21:05:57  fonin
  * Internal redesign for new "change sampling params" feature.
  * New functions init_sound() and close_sound().
@@ -337,21 +340,6 @@ serror(DWORD err, TCHAR * str)
 }
 #endif
 
-#ifdef DEMO
-#   ifdef _WIN32
-VOID            CALLBACK
-expired(HWND hwnd, UINT msg, UINT timer_id, DWORD time)
-{
-    gtk_main_quit();
-    close_sound();
-    printf("%s", DEMO_MSG);
-    exit(ERR_DEMOEXPIRED);
-}
-
-#   else
-#   endif
-#endif
-
 /*
  * sound shutdown 
  */
@@ -616,6 +604,21 @@ init_sound(void)
     return ERR_NOERROR;
 }
 
+
+#ifdef DEMO
+#   ifdef _WIN32
+VOID            CALLBACK
+expired(HWND hwnd, UINT msg, UINT timer_id, DWORD time)
+{
+    gtk_main_quit();
+    close_sound();
+    printf("%s", DEMO_MSG);
+    exit(ERR_DEMOEXPIRED);
+}
+
+#   else
+#   endif
+#endif
 
 int
 main(int argc, char **argv)
