@@ -33,13 +33,14 @@
 #define __GTKATTACHOPTIONS
 #endif
 
+#define VERSION "0.2.0"
 #define DISCLAIMER  "This program is free software; you can redistribute it and/or modify\n" \
 		    "it under the terms of the GNU General Public License as published by\n" \
 		    "the Free Software Foundation; either version 2, or (at your option)\n" \
 		    "any later version.\n\n" \
 		    "This program makes usage of Glib and GTK+ libraries that are distributed\n" \
 		    "under Library GNU Public License (LGPL).\n\n"
-#define COPYRIGHT   "GNUitar 0.2.0\n" \
+#define COPYRIGHT   "GNUitar "VERSION"\n" \
 		    "Copyright (C) 2000,2001,2003 Max Rudensky <fonin@ziet.zhitomir.ua>\n" \
 		    "http://ziet.zhitomir.ua/~fonin/\n"
 void
