@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2003/12/28 10:16:08  fonin
+ * Code lickup
+ *
  * Revision 1.14  2003/12/21 08:40:36  dexterus
  * biquad files amd eqbank working
  *
@@ -93,7 +96,7 @@
 #include "tracker.h"
 #include "noise.h"
 #include "eqbank.h"
-#include "distort_ts9.h"
+//#include "distort_ts9.h"
 
 struct effect  *effects[MAX_EFFECTS];
 int             n = 0;

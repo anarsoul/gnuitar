@@ -58,7 +58,6 @@ typedef signed char SAMPLE8;
 #define NOISE		11
 #define EQBANK		12
 
-
 struct data_block {
     int            *data;
     int             len;
