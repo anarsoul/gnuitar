@@ -57,6 +57,10 @@ rm -rf ${RPM_BUILD_ROOT}
 - Bank clist widget width auto-resizing
 - Few entries in TODO
 - Added section "BUGS" to README
+- Program does setuid(real user id) immediately after setting 
+  real time priority to pumper thread. All open(...,O_CREAT | O_EXCL) 
+  (file open error if the file already exists) through the code 
+  replaced with simply O_CREAT (file will be overwritten).
 * Sun Mar 11 2001 Max Rudensky	<fonin@ziet.zhitomir.ua>
 - Fixed closing main window. There was a bug - after close application 
 still was in memory.
