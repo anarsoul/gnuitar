@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2003/02/04 20:42:18  fonin
+ * Heuristic to search for docs through the few directories.
+ *
  * Revision 1.11  2003/02/03 17:24:24  fonin
  * Launch HTML browser to view docs.
  *
@@ -60,15 +63,18 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <time.h>
-
 #ifdef _WIN32
+#    ifndef  R_OK
+#        define  R_OK 04
+#    endif
+#    include <io.h>
 #    include <ctype.h>
 #    include <string.h>
 #    include <windows.h>
 #    include <process.h>
 #    include "resource.h"
 #else
-#    include <sys/stat.h>
+#    include <unistd.h>
 #    include "gnuitar.xpm"
 #endif
 
@@ -143,9 +149,7 @@ about_dlg(void)
     GtkWidget      *ok_button;
 
     about = gtk_window_new(GTK_WINDOW_DIALOG);
-    about_label =
-	gtk_label_new
-	(COPYRIGHT);
+    about_label = gtk_label_new(COPYRIGHT);
     gtk_window_set_title(GTK_WINDOW(about), "About");
     gtk_container_set_border_width(GTK_CONTAINER(about), 8);
     gtk_widget_set_usize(about, 528, 358);
@@ -167,7 +171,7 @@ about_dlg(void)
 
     gtk_text_freeze(GTK_TEXT(text));
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,DISCLAIMER, -1);
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL, DISCLAIMER, -1);
 
     gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
 		    "This program is distributed in the hope that it will be useful,\n"
@@ -186,7 +190,6 @@ about_dlg(void)
 
     ok_button = gtk_button_new_with_label("OK");
     gtk_box_pack_end(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
-    gtk_widget_grab_default(ok_button);
     gtk_signal_connect_object(GTK_OBJECT(ok_button), "clicked",
 			      GTK_SIGNAL_FUNC(gtk_widget_destroy),
 			      GTK_OBJECT(about));
@@ -194,13 +197,15 @@ about_dlg(void)
     gtk_widget_show_all(about);
 }
 
-void help_contents(void) {
+void
+help_contents(void)
+{
+    char            path[2048] = "";
 #ifndef _WIN32
-    char path[2048];
-    pid_t pid;
-    char browser[2048]="";
-    char *env_browser=NULL;
-    char *browsers[7]={
+    pid_t           pid;
+    char            browser[2048] = "";
+    char           *env_browser = NULL;
+    char           *browsers[7] = {
 	"/usr/bin/netscape",
 	"/usr/bin/netscape-navigator",
 	"/usr/bin/netscape-communicator",
@@ -209,40 +214,81 @@ void help_contents(void) {
 	"/usr/bin/links",
 	"/usr/bin/lynx"
     };
-    int i;
-    struct stat bullshit;
+    char           *docs[7] = {
+	"/usr/share/doc/gnuitar-" VERSION "/docs/index.html",
+	"/usr/share/gnuitar/docs/index.html",
+	"/usr/doc/gnuitar-" VERSION "/docs/index.html",
+	"/usr/local/doc/gnuitar-" VERSION "/docs/index.html",
+	"/usr/share/doc/gnuitar/docs/index.html",
+	"/usr/doc/gnuitar/docs/index.html",
+	"/usr/local/doc/gnuitar/docs/index.html"
+    };
+    int             i;
 
-    /* first get environment variable for a browser */
-    env_browser=getenv("BROWSER");
-    /* if there is no prefernce, trying to guess */
-    if(env_browser==NULL) {
-	for(i=0;i<7;i++) {
-	    if(stat(browsers[i],&bullshit)==0) {
-		strcpy(browser,browsers[i]);
+    /*
+     * first get environment variable for a browser 
+     */
+    env_browser = getenv("BROWSER");
+    /*
+     * if there is no preference, trying to guess 
+     */
+    if (env_browser == NULL) {
+	for (i = 0; i < 7; i++) {
+	    if (access(browsers[i], X_OK) == 0) {
+		strcpy(browser, browsers[i]);
 		break;
 	    }
 	}
-    }
-    else {
-	strcpy(browser,env_browser);
+    } else {
+	strcpy(browser, env_browser);
     }
 
-    if(strcmp(browser,"")!=0) {
-        pid=fork();
-	if(pid==-1) {
+    if (strcmp(browser, "") != 0) {
+	pid = fork();
+	if (pid == -1) {
 	    perror("fork");
 	    return;
 	}
-        /* child process */
-	if(pid==0) {
-	    getcwd(path,sizeof(path));
-	    strcat(path,"/../docs/index.html");
-	    execl(browser,browser,path,NULL);
+	/*
+	 * child process 
+	 */
+	if (pid == 0) {
+	    for (i = 0; i < 7; i++) {
+		if (access(docs[i], R_OK) == 0) {
+		    strcpy(path, docs[i]);
+		    break;
+		}
+	    }
+	    if (strcmp(path, "") == 0) {
+		getcwd(path, sizeof(path));
+		strcat(path, "/../docs/index.html");
+		if (access(path, R_OK) != 0) {
+		    getcwd(path, sizeof(path));
+		    strcat(path, "/index.html");
+		    if (access(path, R_OK) != 0) {
+			strcpy(path, "");
+		    }
+		}
+	    }
+	    if (strcmp(path, "") != 0)
+		execl(browser, browser, path, NULL);
 	}
     }
 #else
-    if(spawnlp(P_NOWAIT,"start","start","..\\docs\\index.html")==-1) {
-	perror("spawn");
+    strcpy(path, "..\\docs\\index.html");
+    if (access(path, R_OK) != 0) {
+	strcpy(path, "index.html");
+	if (access(path, R_OK) != 0) {
+	    strcpy(path, "docs\\index.html");
+	    if (access(path, R_OK) != 0) {
+		strcpy(path, "");
+	    }
+	}
+    }
+    if (strcmp(path, "") != 0) {
+	if (spawnlp(P_NOWAIT, "start", "start", path) == -1) {
+	    perror("spawn");
+	}
     }
 #endif
 }
