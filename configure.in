@@ -26,12 +26,65 @@ AC_PROG_LN_S
 AC_PROG_CC
 AC_PROG_INSTALL
 
+AC_ARG_WITH(gtk2,
+    [  --with-gtk2	  Use GTK2 instead GTK (disabled by default)],
+    [
+	if test "$withval" != "no"; then
+	    AM_PATH_GLIB_2_0(2.2.0,
+		[
+		    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GLIB2"
+		],
+		AC_MSG_ERROR(Test for GLIB2 failed. See the file 'INSTALL' for help.),
+		gthread)
+	    AM_PATH_GTK_2_0(2.0.0,
+		[
+		    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GTK2"
+		],
+		AC_MSG_ERROR(Test for GTK2 failed. See the file 'INSTALL' for help.))
+	else
+	    AM_PATH_GLIB(1.2.6,
+		[
+		    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GLIB"
+		],
+		AC_MSG_ERROR(Test for GLIB failed. See the file 'INSTALL' for help.),
+		gthread)
+	    AM_PATH_GTK(1.2.6,
+		[
+		    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GTK"
+		],
+		AC_MSG_ERROR(Test for GTK failed. See the file 'INSTALL' for help.))
+	fi
+    ],
+    [
+dnl By default, prefer GTK1 over GTK2, GLIB1 over GLIB2
+	AM_PATH_GLIB(1.2.6,
+	    [
+		CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GLIB"
+	    ],
+	    [
+		AM_PATH_GLIB_2_0(2.2.0,
+		    [
+			CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GLIB2"
+		    ],
+		    AC_MSG_ERROR(Test for GLIB2 failed. See the file 'INSTALL' for help.),
+		    gthread)
+	    ],
+	    gthread)
+	AM_PATH_GTK(1.2.6,
+	    [
+		CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GTK"
+	    ],
+	    [
+	        AM_PATH_GTK_2_0(2.0.0,
+		    [
+			CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GTK2"
+		    ],
+		    AC_MSG_ERROR(Test for GTK2 failed. See the file 'INSTALL' for help.))
+	    ])
+    ]
+)
+
 dnl Checks for libraries.
-AM_PATH_GLIB(1.2.6,,
-	AC_MSG_ERROR(Test for GLIB failed. See the file 'INSTALL' for help.),
-	gthread)
-AM_PATH_GTK(1.2.6,,
-	AC_MSG_ERROR(Test for GTK failed. See the file 'INSTALL' for help.))
 
 dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
@@ -41,14 +94,21 @@ AC_CHECK_LIB(pthread, main)
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h sys/stat.h)
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h sys/stat.h stdlib.h string.h)
+
+dnl Substitute GTK/GLIB settings
+AC_SUBST(CONFIG_DEFS)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
+AC_C_INLINE
 AC_TYPE_PID_T
 
 dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
-AC_CHECK_FUNCS(getcwd)
+AC_FUNC_FORK
+AC_FUNC_MALLOC
+AC_FUNC_SETVBUF_REVERSED
+AC_CHECK_FUNCS([getcwd isascii memset pow])
 
 AC_OUTPUT(Makefile src/Makefile)

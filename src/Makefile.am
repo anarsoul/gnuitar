@@ -1,3 +1,5 @@
+CONFIG_DEFS=@CONFIG_DEFS@
+
 bin_PROGRAMS = gnuitar gen_distort2_lookup
 gnuitar_SOURCES =  main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	vibrato.c autowah.c phasor.c rcfilter.c \
@@ -10,7 +12,7 @@ gen_distort2_lookup_SOURCES = gen_distort2_lookup.c pump.h
 
 INCLUDES = \
 	-DG_LOG_DOMAIN=\"gnuitar\" \
-	$(GTK_CFLAGS) \
+	$(GTK_CFLAGS) $(CONFIG_DEFS) \
 	-I$(includedir)
 
 gnuitar_LDADD = \
