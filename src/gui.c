@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2003/02/05 21:07:39  fonin
+ * Fix: when a the write track checkbox is clicked, and then action is cancelled,
+ * checkbox remained toggled.
+ *
  * Revision 1.12  2003/02/04 20:42:18  fonin
  * Heuristic to search for docs through the few directories.
  *
@@ -564,9 +568,18 @@ bank_start_load(GtkWidget * widget, gpointer data)
 void
 start_tracker(GtkWidget * widget, GtkFileSelection * filesel)
 {
-    tracker_out(gtk_file_selection_get_filename
-		(GTK_FILE_SELECTION(filesel)));
+    char           *name;
+    name = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+    if (name != NULL)
+	tracker_out(name);
     gtk_widget_destroy(GTK_WIDGET(filesel));
+}
+
+void
+cancel_tracker(GtkWidget * widget, GtkFileSelection * filesel)
+{
+    gtk_widget_destroy(GTK_WIDGET(filesel));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tracker), 0);
 }
 
 void
@@ -589,7 +602,7 @@ tracker_pressed(GtkWidget * widget, gpointer data)
 			   filesel);
 	gtk_signal_connect(GTK_OBJECT
 			   (GTK_FILE_SELECTION(filesel)->cancel_button),
-			   "clicked", GTK_SIGNAL_FUNC(destroy_widget),
+			   "clicked", GTK_SIGNAL_FUNC(cancel_tracker),
 			   GTK_WIDGET(filesel));
 	gtk_widget_show(filesel);
     } else {
