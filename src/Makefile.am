@@ -1,4 +1,4 @@
-bin_PROGRAMS = gnuitar gen_distort2_lookup
+bin_PROGRAMS = gnuitar gen_distort2_lookup strip_lookup_table
 gnuitar_SOURCES =  main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	vibrato.c autowah.c phasor.c rcfilter.c \
 	gui.c distort.c distort2.c sustain.c reverb.c backbuf.c utils.c \
@@ -7,6 +7,7 @@ gnuitar_SOURCES =  main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
 	noise.c noise.h
 gen_distort2_lookup_SOURCES = gen_distort2_lookup.c pump.h
+strip_lookup_table_SOURCES = strip_lookup_table.c pump.h
 
 INCLUDES = \
 	-DG_LOG_DOMAIN=\"gnuitar\" \
