@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2003/03/25 19:56:57  fonin
+ * Added tooltips to most important controls.
+ *
  * Revision 1.17  2003/03/25 14:03:31  fonin
  * New control in options dialog for the buffer overrun threshold.
  *
@@ -159,6 +162,7 @@ GtkWidget      *del;
 GtkWidget      *add;
 GtkWidget      *tracker;
 GtkWidget      *start;
+GtkTooltips    *tooltips;
 gint            curr_row = -1;	/* 
 				 * current row in processor list 
 				 */
@@ -810,6 +814,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
 			   FALSE);
     gtk_widget_set_usize(sparams.rate, 70, 0);
     gtk_box_pack_start(GTK_BOX(hpack1), sparams.rate, TRUE, FALSE, 0);
+    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.rate)->entry,"This is the current sampling rate.",NULL);
 
     channels_label = gtk_label_new("  Channels:");
     gtk_box_pack_start(GTK_BOX(hpack1), channels_label, TRUE, FALSE, 1);
@@ -824,6 +829,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
 		       my_itoa(nchannels));
     gtk_widget_set_usize(sparams.channels, 40, 0);
     gtk_box_pack_start(GTK_BOX(hpack1), sparams.channels, TRUE, FALSE, 1);
+    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.channels)->entry,"Mono ? Stereo ?",NULL);
 
     bits_label = gtk_label_new("Bits:");
     gtk_box_pack_start(GTK_BOX(hpack2), bits_label, TRUE, FALSE, 1);
@@ -838,6 +844,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_widget_set_sensitive(GTK_WIDGET(sparams.bits), FALSE);
     gtk_widget_set_usize(sparams.bits, 40, 0);
     gtk_box_pack_start(GTK_BOX(hpack2), sparams.bits, TRUE, FALSE, 1);
+    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.bits)->entry,"I thought that no one will ever need 8 bits, and this option is disabled.",NULL);
 
     latency_label = gtk_label_new("Fragment size:");
     gtk_box_pack_start(GTK_BOX(hpack2), latency_label, TRUE, FALSE, 1);
@@ -858,7 +865,12 @@ sample_dlg(GtkWidget * widget, gpointer data)
 			  GTK_JUSTIFY_LEFT);
     gtk_box_pack_end(GTK_BOX(hpack3), sparams.latency_label, TRUE, TRUE,
 		     1);
-
+    gtk_tooltips_set_tip(tooltips,sparams.latency,"The fragment size is the number of samples " \
+	"that the sound driver reads by one time. " \
+	"The smaller is the fragment size, the lower is the latency, " \
+	"and vice versa. However, small fragment size may cause buffer overruns. " \
+	"If you encounter multiple buffer overruns, " \
+	"try to increase this setting.",NULL);
 #ifdef _WIN32
     /* DirectSound checkbox */
     directsound =
@@ -866,6 +878,10 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(hpack4), directsound, TRUE, TRUE, 1);
     if (dsound)
 	GTK_TOGGLE_BUTTON(directsound)->active = 1;
+    gtk_tooltips_set_tip(tooltips,directsound,"If this is turned on, " \
+	"the playback will be output via DirectSound, " \
+	"or via MME API otherwise. Resulting latency depends mostly on this." \
+	"However, if you have WDM sound driver, try to turn this off.",NULL);
 
     /* threshold spin button */
     threshold_label = gtk_label_new("Overrun threshold:");
@@ -880,6 +896,10 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_entry_set_editable(dummy2, FALSE);
     gtk_widget_set_usize(threshold, 30, 0);
     gtk_box_pack_start(GTK_BOX(hpack4), threshold, FALSE, FALSE, 1);
+    gtk_tooltips_set_tip(tooltips,threshold,"Large value will force buffer overruns " \
+	"to be ignored. If you encounter heavy overruns, " \
+	"especially with autowah, decrease this to 1. " \
+	"(for hackers: this is the number of fragments that are allowed to be lost).",NULL);
     threshold_fragments = gtk_label_new("fragments");
     gtk_box_pack_start(GTK_BOX(hpack4), threshold_fragments, TRUE, FALSE, 1);
     gtk_signal_connect(GTK_OBJECT(directsound), "toggled",
@@ -1026,6 +1046,8 @@ init_gui(void)
 			      (item_factory, "/Options/Options")), FALSE);
 
 
+    tooltips=gtk_tooltips_new();
+
     processor = gtk_clist_new_with_titles(1, processor_titles);
     gtk_clist_set_selection_mode(GTK_CLIST(processor),
 				 GTK_SELECTION_SINGLE);
@@ -1035,7 +1057,9 @@ init_gui(void)
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(processor_scroll),
 				   GTK_POLICY_AUTOMATIC,
 				   GTK_POLICY_AUTOMATIC);
-
+    gtk_tooltips_set_tip(tooltips,processor,"This area contains a list of current applied effects." \
+	"You can use Add/Up/Down/Delete buttons to control this list.",NULL);
+    
     known_effects = gtk_clist_new_with_titles(1, effects_titles);
     gtk_clist_set_selection_mode(GTK_CLIST(known_effects),
 				 GTK_SELECTION_SINGLE);
@@ -1045,6 +1069,11 @@ init_gui(void)
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(effect_scroll),
 				   GTK_POLICY_AUTOMATIC,
 				   GTK_POLICY_AUTOMATIC);
+    gtk_tooltips_set_tip(tooltips,known_effects,"This area contains a list of available effects." \
+	"To apply effects to the sound, you need to add the effects" \
+	"to the \"Current Effects\" list." \
+	"You can use Add/Up/Down/Delete buttons to do this.",NULL);
+
 
     for (i = 0; effect_list[i].str; i++)
 	gtk_clist_append(GTK_CLIST(known_effects), &effect_list[i].str);
@@ -1057,6 +1086,9 @@ init_gui(void)
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(bank_scroll),
 				   GTK_POLICY_AUTOMATIC,
 				   GTK_POLICY_AUTOMATIC);
+    gtk_tooltips_set_tip(tooltips,bank,"This area contains a list of presets." \
+	"Use \"Add Preset\" button to add the preset to the list." \
+	"Use SWITCH button to switch between presets.",NULL);
 
     gtk_table_attach(GTK_TABLE(tbl), processor_scroll, 3, 4, 1, 4,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND),
@@ -1075,6 +1107,8 @@ init_gui(void)
     gtk_window_set_title(GTK_WINDOW(mainWnd), MAINGUI_TITLE);
 
     bank_add = gtk_button_new_with_label("Add Preset >>");
+    gtk_tooltips_set_tip(tooltips,bank_add,"Use this button to add the presets to the presets list.",NULL);
+
     style = gtk_widget_get_style(bank_add);
     new_font =
 	gdk_fontset_load
@@ -1086,12 +1120,19 @@ init_gui(void)
     }
 
     bank_switch = gtk_button_new_with_label("SWITCH");
+    gtk_tooltips_set_tip(tooltips,bank_switch,"Use this button to switch between presets",NULL);
     up = gtk_button_new_with_label("Up");
+    gtk_tooltips_set_tip(tooltips,up,"Use this button to move the current selected effect up.",NULL);
     down = gtk_button_new_with_label("Down");
+    gtk_tooltips_set_tip(tooltips,down,"Use this button to move the current selected effect down.",NULL);
     del = gtk_button_new_with_label("Delete");
+    gtk_tooltips_set_tip(tooltips,del,"Use this button to delete the current selected effect",NULL);
     add = gtk_button_new_with_label("<< Add");
+    gtk_tooltips_set_tip(tooltips,add,"Use this button to add the current selected effect to the \"Current Effects\" list.",NULL);
     tracker = gtk_check_button_new_with_label("Write track");
+    gtk_tooltips_set_tip(tooltips,tracker,"You can write the output to the file, did you know ?.",NULL);
     start = gtk_toggle_button_new_with_label("STOP");
+    gtk_tooltips_set_tip(tooltips,start,"This button starts/stops the sound processing.",NULL);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
 
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
