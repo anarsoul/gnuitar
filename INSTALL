@@ -1,5 +1,86 @@
-Basic Installation
-==================
+Windows Build Notes
+===================
+
+  To build GNUitar on Windows, you will need the following:
+o Microsoft Visual C++ 6.0 compiler (MSVC);
+o GTK 1.2 for Windows
+o Glib 1.2 for Windows
+o GNU libintl for Windows
+o GNU libiconv for Windows
+All the software except MSVC is free and can be downloaded from the site
+... (FIXME)
+
+  Currently, the exact links are:
+libintl-0.10.40-tml-20020904.zip
+http://sourceforge.net/project/showfiles.php?group_id=25167 (libiconv)
+glib-2.2.0-20030112.zip
+glib-dev-2.2.0-20030112.zip
+gtk+-1.3.0-20030115.zip
+gtk+-dev-1.3.0-20030115.zip
+Please note that these links may change with the software updates.
+
+  You need to prepare your build environment, before you start to compile.
+Most of the packages above contain 2 important directories: "lib" and "include".
+Copy the contents of the "lib" directory of each package to the folder
+C:\Program Files\Microsoft Visual Studio\VC98\Lib (adjust this path
+to the real path where your MSVC installed), and the contents of the "include"
+directory to C:\Program Files\Microsoft Visual Studio\VC98\Include.
+Rename include\glib-2.0 to include\glib, lib\glib-2.0 to lib\glib,
+move \lib\include\gtk+\gdkconfig.h to include\gtkconfig.h.
+Now, you are ready to build the program. Launch MS Visual Studio,
+choose File->Open, select file gnuitar.dsp.
+Select Build->Set Active Configuration and choose "Release" for
+Pentium Pro/II/III, or "Release 586" for Pentium processor, to make
+the benefit of Pentium CPU extended instructions set.
+Press F7 to start build. If all the above were done correctly, you should
+not get error messages (please note that it produces few dozens of warnings,
+it is ok). If you get something like "Linker error: cannot resolve external
+symbols ...", this means that you've done something wrong when preparing
+build environment.
+If all went fine, you should pickup the file gnuitar.exe
+in the folder gnuitar\Release\ or gnuitar\Release 586\ depending on
+which configuration did you chose. Now, copy the gnuitar executable
+somewhere where you are going to keep it, and copy the files:
+
+iconv.dll
+libgdk-0.dll
+libglib-2.0-0.dll
+libgmodule-2.0-0.dll
+libgtk-0.dll
+libintl-1.dll
+
+to the same folder as gnuitar.exe. Ready.
+
+Windows Installation - Binary Package
+=====================================
+
+  GNUitar binary package does not require
+specific install on Windows - just unzip the package and run gnuitar.exe.
+
+Linux - Install From RPM
+========================
+
+  RPM stands for RedHat Package Manager. Just download rpm file
+from the GNUitar site, and issue shell command as root:
+
+rpm -i gnuitar-x.y.z.i386.rpm
+
+Linux - Create Your RPM
+=======================
+
+  You can create your own rpm package on Linux. To do so, you need
+first to install the package "rpm-build" from your Linux CD
+(first check does the /usr/src/redhat/ directory exist, if yes then you
+already have it installed). Then, copy the file gnuitar.spec
+to /usr/src/redhat/SPECS, and gnuitar-x.y.z.tar.gz to /usr/src/redhat/SOURCES.
+Changde dir to /usr/src/redhat/specs and issue
+
+rpm -bb gnuitar.spec
+
+This should create the rpm package somewhere under /usr/src/redhat/RPMS.
+
+Basic UNIX Installation - Compilation From Sources (standard GNU blah blah)
+===========================================================================
 
    These are generic installation instructions.
 

@@ -9,18 +9,20 @@ GNUitar is a real-time sound effects software that allows
 you to use your computer as a guitar processor. It has GTK+ based 
 interface. It can be compiled on any flavor of UNIX that have
 GTK+ 1.2, Glib, pthreads and OSS sound driver. It also works on Windows.
-
-Program is based on 2 works:
+Program is inspired by 2 works:
     o Ele 0.1 by Morris Slutsky
       http://www-personal.umich.edu/~mslutsky/elepage/index.html
     o Guitar FX Processor by Marin Vlah
       http://fly.srk.fer.hr/~mvlah/fx_processor.html
 
+GNUitar is free software and is distributed under GNU GPL license;
+however you should pay to obtain Windows binary (you are still free
+to compile it yourself; see section 10 "Legal Issues").
+
 2. Download
 
 http://freshmeat.net/projects/gnuitar
 http://ziet.zhitomir.ua/~fonin/downloads.php
-
 
 3. Requirements
 
@@ -29,16 +31,20 @@ You will need
     o GLIB 1.2 or better
     o POSIX threads on UNIX
     o full-duplex sound card
-    o GCC on UNIX, Microsoft Visual C++ 6.0 on Windows
-
+    o To compile: GCC on UNIX, Microsoft Visual C++ 6.0 on Windows
 
 4. Performance
 
-The bottleneck of the real-time sound software is CPU, and quality
-of sound driver (the latter also is very depend on OS).
-It was reported that GNUitar works pretty well on Celeron II/300.
-Pentium/166 is not sufficient to run GNUitar.
-Please send your reports with 
+GNUitar is a CPU-consuming program. Pentium/166 is sufficient
+to run GNUitar, Pentium II/300 is recommended, and on Pentium II/450
+it will work just fine.
+Real performance is very depend on your CPU/sound card/sound driver/OS
+combination. The best performance can be achieved on Linux,
+because of its great real-time features and advanced OSS sound drivers.
+
+When running the program, make sure you close all unnecessary applications,
+to give more resources to it. Avoid anything that can cause disk I/O
+or CPU usage.
 
 4.1 UNIX notes
 
@@ -48,31 +54,47 @@ switching between windows. It switches to real user id as soon as
 it set real-time priority to effect-processing thread, and before
 any GTK initializations are being performed, so it shouldn't break 
 security on your system.
+GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA !
 
 4.2. Windows notes
 
-Windows have hard problems with latency when processing audio in real time.
-This causes GNUitar to perform bad on Windows. I never succeed to reduce
-latency lower than 60ms. These are few performance notes:
-- close all unnecessary applications before you launch GNUitar;
-- try to re-launch it few times, if the initial latency is bad;
-- make sure you have the latest driver for your soundcard;
- 
+Windows have complex problems with latency when processing audio in real time,
+mostly because of its non-uniform drivers architecture.
+GNUitar latency on Windows is much higher than on Linux. The real latency
+is very depend on sound board driver.
+There are few kinds of sound drivers for Windows: old VXD (Win95/98),
+NT4-kernel style, and modern WDM drivers that were introduced in Windows 98/SE.
+Currently GNUitar uses common MME API (MME=MultiMedia Extension) that is
+compatible with all kinds of drivers; however AFAIK WDM drivers provide
+much lower latency. Therefore, avoid VXD drivers; use modern WDM drivers 
+instead, if possible.
+
+The difference in latency between two kinds of drivers is really noticeable:
+I had 100ms up to ~400ms on Pentium III/850/ISA AWE64/VXD,
+and ~60ms on Pentium MMX/166/Yamaha OPL3/WDM laptop.
+Try to re-launch GNUitar few times, if the initial latency is bad.
+
+The kind of bus (PCI/ISA) of the sound card does not affect
+the latency very much, the deal is with OS and its architecture.
+So do not through away your old ISA Sound Blaster and replace it with
+modern sound card, first try it on Linux !
+
+5. Installation
+
 See INSTALL file for common installation notes.
 
+6. Interface and Controls
 
-5. Usage
+There are 3 areas in the main window. The right area is a list of all
+available effects. The central area contains effects that are currently used.
+There are few buttons right to it should be used to add/remove effects 
+and change its order. Each effect has separate top-level control window with 
+appropriate sliders.  Each effect-control box is shown in the window manager
+task bar.
 
-The meanings of controls are quite straightforward.
-
-The right area contains available effects. The central area
-indicates currently used effects. The buttons right to it should be
-used to add/remove effects and change its order.
-Each effect has separate control window with appropriate controls.
-
-The left area contains available effect layouts, and button
+The left area contains available effect layouts, or presets, and button
 to add the one. Layout is a "snapshot" of your effects and its' 
-settings, that you can load/save using "File" menu.
+settings, you can load/save using "File" menu.
 
 Big "Switch" button is used to switch layouts. In this manner,
 you can change current sound by one mouse/keyboard click.
@@ -82,7 +104,7 @@ check-box "Write track" at the bottom of program window, enter
 filename and play. Don't forget that continuous track write 
 can fill out your hard drive.
 The track file format is raw data, word length, signed,
-44100 Hz sampling rate, 1 channel. In future, sampling format may change,
+44100 Hz sampling rate, 1 channel. In the future, sampling format may change,
 however you will always be informed about actual format.
 You can convert it with SoX program like this
 
@@ -98,13 +120,72 @@ and Bladeenc is at http://home8.swipnet.se/~w-82625.
 Windows users can write track directly to .wav file
 (currently it is not available on UNIX).
 
+Autowah
 
-6. Bugs
+speed    - speed of wah-wah'ing
+freq.low - low frequency (the cycle starts from this freq.)
+freq.hi  - high frequence (the cycle stops at this freq.)
+mix      - mix clean sound with processed sound
+
+7. Effects
+
+The controls and description of the effects are described below.
+
+7.1. Reverberator
+
+Reverberator produces echoed "space" sound. Controls:
+
+delay  - delay time
+wet    - "wet" (processed) sound volume
+dry    - "dry" (clean) sound volume
+regen  - number of repeats
+
+7.2. Delay
+
+Another kind of reverberation.
+
+decay  - this controls how the repeated sound is fading out
+time   - this is the delay time
+repeat - number of repeats
+
+7.3. Distortion
+
+distort    - power of effect
+level      - volume, for the case if you need to mute it quickly
+saturation - high-frequency "sand" in the sound
+lowpass    - low-band filter that can be used to change the sound feel
+
+7.4. Vibrato
+
+Vibrato sounds like when you turn the master volume on and off very quickly
+(few times per second).
+
+speed     - the speed of modulation
+amplitude - the depth of modulation
+
+7.5. Chorus
+
+depth     - the depth of modulation
+speed     - the speed of modulation
+wet       - "wet" (processed) sound volume
+dry       - "dry" (clean) sound volume
+regen     - hard to explain
+
+7.6. Echo
+
+Another reverberation effect, not like the others.
+While other reverb effects are just kinds of sound patterns repeating,
+echo attempts to achieve a large hall echo.
+
+decay     - this controls how the repeated sound is fading out
+count     - number of repeats
+size      - controls delay time
+
+8. Bugs
 
 Probably they are there :-) Send bug reports to fonin@ziet.zhitomir.ua
 
-
-7. About Free Software Development
+9. About Free Software Development
 
 You should always keep in mind, that development of free software
 doesn't work in the same way as commercial development. Every
@@ -114,8 +195,33 @@ important. If something doesn't work, or some feature is missing,
 please mail me about it. Thank you in advance! You can send GNUitar
 related mails to me at mailto:fonin@ziet.zhitomir.ua.
 
+10. Legal Issues
 
-8. Related Links
+GNUitar is a free software and is distributed under the terms of 
+GNU GPL license. However you should pay a small amount of $10 to obtain 
+Windows binary. You are still free to compile it yourself from sources, 
+or get a compiled binary from a friend. Please note that this does not 
+contradict with GNU concept, and it is not like the commercial licenses.
+Paragraph 1 of the GPL license states: "You may charge a fee for the
+physical act of transferring a copy, and you may at your option offer warranty 
+protection in exchange for a fee."
+You are free to copy and share the program with other people, 
+you are not limited with the number of computers where you can use it. 
+You can redistribute the program and the works based on it 
+under the terms of GPL license. You have complete sources and detailed compile 
+instructions to build the program yourself, so you always have a choice 
+not to pay. You have full freedom with using and sharing the program,
+according to the GNU software concept.
+You may regard this charge as a charge for build service.
+In return for quite a small amount you will get high-quality software
+with full freedom to use and share it (compare it with commercial
+guitar processors licenses and the hardware effects cost).
+
+11. Order Information - Windows Users
+
+To be done.
+
+12. Related Links
 
 http://freshmeat.net/projects/gnuitar and
 http://ziet.zhitomir.ua/~fonin/downloads.php - GNUitar project pages
@@ -124,8 +230,7 @@ http://home.sprynet.com/~cbagwell/sox.html - SoX playback/record/processing
   software
 http://home8.swipnet.se/~w-82625 - BladeEnc, free MP3 encoder
 
-
-9. Author
+13. Author
 
 Max Rudensky <fonin@ziet.zhitomir.ua>
 	     <fonin@yahoo.com>
