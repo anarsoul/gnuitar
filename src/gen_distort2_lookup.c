@@ -1,5 +1,8 @@
 /*
  * $Log$
+ * Revision 1.4  2003/04/17 12:22:28  fonin
+ * Strip lookup table before write it to the file.
+ *
  * Revision 1.3  2003/04/16 13:56:21  fonin
  * Changed lookup table size to 64k.
  *
@@ -21,6 +24,7 @@
 #include "pump.h"
 
 #define MAX_TUBE MAX_SAMPLE
+#define FILL 32767
 SAMPLE          tube[MAX_SAMPLE];
 
 void
@@ -102,7 +106,12 @@ init_distort2_lookup(char *c_r1, char *c_r2, char *sr)
 	perror("open");
 	exit(1);
     }
-    write(res, tube, sizeof(tube));
+    for(i=MAX_SAMPLE-1;i>=0;i--) {
+	if(tube[i]!=FILL)
+	    break;
+    }
+
+    write(res,tube,(i+1)*sizeof(SAMPLE));
     close(res);
 }
 
