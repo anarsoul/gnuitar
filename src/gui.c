@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:21:51  fonin
- * Initial revision
+ * Revision 1.2  2001/03/11 20:16:44  fonin
+ * Fixed destroying of main window.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:21:51  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -16,6 +19,7 @@
 
 void            bank_start_save(GtkWidget * widget, gpointer data);
 void            bank_start_load(GtkWidget * widget, gpointer data);
+void quit(GtkWidget * widget, gpointer data);
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -25,7 +29,7 @@ static GtkItemFactoryEntry mainGui_menu[] = {
     {"/File/_Save Layout", "<control>S", (GtkSignalFunc) bank_start_save,
      0, NULL},
     {"/File/sep1", NULL, NULL, 0, "<Separator>"},
-    {"/File/E_xit", NULL, (GtkSignalFunc) gtk_main_quit, 0, NULL},
+    {"/File/E_xit", NULL, (GtkSignalFunc) quit, 0, NULL},
     {"/_Help", NULL, NULL, 0, "<LastBranch>"},
     {"/_Help/About", NULL, NULL, 0, NULL}
 };
@@ -56,6 +60,19 @@ gint            bank_row = -1;	/*
 				 */
 
 extern unsigned short write_track;
+
+/*
+ * Cleaning and quit from application
+ */
+void
+quit(GtkWidget * widget, gpointer data)
+{
+    gtk_main_quit();
+    pump_stop();
+
+    tracker_done();
+}
+
 
 void
 rnd_window_pos(GtkWindow * wnd)
@@ -342,6 +359,7 @@ init_gui(void)
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(mainWnd, 500, 370);
     tbl = gtk_table_new(5, 6, FALSE);
+    gtk_signal_connect(GTK_OBJECT(mainWnd), "destroy", GTK_SIGNAL_FUNC(quit), NULL);
 
     /*
      * make menu
