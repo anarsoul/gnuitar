@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2001/03/25 17:42:55  fonin
+ * Switching back to real user identifier immediately after setting realtime priority.
+ *
  * Revision 1.2  2001/03/25 12:10:06  fonin
  * Text messages begin from newline rather than end with it.
  *
@@ -158,6 +161,12 @@ main(int argc, char **argv)
 	fprintf(stderr, "\nAudio thread creation failed!");
 	exit(1);
     }
+
+    /*
+     * We were running to this point as setuid root program.
+     * Switching to our native user id
+     */
+    setuid(getuid());
 
     gtk_main();
 
