@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/03/11 22:04:00  fonin
+ * Measure control sliders in standard units (ms, %).
+ *
  * Revision 1.7  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -60,19 +63,19 @@ void            sustain_filter(struct effect *p, struct data_block *db);
 void
 update_sustain_sust(GtkAdjustment * adj, struct sustain_params *params)
 {
-    params->sust = (int) adj->value;
+    params->sust = (int) adj->value * 2.56;
 }
 
 void
 update_sustain_noise(GtkAdjustment * adj, struct sustain_params *params)
 {
-    params->noise = (int) adj->value;
+    params->noise = (int) adj->value * 2.56;
 }
 
 void
 update_sustain_gate(GtkAdjustment * adj, struct sustain_params *params)
 {
-    params->threshold = (int) adj->value;
+    params->threshold = (int) adj->value * 2.56;
 }
 
 
@@ -124,15 +127,14 @@ sustain_init(struct effect *p)
 
     parmTable = gtk_table_new(4, 8, FALSE);
 
-    adj_gate = gtk_adjustment_new(psustain->threshold,
-				  0.0, 255.0, 1.0, 1.0, 1.0);
-    gate_label = gtk_label_new("Gate");
+    adj_gate = gtk_adjustment_new(psustain->threshold / 2.56,
+				  0.0, 101.0, 1.0, 1.0, 1.0);
+    gate_label = gtk_label_new("Gate\n%");
     gtk_table_attach(GTK_TABLE(parmTable), gate_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-
 
     gtk_signal_connect(GTK_OBJECT(adj_gate), "value_changed",
 		       GTK_SIGNAL_FUNC(update_sustain_gate), psustain);
@@ -145,16 +147,15 @@ sustain_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-
     adj_sust =
-	gtk_adjustment_new(psustain->sust, 0.0, 255.0, 1.0, 1.0, 1.0);
-    sust_label = gtk_label_new("Sustain");
+	gtk_adjustment_new(psustain->sust / 2.56, 0.0, 101.0, 1.0, 1.0,
+			   1.0);
+    sust_label = gtk_label_new("Sustain\n%");
     gtk_table_attach(GTK_TABLE(parmTable), sust_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-
 
     gtk_signal_connect(GTK_OBJECT(adj_sust), "value_changed",
 		       GTK_SIGNAL_FUNC(update_sustain_sust), psustain);
@@ -167,16 +168,15 @@ sustain_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-
     adj_noise =
-	gtk_adjustment_new(psustain->noise, 0.0, 255.0, 1.0, 1.0, 1.0);
-    noise_label = gtk_label_new("Noise");
+	gtk_adjustment_new(psustain->noise / 2.56, 0.0, 101.0, 1.0, 1.0,
+			   1.0);
+    noise_label = gtk_label_new("Noise\n%");
     gtk_table_attach(GTK_TABLE(parmTable), noise_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-
 
     gtk_signal_connect(GTK_OBJECT(adj_noise), "value_changed",
 		       GTK_SIGNAL_FUNC(update_sustain_noise), psustain);

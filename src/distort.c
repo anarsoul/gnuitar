@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/03/11 22:04:00  fonin
+ * Measure control sliders in standard units (ms, %).
+ *
  * Revision 1.8  2003/03/09 20:49:45  fonin
  * Structures were redesigned to allow to change sampling params.
  *
@@ -61,19 +64,19 @@ void            distort_filter(struct effect *p, struct data_block *db);
 void
 update_distort_level(GtkAdjustment * adj, struct distort_params *params)
 {
-    params->level = (int) adj->value;
+    params->level = (int) adj->value * 2.56;
 }
 
 void
 update_distort_sat(GtkAdjustment * adj, struct distort_params *params)
 {
-    params->sat = (int) adj->value;
+    params->sat = (int) adj->value * 300;
 }
 
 void
 update_distort_drive(GtkAdjustment * adj, struct distort_params *params)
 {
-    params->drive = (int) adj->value;
+    params->drive = (int) adj->value * 10;
 }
 
 void
@@ -120,9 +123,7 @@ distort_init(struct effect *p)
 
     GtkWidget      *parmTable;
 
-
     pdistort = (struct distort_params *) p->params;
-
 
     /*
      * GUI Init
@@ -134,15 +135,14 @@ distort_init(struct effect *p)
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
-    adj_drive = gtk_adjustment_new(pdistort->drive,
-				   1.0, 1000.0, 1.0, 1.0, 1.0);
-    drive_label = gtk_label_new("Drive");
+    adj_drive = gtk_adjustment_new(pdistort->drive / 10,
+				   1.0, 100.0, 1.0, 1.0, 1.0);
+    drive_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
-
 
     gtk_signal_connect(GTK_OBJECT(adj_drive), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort_drive), pdistort);
@@ -155,10 +155,10 @@ distort_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-
     adj_level =
-	gtk_adjustment_new(pdistort->level, 1.0, 255, 1.0, 1.0, 1.0);
-    level_label = gtk_label_new("Level");
+	gtk_adjustment_new(pdistort->level / 2.56, 1.0, 101, 1.0, 1.0,
+			   1.0);
+    level_label = gtk_label_new("Level\n%");
     gtk_table_attach(GTK_TABLE(parmTable), level_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -177,9 +177,9 @@ distort_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-
-    adj_sat = gtk_adjustment_new(pdistort->sat, 1.0, 65000, 1.0, 1.0, 1.0);
-    sat_label = gtk_label_new("Saturation");
+    adj_sat =
+	gtk_adjustment_new(pdistort->sat / 300, 1.0, 101, 1.0, 1.0, 1.0);
+    sat_label = gtk_label_new("Saturation\n%");
     gtk_table_attach(GTK_TABLE(parmTable), sat_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -198,16 +198,14 @@ distort_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-
     adj_lowpass =
 	gtk_adjustment_new(pdistort->lowpass, 1.0, 3000, 1.0, 1.0, 1.0);
-    lowpass_label = gtk_label_new("Lowpass");
+    lowpass_label = gtk_label_new("Lowpass\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), lowpass_label, 7, 8, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
-
 
     gtk_signal_connect(GTK_OBJECT(adj_lowpass), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort_lowpass), pdistort);
@@ -243,7 +241,8 @@ distort_init(struct effect *p)
 void
 distort_filter(struct effect *p, struct data_block *db)
 {
-    int             count,currchannel=0,
+    int             count,
+                    currchannel = 0,
                    *s;
     struct distort_params *dp;
 
@@ -273,8 +272,8 @@ distort_filter(struct effect *p, struct data_block *db)
 	    *s = dp->lastval[currchannel] - dp->sat;
 
 	dp->lastval[currchannel] = *s;
-	if(nchannels>1)
-	    currchannel=!currchannel;
+	if (nchannels > 1)
+	    currchannel = !currchannel;
 
 	*s *= dp->level;
 	*s /= 256;
