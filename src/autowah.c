@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.9  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -270,15 +273,14 @@ void
 autowah_filter(struct effect *p, struct data_block *db)
 {
     struct autowah_params *ap;
-    int             dry[MAX_BUFFER_SIZE];
+    DSP_SAMPLE      dry[MAX_BUFFER_SIZE];
     int             i;
 
     ap = (struct autowah_params *) p->params;
 
 
-    if (ap->mixx == 1) {
-	memcpy(dry, db->data, db->len * sizeof(int));
-    }
+    if (ap->mixx == 1)
+	memcpy(dry, db->data, db->len * sizeof(DSP_SAMPLE));
 
 /*
     if (ap->wah_count != 0) {

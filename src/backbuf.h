@@ -23,7 +23,9 @@
 #ifndef _BACKBUF_H_
 #define _BACKBUF_H_ 1
 
-#define BUF_TYPE int
+#include "pump.h"		/* for DSP_SAMPLE */
+
+#define BUF_TYPE DSP_SAMPLE
 
 struct backBuf {
 

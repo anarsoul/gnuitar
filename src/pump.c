@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.15  2003/12/28 10:16:08  fonin
  * Code lickup
  *
@@ -96,7 +99,6 @@
 #include "tracker.h"
 #include "noise.h"
 #include "eqbank.h"
-//#include "distort_ts9.h"
 
 struct effect  *effects[MAX_EFFECTS];
 int             n = 0;
@@ -121,7 +123,7 @@ unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
 int
-pump_sample(int *s, int size)
+pump_sample(DSP_SAMPLE *s, int size)
 {
     struct data_block db;
     int             i;
@@ -162,7 +164,7 @@ struct effect_creator effect_list[] = {
     {"sustain", sustain_create},
     {"distort2", distort2_create},
     {"noise gate", noise_create},
-	{"eq bank", eqbank_create},
+    {"eq bank", eqbank_create},
     {NULL, NULL}
 };
 

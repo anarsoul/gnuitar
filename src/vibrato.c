@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.10  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -193,9 +196,9 @@ vibrato_init(struct effect *p)
 void
 vibrato_filter(struct effect *p, struct data_block *db)
 {
-    int             ratio,
-                   *s,
-                    count;
+    DSP_SAMPLE     *s,
+                    ratio;
+    int             count;
     struct vibrato_params *vp;
 
     s = db->data;
@@ -257,7 +260,7 @@ vibrato_load(struct effect *p, int fd)
     read(fd, &vp->vibrato_speed, sizeof(int));
     read(fd, &vp->vibrato_amplitude, sizeof(int));
     for (i = 0; i < vp->vibrato_phase_buffer_size; i++) {
-	vp->phase_buffer[i] = (int) ((double) vp->vibrato_amplitude *
+	vp->phase_buffer[i] = ((double) vp->vibrato_amplitude *
 				     sin(2 * M_PI * ((double) i / (double)
 						     vp->
 						     vibrato_phase_buffer_size)));
@@ -293,11 +296,11 @@ vibrato_create(struct effect *p)
     pvibrato->vibrato_phase_buffer_size = MAX_VIBRATO_BUFSIZE;
 
     pvibrato->phase_buffer =
-	(int *) malloc(MAX_VIBRATO_BUFSIZE * sizeof(int));
+	(DSP_SAMPLE *) malloc(MAX_VIBRATO_BUFSIZE * sizeof(DSP_SAMPLE));
     pvibrato->vibrato_phase = 0;
 
     for (i = 0; i < pvibrato->vibrato_phase_buffer_size; i++) {
-	pvibrato->phase_buffer[i] = (int) (MAX_SAMPLE *
+	pvibrato->phase_buffer[i] = (MAX_SAMPLE *
 					   sin(2 * M_PI * ((double)
 							   i / (double)
 							   pvibrato->

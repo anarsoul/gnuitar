@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.11  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -241,9 +244,9 @@ delay_filter(struct effect *p, struct data_block *db)
 {
     struct delay_params *dp;
     int             i,
-                   *s,
                     count,
                     current_decay;
+    DSP_SAMPLE     *s;
 
     dp = (struct delay_params *) p->params;
 
@@ -362,7 +365,7 @@ delay_create(struct effect *p)
     pdelay->delay_step = 11300;
     pdelay->delay_count = 8;
 
-    pdelay->history = (int *) malloc(MAX_SIZE * sizeof(int));
+    pdelay->history = (DSP_SAMPLE *) malloc(MAX_SIZE * sizeof(DSP_SAMPLE));
     pdelay->idelay = (int *) malloc(MAX_COUNT * sizeof(int));
     pdelay->index = 0;
 

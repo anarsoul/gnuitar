@@ -33,9 +33,9 @@ extern void     vibrato_create(struct effect *);
 struct vibrato_params {
     float           vibrato_amplitude;
     int             vibrato_speed,
-                    vibrato_phase_buffer_size;
-    int             vibrato_phase,
-                   *phase_buffer;
+                    vibrato_phase_buffer_size,
+                    vibrato_phase;
+    DSP_SAMPLE     *phase_buffer;
 };
 
 #endif

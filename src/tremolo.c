@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.9  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -201,9 +204,9 @@ tremolo_filter(struct effect *p, struct data_block *db)
 {
     struct tremolo_params *tp;
     int             ef_index,
-                   *s,
                     count,
                     currchannel = 0;
+    DSP_SAMPLE     *s;
 
     tp = p->params;
 
@@ -318,15 +321,15 @@ tremolo_create(struct effect *p)
 	ptremolo->index[i] = 0;
 	ptremolo->tremolo_index[i] = 0;
 	ptremolo->history[i] =
-	    (int *) malloc(ptremolo->tremolo_size * sizeof(int));
+	    (DSP_SAMPLE *) malloc(ptremolo->tremolo_size * sizeof(DSP_SAMPLE));
     }
     ptremolo->phase_buffer =
-	(int *) malloc(ptremolo->tremolo_phase_buffer_size * sizeof(int));
+	(DSP_SAMPLE *) malloc(ptremolo->tremolo_phase_buffer_size * sizeof(DSP_SAMPLE));
 
     ptremolo->tremolo_phase = 0;
 
     for (i = 0; i < ptremolo->tremolo_phase_buffer_size; i++) {
-	ptremolo->phase_buffer[i] = (int) ((double)
+	ptremolo->phase_buffer[i] = ((double)
 					   ptremolo->tremolo_amplitude *
 					   sin(2 * M_PI * ((double)
 							   i / (double)

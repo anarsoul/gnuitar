@@ -31,14 +31,14 @@
 #include "reverb.h"
 #include "gui.h"
 
-int *
+DSP_SAMPLE *
 newChunk()
 {
-    return (int *) malloc(buffer_size * sizeof(int));
+    return (DSP_SAMPLE *) malloc(buffer_size * sizeof(DSP_SAMPLE));
 }
 
 void
-freeChunk(int *p)
+freeChunk(DSP_SAMPLE *p)
 {
     free(p);
 }
@@ -46,7 +46,7 @@ freeChunk(int *p)
 void
 reverbBuffer_init(struct reverbBuffer *r, int chunks)
 {
-    r->data = (int *) malloc(chunks * buffer_size * sizeof(int));
+    r->data = (DSP_SAMPLE *) malloc(chunks * buffer_size * sizeof(DSP_SAMPLE));
     r->nChunks = chunks;
     r->nCursor = 0;
 }
@@ -59,21 +59,21 @@ reverbBuffer_done(struct reverbBuffer *r)
 }
 
 void
-reverbBuffer_addChunk(struct reverbBuffer *r, int *chunk)
+reverbBuffer_addChunk(struct reverbBuffer *r, DSP_SAMPLE *chunk)
 {
-    int            *addTo;
+    DSP_SAMPLE *addTo;
     addTo = r->data + r->nCursor * buffer_size;
-    memcpy(addTo, chunk, buffer_size * sizeof(int));
+    memcpy(addTo, chunk, buffer_size * sizeof(DSP_SAMPLE));
     r->nCursor++;
     r->nCursor %= r->nChunks;
 }
 
-int            *
+DSP_SAMPLE            *
 reverbBuffer_getChunk(struct reverbBuffer *r, int delay)
 {
     int             nFrom;
-    int            *getFrom;
-    int            *giveTo;
+    DSP_SAMPLE     *getFrom;
+    DSP_SAMPLE     *giveTo;
 
     assert((delay >= 0) && (delay < r->nChunks));
     nFrom = r->nCursor - delay;
@@ -81,7 +81,7 @@ reverbBuffer_getChunk(struct reverbBuffer *r, int delay)
 	nFrom += r->nChunks;
     getFrom = r->data + nFrom * buffer_size;
     giveTo = newChunk();
-    memcpy(giveTo, getFrom, buffer_size * sizeof(int));
+    memcpy(giveTo, getFrom, buffer_size * sizeof(DSP_SAMPLE));
     return giveTo;
 }
 
@@ -286,17 +286,16 @@ void
 reverb_filter(struct effect *p, struct data_block *db)
 {
     struct reverb_params *dr;
-    int            *s,
-                    count;
+    DSP_SAMPLE     *s;
     int             Dry,
                     Wet,
                     Rgn,
-                    dd;
-    int            *Old,
+                    dd,
+                    count;
+    DSP_SAMPLE     *Old,
                    *Old2,
                     Out;
-    float           delay;
-    int             tmp,
+    DSP_SAMPLE      tmp,
                     tot;
     dr = (struct reverb_params *) p->params;
 
@@ -306,8 +305,7 @@ reverb_filter(struct effect *p, struct data_block *db)
     /*
      * get delay 
      */
-    delay = dr->delay;
-    dd = (int) delay;
+    dd = dr->delay;
     dd = (dd < 1) ? 1 : (dd >=
 			 dr->history->nChunks) ? dr->history->nChunks -
 	1 : dd;
@@ -315,11 +313,11 @@ reverb_filter(struct effect *p, struct data_block *db)
     /*
      * get parms 
      */
-    Dry = (int) dr->dry;
-    Wet = (int) dr->wet;
-    Rgn = (int) dr->regen;
+    Dry = dr->dry;
+    Wet = dr->wet;
+    Rgn = dr->regen;
 
-    Old = (int *) reverbBuffer_getChunk(dr->history, dd);
+    Old = (DSP_SAMPLE *) reverbBuffer_getChunk(dr->history, dd);
     Old2 = Old;
     while (count) {
 	/*
@@ -333,19 +331,23 @@ reverb_filter(struct effect *p, struct data_block *db)
 	tot *= Wet;
 	tot /= 256;
 	tot += tmp;
+#ifdef CLIP_EVERYWHERE
 	tot =
 	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
 						 MAX_SAMPLE) ? MAX_SAMPLE :
 	    tot;
+#endif
 	Out = tot;
 
 	tot *= Rgn;
 	tot /= 256;
 	tot += *s;
+#ifdef CLIP_EVERYWHERE
 	tot =
 	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
 						 MAX_SAMPLE) ? MAX_SAMPLE :
 	    tot;
+#endif
 	*s = tot;
 	s++;
 	Old++;

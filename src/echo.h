@@ -34,10 +34,10 @@ struct echo_params {
     int             echo_size,
                     echo_decay,
                     buffer_count;	/* number of buffers */
-    int           **history,	/* array[MAX_ECHO_COUNT] of history */
-                   *index,	/* array[MAX_ECHO_COUNT] of history index */
-                   *size,	/* size of one buffer */
-                   *factor;
+    DSP_SAMPLE    **history;	/* array[MAX_ECHO_COUNT] of history */
+    int            *size,	/* size of one buffer */
+                   *factor,
+                   *index;	/* array[MAX_ECHO_COUNT] of history index */
 };
 
 #endif

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.10  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -252,8 +255,8 @@ void
 distort_filter(struct effect *p, struct data_block *db)
 {
     int             count,
-                    currchannel = 0,
-                   *s;
+                    currchannel = 0;
+    DSP_SAMPLE     *s;
     struct distort_params *dp;
 
     dp = (struct distort_params *) p->params;

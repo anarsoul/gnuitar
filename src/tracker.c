@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.7  2003/03/09 20:58:47  fonin
  * Redesign for the new "change sampling params" feature.
  *
@@ -134,7 +137,7 @@ tracker_done()
 
 
 void
-track_write(int *s, int count)
+track_write(DSP_SAMPLE *s, int count)
 {
     SAMPLE          tmp[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
 

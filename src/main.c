@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.17  2003/05/30 12:49:23  fonin
  * log2() renamed to my_log2() since log2 is a reserved word on MacOS X.
  *
@@ -100,7 +103,7 @@
 #define DEMO_MSG "\n\nThis is the demo version of the GNUitar program." \
     "\nYou may download the full version as a source distribution" \
     "\nfrom http://freshmeat.net/projects/gnuitar" \
-    "\nor purchase binary package from http://ns2.ziet.zhitomir.ua/~fonin/order.php\n"
+    "\nor purchase binary package from http://www.omnistaronline.com/~fonin/order.php\n"
 #    ifdef _WIN32
 #        define DEMO_TIMER 1
 #    endif
@@ -147,7 +150,7 @@ char            cur_wr_hdr[MAX_BUFFERS];	/* available write headers
 						 * array */
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* write buffers */
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* receive buffer */
-int             procbuf[MAX_BUFFER_SIZE];	/* procesing buffer */
+DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];	/* procesing buffer */
 int             active_in_buffers = 0,
                 active_out_buffers = 0;
 
@@ -167,7 +170,7 @@ audio_thread_start(void *V)
 #ifndef _WIN32
     SAMPLE          rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];	/* receive 
 								 * buffer */
-    int             procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
+    DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
 
     while (state != STATE_EXIT) {
 	if (state == STATE_PAUSE) {
@@ -249,7 +252,7 @@ audio_thread_start(void *V)
 		    count /= bits / 8;
 		    for (i = 0; i < count; i++) {
 			procbuf[i] =
-			    ((SAMPLE *) (((WAVEHDR *) msg.lParam)->
+			    ((DSP_SAMPLE *) (((WAVEHDR *) msg.lParam)->
 					 lpData))[i];
 		    }
 
@@ -349,7 +352,7 @@ audio_thread_start(void *V)
 
 			    }
 			    for (i = 0, j = 0, k = 0; i < count; i++) {
-				int             W = procbuf[i];
+				DSP_SAMPLE      W = procbuf[i];
 				SAMPLE         *curpos;
 				if (W < -MAX_SAMPLE)
 				    W = -MAX_SAMPLE;
@@ -443,7 +446,7 @@ audio_thread_start(void *V)
 			 */
 			else {
 			    for (i = 0; i < count; i++) {
-				int             W = procbuf[i];
+				DSP_SAMPLE       W = procbuf[i];
 				if (W < -MAX_SAMPLE)
 				    W = -MAX_SAMPLE;
 				if (W > MAX_SAMPLE)

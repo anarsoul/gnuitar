@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.10  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -226,15 +229,15 @@ void
 sustain_filter(struct effect *p, struct data_block *db)
 {
 
-    int             count,
-                   *s;
+    int             count;
+    DSP_SAMPLE     *s;
     struct sustain_params *ds;
-    int             volAccum;
+    DSP_SAMPLE      volAccum,
+                    tmp;
     float           CompW1;
     float           CompW2;
     float           gateFac;
     float           compFac;
-    int             tmp;
 
     ds = (struct sustain_params *) p->params;
 
@@ -270,8 +273,10 @@ sustain_filter(struct effect *p, struct data_block *db)
 	/*
 	 * process signal... 
 	 */
-	tmp = (int) ((float) (*s) * compFac * gateFac);
-	tmp = (tmp < -32767) ? -32767 : (tmp > 32767) ? 32767 : tmp;
+	tmp = ((float) (*s) * compFac * gateFac);
+#ifdef CLIP_EVERYWHERE
+	tmp = (tmp < -MAX_SAMPLE) ? -MAX_SAMPLE : (tmp > MAX_SAMPLE) ? MAX_SAMPLE : tmp;
+#endif
 	*s = tmp;
 	s++;
 	count--;

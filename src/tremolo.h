@@ -31,11 +31,11 @@ struct tremolo_params {
     int             tremolo_size,
                     tremolo_amplitude,
                     tremolo_speed,
-                    tremolo_phase_buffer_size;
-    int            *history[MAX_CHANNELS],
-                    tremolo_index[MAX_CHANNELS],
+                    tremolo_phase_buffer_size,
+		    tremolo_index[MAX_CHANNELS],
                     tremolo_phase,
-                    index[MAX_CHANNELS],
+                    index[MAX_CHANNELS];
+    DSP_SAMPLE     *history[MAX_CHANNELS],
                    *phase_buffer;
 };
 

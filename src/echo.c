@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.10  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -241,9 +244,8 @@ echo_init(struct effect *p)
 void
 echo_filter(struct effect *p, struct data_block *db)
 {
-    int            *s,
-                    j,
-                    sample,
+    DSP_SAMPLE     *s,sample;
+    int             j,
                     count;
     struct echo_params *ep;
 
@@ -343,7 +345,7 @@ echo_create(struct effect *p)
     pecho->echo_decay = 700;
     pecho->buffer_count = 20;
 
-    pecho->history = (int **) malloc(MAX_ECHO_COUNT * sizeof(int *));
+    pecho->history = (DSP_SAMPLE **) malloc(MAX_ECHO_COUNT * sizeof(DSP_SAMPLE *));
     pecho->index = (int *) calloc(MAX_ECHO_COUNT, sizeof(int));
     pecho->size = (int *) malloc(MAX_ECHO_COUNT * sizeof(int));
     pecho->factor = (int *) malloc(MAX_ECHO_COUNT * sizeof(int));
@@ -361,6 +363,6 @@ echo_create(struct effect *p)
 
     for (i = 0; i < MAX_ECHO_COUNT; i++) {
 	pecho->size[i] = pecho->factor[i] * MAX_ECHO_SIZE;
-	pecho->history[i] = (int *) calloc(pecho->size[i], sizeof(int));
+	pecho->history[i] = (DSP_SAMPLE *) calloc(pecho->size[i], sizeof(DSP_SAMPLE));
     }
 }

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.4  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -275,8 +278,8 @@ void
 noise_filter(struct effect *p, struct data_block *db)
 {
 
-    int             count,
-                   *s;
+    int             count;
+    DSP_SAMPLE     *s;
     struct noise_params *dn;
     static int      hold_counter;
     static int      release_counter;

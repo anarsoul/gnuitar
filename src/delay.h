@@ -32,14 +32,14 @@
 extern void     delay_create(struct effect *);
 
 struct delay_params {
-    int            *history,	/* history of samples */
+    DSP_SAMPLE     *history;	/* history of samples */
 
-                   *idelay,
-                    index;	/* curr.index in the history array */
+    int             index;	/* curr.index in the history array */
     int             delay_size,	/* length of history */
                     delay_decay,	/* volume of processed signal */
                     delay_start,
                     delay_step,
+                   *idelay,
                     delay_count;	/* number of repeats */
 };
 

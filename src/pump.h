@@ -25,10 +25,15 @@
 
 #include <gtk/gtk.h>
 
-#ifndef _WIN32
-typedef short   SAMPLE;
+#ifdef FLOAT_DSP
+typedef double	DSP_SAMPLE;
 #else
+typedef int	DSP_SAMPLE;
+#endif
+
 typedef short   SAMPLE;
+
+#ifdef _WIN32
 #define MAX_BUFFERS	1024	/* number of input/output sound buffers */
 #endif
 typedef signed char SAMPLE8;
@@ -59,8 +64,8 @@ typedef signed char SAMPLE8;
 #define EQBANK		12
 
 struct data_block {
-    int            *data;
-    int             len;
+    DSP_SAMPLE     *data;
+    unsigned int    len;
 };
 
 struct effect {
@@ -93,7 +98,7 @@ extern int      n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];
 
-extern int      pump_sample(int *s, int size);
+extern int      pump_sample(DSP_SAMPLE *s, int size);
 extern void     pump_start(int argc, char **argv);
 extern void     pump_stop(void);
 extern void     save_pump(char *fname);

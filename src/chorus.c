@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2004/08/10 15:07:31  fonin
+ * Support processing in float/int - type DSP_SAMPLE
+ *
  * Revision 1.11  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -327,21 +330,22 @@ chorus_filter(struct effect *p, struct data_block *db)
 {
     struct chorus_params *cp;
     int             count;
-    int            *s;
+    DSP_SAMPLE     *s;
     int             dly = 0;
     float           AngInc,
                     Ang;
-    int             tmp,
+    DSP_SAMPLE      tmp,
                     tot,
-                    rgn,
-                    currchannel = 0;
+                    rgn;
+    int		    currchannel = 0;
 
     cp = (struct chorus_params *) p->params;
 
     s = db->data;
     count = db->len;
 
-#define MaxDly ((int)cp->depth * 8)
+//#define MaxDly ((int)cp->depth * 8)
+#define MaxDly (cp->depth * 8)
     AngInc = cp->speed / 1000.0f;
     Ang = cp->ang;
 
@@ -371,17 +375,21 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tot *= cp->wet;
 	tot /= 256;
 	tot += tmp;
+#ifdef CLIP_EVERYWHERE
 	tot =
 	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
 						 MAX_SAMPLE) ? MAX_SAMPLE :
 	    tot;
+#endif
 	rgn =
 	    (backbuff_get(cp->memory[currchannel], (unsigned int) dly) *
 	     cp->regen) / 256 + *s;
+#ifdef CLIP_EVERYWHERE
 	rgn =
 	    (rgn < -MAX_SAMPLE) ? -MAX_SAMPLE : (rgn >
 						 MAX_SAMPLE) ? MAX_SAMPLE :
 	    rgn;
+#endif
 	backbuff_add(cp->memory[currchannel], rgn);
 	*s = tot;
 

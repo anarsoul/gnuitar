@@ -28,7 +28,7 @@
 extern void     reverb_create(struct effect *);
 
 struct reverbBuffer {
-    int            *data;
+    DSP_SAMPLE     *data;
     int             nChunks;
     int             nCursor;
 };
