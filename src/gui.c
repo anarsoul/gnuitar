@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2001/03/25 12:09:51  fonin
+ * Added function delete_event(). Effect control windows use it to ignore windows destroy event.
+ *
  * Revision 1.2  2001/03/11 20:16:44  fonin
  * Fixed destroying of main window.
  *
@@ -19,12 +22,12 @@
 
 void            bank_start_save(GtkWidget * widget, gpointer data);
 void            bank_start_load(GtkWidget * widget, gpointer data);
-void quit(GtkWidget * widget, gpointer data);
+void            quit(GtkWidget * widget, gpointer data);
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
-    
-	{"/File/_Open Layout", "<control>O",
+
+    {"/File/_Open Layout", "<control>O",
      (GtkSignalFunc) bank_start_load, 0, NULL},
     {"/File/_Save Layout", "<control>S", (GtkSignalFunc) bank_start_save,
      0, NULL},
@@ -83,6 +86,12 @@ rnd_window_pos(GtkWindow * wnd)
     x = 1 + (int) (800.0 * rand() / (RAND_MAX + 1.0));
     y = 1 + (int) (600.0 * rand() / (RAND_MAX + 1.0));
     gtk_widget_set_uposition(GTK_WIDGET(wnd), x, y);
+}
+
+gint
+delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
+{
+    return (TRUE);
 }
 
 void
@@ -217,11 +226,6 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
     gtk_widget_destroy(GTK_WIDGET(filesel));
     gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5,
 		     1.0);
-    /*
-     * GTK_ADJUSTMENT(GTK_CLIST(bank)->hadjustment)->upper=1000;
-     * gtk_signal_emit_by_name(GTK_OBJECT(GTK_CLIST(bank)->hadjustment),"changed");
-     * gtk_signal_emit_by_name(GTK_OBJECT(bank_scroll),"changed");
-     */
 }
 
 void
@@ -359,7 +363,8 @@ init_gui(void)
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(mainWnd, 500, 370);
     tbl = gtk_table_new(5, 6, FALSE);
-    gtk_signal_connect(GTK_OBJECT(mainWnd), "destroy", GTK_SIGNAL_FUNC(quit), NULL);
+    gtk_signal_connect(GTK_OBJECT(mainWnd), "destroy",
+		       GTK_SIGNAL_FUNC(quit), NULL);
 
     /*
      * make menu
@@ -404,7 +409,7 @@ init_gui(void)
     processor = gtk_clist_new_with_titles(1, processor_titles);
     gtk_clist_set_selection_mode(GTK_CLIST(processor),
 				 GTK_SELECTION_SINGLE);
-    gtk_clist_set_column_width(GTK_CLIST(processor), 0, 70);
+    gtk_clist_set_column_auto_resize(GTK_CLIST(processor), 0, TRUE);
     processor_scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(processor_scroll), processor);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(processor_scroll),
@@ -414,7 +419,7 @@ init_gui(void)
     known_effects = gtk_clist_new_with_titles(1, effects_titles);
     gtk_clist_set_selection_mode(GTK_CLIST(known_effects),
 				 GTK_SELECTION_SINGLE);
-    gtk_clist_set_column_width(GTK_CLIST(known_effects), 0, 70);
+    gtk_clist_set_column_auto_resize(GTK_CLIST(known_effects), 0, TRUE);
     effect_scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(effect_scroll), known_effects);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(effect_scroll),
@@ -426,7 +431,7 @@ init_gui(void)
 
     bank = gtk_clist_new_with_titles(1, bank_titles);
     gtk_clist_set_selection_mode(GTK_CLIST(bank), GTK_SELECTION_SINGLE);
-    gtk_clist_set_column_width(GTK_CLIST(bank), 0, 300);
+    gtk_clist_set_column_auto_resize(GTK_CLIST(bank), 0, TRUE);
     bank_scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(bank_scroll), bank);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(bank_scroll),
