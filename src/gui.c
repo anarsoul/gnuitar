@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2003/04/16 18:42:58  fonin
+ * R_OK macro definition moved to utils.h.
+ *
  * Revision 1.19  2003/04/11 18:33:56  fonin
  * my_itoa() moved to utils.h.
  *
@@ -88,9 +91,6 @@
 #include <stdlib.h>
 #include <time.h>
 #ifdef _WIN32
-#    ifndef  R_OK
-#        define  R_OK 04
-#    endif
 #    include <io.h>
 #    include <stdio.h>
 #    include <ctype.h>
