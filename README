@@ -46,6 +46,11 @@ When running the program, make sure you close all unnecessary applications,
 to give more resources to it. Avoid anything that can cause disk I/O
 or CPU usage.
 
+GNUitar runs with increased priority; this may cause hang-ups
+and delayed system response on low-end machines. Therefore you
+should care to save all important data in other applications,
+before you launch GNUitar.
+
 4.1 UNIX notes
 
 GNUitar executable file should be setuid root to process sound with 
