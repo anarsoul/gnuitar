@@ -61,9 +61,21 @@
 #include "pump.h"
 #ifdef _WIN32
 #    define M_PI 3.14159265358979323846E0
+#    ifndef  R_OK
+#        define  R_OK 04
+#    endif
+#    ifndef  X_OK
+#        define  X_OK 01
+#    endif
+#    ifndef  F_OK
+#        define  F_OK 00
+#    endif
+#    define FILESEP "\\"
+#else
+#    define FILESEP "/"
 #endif
 
 extern short    log2(int);
-char           *my_itoa(int i);
+extern char    *my_itoa(int i);
 
 #endif
