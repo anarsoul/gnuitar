@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2003/02/01 22:19:50  fonin
+ * Removed unreferenced local variable.
+ *
  * Revision 1.6  2003/02/01 19:13:44  fonin
  * Changed the units of slider bars from computer ones to ms and %
  *
@@ -63,7 +66,6 @@ update_vibrato_speed(GtkAdjustment * adj, struct vibrato_params *params)
 void
 update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 {
-    int             i;
     params->vibrato_amplitude = adj->value*50.0/32767.0;
 }
 
