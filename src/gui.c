@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2003/05/01 19:09:25  fonin
+ * Bugfix with spawnl() syntax - the last parameter always should be NULL.
+ *
  * Revision 1.20  2003/04/16 18:42:58  fonin
  * R_OK macro definition moved to utils.h.
  *
@@ -336,7 +339,7 @@ help_contents(void)
 	}
     }
     if (strcmp(path, "") != 0) {
-	if (spawnlp(P_NOWAIT, "start", "start", path) == -1) {
+	if (spawnlp(P_NOWAIT, "start", "start", path, NULL) == -1) {
 	    perror("spawn");
 	}
     }
