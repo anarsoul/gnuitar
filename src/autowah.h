@@ -31,10 +31,9 @@ extern void     autowah_create(struct effect *);
 struct autowah_params {
     float           freq_low;
     float           freq_high;
-    float           speed;
-    int             wah_count;
-    float           f,
-                    df;
+    int             wah_count;	/* number of "cries" processed */
+    float           f,		/* resonance frequency ? */
+                    df;		/* delta frequency ? */
     struct filter_data *fd;
     unsigned short  mixx;
 };

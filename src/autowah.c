@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/03/09 20:46:07  fonin
+ * - parameter "speed" removed from effect internal structure, df (delta ef)
+ *   instead;
+ * - cleanup of dead code and variables in autowah_filter();
+ * - parameter speed is measured in 1 wave per N msec.
+ *
  * Revision 1.7  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -56,9 +62,6 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-double          amplitude,
-                amplitude2;
-
 void
                 autowah_filter(struct effect *p, struct data_block *db);
 
@@ -66,8 +69,11 @@ void
 void
 update_wah_speed(GtkAdjustment * adj, struct autowah_params *params)
 {
-    params->speed = (float) adj->value;
-    params->df = (float) adj->value;
+    params->df =
+	(params->freq_high -
+	 params->freq_low) * 1000.0 * buffer_size / (sample_rate *
+						     nchannels *
+						     (float) adj->value);
 }
 
 void
@@ -116,8 +122,8 @@ autowah_init(struct effect *p)
 {
     struct autowah_params *pautowah;
 
-    GtkWidget      *speed;
     GtkWidget      *speed_label;
+    GtkWidget      *speed;
     GtkObject      *adj_speed;
 
     GtkWidget      *freq_low;
@@ -147,9 +153,12 @@ autowah_init(struct effect *p)
 
     parmTable = gtk_table_new(4, 8, FALSE);
 
-    adj_speed = gtk_adjustment_new(pautowah->speed,
-				   0.0, 30.0, 0.1, 1.0, 1.0);
-    speed_label = gtk_label_new("Speed");
+    adj_speed =
+	gtk_adjustment_new((pautowah->freq_high -
+			    pautowah->freq_low) * 1000 * buffer_size /
+			   (sample_rate * nchannels * pautowah->df), 100.0,
+			   20000.0, 1.0, 10.0, 1.0);
+    speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -170,7 +179,7 @@ autowah_init(struct effect *p)
 
     adj_freqlow = gtk_adjustment_new(pautowah->freq_low,
 				     150.0, 300.0, 1.0, 1.0, 1.0);
-    freqlow_label = gtk_label_new("Freq. low");
+    freqlow_label = gtk_label_new("Freq. low\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freqlow_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -191,7 +200,7 @@ autowah_init(struct effect *p)
 
     adj_freqhi = gtk_adjustment_new(pautowah->freq_high,
 				    500.0, 3500.0, 1.0, 1.0, 1.0);
-    freqhi_label = gtk_label_new("Freq. hi");
+    freqhi_label = gtk_label_new("Freq. hi\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freqhi_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -250,7 +259,7 @@ void
 autowah_filter(struct effect *p, struct data_block *db)
 {
     struct autowah_params *ap;
-    int             dry[BUFFER_SIZE];
+    int             dry[MAX_BUFFER_SIZE];
     int             i;
 
     ap = (struct autowah_params *) p->params;
@@ -260,19 +269,11 @@ autowah_filter(struct effect *p, struct data_block *db)
 	memcpy(dry, db->data, db->len * sizeof(int));
     }
 
-    /*
-     * Change this constant if autowah works bad 
-     */
-    if (amplitude2 / amplitude > 1.4) {
-	ap->wah_count = 1;
-	ap->f = ap->freq_low;
-	ap->df = ap->speed;
+/*
+    if (ap->wah_count != 0) {
+	LC_filter(db->data, db->len, HIGHPASS,ap->freq_high, ap->fd);
     }
-
-    /*
-     * if (ap->wah_count != 0) { LC_filter(db->data, db->len, HIGHPASS,
-     * ap->freq_high, ap->fd); } 
-     */
+ */
     ap->f += ap->df;
     if (ap->f >= ap->freq_high) {
 	ap->df = -ap->df;
@@ -281,13 +282,6 @@ autowah_filter(struct effect *p, struct data_block *db)
 
     if (ap->f <= ap->freq_low && ap->wah_count == 2) {
 	ap->wah_count = 0;
-    }
-
-    if (amplitude2 / amplitude > 1.2 && ap->wah_count == 0) {
-	if (ap->df == 0) {
-	    ap->df = ap->speed;
-	    ap->f = ap->freq_low;
-	}
     }
 
     if (ap->wah_count == 1) {
@@ -333,12 +327,13 @@ void
 autowah_save(struct effect *p, int fd)
 {
     struct autowah_params *ap;
+    float           dummy;
 
     ap = (struct autowah_params *) p->params;
 
     write(fd, &ap->freq_low, sizeof(ap->freq_low));
     write(fd, &ap->freq_high, sizeof(ap->freq_high));
-    write(fd, &ap->speed, sizeof(ap->speed));
+    write(fd, &dummy, sizeof(dummy));
     write(fd, &ap->wah_count, sizeof(ap->wah_count));
     write(fd, &ap->f, sizeof(ap->f));
     write(fd, &ap->df, sizeof(ap->df));
@@ -349,12 +344,13 @@ void
 autowah_load(struct effect *p, int fd)
 {
     struct autowah_params *ap;
+    float           dummy;
 
     ap = (struct autowah_params *) p->params;
 
     read(fd, &ap->freq_low, sizeof(ap->freq_low));
     read(fd, &ap->freq_high, sizeof(ap->freq_high));
-    read(fd, &ap->speed, sizeof(ap->speed));
+    read(fd, &dummy, sizeof(dummy));
     read(fd, &ap->wah_count, sizeof(ap->wah_count));
     read(fd, &ap->f, sizeof(ap->f));
     read(fd, &ap->df, sizeof(ap->df));
@@ -384,9 +380,8 @@ autowah_create(struct effect *p)
 
     ap->freq_low = 150;
     ap->freq_high = 1000;
-    ap->speed = 1;
+    ap->df = 1;
     ap->wah_count = 0;
     ap->f = ap->freq_low;
-    ap->df = ap->speed;
     ap->mixx = 0;
 }
