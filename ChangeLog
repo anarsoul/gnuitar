@@ -1,3 +1,464 @@
+2003-04-18 21:29  fonin
+
+	* TODO: Updating plans.
+
+2003-04-18 21:27  fonin
+
+	* NEWS, gnuitar.spec: Updated history.
+
+2003-04-18 21:22  fonin
+
+	* src/noise.c: Cleanup.
+
+2003-04-17 15:23  fonin
+
+	* README, docs/index.html, docs/readme.html: Notes about distort2
+	and noise gate effects.
+
+2003-04-17 15:22  fonin
+
+	* src/gen_distort2_lookup.c: Strip lookup table before write it to
+	the file.
+
+2003-04-17 15:22  fonin
+
+	* src/distort2.c: More search paths for lookup dir.
+
+2003-04-17 14:59  fonin
+
+	* distort2/distort2lookup_44100_10_510: Yet another one
+
+2003-04-17 14:59  fonin
+
+	* distort2/: distort2lookup_44100_10_520,
+	distort2lookup_44100_12_520, distort2lookup_44100_14_520,
+	distort2lookup_44100_16_520, distort2lookup_44100_18_520,
+	distort2lookup_44100_2_520, distort2lookup_44100_6_520,
+	distort2lookup_44100_8_520: Added more lookup tables.
+
+2003-04-17 14:58  fonin
+
+	* gnuitar.spec: Distortion 2 data were split to separate package.
+
+2003-04-17 14:57  fonin
+
+	* src/: Makefile.am, Makefile.in: Removed target
+	strip_lookup_table.
+
+2003-04-17 14:56  fonin
+
+	* scripts/striptables.sh: This functionality was moved to
+	gen_distort2_lookup utility.
+
+2003-04-17 14:55  fonin
+
+	* src/strip_lookup_table.c: The functionality was moved to
+	gen_distort2_lookup.c.
+
+2003-04-16 21:42  fonin
+
+	* src/gui.c: R_OK macro definition moved to utils.h.
+
+2003-04-16 21:42  fonin
+
+	* gnuitar.dsp, gnuitar.mak: New files were added (distort2 and
+	noise effects).
+
+2003-04-16 21:41  fonin
+
+	* src/utils.h: Defined macros FILESEP aka file separator, and X_OK,
+	F_OK for Windows (sys/stat.h on Unix).
+
+2003-04-16 21:40  fonin
+
+	* src/utils.c: my_itoa() is defined for Windows also.
+
+2003-04-16 21:40  fonin
+
+	* src/distort2.c: - lookup dir search paths for Win32; - R1
+	parameter should be inverted 100% == 1% and vice versa.
+
+2003-04-16 17:03  fonin
+
+	* scripts/striptables.sh: Maintenance script.
+
+2003-04-16 17:03  fonin
+
+	* scripts/strip_lookup_table: Oops, this was added by mistake.
+
+2003-04-16 17:02  fonin
+
+	* scripts/: beautify.sh, gendistort.sh, strip_lookup_table:
+	Maintenance scripts.
+
+2003-04-16 17:01  fonin
+
+	* distort2/: distort2lookup_44100_10_10,
+	distort2lookup_44100_10_100, distort2lookup_44100_10_110,
+	distort2lookup_44100_10_120, distort2lookup_44100_10_130,
+	distort2lookup_44100_10_140, distort2lookup_44100_10_150,
+	distort2lookup_44100_10_160, distort2lookup_44100_10_170,
+	distort2lookup_44100_10_180, distort2lookup_44100_10_190,
+	distort2lookup_44100_10_20, distort2lookup_44100_10_200,
+	distort2lookup_44100_10_210, distort2lookup_44100_10_220,
+	distort2lookup_44100_10_230, distort2lookup_44100_10_240,
+	distort2lookup_44100_10_250, distort2lookup_44100_10_260,
+	distort2lookup_44100_10_270, distort2lookup_44100_10_280,
+	distort2lookup_44100_10_290, distort2lookup_44100_10_30,
+	distort2lookup_44100_10_300, distort2lookup_44100_10_310,
+	distort2lookup_44100_10_320, distort2lookup_44100_10_330,
+	distort2lookup_44100_10_340, distort2lookup_44100_10_350,
+	distort2lookup_44100_10_360, distort2lookup_44100_10_370,
+	distort2lookup_44100_10_380, distort2lookup_44100_10_390,
+	distort2lookup_44100_10_40, distort2lookup_44100_10_400,
+	distort2lookup_44100_10_410, distort2lookup_44100_10_420,
+	distort2lookup_44100_10_430, distort2lookup_44100_10_440,
+	distort2lookup_44100_10_450, distort2lookup_44100_10_460,
+	distort2lookup_44100_10_470, distort2lookup_44100_10_480,
+	distort2lookup_44100_10_490, distort2lookup_44100_10_50,
+	distort2lookup_44100_10_500, distort2lookup_44100_10_60,
+	distort2lookup_44100_10_70, distort2lookup_44100_10_80,
+	distort2lookup_44100_10_90, distort2lookup_44100_12_10,
+	distort2lookup_44100_12_100, distort2lookup_44100_12_110,
+	distort2lookup_44100_12_120, distort2lookup_44100_12_130,
+	distort2lookup_44100_12_140, distort2lookup_44100_12_150,
+	distort2lookup_44100_12_160, distort2lookup_44100_12_170,
+	distort2lookup_44100_12_180, distort2lookup_44100_12_190,
+	distort2lookup_44100_12_20, distort2lookup_44100_12_200,
+	distort2lookup_44100_12_210, distort2lookup_44100_12_220,
+	distort2lookup_44100_12_230, distort2lookup_44100_12_240,
+	distort2lookup_44100_12_250, distort2lookup_44100_12_260,
+	distort2lookup_44100_12_270, distort2lookup_44100_12_280,
+	distort2lookup_44100_12_290, distort2lookup_44100_12_30,
+	distort2lookup_44100_12_300, distort2lookup_44100_12_310,
+	distort2lookup_44100_12_320, distort2lookup_44100_12_330,
+	distort2lookup_44100_12_340, distort2lookup_44100_12_350,
+	distort2lookup_44100_12_360, distort2lookup_44100_12_370,
+	distort2lookup_44100_12_380, distort2lookup_44100_12_390,
+	distort2lookup_44100_12_40, distort2lookup_44100_12_400,
+	distort2lookup_44100_12_410, distort2lookup_44100_12_420,
+	distort2lookup_44100_12_430, distort2lookup_44100_12_440,
+	distort2lookup_44100_12_450, distort2lookup_44100_12_460,
+	distort2lookup_44100_12_470, distort2lookup_44100_12_480,
+	distort2lookup_44100_12_490, distort2lookup_44100_12_50,
+	distort2lookup_44100_12_500, distort2lookup_44100_12_510,
+	distort2lookup_44100_12_60, distort2lookup_44100_12_70,
+	distort2lookup_44100_12_80, distort2lookup_44100_12_90,
+	distort2lookup_44100_14_10, distort2lookup_44100_14_100,
+	distort2lookup_44100_14_110, distort2lookup_44100_14_120,
+	distort2lookup_44100_14_130, distort2lookup_44100_14_140,
+	distort2lookup_44100_14_150, distort2lookup_44100_14_160,
+	distort2lookup_44100_14_170, distort2lookup_44100_14_180,
+	distort2lookup_44100_14_190, distort2lookup_44100_14_20,
+	distort2lookup_44100_14_200, distort2lookup_44100_14_210,
+	distort2lookup_44100_14_220, distort2lookup_44100_14_230,
+	distort2lookup_44100_14_240, distort2lookup_44100_14_250,
+	distort2lookup_44100_14_260, distort2lookup_44100_14_270,
+	distort2lookup_44100_14_280, distort2lookup_44100_14_290,
+	distort2lookup_44100_14_30, distort2lookup_44100_14_300,
+	distort2lookup_44100_14_310, distort2lookup_44100_14_320,
+	distort2lookup_44100_14_330, distort2lookup_44100_14_340,
+	distort2lookup_44100_14_350, distort2lookup_44100_14_360,
+	distort2lookup_44100_14_370, distort2lookup_44100_14_380,
+	distort2lookup_44100_14_390, distort2lookup_44100_14_40,
+	distort2lookup_44100_14_400, distort2lookup_44100_14_410,
+	distort2lookup_44100_14_420, distort2lookup_44100_14_430,
+	distort2lookup_44100_14_440, distort2lookup_44100_14_450,
+	distort2lookup_44100_14_460, distort2lookup_44100_14_470,
+	distort2lookup_44100_14_480, distort2lookup_44100_14_490,
+	distort2lookup_44100_14_50, distort2lookup_44100_14_500,
+	distort2lookup_44100_14_510, distort2lookup_44100_14_60,
+	distort2lookup_44100_14_70, distort2lookup_44100_14_80,
+	distort2lookup_44100_14_90, distort2lookup_44100_16_10,
+	distort2lookup_44100_16_100, distort2lookup_44100_16_110,
+	distort2lookup_44100_16_120, distort2lookup_44100_16_130,
+	distort2lookup_44100_16_140, distort2lookup_44100_16_150,
+	distort2lookup_44100_16_160, distort2lookup_44100_16_170,
+	distort2lookup_44100_16_180, distort2lookup_44100_16_190,
+	distort2lookup_44100_16_20, distort2lookup_44100_16_200,
+	distort2lookup_44100_16_210, distort2lookup_44100_16_220,
+	distort2lookup_44100_16_230, distort2lookup_44100_16_240,
+	distort2lookup_44100_16_250, distort2lookup_44100_16_260,
+	distort2lookup_44100_16_270, distort2lookup_44100_16_280,
+	distort2lookup_44100_16_290, distort2lookup_44100_16_30,
+	distort2lookup_44100_16_300, distort2lookup_44100_16_310,
+	distort2lookup_44100_16_320, distort2lookup_44100_16_330,
+	distort2lookup_44100_16_340, distort2lookup_44100_16_350,
+	distort2lookup_44100_16_360, distort2lookup_44100_16_370,
+	distort2lookup_44100_16_380, distort2lookup_44100_16_390,
+	distort2lookup_44100_16_40, distort2lookup_44100_16_400,
+	distort2lookup_44100_16_410, distort2lookup_44100_16_420,
+	distort2lookup_44100_16_430, distort2lookup_44100_16_440,
+	distort2lookup_44100_16_450, distort2lookup_44100_16_460,
+	distort2lookup_44100_16_470, distort2lookup_44100_16_480,
+	distort2lookup_44100_16_490, distort2lookup_44100_16_50,
+	distort2lookup_44100_16_500, distort2lookup_44100_16_510,
+	distort2lookup_44100_16_60, distort2lookup_44100_16_70,
+	distort2lookup_44100_16_80, distort2lookup_44100_16_90,
+	distort2lookup_44100_18_10, distort2lookup_44100_18_100,
+	distort2lookup_44100_18_110, distort2lookup_44100_18_120,
+	distort2lookup_44100_18_130, distort2lookup_44100_18_140,
+	distort2lookup_44100_18_150, distort2lookup_44100_18_160,
+	distort2lookup_44100_18_170, distort2lookup_44100_18_180,
+	distort2lookup_44100_18_190, distort2lookup_44100_18_20,
+	distort2lookup_44100_18_200, distort2lookup_44100_18_210,
+	distort2lookup_44100_18_220, distort2lookup_44100_18_230,
+	distort2lookup_44100_18_240, distort2lookup_44100_18_250,
+	distort2lookup_44100_18_260, distort2lookup_44100_18_270,
+	distort2lookup_44100_18_280, distort2lookup_44100_18_290,
+	distort2lookup_44100_18_30, distort2lookup_44100_18_300,
+	distort2lookup_44100_18_310, distort2lookup_44100_18_320,
+	distort2lookup_44100_18_330, distort2lookup_44100_18_340,
+	distort2lookup_44100_18_350, distort2lookup_44100_18_360,
+	distort2lookup_44100_18_370, distort2lookup_44100_18_380,
+	distort2lookup_44100_18_390, distort2lookup_44100_18_40,
+	distort2lookup_44100_18_400, distort2lookup_44100_18_410,
+	distort2lookup_44100_18_420, distort2lookup_44100_18_430,
+	distort2lookup_44100_18_440, distort2lookup_44100_18_450,
+	distort2lookup_44100_18_460, distort2lookup_44100_18_470,
+	distort2lookup_44100_18_480, distort2lookup_44100_18_490,
+	distort2lookup_44100_18_50, distort2lookup_44100_18_500,
+	distort2lookup_44100_18_510, distort2lookup_44100_18_60,
+	distort2lookup_44100_18_70, distort2lookup_44100_18_80,
+	distort2lookup_44100_18_90, distort2lookup_44100_1_10,
+	distort2lookup_44100_1_100, distort2lookup_44100_1_110,
+	distort2lookup_44100_1_120, distort2lookup_44100_1_130,
+	distort2lookup_44100_1_140, distort2lookup_44100_1_150,
+	distort2lookup_44100_1_160, distort2lookup_44100_1_170,
+	distort2lookup_44100_1_180, distort2lookup_44100_1_190,
+	distort2lookup_44100_1_20, distort2lookup_44100_1_200,
+	distort2lookup_44100_1_210, distort2lookup_44100_1_220,
+	distort2lookup_44100_1_230, distort2lookup_44100_1_240,
+	distort2lookup_44100_1_250, distort2lookup_44100_1_260,
+	distort2lookup_44100_1_270, distort2lookup_44100_1_280,
+	distort2lookup_44100_1_290, distort2lookup_44100_1_30,
+	distort2lookup_44100_1_300, distort2lookup_44100_1_310,
+	distort2lookup_44100_1_320, distort2lookup_44100_1_330,
+	distort2lookup_44100_1_340, distort2lookup_44100_1_350,
+	distort2lookup_44100_1_360, distort2lookup_44100_1_370,
+	distort2lookup_44100_1_380, distort2lookup_44100_1_390,
+	distort2lookup_44100_1_40, distort2lookup_44100_1_400,
+	distort2lookup_44100_1_410, distort2lookup_44100_1_420,
+	distort2lookup_44100_1_430, distort2lookup_44100_1_440,
+	distort2lookup_44100_1_450, distort2lookup_44100_1_460,
+	distort2lookup_44100_1_470, distort2lookup_44100_1_480,
+	distort2lookup_44100_1_490, distort2lookup_44100_1_50,
+	distort2lookup_44100_1_500, distort2lookup_44100_1_510,
+	distort2lookup_44100_1_520, distort2lookup_44100_1_60,
+	distort2lookup_44100_1_70, distort2lookup_44100_1_80,
+	distort2lookup_44100_1_90, distort2lookup_44100_20_100,
+	distort2lookup_44100_20_110, distort2lookup_44100_20_120,
+	distort2lookup_44100_20_130, distort2lookup_44100_20_140,
+	distort2lookup_44100_20_150, distort2lookup_44100_20_160,
+	distort2lookup_44100_20_170, distort2lookup_44100_20_180,
+	distort2lookup_44100_20_190, distort2lookup_44100_20_200,
+	distort2lookup_44100_20_210, distort2lookup_44100_20_220,
+	distort2lookup_44100_20_230, distort2lookup_44100_20_240,
+	distort2lookup_44100_20_250, distort2lookup_44100_20_260,
+	distort2lookup_44100_20_270, distort2lookup_44100_20_280,
+	distort2lookup_44100_20_290, distort2lookup_44100_20_300,
+	distort2lookup_44100_20_310, distort2lookup_44100_20_320,
+	distort2lookup_44100_20_330, distort2lookup_44100_20_340,
+	distort2lookup_44100_20_350, distort2lookup_44100_20_360,
+	distort2lookup_44100_20_370, distort2lookup_44100_20_380,
+	distort2lookup_44100_20_390, distort2lookup_44100_20_400,
+	distort2lookup_44100_20_410, distort2lookup_44100_20_420,
+	distort2lookup_44100_20_430, distort2lookup_44100_20_440,
+	distort2lookup_44100_20_450, distort2lookup_44100_20_460,
+	distort2lookup_44100_20_470, distort2lookup_44100_20_480,
+	distort2lookup_44100_20_490, distort2lookup_44100_20_50,
+	distort2lookup_44100_20_500, distort2lookup_44100_20_510,
+	distort2lookup_44100_20_520, distort2lookup_44100_20_60,
+	distort2lookup_44100_20_70, distort2lookup_44100_20_80,
+	distort2lookup_44100_20_90, distort2lookup_44100_2_10,
+	distort2lookup_44100_2_100, distort2lookup_44100_2_110,
+	distort2lookup_44100_2_120, distort2lookup_44100_2_130,
+	distort2lookup_44100_2_140, distort2lookup_44100_2_150,
+	distort2lookup_44100_2_160, distort2lookup_44100_2_170,
+	distort2lookup_44100_2_180, distort2lookup_44100_2_190,
+	distort2lookup_44100_2_20, distort2lookup_44100_2_200,
+	distort2lookup_44100_2_210, distort2lookup_44100_2_220,
+	distort2lookup_44100_2_230, distort2lookup_44100_2_240,
+	distort2lookup_44100_2_250, distort2lookup_44100_2_260,
+	distort2lookup_44100_2_270, distort2lookup_44100_2_280,
+	distort2lookup_44100_2_290, distort2lookup_44100_2_30,
+	distort2lookup_44100_2_300, distort2lookup_44100_2_310,
+	distort2lookup_44100_2_320, distort2lookup_44100_2_330,
+	distort2lookup_44100_2_340, distort2lookup_44100_2_350,
+	distort2lookup_44100_2_360, distort2lookup_44100_2_370,
+	distort2lookup_44100_2_380, distort2lookup_44100_2_390,
+	distort2lookup_44100_2_40, distort2lookup_44100_2_400,
+	distort2lookup_44100_2_410, distort2lookup_44100_2_420,
+	distort2lookup_44100_2_430, distort2lookup_44100_2_440,
+	distort2lookup_44100_2_450, distort2lookup_44100_2_460,
+	distort2lookup_44100_2_470, distort2lookup_44100_2_480,
+	distort2lookup_44100_2_490, distort2lookup_44100_2_50,
+	distort2lookup_44100_2_500, distort2lookup_44100_2_510,
+	distort2lookup_44100_2_60, distort2lookup_44100_2_70,
+	distort2lookup_44100_2_80, distort2lookup_44100_2_90,
+	distort2lookup_44100_4_100, distort2lookup_44100_4_110,
+	distort2lookup_44100_4_120, distort2lookup_44100_4_130,
+	distort2lookup_44100_4_140, distort2lookup_44100_4_150,
+	distort2lookup_44100_4_160, distort2lookup_44100_4_170,
+	distort2lookup_44100_4_180, distort2lookup_44100_4_190,
+	distort2lookup_44100_4_200, distort2lookup_44100_4_210,
+	distort2lookup_44100_4_220, distort2lookup_44100_4_230,
+	distort2lookup_44100_4_240, distort2lookup_44100_4_250,
+	distort2lookup_44100_4_260, distort2lookup_44100_4_270,
+	distort2lookup_44100_4_280, distort2lookup_44100_4_290,
+	distort2lookup_44100_4_300, distort2lookup_44100_4_310,
+	distort2lookup_44100_4_320, distort2lookup_44100_4_330,
+	distort2lookup_44100_4_340, distort2lookup_44100_4_350,
+	distort2lookup_44100_4_360, distort2lookup_44100_4_370,
+	distort2lookup_44100_4_380, distort2lookup_44100_4_390,
+	distort2lookup_44100_4_400, distort2lookup_44100_4_410,
+	distort2lookup_44100_4_420, distort2lookup_44100_4_430,
+	distort2lookup_44100_4_440, distort2lookup_44100_4_450,
+	distort2lookup_44100_4_460, distort2lookup_44100_4_470,
+	distort2lookup_44100_4_480, distort2lookup_44100_4_490,
+	distort2lookup_44100_4_50, distort2lookup_44100_4_500,
+	distort2lookup_44100_4_510, distort2lookup_44100_4_520,
+	distort2lookup_44100_4_60, distort2lookup_44100_4_70,
+	distort2lookup_44100_4_80, distort2lookup_44100_4_90,
+	distort2lookup_44100_50_510, distort2lookup_44100_6_10,
+	distort2lookup_44100_6_100, distort2lookup_44100_6_110,
+	distort2lookup_44100_6_120, distort2lookup_44100_6_130,
+	distort2lookup_44100_6_140, distort2lookup_44100_6_150,
+	distort2lookup_44100_6_160, distort2lookup_44100_6_170,
+	distort2lookup_44100_6_180, distort2lookup_44100_6_190,
+	distort2lookup_44100_6_20, distort2lookup_44100_6_200,
+	distort2lookup_44100_6_210, distort2lookup_44100_6_220,
+	distort2lookup_44100_6_230, distort2lookup_44100_6_240,
+	distort2lookup_44100_6_250, distort2lookup_44100_6_260,
+	distort2lookup_44100_6_270, distort2lookup_44100_6_280,
+	distort2lookup_44100_6_290, distort2lookup_44100_6_30,
+	distort2lookup_44100_6_300, distort2lookup_44100_6_310,
+	distort2lookup_44100_6_320, distort2lookup_44100_6_330,
+	distort2lookup_44100_6_340, distort2lookup_44100_6_350,
+	distort2lookup_44100_6_360, distort2lookup_44100_6_370,
+	distort2lookup_44100_6_380, distort2lookup_44100_6_390,
+	distort2lookup_44100_6_40, distort2lookup_44100_6_400,
+	distort2lookup_44100_6_410, distort2lookup_44100_6_420,
+	distort2lookup_44100_6_430, distort2lookup_44100_6_440,
+	distort2lookup_44100_6_450, distort2lookup_44100_6_460,
+	distort2lookup_44100_6_470, distort2lookup_44100_6_480,
+	distort2lookup_44100_6_490, distort2lookup_44100_6_50,
+	distort2lookup_44100_6_500, distort2lookup_44100_6_510,
+	distort2lookup_44100_6_60, distort2lookup_44100_6_70,
+	distort2lookup_44100_6_80, distort2lookup_44100_6_90,
+	distort2lookup_44100_8_10, distort2lookup_44100_8_100,
+	distort2lookup_44100_8_110, distort2lookup_44100_8_120,
+	distort2lookup_44100_8_130, distort2lookup_44100_8_140,
+	distort2lookup_44100_8_150, distort2lookup_44100_8_160,
+	distort2lookup_44100_8_170, distort2lookup_44100_8_180,
+	distort2lookup_44100_8_190, distort2lookup_44100_8_20,
+	distort2lookup_44100_8_200, distort2lookup_44100_8_210,
+	distort2lookup_44100_8_220, distort2lookup_44100_8_230,
+	distort2lookup_44100_8_240, distort2lookup_44100_8_250,
+	distort2lookup_44100_8_260, distort2lookup_44100_8_270,
+	distort2lookup_44100_8_280, distort2lookup_44100_8_290,
+	distort2lookup_44100_8_30, distort2lookup_44100_8_300,
+	distort2lookup_44100_8_310, distort2lookup_44100_8_320,
+	distort2lookup_44100_8_330, distort2lookup_44100_8_340,
+	distort2lookup_44100_8_350, distort2lookup_44100_8_360,
+	distort2lookup_44100_8_370, distort2lookup_44100_8_380,
+	distort2lookup_44100_8_390, distort2lookup_44100_8_40,
+	distort2lookup_44100_8_400, distort2lookup_44100_8_410,
+	distort2lookup_44100_8_420, distort2lookup_44100_8_430,
+	distort2lookup_44100_8_440, distort2lookup_44100_8_450,
+	distort2lookup_44100_8_460, distort2lookup_44100_8_470,
+	distort2lookup_44100_8_480, distort2lookup_44100_8_490,
+	distort2lookup_44100_8_50, distort2lookup_44100_8_500,
+	distort2lookup_44100_8_510, distort2lookup_44100_8_60,
+	distort2lookup_44100_8_70, distort2lookup_44100_8_80,
+	distort2lookup_44100_8_90: Lookup tables for distortion 2 effect.
+
+2003-04-16 17:01  fonin
+
+	* Makefile.am, Makefile.in: Installing data.
+
+2003-04-16 17:00  fonin
+
+	* src/: Makefile.am, Makefile.in: Added strip_lookup_table target.
+
+2003-04-16 17:00  fonin
+
+	* src/noise.c: - fix with updating the time controls; - all
+	features work now including fade out time, fade in time,  
+	hysteresis etc.  - better presets.
+
+2003-04-16 16:58  fonin
+
+	* src/distort2.c: - trying to guess the lookup directory; - filling
+	the lookup table with constant 32767 by default.
+
+2003-04-16 16:57  fonin
+
+	* src/strip_lookup_table.c: A small utility to strip the fill
+	sequence from the distort2 lookup table.  Based on the fact that
+	the most part of the lookup table is filled with the 32767, and
+	therefore it is possible to get rid of it.
+
+2003-04-16 16:56  fonin
+
+	* src/gen_distort2_lookup.c: Changed lookup table size to 64k.
+
+2003-04-12 23:03  fonin
+
+	* src/: Makefile.am, Makefile.in: Added new noise gate effect
+	files.
+
+2003-04-12 23:03  fonin
+
+	* src/gen_distort2_lookup.c: Minor bugfix in the algorithm, and few
+	variable type changes.
+
+2003-04-12 23:01  fonin
+
+	* src/: noise.c, noise.h, pump.h, pump.c: New noise gate effect.
+
+2003-04-12 23:01  fonin
+
+	* src/distort2.h: Noisegate was returned since it is needed.
+
+2003-04-12 23:00  fonin
+
+	* src/distort2.c: Stupid bugfix (forgot to move forward buffer
+	pointer in the filter function); "level" control taken out.
+
+2003-04-11 21:35  fonin
+
+	* src/: Makefile.am, Makefile.in: New binary - gen_distort2_lookup.
+
+2003-04-11 21:34  fonin
+
+	* src/: pump.c, pump.h: Added distort2 effect.
+
+2003-04-11 21:34  fonin
+
+	* src/gui.h, configure, configure.in: Starting version 0.3.1.
+
+2003-04-11 21:33  fonin
+
+	* src/: gui.c, utils.c, utils.h: my_itoa() moved to utils.h.
+
+2003-04-11 21:33  fonin
+
+	* src/gen_distort2_lookup.c: Lookup table generator for
+	distortion2.
+
+2003-04-11 21:32  fonin
+
+	* src/: distort2.c, distort2.h: New distortion effect.
+
+2003-03-28 22:18  fonin
+
+	* gnuitar.dsp, gnuitar.mak: Version 0.3.0.
+
+2003-03-28 22:01  fonin
+
+	* ChangeLog: Version 0.3.0.
+
 2003-03-28 22:01  fonin
 
 	* TODO: Updated tasks.
