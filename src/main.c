@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2003/01/30 21:33:31  fonin
+ * - Added demo version code for Win32;
+ * - NCHANNELS now is used in UNIX build.
+ *
  * Revision 1.6  2003/01/29 19:34:00  fonin
  * Win32 port.
  *
@@ -40,19 +44,6 @@
  *
  */
 
-/*
- * TODO:
- * - fix delay and set rt priority to the thread
- * - problems with banks list - does not support national characters
- * - demo version
- * - clean compiler warnings
- * - graceful app shutdown (function die)
- * - lick up the project file
- * - hunt memory leaks
- * + fix tracker module (write to .WAV file)
- * + problem with tremolo.c - memory bound error
- */
-
 #include <stdio.h>
 #ifndef _WIN32
 #    include <unistd.h>
@@ -71,6 +62,16 @@
 #endif
 #include <fcntl.h>
 #include <sys/types.h>
+
+#ifdef DEMO
+#define DEMO_MSG "\n\nThis is the demo version of the GNUitar program." \
+    "\nYou may download the full version as a source distribution" \
+    "\nfrom http://freshmeat.net/projects/gnuitar" \
+    "\nor purchase binary package from http://ziet.zhitomir.ua/~fonin/order.php\n"
+#    ifdef _WIN32
+#        define DEMO_TIMER 1
+#    endif
+#endif
 
 #include "pump.h"
 #include "tracker.h"
@@ -350,6 +351,19 @@ short log2(int x) {
 }
 #endif
 
+#ifdef DEMO
+#   ifdef _WIN32
+VOID CALLBACK expired(HWND  hwnd, UINT msg, UINT timer_id, DWORD time) {
+    gtk_main_quit();
+    die();
+    printf("%s",DEMO_MSG);
+    exit(10);
+}
+
+#   else
+#   endif
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -408,7 +422,7 @@ main(int argc, char **argv)
 	return -1;
     }
 
-    i = 0;
+    i = NCHANNELS-1;
     if (ioctl(fd, SNDCTL_DSP_STEREO, &i) == -1) {
 	fprintf(stderr, "\nCannot setup mono audio!");
 	close(fd);
@@ -424,6 +438,17 @@ main(int argc, char **argv)
 #else
     WAVEFORMATEX    format;	/* wave format */
     int             i;
+
+#ifdef DEMO
+    /*
+     * For demo version, we exit after a random time, 10 up to 15 minutes
+     */
+    srand(time(NULL));
+#   ifdef _WIN32
+    SetTimer(GetActiveWindow(),DEMO_TIMER,(unsigned int)(1000*60*10+1000*60*5*rand()/(RAND_MAX+1.0)),expired);
+#   else
+#   endif
+#endif
 
     ZeroMemory(&wave_header[0], sizeof(WAVEHDR) * NBUFFERS);
     ZeroMemory(&write_header[0], sizeof(WAVEHDR) * NBUFFERS);
