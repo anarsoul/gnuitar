@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/03/14 19:20:31  fonin
+ * Unreferenced variables fixed.
+ *
  * Revision 1.8  2003/03/12 20:53:54  fonin
  * - meaningful sliders measure units;
  * - code cleanup.
@@ -313,7 +316,6 @@ echo_create(struct effect *p)
 {
     struct echo_params *pecho;
     int             i = 10,
-                    j,
                     k = 0;
 
     p->params = (struct echo_params *) malloc(sizeof(struct echo_params));

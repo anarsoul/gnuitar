@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2003/03/14 19:20:31  fonin
+ * Unreferenced variables fixed.
+ *
  * Revision 1.9  2003/03/12 20:53:54  fonin
  * - meaningful sliders measure units;
  * - code cleanup.
@@ -323,7 +326,6 @@ void
 delay_create(struct effect *p)
 {
     struct delay_params *pdelay;
-    int             i;
 
     p->params =
 	(struct delay_params *) malloc(sizeof(struct delay_params));
