@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Graphics user interface
- * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/02/03 11:36:38  fonin
+ * Add icon to the main window on startup.
+ *
  * Revision 1.8  2003/01/30 21:32:25  fonin
  * Removed gui_done()
  *
@@ -55,6 +58,10 @@
 #ifdef _WIN32
 #    include <ctype.h>
 #    include <string.h>
+#    include <windows.h>
+#    include "resource.h"
+#else
+#    include "gnuitar.xpm"
 #endif
 
 #include "gui.h"
@@ -492,12 +499,22 @@ init_gui(void)
     char           *effects_titles[] = { "Known effects", NULL };
     char           *bank_titles[] = { "Processor bank", NULL };
 
+#ifdef _WIN32
+    HICON           app_icon,small_icon;
+    HWND	    window;
+    HMODULE	    me;
+#else
+    GdkPixmap      *app_icon;
+    GdkBitmap      *mask;
+    GtkStyle       *style;
+#endif
 
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(mainWnd, 500, 370);
     tbl = gtk_table_new(5, 6, FALSE);
     gtk_signal_connect(GTK_OBJECT(mainWnd), "destroy",
 		       GTK_SIGNAL_FUNC(quit), NULL);
+
 
     /*
      * make menu
@@ -634,8 +651,26 @@ init_gui(void)
 		       GTK_SIGNAL_FUNC(selectrow_processor), NULL);
     gtk_signal_connect(GTK_OBJECT(known_effects), "select_row",
 		       GTK_SIGNAL_FUNC(selectrow_effects), NULL);
-
-
     gtk_widget_show_all(mainWnd);
+
+    /*
+     * Attach icon to the window
+     */
+#ifdef _WIN32
+    window=GetActiveWindow();
+    me=GetModuleHandle(NULL);
+    app_icon=LoadIcon(me, MAKEINTRESOURCE(APP_ICON));
+    small_icon=LoadIcon(me, MAKEINTRESOURCE(SMALL_ICON));
+    if(app_icon)
+	SendMessage(window, WM_SETICON, ICON_BIG, (LPARAM)app_icon);
+    if(small_icon)
+	SendMessage(window, WM_SETICON, ICON_SMALL, (LPARAM)small_icon);
+
+#else
+    style=gtk_widget_get_style(mainWnd);
+    app_icon=gdk_pixmap_create_from_xpm_d(mainWnd->window,&mask,
+			&style->white,gnuitar_xpm);
+    gdk_window_set_icon(mainWnd->window,mainWnd->window,app_icon,mask);
+#endif
 }
-
+
