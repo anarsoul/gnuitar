@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2003/02/03 17:24:24  fonin
+ * Launch HTML browser to view docs.
+ *
  * Revision 1.10  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -62,8 +65,10 @@
 #    include <ctype.h>
 #    include <string.h>
 #    include <windows.h>
+#    include <process.h>
 #    include "resource.h"
 #else
+#    include <sys/stat.h>
 #    include "gnuitar.xpm"
 #endif
 
@@ -75,6 +80,7 @@ void            bank_start_save(GtkWidget * widget, gpointer data);
 void            bank_start_load(GtkWidget * widget, gpointer data);
 void            quit(GtkWidget * widget, gpointer data);
 void            about_dlg(void);
+void            help_contents(void);
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -86,6 +92,7 @@ static GtkItemFactoryEntry mainGui_menu[] = {
     {"/File/sep1", NULL, NULL, 0, "<Separator>"},
     {"/File/E_xit", NULL, (GtkSignalFunc) quit, 0, NULL},
     {"/_Help", NULL, NULL, 0, "<LastBranch>"},
+    {"/_Help/Contents", NULL, (GtkSignalFunc) help_contents, 0, NULL},
     {"/_Help/About", NULL, (GtkSignalFunc) about_dlg, 0, NULL}
 };
 GtkWidget      *mainWnd;
@@ -138,10 +145,10 @@ about_dlg(void)
     about = gtk_window_new(GTK_WINDOW_DIALOG);
     about_label =
 	gtk_label_new
-	("GNUitar 0.2.0\nCopyright (C) 2000,2001,2003 Max Rudensky <fonin@ziet.zhitomir.ua>\nhttp://ziet.zhitomir.ua/~fonin/\n\n");
+	(COPYRIGHT);
     gtk_window_set_title(GTK_WINDOW(about), "About");
     gtk_container_set_border_width(GTK_CONTAINER(about), 8);
-    gtk_widget_set_usize(about, 518, 358);
+    gtk_widget_set_usize(about, 528, 358);
     gtk_window_set_position(GTK_WINDOW(about), GTK_WIN_POS_CENTER);
     vbox = gtk_vbox_new(FALSE, 8);
     gtk_container_add(GTK_CONTAINER(about), vbox);
@@ -160,11 +167,7 @@ about_dlg(void)
 
     gtk_text_freeze(GTK_TEXT(text));
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
-		    "This program is free software; you can redistribute it and/or modify\n"
-		    "it under the terms of the GNU General Public License as published by\n"
-		    "the Free Software Foundation; either version 2, or (at your option)\n"
-		    "any later version.\n\n", -1);
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,DISCLAIMER, -1);
 
     gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
 		    "This program is distributed in the hope that it will be useful,\n"
@@ -189,6 +192,59 @@ about_dlg(void)
 			      GTK_OBJECT(about));
 
     gtk_widget_show_all(about);
+}
+
+void help_contents(void) {
+#ifndef _WIN32
+    char path[2048];
+    pid_t pid;
+    char browser[2048]="";
+    char *env_browser=NULL;
+    char *browsers[7]={
+	"/usr/bin/netscape",
+	"/usr/bin/netscape-navigator",
+	"/usr/bin/netscape-communicator",
+	"/usr/bin/konqueror",
+	"/usr/bin/mozilla",
+	"/usr/bin/links",
+	"/usr/bin/lynx"
+    };
+    int i;
+    struct stat bullshit;
+
+    /* first get environment variable for a browser */
+    env_browser=getenv("BROWSER");
+    /* if there is no prefernce, trying to guess */
+    if(env_browser==NULL) {
+	for(i=0;i<7;i++) {
+	    if(stat(browsers[i],&bullshit)==0) {
+		strcpy(browser,browsers[i]);
+		break;
+	    }
+	}
+    }
+    else {
+	strcpy(browser,env_browser);
+    }
+
+    if(strcmp(browser,"")!=0) {
+        pid=fork();
+	if(pid==-1) {
+	    perror("fork");
+	    return;
+	}
+        /* child process */
+	if(pid==0) {
+	    getcwd(path,sizeof(path));
+	    strcat(path,"/../docs/index.html");
+	    execl(browser,browser,path,NULL);
+	}
+    }
+#else
+    if(spawnlp(P_NOWAIT,"start","start","..\\docs\\index.html")==-1) {
+	perror("spawn");
+    }
+#endif
 }
 
 gint
