@@ -1,5 +1,8 @@
 /*
  * $Log$
+ * Revision 1.2  2003/04/12 20:03:00  fonin
+ * Minor bugfix in the algorithm, and few variable type changes.
+ *
  * Revision 1.1  2003/04/11 18:33:00  fonin
  * Lookup table generator for distortion2.
  *
@@ -15,7 +18,7 @@
 #include "pump.h"
 
 #define MAX_TUBE MAX_SAMPLE
-int tube[MAX_SAMPLE];
+SAMPLE tube[MAX_SAMPLE];
 
 void init_distort2_lookup(char* c_r1, char* c_r2, char* sr) {
     int sample_rate;
@@ -31,7 +34,7 @@ void init_distort2_lookup(char* c_r1, char* c_r2, char* sr) {
     float           s2;
     int             i=0,
                     j;
-    int             x;
+    float           x;
     float           x2,
                     y,
                     rz,
@@ -56,7 +59,7 @@ void init_distort2_lookup(char* c_r1, char* c_r2, char* sr) {
 	y = 1;
 	rz = ((x2 - y) / r2) + is * (exp((x - y) / mut) -
 				     exp((y - x) / mut)) * 1000;
-	tube[i] = 1;
+	tube[i] = i;
 	for (j = 2; j <= MAX_TUBE; j++) {
 	    y = j;
 	    rz2 =
@@ -74,8 +77,6 @@ void init_distort2_lookup(char* c_r1, char* c_r2, char* sr) {
 	}
 //	tube[i] = tube[i] * 0.4;	// 40 - гpомкость
     }
-    for(i=MAX_TUBE+1;i<MAX_SAMPLE;i++)
-	tube[i]=i;
 
     /* write the table to the file */
     strcpy(filename,"distort2lookup_");
