@@ -1,4 +1,4 @@
-SUBDIRS = src effects
+SUBDIRS = src
 
 EXTRA_DIST = gnuitar.spec
 

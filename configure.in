@@ -5,7 +5,7 @@ PACKAGE=gnuitar
 
 dnl version number
 MAJOR_VERSION=0
-MINOR_VERSION=1
+MINOR_VERSION=2
 MICRO_VERSION=0
 dnl INTERFACE_AGE=1
 dnl BINARY_AGE=1
@@ -39,13 +39,16 @@ dnl Replace `main' with a function in -lpthread:
 AC_CHECK_LIB(pthread, main)
 
 dnl Checks for header files.
+AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h)
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h sys/stat.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
+AC_TYPE_PID_T
 
 dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
+AC_CHECK_FUNCS(getcwd)
 
-AC_OUTPUT(Makefile src/Makefile effects/Makefile)
+AC_OUTPUT(Makefile src/Makefile)
