@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2003/04/16 14:00:07  fonin
+ * - fix with updating the time controls;
+ * - all features work now including fade out time, fade in time,
+ *   hysteresis etc.
+ * - better presets.
+ *
  * Revision 1.1  2003/04/12 20:01:48  fonin
  * New noise gate effect.
  *
@@ -41,20 +47,21 @@ void
 update_noise_threshold(GtkAdjustment * adj, struct noise_params *params)
 {
     params->threshold = (int) adj->value * 10;
-printf("\nthreshold=%i",params->threshold);
+    printf("\nthreshold=%i", params->threshold);
 }
 
 void
 update_noise_hold(GtkAdjustment * adj, struct noise_params *params)
 {
-    params->hold_time = (int) adj->value * nchannels * sample_rate / (1000 * buffer_size);
-printf("\nhold=%i",params->hold_time);
+    params->hold_time = (int) adj->value * nchannels * sample_rate / 1000;
+    printf("\nhold=%i", params->hold_time);
 }
 
 void
 update_noise_release(GtkAdjustment * adj, struct noise_params *params)
 {
-    params->release_time = (int) adj->value * nchannels * sample_rate / (1000 * buffer_size);
+    params->release_time =
+	(int) adj->value * nchannels * sample_rate / 1000;
 }
 
 void
@@ -66,7 +73,8 @@ update_noise_hyst(GtkAdjustment * adj, struct noise_params *params)
 void
 update_noise_attack(GtkAdjustment * adj, struct noise_params *params)
 {
-    params->attack = (int) adj->value * nchannels * sample_rate / (1000 * buffer_size);
+    params->attack = (int) adj->value * nchannels * sample_rate / 1000;
+    printf("\nattack=%i", params->attack);
 }
 
 void
@@ -126,7 +134,7 @@ noise_init(struct effect *p)
     parmTable = gtk_table_new(4, 11, FALSE);
 
     adj_threshold = gtk_adjustment_new(pnoise->threshold / 10,
-				  0.0, 101.0, 1.0, 1.0, 1.0);
+				       0.0, 101.0, 1.0, 1.0, 1.0);
     threshold_label = gtk_label_new("Threshold\n%");
     gtk_table_attach(GTK_TABLE(parmTable), threshold_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -146,7 +154,7 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
     adj_hold =
-	gtk_adjustment_new(pnoise->hold_time * buffer_size * 1000 /
+	gtk_adjustment_new(pnoise->hold_time * 1000 /
 			   (sample_rate * nchannels), 0.0, 201.0, 1.0, 1.0,
 			   1.0);
     hold_label = gtk_label_new("Hold\nms");
@@ -168,9 +176,9 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
     adj_release =
-	gtk_adjustment_new(pnoise->release_time * buffer_size * 1000 /
-			   (sample_rate * nchannels), 0.0, 15001.0, 1.0, 1.0,
-			   1.0);
+	gtk_adjustment_new(pnoise->release_time * 1000 /
+			   (sample_rate * nchannels), 0.0, 15001.0, 1.0,
+			   1.0, 1.0);
     release_label = gtk_label_new("Release\nms");
     gtk_table_attach(GTK_TABLE(parmTable), release_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -190,9 +198,9 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
     adj_attack =
-	gtk_adjustment_new(pnoise->attack * buffer_size * 1000 /
-			   (sample_rate * nchannels), 0.0, 4001.0, 1.0, 1.0,
-			   1.0);
+	gtk_adjustment_new(pnoise->attack * 1000 /
+			   (sample_rate * nchannels), 0.0, 4001.0, 1.0,
+			   1.0, 1.0);
     attack_label = gtk_label_new("Attack\nms");
     gtk_table_attach(GTK_TABLE(parmTable), attack_label, 7, 8, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -213,7 +221,7 @@ noise_init(struct effect *p)
 
 
     adj_hyst =
-	gtk_adjustment_new(pnoise->hysteresis/10, 0.0, 101.0, 1.0, 1.0,
+	gtk_adjustment_new(pnoise->hysteresis / 10, 0.0, 101.0, 1.0, 1.0,
 			   1.0);
     hyst_label = gtk_label_new("Hysteresis\n%");
     gtk_table_attach(GTK_TABLE(parmTable), hyst_label, 9, 10, 0, 1,
@@ -260,11 +268,12 @@ noise_filter(struct effect *p, struct data_block *db)
     int             count,
                    *s;
     struct noise_params *dn;
-    static int      hold_counter;//=0;
-    static int      release_counter;//=0;
-    static float    release_amp=1.0;
-    static int      attack_counter=0;
-    static short    fadeout=0;
+    static int      hold_counter;
+    static int      release_counter;
+    static float    release_amp = 1.0;
+    static float    attack_amp = 1.0;
+    static int      attack_counter = 0;
+    static short    fadeout = 0;
 
     dn = (struct noise_params *) p->params;
 
@@ -272,32 +281,41 @@ noise_filter(struct effect *p, struct data_block *db)
     s = db->data;
 
     while (count) {
-	if((((*s>0 && *s<dn->threshold) || (*s<0 && *s>-dn->threshold)) && 
-						!fadeout)
-	    || (((*s>0 && *s<dn->hysteresis) || (*s<0 && *s>-dn->hysteresis)) && 
-						fadeout)) {
+	if ((((*s > 0 && *s < dn->threshold)
+	      || (*s < 0 && *s > -dn->threshold)) && !fadeout)
+	    ||
+	    (((*s > 0 && *s < dn->hysteresis)
+	      || (*s < 0 && *s > -dn->hysteresis)) && fadeout)) {
 	    hold_counter++;
-	    if(hold_counter>=dn->hold_time) {
-		if((*s>0 && *s<dn->hysteresis) || (*s<0 && *s>-dn->hysteresis)) {
-		    fadeout=0;
-//printf("\nfaded out.");
+	    if (hold_counter >= dn->hold_time) {
+		if ((*s > 0 && *s < dn->hysteresis)
+		    || (*s < 0 && *s > -dn->hysteresis)) {
+		    attack_counter = 0;
+		    attack_amp = 1;
+		    fadeout = 0;
 		}
-	        if(release_counter<dn->release_time)
+		if (dn->release_time && release_counter < dn->release_time) {
 		    release_counter++;
-		release_amp=((float)dn->release_time-(float)release_counter)/(float)dn->release_time;
-//if(release_amp)
-//    printf("\namp=%.2f",release_amp);
+		    release_amp =
+			((float) dn->release_time -
+			 (float) release_counter) /
+			(float) dn->release_time;
+		} else if (!dn->release_time) {
+		    release_amp = 0;
+		}
 	    }
+	} else {
+	    hold_counter = 0;
+	    release_counter = 0;
+	    release_amp = 1.0;
+	    fadeout = 1;
+	    if (dn->attack && attack_counter < dn->attack) {
+		attack_counter++;
+		attack_amp = (float) attack_counter / (float) dn->attack;
+	    } else
+		attack_amp = 1;
 	}
-	else {
-//printf("\nsignal high !");
-	    hold_counter=0;
-	    release_counter=0;
-	    release_amp=1.0;
-	    fadeout=1;
-	}
-	*s*=release_amp;
-
+	*s *= attack_amp * release_amp;
 	s++;
 	count--;
     }
@@ -367,8 +385,8 @@ noise_create(struct effect *p)
     pnoise = (struct noise_params *) p->params;
 
     pnoise->threshold = 500;
-    pnoise->hold_time = 20 * nchannels * sample_rate / (1000 * buffer_size);
-    pnoise->release_time = 2000 * nchannels * sample_rate / (1000 * buffer_size);
-    pnoise->attack = 500 * nchannels * sample_rate / (1000 * buffer_size);
-    pnoise->hysteresis = 379;
+    pnoise->hold_time = 2 * nchannels * sample_rate / 1000;
+    pnoise->release_time = 500 * nchannels * sample_rate / 1000;
+    pnoise->attack = 0 * nchannels * sample_rate / 1000;
+    pnoise->hysteresis = 410;
 }
