@@ -86,7 +86,7 @@ PROGRAMS =  $(bin_PROGRAMS)
 DEFS = @DEFS@ -I. -I$(srcdir) 
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@
+LIBS = @LIBS@ -lpthread
 gnuitar_OBJECTS =  main.o pump.o chorus.o delay.o echo.o tracker.o \
 tremolo.o vibrato.o autowah.o phasor.o rcfilter.o gui.o distort.o \
 sustain.o reverb.o backbuf.o
