@@ -64,14 +64,15 @@ TODO:
   + delay
   + echo
 
-0.2.2
-- convert the names of presets to UTF8 strings, before append it
-  to the bank list, as recommended by GTK-Win32 manual.
-- bug with GTK critical error on finish
-
 0.3.0
-- DirectSound API Win32
-- WDM Kernel Streaming Win32
++ DirectSound API Win32
+  + fix buffer over/underruns (48000)
+  + fix latency autowah
+  + DirectSound control in sampling params dialog
+  + optimize loops in the audio thread
+
+0.3.1
+- WDM Kernel Streaming Win32, if such API exists (I'm in doubt)
 
 0.4.0
 - plugins
@@ -87,10 +88,7 @@ TODO:
 0.7.0
 - play .wav in the background
 
-For future releases (misc):
-+ tracker
-  - gzip/compress track file on the fly, depending on the OS
-  - improve quality (now it writes sound with cutoff frequencies)
-- rewrite pump module to gain maximum performance
-- improve portability:
-  - fix pre-assumed little-endian architecture; perform explicit check
+Ongoing bugs (misc):
+- convert the names of presets to UTF8 strings, before append it
+  to the bank list, as recommended by GTK-Win32 manual.
+- bug with GTK critical error on finish
