@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Graphics user interface
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2001/06/02 14:27:14  fonin
+ * Added about dialog.
+ *
  * Revision 1.4  2001/06/02 14:05:42  fonin
  * Effects pushed to the END of stack.
  * Added GNU disclaimer.
@@ -45,6 +48,7 @@
 void            bank_start_save(GtkWidget * widget, gpointer data);
 void            bank_start_load(GtkWidget * widget, gpointer data);
 void            quit(GtkWidget * widget, gpointer data);
+void            about_dlg(void);
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -56,7 +60,7 @@ static GtkItemFactoryEntry mainGui_menu[] = {
     {"/File/sep1", NULL, NULL, 0, "<Separator>"},
     {"/File/E_xit", NULL, (GtkSignalFunc) quit, 0, NULL},
     {"/_Help", NULL, NULL, 0, "<LastBranch>"},
-    {"/_Help/About", NULL, NULL, 0, NULL}
+    {"/_Help/About", NULL, (GtkSignalFunc) about_dlg, 0, NULL}
 };
 GtkWidget      *mainWnd;
 GtkWidget      *tbl;
@@ -110,8 +114,73 @@ rnd_window_pos(GtkWindow * wnd)
     gtk_widget_set_uposition(GTK_WIDGET(wnd), x, y);
 }
 
-gint
-delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
+void
+about_dlg(void)
+{
+    GtkWidget      *about;
+    GtkWidget      *about_label;
+    GtkWidget      *vbox;
+    GtkWidget      *scrolledwin;
+    GtkWidget      *text;
+    GtkWidget      *ok_button;
+
+    about = gtk_window_new(GTK_WINDOW_DIALOG);
+    about_label =
+	gtk_label_new
+	("GNUitar 0.1.0 beta 4\nCopyright (C) 2001 Max Rudensky <fonin@ziet.zhitomir.ua>\nhttp://ziet.zhitomir.ua/~fonin/code\n\n");
+    gtk_window_set_title(GTK_WINDOW(about), "About");
+    gtk_container_set_border_width(GTK_CONTAINER(about), 8);
+    gtk_widget_set_usize(about, 518, 358);
+    gtk_window_set_position(GTK_WINDOW(about), GTK_WIN_POS_CENTER);
+    vbox = gtk_vbox_new(FALSE, 8);
+    gtk_container_add(GTK_CONTAINER(about), vbox);
+    gtk_box_pack_start(GTK_BOX(vbox), about_label, FALSE, FALSE, 0);
+
+    scrolledwin = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwin),
+				   GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
+    gtk_box_pack_start(GTK_BOX(vbox), scrolledwin, TRUE, TRUE, 0);
+
+    text = gtk_text_new(gtk_scrolled_window_get_hadjustment
+			(GTK_SCROLLED_WINDOW(scrolledwin)),
+			gtk_scrolled_window_get_vadjustment
+			(GTK_SCROLLED_WINDOW(scrolledwin)));
+    gtk_container_add(GTK_CONTAINER(scrolledwin), text);
+
+    gtk_text_freeze(GTK_TEXT(text));
+
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
+		    "This program is free software; you can redistribute it and/or modify\n"
+		    "it under the terms of the GNU General Public License as published by\n"
+		    "the Free Software Foundation; either version 2, or (at your option)\n"
+		    "any later version.\n\n", -1);
+
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
+		    "This program is distributed in the hope that it will be useful,\n"
+		    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+		    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+		    "See the GNU General Public License for more details.\n\n",
+		    -1);
+
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
+		    "You should have received a copy of the GNU General Public License\n"
+		    "along with this program; if not, write to the Free Software\n"
+		    "Foundation, Inc., 59 Temple Place - Suite 330, Boston,\n"
+		    "MA 02111-1307, USA.", -1);
+
+    gtk_text_thaw(GTK_TEXT(text));
+
+    ok_button = gtk_button_new_with_label("OK");
+    gtk_box_pack_end(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
+    gtk_widget_grab_default(ok_button);
+    gtk_signal_connect_object(GTK_OBJECT(ok_button), "clicked",
+			      GTK_SIGNAL_FUNC(gtk_widget_destroy),
+			      GTK_OBJECT(about));
+
+    gtk_widget_show_all(about);
+}
+
+gint delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 {
     return (TRUE);
 }
@@ -218,7 +287,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	&& effects_row <= EFFECT_AMOUNT) {
 	audio_lock = 1;
 	if (curr_row >= 0 && curr_row < n) {
-	    idx = curr_row+1;
+	    idx = curr_row + 1;
 	    for (i = n; i > idx; i--) {
 		effects[i] = effects[i - 1];
 	    }
