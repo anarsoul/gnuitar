@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2003/04/12 20:02:10  fonin
+ * New noise gate effect.
+ *
  * Revision 1.12  2003/04/11 18:34:36  fonin
  * Added distort2 effect.
  *
@@ -85,6 +88,7 @@
 #include "sustain.h"
 #include "reverb.h"
 #include "tracker.h"
+#include "noise.h"
 
 struct effect  *effects[MAX_EFFECTS];
 int             n = 0;
@@ -149,6 +153,7 @@ struct effect_creator effect_list[] = {
     {"tremolo", tremolo_create},
     {"sustain", sustain_create},
     {"distort2", distort2_create},
+    {"noise gate", noise_create},
     {NULL, NULL}
 };
 

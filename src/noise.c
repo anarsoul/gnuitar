@@ -1,0 +1,374 @@
+/*
+ * GNUitar
+ * Noise effect
+ * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * $Id$
+ *
+ * $Log$
+ * Revision 1.1  2003/04/12 20:01:48  fonin
+ * New noise gate effect.
+ *
+ */
+
+#include "noise.h"
+#include <stdlib.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#else
+#    include <io.h>
+#endif
+#include "gui.h"
+
+
+void            noise_filter(struct effect *p, struct data_block *db);
+
+void
+update_noise_threshold(GtkAdjustment * adj, struct noise_params *params)
+{
+    params->threshold = (int) adj->value * 10;
+printf("\nthreshold=%i",params->threshold);
+}
+
+void
+update_noise_hold(GtkAdjustment * adj, struct noise_params *params)
+{
+    params->hold_time = (int) adj->value * nchannels * sample_rate / (1000 * buffer_size);
+printf("\nhold=%i",params->hold_time);
+}
+
+void
+update_noise_release(GtkAdjustment * adj, struct noise_params *params)
+{
+    params->release_time = (int) adj->value * nchannels * sample_rate / (1000 * buffer_size);
+}
+
+void
+update_noise_hyst(GtkAdjustment * adj, struct noise_params *params)
+{
+    params->hysteresis = (int) adj->value * 10;
+}
+
+void
+update_noise_attack(GtkAdjustment * adj, struct noise_params *params)
+{
+    params->attack = (int) adj->value * nchannels * sample_rate / (1000 * buffer_size);
+}
+
+void
+toggle_noise(void *bullshit, struct effect *p)
+{
+    if (p->toggle == 1) {
+	p->proc_filter = passthru;
+	p->toggle = 0;
+    } else {
+	p->proc_filter = noise_filter;
+	p->toggle = 1;
+    }
+}
+
+void
+noise_init(struct effect *p)
+{
+    struct noise_params *pnoise;
+
+    GtkWidget      *threshold;
+    GtkWidget      *threshold_label;
+    GtkObject      *adj_threshold;
+
+    GtkWidget      *release;
+    GtkWidget      *release_label;
+    GtkObject      *adj_release;
+
+    GtkWidget      *hold;
+    GtkWidget      *hold_label;
+    GtkObject      *adj_hold;
+
+    GtkWidget      *attack;
+    GtkWidget      *attack_label;
+    GtkObject      *adj_attack;
+
+    GtkWidget      *hyst;
+    GtkWidget      *hyst_label;
+    GtkObject      *adj_hyst;
+
+    GtkWidget      *button;
+
+    GtkWidget      *parmTable;
+
+
+    pnoise = (struct noise_params *) p->params;
+
+    /*
+     * GUI Init
+     */
+    p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
+
+    gtk_window_set_position(GTK_WINDOW(p->control), GTK_WIN_POS_CENTER);
+
+    parmTable = gtk_table_new(4, 11, FALSE);
+
+    adj_threshold = gtk_adjustment_new(pnoise->threshold / 10,
+				  0.0, 101.0, 1.0, 1.0, 1.0);
+    threshold_label = gtk_label_new("Threshold\n%");
+    gtk_table_attach(GTK_TABLE(parmTable), threshold_label, 0, 1, 0, 1,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    gtk_signal_connect(GTK_OBJECT(adj_threshold), "value_changed",
+		       GTK_SIGNAL_FUNC(update_noise_threshold), pnoise);
+
+    threshold = gtk_vscale_new(GTK_ADJUSTMENT(adj_threshold));
+
+    gtk_table_attach(GTK_TABLE(parmTable), threshold, 0, 1, 1, 2,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    adj_hold =
+	gtk_adjustment_new(pnoise->hold_time * buffer_size * 1000 /
+			   (sample_rate * nchannels), 0.0, 201.0, 1.0, 1.0,
+			   1.0);
+    hold_label = gtk_label_new("Hold\nms");
+    gtk_table_attach(GTK_TABLE(parmTable), hold_label, 3, 4, 0, 1,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    gtk_signal_connect(GTK_OBJECT(adj_hold), "value_changed",
+		       GTK_SIGNAL_FUNC(update_noise_hold), pnoise);
+
+    hold = gtk_vscale_new(GTK_ADJUSTMENT(adj_hold));
+
+    gtk_table_attach(GTK_TABLE(parmTable), hold, 3, 4, 1, 2,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    adj_release =
+	gtk_adjustment_new(pnoise->release_time * buffer_size * 1000 /
+			   (sample_rate * nchannels), 0.0, 15001.0, 1.0, 1.0,
+			   1.0);
+    release_label = gtk_label_new("Release\nms");
+    gtk_table_attach(GTK_TABLE(parmTable), release_label, 5, 6, 0, 1,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    gtk_signal_connect(GTK_OBJECT(adj_release), "value_changed",
+		       GTK_SIGNAL_FUNC(update_noise_release), pnoise);
+
+    release = gtk_vscale_new(GTK_ADJUSTMENT(adj_release));
+
+    gtk_table_attach(GTK_TABLE(parmTable), release, 5, 6, 1, 2,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    adj_attack =
+	gtk_adjustment_new(pnoise->attack * buffer_size * 1000 /
+			   (sample_rate * nchannels), 0.0, 4001.0, 1.0, 1.0,
+			   1.0);
+    attack_label = gtk_label_new("Attack\nms");
+    gtk_table_attach(GTK_TABLE(parmTable), attack_label, 7, 8, 0, 1,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    gtk_signal_connect(GTK_OBJECT(adj_attack), "value_changed",
+		       GTK_SIGNAL_FUNC(update_noise_attack), pnoise);
+
+    attack = gtk_vscale_new(GTK_ADJUSTMENT(adj_attack));
+
+    gtk_table_attach(GTK_TABLE(parmTable), attack, 7, 8, 1, 2,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+
+    adj_hyst =
+	gtk_adjustment_new(pnoise->hysteresis/10, 0.0, 101.0, 1.0, 1.0,
+			   1.0);
+    hyst_label = gtk_label_new("Hysteresis\n%");
+    gtk_table_attach(GTK_TABLE(parmTable), hyst_label, 9, 10, 0, 1,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    gtk_signal_connect(GTK_OBJECT(adj_hyst), "value_changed",
+		       GTK_SIGNAL_FUNC(update_noise_hyst), pnoise);
+
+    hyst = gtk_vscale_new(GTK_ADJUSTMENT(adj_hyst));
+
+    gtk_table_attach(GTK_TABLE(parmTable), hyst, 9, 10, 1, 2,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    button = gtk_check_button_new_with_label("On");
+    gtk_signal_connect(GTK_OBJECT(button), "toggled",
+		       GTK_SIGNAL_FUNC(toggle_noise), p);
+
+    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 3, 4,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    if (p->toggle == 1) {
+	p->toggle = 0;
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
+    }
+
+    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("noise"));
+    gtk_container_add(GTK_CONTAINER(p->control), parmTable);
+
+    gtk_widget_show_all(p->control);
+}
+
+void
+noise_filter(struct effect *p, struct data_block *db)
+{
+
+    int             count,
+                   *s;
+    struct noise_params *dn;
+    static int      hold_counter;//=0;
+    static int      release_counter;//=0;
+    static float    release_amp=1.0;
+    static int      attack_counter=0;
+    static short    fadeout=0;
+
+    dn = (struct noise_params *) p->params;
+
+    count = db->len;
+    s = db->data;
+
+    while (count) {
+	if((((*s>0 && *s<dn->threshold) || (*s<0 && *s>-dn->threshold)) && 
+						!fadeout)
+	    || (((*s>0 && *s<dn->hysteresis) || (*s<0 && *s>-dn->hysteresis)) && 
+						fadeout)) {
+	    hold_counter++;
+	    if(hold_counter>=dn->hold_time) {
+		if((*s>0 && *s<dn->hysteresis) || (*s<0 && *s>-dn->hysteresis)) {
+		    fadeout=0;
+//printf("\nfaded out.");
+		}
+	        if(release_counter<dn->release_time)
+		    release_counter++;
+		release_amp=((float)dn->release_time-(float)release_counter)/(float)dn->release_time;
+//if(release_amp)
+//    printf("\namp=%.2f",release_amp);
+	    }
+	}
+	else {
+//printf("\nsignal high !");
+	    hold_counter=0;
+	    release_counter=0;
+	    release_amp=1.0;
+	    fadeout=1;
+	}
+	*s*=release_amp;
+
+	s++;
+	count--;
+    }
+}
+
+void
+noise_save(struct effect *p, int fd)
+{
+    struct noise_params *sp;
+
+    sp = (struct noise_params *) p->params;
+
+    write(fd, &sp->threshold, sizeof(sp->threshold));
+    write(fd, &sp->hold_time, sizeof(sp->hold_time));
+    write(fd, &sp->release_time, sizeof(sp->release_time));
+    write(fd, &sp->attack, sizeof(sp->attack));
+    write(fd, &sp->hysteresis, sizeof(sp->hysteresis));
+}
+
+void
+noise_load(struct effect *p, int fd)
+{
+    struct noise_params *sp;
+
+    sp = (struct noise_params *) p->params;
+
+    read(fd, &sp->threshold, sizeof(sp->threshold));
+    read(fd, &sp->hold_time, sizeof(sp->hold_time));
+    read(fd, &sp->release_time, sizeof(sp->release_time));
+    read(fd, &sp->attack, sizeof(sp->attack));
+    read(fd, &sp->hysteresis, sizeof(sp->hysteresis));
+    if (p->toggle == 0) {
+	p->proc_filter = passthru;
+    } else {
+	p->proc_filter = noise_filter;
+    }
+}
+
+void
+noise_done(struct effect *p)
+{
+    struct noise_params *dp;
+
+    dp = (struct noise_params *) p->params;
+
+    free(p->params);
+    gtk_widget_destroy(p->control);
+    free(p);
+    p = NULL;
+}
+
+void
+noise_create(struct effect *p)
+{
+    struct noise_params *pnoise;
+
+    p->params =
+	(struct noise_params *) malloc(sizeof(struct noise_params));
+    p->proc_init = noise_init;
+    p->proc_filter = passthru;
+    p->proc_load = noise_load;
+    p->proc_save = noise_save;
+    p->toggle = 0;
+    p->proc_done = noise_done;
+    p->id = NOISE;
+
+    pnoise = (struct noise_params *) p->params;
+
+    pnoise->threshold = 500;
+    pnoise->hold_time = 20 * nchannels * sample_rate / (1000 * buffer_size);
+    pnoise->release_time = 2000 * nchannels * sample_rate / (1000 * buffer_size);
+    pnoise->attack = 500 * nchannels * sample_rate / (1000 * buffer_size);
+    pnoise->hysteresis = 379;
+}
