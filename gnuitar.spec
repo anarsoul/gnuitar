@@ -1,4 +1,4 @@
-%define ver 0.3.0
+%define ver 0.3.1
 %define rel 1
 %define prefix /usr
 
@@ -16,17 +16,28 @@ BuildRoot: /var/tmp/%{name}-root
 
 %description
 This is a guitar effects software that allows you to 
-use your Linux box as guitar processor.
+use your computer as powerful guitar processor.
 Includes effects:
 	o wah-wah
 	o sustain
-	o distortion
+	o two flavours of distortion
 	o reverberator, echo, delay
 	o tremolo
 	o vibrato
 	o chorus/flanger
 	o phasor
-See 'README' for more information.
+	o noise gate
+
+%package distort2
+Summary: a GTK+ based guitar processor. Includes such effects as reverberator, sustain, distortion, phasor, wah-wah.
+Release: %{rel}
+Group: Applications/Multimedia
+Requires: gnuitar >= 0.3.1
+Provides: gnuitar-distort2
+Obsoletes: gnuitar-distort2
+
+%description distort2
+Lookup tables for distort2 effect of GNUitar.
 
 %prep
 rm -rf $RPM_BUILD_ROOT
@@ -45,9 +56,15 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files
 %defattr(-,root,root)
-%doc COPYING ChangeLog TODO README AUTHORS NEWS docs
+#%doc COPYING ChangeLog TODO README AUTHORS NEWS FAQ INSTALL docs
 %attr(4755,root,root) %{prefix}/bin/gnuitar
-%prefix/*
+%prefix/share/doc/gnuitar/*
+#%prefix/share/gnuitar/win32/*
+%prefix/share/gnuitar/distort2/distort2lookup_44100_1_510
+
+%files distort2
+%defattr(-,root,root)
+%prefix/share/gnuitar/distort2/*
 
 %changelog
 * Fri Mar 28 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
