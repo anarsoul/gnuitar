@@ -1,2 +1,15 @@
 2001-01-11	Max Rudensky	<fonin@ziet.zhitomir.ua>
 	* First release
+
+2001-03-11	Max Rudensky	<fonin@ziet.zhitomir.ua>
+	* Fixed closing main window. There was a bug - after close 
+	application still was in memory.
+
+2001-03-25	Max Rudensky	<fonin@ziet.zhitomir.ua>
+	* Removed "Clip" function from distortion. I found it ambiguous and 
+	  unelegant.
+	* Make effect control windows ignore "delete_event", to prevent 
+	  accidentally close.
+	* Bank clist widget width auto-resizing
+	* Few entries in TODO
+	* Added section "BUGS" to README
