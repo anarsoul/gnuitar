@@ -2,6 +2,7 @@ For 0.1.0 Release
 - extensively testing to find security issues, memory leaks etc.
 - about box and logo
 - documentation
+- push effects on the _top_ of stack
 
 For future releases:
 + tracker
