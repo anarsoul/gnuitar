@@ -1,7 +1,7 @@
 # Microsoft Developer Studio Generated NMAKE File, Based on gnuitar.dsp
 !IF "$(CFG)" == ""
-CFG=gnuitar - Win32 Debug
-!MESSAGE No configuration specified. Defaulting to gnuitar - Win32 Debug.
+CFG=gnuitar - Win32 Release
+!MESSAGE No configuration specified. Defaulting to gnuitar - Win32 Release.
 !ENDIF 
 
 !IF "$(CFG)" != "gnuitar - Win32 Release" && "$(CFG)" != "gnuitar - Win32 Debug" && "$(CFG)" != "gnuitar - Win32 Demo" && "$(CFG)" != "gnuitar - Win32 Release 586"
