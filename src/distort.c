@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:21:41  fonin
- * Initial revision
+ * Revision 1.2  2001/03/25 12:10:14  fonin
+ * Removed clip functionality. Effect control window ignores delete event.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:21:41  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -13,7 +16,6 @@
 #include "gui.h"
 
 void            distort_filter(struct effect *p, struct data_block *db);
-
 
 void
 update_distort_level(GtkAdjustment * adj, struct distort_params *params)
@@ -37,16 +39,6 @@ void
 update_distort_lowpass(GtkAdjustment * adj, struct distort_params *params)
 {
     params->lowpass = (int) adj->value;
-}
-
-void
-toggle_clip(void *bullshit, struct distort_params *dp)
-{
-    if (dp->clip == 1) {
-	dp->clip = 0;
-    } else {
-	dp->clip = 1;
-    }
 }
 
 
@@ -83,9 +75,7 @@ distort_init(struct effect *p)
     GtkWidget      *lowpass_label;
     GtkObject      *adj_lowpass;
 
-
     GtkWidget      *button;
-    GtkWidget      *clip;
 
     GtkWidget      *parmTable;
 
@@ -98,6 +88,9 @@ distort_init(struct effect *p)
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     rnd_window_pos(GTK_WINDOW(p->control));
+
+    gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
+		       GTK_SIGNAL_FUNC(delete_event), NULL);
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
@@ -187,7 +180,6 @@ distort_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_distort), p);
@@ -202,20 +194,6 @@ distort_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    clip = gtk_check_button_new_with_label("Clip");
-    gtk_signal_connect(GTK_OBJECT(clip), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_clip), pdistort);
-
-    gtk_table_attach(GTK_TABLE(parmTable), clip, 5, 6, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-    if (pdistort->clip == 1) {
-	pdistort->clip = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(clip), TRUE);
-    }
-
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Distortion"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
@@ -228,9 +206,10 @@ distort_filter(struct effect *p, struct data_block *db)
     int             count,
                    *s;
     struct distort_params *dp;
+    struct filter_data f;
     dp = (struct distort_params *) p->params;
     /*
-     * sat clips derivative by limiting difference between samples. use Extra 
+     * sat clips derivative by limiting difference between samples. Use lastval 
      * member to store last sample for seamlessness between chunks. 
      */
     count = db->len;
@@ -254,19 +233,13 @@ distort_filter(struct effect *p, struct data_block *db)
 
 	dp->lastval = *s;
 
-	/*
-	 * apply Clip 
-	 */
-	if (dp->clip)
-	    *s = (*s > 32767) ? 32767 : (*s < -32767) ? -32767 : *s;
-	/*
-	 * apply level 
-	 */
 	*s *= dp->level;
 	*s /= 256;
+
 	s++;
 	count--;
     }
+
     LC_filter(db->data, db->len, LOWPASS, dp->lowpass, &(dp->noise));
 }
 
@@ -283,13 +256,17 @@ void
 distort_save(struct effect *p, int fd)
 {
     struct distort_params *ap;
+    short           tmp = 0;
 
     ap = (struct distort_params *) p->params;
 
     write(fd, &ap->sat, sizeof(int));
     write(fd, &ap->level, sizeof(int));
     write(fd, &ap->drive, sizeof(int));
-    write(fd, &ap->clip, sizeof(short));
+    /*
+     * Fake write - for compatibility with old versions 
+     */
+    write(fd, &tmp, sizeof(short));
     write(fd, &ap->lowpass, sizeof(int));
 }
 
@@ -297,13 +274,14 @@ void
 distort_load(struct effect *p, int fd)
 {
     struct distort_params *ap;
+    short           tmp;
 
     ap = (struct distort_params *) p->params;
 
     read(fd, &ap->sat, sizeof(int));
     read(fd, &ap->level, sizeof(int));
     read(fd, &ap->drive, sizeof(int));
-    read(fd, &ap->clip, sizeof(short));
+    read(fd, &tmp, sizeof(short));
     read(fd, &ap->lowpass, sizeof(int));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -333,12 +311,12 @@ distort_create(struct effect *p)
     ap->sat = 20000;
     ap->level = 100;
     ap->drive = 555;
-    ap->clip = 0;
     ap->lowpass = 350;
+    ap->noisegate = 3000;
 
     RC_setup(10, 1.5, &(ap->fd));
-    RC_set_freq(350, &(ap->fd));
+    RC_set_freq(ap->lowpass, &(ap->fd));
 
     RC_setup(10, 1, &(ap->noise));
-    RC_set_freq(3000, &(ap->noise));
+    RC_set_freq(ap->noisegate, &(ap->noise));
 }
