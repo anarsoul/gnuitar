@@ -90,25 +90,25 @@ void            reverb_filter(struct effect *p, struct data_block *db);
 void
 update_reverb_wet(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->wet = (int) adj->value;
+    params->wet = (int) adj->value * 2.56;
 }
 
 void
 update_reverb_dry(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->dry = (int) adj->value;
+    params->dry = (int) adj->value * 2.56;
 }
 
 void
 update_reverb_delay(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->delay = (int) adj->value;
+    params->delay = (int) adj->value*2.56;
 }
 
 void
 update_reverb_regen(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->regen = (int) adj->value;
+    params->regen = (int) adj->value*2.56;
 }
 
 void
@@ -183,8 +183,8 @@ reverb_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_wet = gtk_adjustment_new(preverb->wet, 1.0, 255.0, 1.0, 1.0, 1.0);
-    wet_label = gtk_label_new("wet");
+    adj_wet = gtk_adjustment_new(preverb->wet/2.56, 1.0, 101.0, 1.0, 1.0, 1.0);
+    wet_label = gtk_label_new("wet\n%");
     gtk_table_attach(GTK_TABLE(parmTable), wet_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -204,8 +204,8 @@ reverb_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_dry = gtk_adjustment_new(preverb->dry, 1.0, 255.0, 1.0, 1.0, 1.0);
-    dry_label = gtk_label_new("dry");
+    adj_dry = gtk_adjustment_new(preverb->dry/2.56, 1.0, 101.0, 1.0, 1.0, 1.0);
+    dry_label = gtk_label_new("dry\n%");
     gtk_table_attach(GTK_TABLE(parmTable), dry_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -225,9 +225,9 @@ reverb_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_regen = gtk_adjustment_new(preverb->regen,
-				   0.0, 256, 1.0, 1.0, 1.0);
-    regen_label = gtk_label_new("regen");
+    adj_regen = gtk_adjustment_new(preverb->regen/2.56,
+				   0.0, 101, 1.0, 1.0, 1.0);
+    regen_label = gtk_label_new("regen\n%");
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 7, 8, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
