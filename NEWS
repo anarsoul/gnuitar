@@ -10,6 +10,7 @@
 
 25 March 2002, Version 0.1.0-beta 3
 - removed clip function from distortion - it sounds pretty bad;
+- Bank clist widget width auto-resizing;
 - effect control pop-ups cannot be closed from window manager;
 - updated doc.
 
