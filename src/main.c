@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2004/10/21 11:19:18  dexterus
+ * Bug in the win 32 section related to sample type (SAMPLE insted of DSP_SAMPLE ) fixed -- win32 working
+ *
+ *
  * Revision 1.18  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -134,7 +138,7 @@ DWORD           thread_id;
 
 LPDIRECTSOUND   snd = NULL;	/* DirectSound object */
 LPDIRECTSOUNDBUFFER dbuffer = NULL;	/* DS buffer */
-short           dsound = 1;	/* flag - do we use DirectSound for output ? */
+short           dsound = 0;	/* flag - do we use DirectSound for output ? */
 unsigned short	overrun_threshold=4;	/* after this number of fragments 
 					 * overran buffer will be recovered  */
 HWAVEIN         in;		/* input sound handle */
@@ -183,7 +187,7 @@ audio_thread_start(void *V)
 	    close(fd);
 	    exit(ERR_WAVEINRECORD);
 	}
-	count /= bits / 8;
+	count /= bits >> 8;
 
 	for (i = 0; i < count; i++)
 	    procbuf[i] = rdbuf[i];
@@ -249,11 +253,14 @@ audio_thread_start(void *V)
 
 		count = ((WAVEHDR *) msg.lParam)->dwBytesRecorded;
 		if (count && !audio_lock) {
-		    count /= bits / 8;
+		    count /= bits >> 3;
+			//WAVEHDR *twh;
+			//twh = (WAVEHDR*) msg.lParam;
 		    for (i = 0; i < count; i++) {
 			procbuf[i] =
-			    ((DSP_SAMPLE *) (((WAVEHDR *) msg.lParam)->
+			   ((SAMPLE *) (((WAVEHDR *) msg.lParam)->
 					 lpData))[i];
+				//procbuf[i] = ((SAMPLE*) twh->lpData)[i];
 		    }
 
 
@@ -710,7 +717,7 @@ init_sound(void)
     format.nChannels = nchannels;
     format.nSamplesPerSec = sample_rate;
     format.wBitsPerSample = bits;
-    format.nBlockAlign = format.nChannels * (format.wBitsPerSample / 8);
+    format.nBlockAlign = format.nChannels * (format.wBitsPerSample >> 3);
     format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
     format.cbSize = 0;
 
