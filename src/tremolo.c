@@ -20,7 +20,7 @@
  * $Id$
  *
  * $Log$
- * Revision 1.10  2004/08/10 15:07:31  fonin
+ * Revision 1.11  2004/08/10 15:21:16  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
  * Revision 1.9  2004/07/07 19:18:42  fonin
