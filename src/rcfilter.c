@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2003/03/09 21:02:18  fonin
+ * Internal redesign for new "change sampling params" feature.
+ *
  * Revision 1.4  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -37,6 +40,7 @@
 #include "rcfilter.h"
 #include "pump.h"
 #include <math.h>
+#include <string.h>
 #ifdef _WIN32
 #    define M_PI 3.14159265358979323846E0
 #endif
@@ -52,31 +56,36 @@ LC_filter(int *sound, int count, int filter_no, double freq,
                     dt_div_C;
     double          du,
                     d2i;
-    int             t;
+    int             t,
+                    currchannel = 0;
 
+    freq *= nchannels;
     L = 50e-3;			/* 
 				 * like original crybaby wahwah, hehehe 
 				 */
     C = 1.0 / (4.0 * pow(M_PI * freq, 2.0) * L);
     R = 300.0;
 
-    dt_div_C = 1.0 / (C * SAMPLE_RATE);
-    dt_div_L = 1.0 / (L * SAMPLE_RATE);
+    dt_div_C = 1.0 / (C * sample_rate * nchannels);
+    dt_div_L = 1.0 / (L * sample_rate * nchannels);
 
     for (t = 0; t < count; t++) {
-	du = (double) *sound - pp->last_sample[filter_no][0];
-	pp->last_sample[filter_no][0] = (double) *sound;
+	du = (double) *sound - pp->last_sample[filter_no][0][currchannel];
+	pp->last_sample[filter_no][0][currchannel] = (double) *sound;
 
 	d2i =
-	    dt_div_L * (du - pp->i[filter_no][0] * dt_div_C -
-			R * pp->di[filter_no][0]);
-	pp->di[filter_no][0] += d2i;
-	pp->i[filter_no][0] += pp->di[filter_no][0];
+	    dt_div_L * (du - pp->i[filter_no][0][currchannel] * dt_div_C -
+			R * pp->di[filter_no][0][currchannel]);
+	pp->di[filter_no][0][currchannel] += d2i;
+	pp->i[filter_no][0][currchannel] +=
+	    pp->di[filter_no][0][currchannel];
 
-	/*
-	 * *sound=(int)(pp->i[filter_no][0]*pp->amplify); 
-	 */
-	*sound = (int) (pp->i[filter_no][0] * 500.0);
+/*
+	*sound=(int)(pp->i[filter_no][0][currchannel][currchannel]*pp->amplify); 
+*/
+	*sound = (int) (pp->i[filter_no][0][currchannel] * 500.0);
+	if (nchannels > 1)
+	    currchannel = !currchannel;
 
 	sound++;
     }
@@ -91,24 +100,21 @@ other(double f, double x)
 void
 RC_setup(int max, double amplify, struct filter_data *pp)
 {
-    int             c,
-                    d;
-
     pp->max = max;
     pp->amplify = amplify;
 
-    for (c = 0; c < max; c++)
-	for (d = 0; d < 2; d++)
-	    pp->i[c][d] = pp->di[c][d] = pp->last_sample[c][d] = 0;
+    memset(pp->i, 0, sizeof(pp->i));
+    memset(pp->di, 0, sizeof(pp->di));
+    memset(pp->last_sample, 0, sizeof(pp->last_sample));
 }
 
 void
 RC_set_freq(double f, struct filter_data *pp)
 {
     pp->R = 1000.0;
-    pp->C = other(f, pp->R);
+    pp->C = other(f * nchannels, pp->R);
     pp->invR = 1.0 / pp->R;
-    pp->dt_div_C = (1.0 / SAMPLE_RATE) / pp->C;
+    pp->dt_div_C = (1.0 / (sample_rate * nchannels)) / pp->C;
 }
 
 void
@@ -117,21 +123,29 @@ RC_filter(int *sound, int count, int mode, int filter_no,
 {
     double          du,
                     di;
-    int             t;
+    int             t,
+                    currchannel = 0;
 
     for (t = 0; t < count; t++) {
-	du = (double) *sound - pp->last_sample[filter_no][mode];
-	pp->last_sample[filter_no][mode] = (double) *sound;
+	du = (double) *sound -
+	    pp->last_sample[filter_no][mode][currchannel];
+	pp->last_sample[filter_no][mode][currchannel] = (double) *sound;
 
-	di = pp->invR * (du - pp->i[filter_no][mode] * pp->dt_div_C);
-	pp->i[filter_no][mode] += di;
+	di = pp->invR * (du -
+			 pp->i[filter_no][mode][currchannel] *
+			 pp->dt_div_C);
+	pp->i[filter_no][mode][currchannel] += di;
 	if (mode == HIGHPASS)
 	    *sound =
-		(int) ((pp->i[filter_no][mode] * pp->R) * pp->amplify);
+		(int) ((pp->i[filter_no][mode][currchannel] * pp->R) *
+		       pp->amplify);
 	else
 	    *sound =
-		(int) (((double) *sound - pp->i[filter_no][mode] * pp->R) *
+		(int) (((double) *sound -
+			pp->i[filter_no][mode][currchannel] * pp->R) *
 		       pp->amplify);
+	if (nchannels > 1)
+	    currchannel = !currchannel;
 
 	sound++;
     }

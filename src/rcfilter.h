@@ -31,15 +31,15 @@
 #define MAX_FILTERS 10
 
 struct filter_data {
-    double          i[MAX_FILTERS][2],
-                    last_sample[MAX_FILTERS][2];
+    double          i[MAX_FILTERS][2][MAX_CHANNELS],
+                    last_sample[MAX_FILTERS][2][MAX_CHANNELS];
     double          max,
                     amplify,
                     R,
                     C,
                     invR,
                     dt_div_C;
-    double          di[MAX_FILTERS][2];
+    double          di[MAX_FILTERS][2][MAX_CHANNELS];
 };
 
 extern void     LC_filter(int *, int, int, double, struct filter_data *);
