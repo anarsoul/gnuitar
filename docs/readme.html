@@ -1,0 +1,269 @@
+<html>
+<title>
+    <head>GNUitar - A Guitar processor software</head>
+</title>
+<body>
+<center><b>
+				GNUitar<br>
+			Guitar processor software
+</b>
+</center><br>
+(C) 2000-2003 Max V.Rudensky <a href=mailto:fonin@ziet.zhitomir.ua>&lt;fonin@ziet.zhitomir.ua&gt</a>
+
+<h1><a name=about>What is GNUitar ?</a></h1>
+
+<p>GNUitar is a real-time sound effects software that allows 
+you to use your computer as a guitar processor. It has GTK+ based 
+interface. It can be compiled on any flavor of UNIX that have
+GTK+ 1.2, Glib, pthreads and OSS sound driver. It also works on Windows.
+Program is inspired by 2 works:<ul>
+<li>Ele 0.1 by Morris Slutsky<br>
+<a href=http://www-personal.umich.edu/~mslutsky/elepage/index.html target=top>
+    http://www-personal.umich.edu/~mslutsky/elepage/index.html</a></li>
+<li>Guitar FX Processor by Marin Vlah<br>
+<a href=http://fly.srk.fer.hr/~mvlah/fx_processor.html target=top>http://fly.srk.fer.hr/~mvlah/fx_processor.html</a></li>
+</ul>
+GNUitar is free software and is distributed under GNU GPL license;
+however you should pay to obtain Windows binary (you are still free
+to compile it yourself; see section 10 "Legal Issues").
+
+<h1><a name=download>Download</a></h1>
+
+<a href=http://freshmeat.net/projects/gnuitar target=top>http://freshmeat.net/projects/gnuitar</a><br>
+<a href=http://ziet.zhitomir.ua/~fonin/downloads.php target=top>http://ziet.zhitomir.ua/~fonin/downloads.php</a>
+
+<h1><a name=requirements>Requirements</a></h1>
+
+<p>You will need:<ul>
+<li>GTK+ version 1.2.6 or better; program was not tested with GTK 2.0;
+<li>GLIB 1.2 or better</li>
+<li>POSIX threads on UNIX</li>
+<li>full-duplex sound card</li>
+<li>To compile: GCC on UNIX, Microsoft Visual C++ 6.0 on Windows</li>
+</ul>
+
+<h1><a name=performance>Performance</a></h1>
+
+<p>GNUitar is a CPU-consuming program. Pentium/166 is sufficient
+to run GNUitar, Pentium II/300 is recommended, and on Pentium II/450
+it will work just fine.
+Real performance is very depend on your CPU/sound card/sound driver/OS
+combination. The best performance can be achieved on Linux,
+because of its great real-time features and advanced OSS sound drivers.
+
+<p>When running the program, make sure you close all unnecessary applications,
+to give more resources to it. Avoid anything that can cause disk I/O
+or CPU usage.
+
+<p>GNUitar runs with increased priority; this may cause hang-ups
+and delayed system response on low-end machines. Therefore you
+should care to save all important data in other applications,
+before you launch GNUitar.
+
+<h2><a name=perf_unix>Performance - UNIX notes</a></h2>
+
+<p>GNUitar executable file should be setuid root to process sound with 
+real-time priority; otherwise you'll hear glitches and delays while 
+switching between windows. It switches to real user id as soon as 
+it set real-time priority to effect-processing thread, and before
+any GTK initializations are being performed, so it shouldn't break 
+security on your system.
+GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA !
+
+<h2><a name=perf_windows>Performance - Windows notes</a></h2>
+
+<p>Windows have complex problems with latency when processing audio in real time,
+mostly because of its non-uniform drivers architecture.
+GNUitar latency on Windows is much higher than on Linux. The real latency
+is very depend on sound board driver.
+<p>There are few kinds of sound drivers for Windows: old VXD (Win95/98),
+NT4-kernel style, and modern WDM drivers that were introduced in Windows 98/SE.
+Currently GNUitar uses common MME API (MME=MultiMedia Extension) that is
+compatible with all kinds of drivers; however AFAIK WDM drivers provide
+much lower latency. Therefore, avoid VXD drivers; use modern WDM drivers 
+instead, if possible.
+
+<p>The difference in latency between two kinds of drivers is really noticeable:
+I had 100ms up to ~400ms on Pentium III/850/ISA AWE64/VXD,
+and ~60ms on Pentium MMX/166/Yamaha OPL3/WDM laptop.
+Try to re-launch GNUitar few times, if the initial latency is bad.
+
+<p>The kind of bus (PCI/ISA) of the sound card does not affect
+the latency very much, the deal is with OS and its architecture.
+So do not through away your old ISA Sound Blaster and replace it with
+modern sound card, first try it on Linux !
+
+<h1><a name=install>Installation</a></h1>
+
+See <a href=install.html>INSTALL</a> file for common installation notes.
+
+<h1><a name=gui>Interface and Controls</a></h1>
+
+<p>There are 3 areas in the main window. The right area is a list of all
+available effects. The central area contains effects that are currently used.
+There are few buttons right to it should be used to add/remove effects 
+and change its order. Each effect has separate top-level control window with 
+appropriate sliders.  Each effect-control box is shown in the window manager
+task bar.
+
+<p>The left area contains available effect layouts, or presets, and button
+to add the one. Layout is a "snapshot" of your effects and its' 
+settings, you can load/save using "File" menu.
+
+<p>Big "Switch" button is used to switch layouts. In this manner,
+you can change current sound by one mouse/keyboard click.
+
+<p>You can write track of what you play to a file. Just click
+check-box "Write track" at the bottom of program window, enter 
+filename and play. Don't forget that continuous track write 
+can fill out your hard drive.
+The track file format is raw data, word length, signed,
+44100 Hz sampling rate, 1 channel. In the future, sampling format may change,
+however you will always be informed about actual format.
+You can convert it with SoX program like this<br><pre>
+
+    sox -w -s -c 1 -r 44100 track.raw track.wav, 
+
+</pre>
+and then to MP3:
+<pre>
+
+    bladeenc track.wav
+
+</pre>
+Sox is available at <a href=http://home.sprynet.com/~cbagwell/sox.html target=top>
+    http://home.sprynet.com/~cbagwell/sox.html</a>, 
+and Bladeenc is at <a href=http://home8.swipnet.se/~w-82625 target=top>http://home8.swipnet.se/~w-82625</a>.
+
+<p>Windows users can write track directly to .wav file
+(currently it is not available on UNIX).
+
+<h1><a name=effects>Effects</a></h1>
+
+The controls and description of the effects follow below.
+
+<h2><a name=autowah>Autowah</a></h2>
+<ul>
+<li>speed    - speed of wah-wah'ing</li>
+<li>freq.low - low frequency (the cycle starts from this freq.)</li>
+<li>freq.hi  - high frequence (the cycle stops at this freq.)</li>
+<li>mix      - mix clean sound with processed sound</li>
+</ul>
+
+<h2><a name=reverb>Reverberator</a></h2>
+
+Reverberator produces echoed "space" sound. Controls:
+<ul>
+<li>delay  - delay time</li>
+<li>wet    - "wet" (processed) sound volume</li>
+<li>dry    - "dry" (clean) sound volume</li>
+<li>regen  - number of repeats</li>
+</ul>
+
+<h2><a name=delay>Delay</a></h2>
+
+Another kind of reverberation.
+<ul>
+<li>decay  - this controls how the repeated sound is fading out</li>
+<li>time   - this is the delay time</li>
+<li>repeat - number of repeats</li>
+</ul>
+
+<h2><a name=distort>Distortion</a></h2>
+<ul>
+<li>distort    - power of effect</li>
+<li>level      - volume, for the case if you need to mute it quickly</li>
+<li>saturation - high-frequency "sand" in the sound</li>
+<li>lowpass    - low-band filter that can be used to change the sound feel</li>
+</ul>
+
+<h2><a name=vibrato>Vibrato</a></h2>
+
+<p>Vibrato sounds like when you turn the master volume on and off very quickly
+(few times per second).
+<ul>
+<li>speed     - the speed of modulation</li>
+<li>amplitude - the depth of modulation</li>
+</ul>
+
+<h2><a name=chorus>Chorus</a></h2>
+
+<ul>
+<li>depth     - the depth of modulation</li>
+<li>speed     - the speed of modulation</li>
+<li>wet       - "wet" (processed) sound volume</li>
+<li>dry       - "dry" (clean) sound volume</li>
+<li>regen     - hard to explain</li>
+</ul>
+
+<h2><a name=echo>Echo</a></h2>
+
+<p>Another reverberation effect, not like the others.
+While other reverb effects are just kinds of sound patterns repeating,
+echo attempts to achieve a large hall echo.
+<ul>
+<li>decay     - this controls how the repeated sound is fading out</li>
+<li>count     - number of repeats</li>
+<li>size      - controls delay time</li>
+</ul>
+
+<h1><a name=bugs>Bugs</a></h1>
+
+<p>Probably they are there :-) Send bug reports to 
+<a href=mailto:fonin@ziet.zhitomir.ua>fonin@ziet.zhitomir.ua</a>.
+
+<h1><a name=freesoft>About Free Software Development</a></h1>
+
+<p>You should always keep in mind, that development of free software
+doesn't work in the same way as commercial development. Every
+successful free software project has an active userbase behind it. This
+means that your comments, ideas and bug reports are extremely
+important. If something doesn't work, or some feature is missing,
+please mail me about it. Thank you in advance! You can send GNUitar
+related mails to me at <a href=mailto:fonin@ziet.zhitomir.ua>fonin@ziet.zhitomir.ua</a>
+
+<h1><a name=legal>Legal Issues</a></h1>
+
+<p>GNUitar is a free software and is distributed under the terms of 
+GNU GPL license. However you should pay a small amount of $10 to obtain 
+Windows binary. You are still free to compile it yourself from sources, 
+or get a compiled binary from a friend. Please note that this does not 
+contradict with GNU concept, and it is not like the commercial licenses.
+Paragraph 1 of the GPL license states: "You may charge a fee for the
+physical act of transferring a copy, and you may at your option offer warranty 
+protection in exchange for a fee."
+<p>You are free to copy and share the program with other people, 
+you are not limited with the number of computers where you can use it. 
+You can redistribute the program and the works based on it 
+under the terms of GPL license. You have complete sources and detailed compile 
+instructions to build the program yourself, so you always have a choice 
+not to pay. You have full freedom with using and sharing the program,
+according to the GNU software concept.
+<p>You may regard this charge as a charge for build service.
+In return for quite a small amount you will get high-quality software
+with full freedom to use and share it (compare it with commercial
+guitar processors licenses and the hardware effects cost).
+
+<h1><a name=order>Order Information - Windows Users</a></h1>
+
+To be done.
+
+<h1><a name=faq>Frequently Asked Questions</a></h1>
+<p>See <a href=faq.html>this</a> page.
+
+<h1><a name=links>Related Links</a></h1>
+
+<a href=http://freshmeat.net/projects/gnuitar target=top>http://freshmeat.net/projects/gnuitar</a> and<br>
+<a href=http://ziet.zhitomir.ua/~fonin/downloads.php target=top>http://ziet.zhitomir.ua/~fonin/downloads.php</a> - GNUitar project pages<br>
+<a href=http://www.linuxsound.org target=top>http://www.linuxsound.org</a> -
+    excellent categorized list of Unix sound software<br>
+<a href=http://home.sprynet.com/~cbagwell/sox.html target=top>http://home.sprynet.com/~cbagwell/sox.html</a> - 
+    SoX playback/record/processing software<br>
+<a href=http://home8.swipnet.se/~w-82625 target=top>http://home8.swipnet.se/~w-82625</a> - 
+    BladeEnc, free MP3 encoder<br>
+
+<h1><a name=author>Author</a></h1>
+
+Max Rudensky <fonin@ziet.zhitomir.ua>
+	     <fonin@yahoo.com>
+	     http://ziet.zhitomir.ua/~fonin

@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>GNUitar - Frequently Asked Questions</title>
+</head>
+<body>
+<br>
+<b>Q:</b> Program does not work; it produces some error message 
+   like "Cannot open input/output sound device"<br>
+<b>A:</b> Make sure your sound card driver is installed properly. Also make sure
+   that your sound card is full-duplex, and full-duplex mode is supported
+   by the driver.<br>
+   Another reason may be that your sound card does not support
+   the sampling parameters of 44100 Hz/16bit/mono. Currently it is
+   impossible to fix without recompilation; this will be changed in the future
+   releases. To recompile, change sampling parameters in the file
+   src/pump.h.<br>
+<br>
+<b>Q:</b> It seems GNUitar works, but I can't hear effects applied 
+   to my guitar sound. "Clean" sound of the guitar is send to the speakers,
+   but with no applied effects. I hear native noise of effects, and it 
+   seems like there is zero input signal send to effects.<br>
+<b>A:</b> Make sure your line input or microphone input levels are not zero.
+   Use your OS mixer program to adjust input levels.<br>
+<br>
+<b>Q:</b> I hear both clean and processed signal in the speakers.<br>
+<b>A:</b> Press "mute" checkbox on the line input channel in your mixer program
+   to suppress clean sound.<br>
+<br>
+<b>Q:</b> GNUitar noises terribly !<br>
+<b>A:</b> You should adjust your mixer properly. Set the line input to maximum level,
+   wave out and master volume to middle level, and then start to decrease
+   master volume until the noise will become minimal. Increase volume
+   on your external amplifier.<br>
+   The reason of problem is that most soundcards have poor signal/noise ratio
+   in full-duplex mode.
+   To eliminate noise, you may do the following:<br>
+   <ul>
+   <li>use protected cable to connect guitar into the PC;</li>
+   <li>ground your PC properly;</li>
+   <li>there is a possible noisy card (video/modem/LAN) on the motherboard 
+     next to your soundcard. Try to move sound card as far as possible
+     from it.</li>
+   <li>try to use high quality low-noise pre-amplifier BETWEEN your guitar
+     and PC. Please be extremely careful with the volume control of
+     your pre-amp -- the sound card can be damaged if you set loud volume
+     on the pre-amp. The main goal of pre-amplifier is to decrease
+     signal/noise ratio between the signal will be passed to sound card.
+     Please understand that the program processes both signal and noise,
+     and the noise in the output is just the input noise amplified and
+     distorted by effects.</li>
+   </ul>
+</body>
+</html>
