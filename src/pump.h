@@ -39,7 +39,7 @@ typedef signed char SAMPLE8;
 #define MAX_CHANNELS 2
 #define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
-#define EFFECT_AMOUNT 9
+#define EFFECT_AMOUNT 10
 
 /*
  * Indices in effect_creator[] array
@@ -54,6 +54,7 @@ typedef signed char SAMPLE8;
 #define PHASOR	7
 #define TREMOLO	8
 #define SUSTAIN	9
+#define DISTORT2 10
 
 struct data_block {
     int            *data;

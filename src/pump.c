@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2003/04/11 18:34:36  fonin
+ * Added distort2 effect.
+ *
  * Revision 1.11  2003/03/28 19:56:08  fonin
  * Sampling rate is 44100 by default.
  *
@@ -78,6 +81,7 @@
 #include "tremolo.h"
 #include "vibrato.h"
 #include "distort.h"
+#include "distort2.h"
 #include "sustain.h"
 #include "reverb.h"
 #include "tracker.h"
@@ -144,6 +148,7 @@ struct effect_creator effect_list[] = {
     {"phasor", phasor_create},
     {"tremolo", tremolo_create},
     {"sustain", sustain_create},
+    {"distort2", distort2_create},
     {NULL, NULL}
 };
 
