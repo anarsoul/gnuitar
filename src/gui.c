@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2004/07/07 19:18:42  fonin
+ * GTK2 port
+ *
  * Revision 1.22  2003/05/30 12:49:23  fonin
  * log2() renamed to my_log2() since log2 is a reserved word on MacOS X.
  *
@@ -203,11 +206,20 @@ about_dlg(void)
     GtkWidget      *text;
     GtkWidget      *ok_button;
 
+#ifdef HAVE_GTK
     about = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    about = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
+
     about_label = gtk_label_new(COPYRIGHT);
     gtk_window_set_title(GTK_WINDOW(about), "About");
     gtk_container_set_border_width(GTK_CONTAINER(about), 8);
+#ifdef HAVE_GTK
     gtk_widget_set_usize(about, 528, 358);
+#elif defined(HAVE_GTK2)
+    gtk_window_set_default_size(GTK_WINDOW(about), 528, 358);
+#endif
     gtk_window_set_position(GTK_WINDOW(about), GTK_WIN_POS_CENTER);
     vbox = gtk_vbox_new(FALSE, 8);
     gtk_container_add(GTK_CONTAINER(about), vbox);
@@ -224,24 +236,24 @@ about_dlg(void)
 			(GTK_SCROLLED_WINDOW(scrolledwin)));
     gtk_container_add(GTK_CONTAINER(scrolledwin), text);
 
-    gtk_text_freeze(GTK_TEXT(text));
+    gtk_text_freeze(MYGTK_TEXT(text));
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL, DISCLAIMER, -1);
+    gtk_text_insert(MYGTK_TEXT(text), NULL, NULL, NULL, DISCLAIMER, -1);
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
+    gtk_text_insert(MYGTK_TEXT(text), NULL, NULL, NULL,
 		    "This program is distributed in the hope that it will be useful,\n"
 		    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
 		    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 		    "See the GNU General Public License for more details.\n\n",
 		    -1);
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
+    gtk_text_insert(MYGTK_TEXT(text), NULL, NULL, NULL,
 		    "You should have received a copy of the GNU General Public License\n"
 		    "along with this program; if not, write to the Free Software\n"
 		    "Foundation, Inc., 59 Temple Place - Suite 330, Boston,\n"
 		    "MA 02111-1307, USA.", -1);
 
-    gtk_text_thaw(GTK_TEXT(text));
+    gtk_text_thaw(MYGTK_TEXT(text));
 
     ok_button = gtk_button_new_with_label("OK");
     gtk_box_pack_end(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
@@ -759,7 +771,12 @@ sample_dlg(GtkWidget * widget, gpointer data)
     GtkSpinButton  *dummy1;
     GtkEntry       *dummy2;
 
+#ifdef HAVE_GTK
     sparams.dialog = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    sparams.dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
+
     gtk_widget_set_usize(sparams.dialog, 320, 200);
     gtk_container_set_border_width(GTK_CONTAINER(sparams.dialog), 5);
     vpack = gtk_vbox_new(FALSE, 20);
@@ -1095,6 +1112,7 @@ init_gui(void)
     gtk_tooltips_set_tip(tooltips,bank_add,"Use this button to add the presets to the presets list.",NULL);
 
     style = gtk_widget_get_style(bank_add);
+#ifdef HAVE_GTK
     new_font =
 	gdk_fontset_load
 	("-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*");
@@ -1103,6 +1121,12 @@ init_gui(void)
 	style->font = new_font;
 	gtk_widget_set_style(bank_add, style);
     }
+#elif defined(HAVE_GTK2)
+    pango_font_description_set_size(style->font_desc,10);
+    pango_font_description_set_family(style->font_desc,"helvetica");
+    pango_font_description_set_style(style->font_desc,PANGO_STYLE_NORMAL);
+    pango_font_description_set_weight(style->font_desc,PANGO_WEIGHT_NORMAL);
+#endif
 
     bank_switch = gtk_button_new_with_label("SWITCH");
     gtk_tooltips_set_tip(tooltips,bank_switch,"Use this button to switch between presets",NULL);

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2004/07/07 19:18:42  fonin
+ * GTK2 port
+ *
  * Revision 1.9  2003/03/14 19:20:31  fonin
  * Unreferenced variables fixed.
  *
@@ -131,7 +134,11 @@ echo_init(struct effect *p)
     /*
      * GUI Init
      */
+#ifdef HAVE_GTK
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
@@ -152,6 +159,9 @@ echo_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_echo_decay), pecho);
 
     decay = gtk_vscale_new(GTK_ADJUSTMENT(adj_decay));
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(GTK_WIDGET(decay),0,100);
+#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), decay, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2004/07/07 19:18:42  fonin
+ * GTK2 port
+ *
  * Revision 1.8  2003/03/09 20:46:07  fonin
  * - parameter "speed" removed from effect internal structure, df (delta ef)
  *   instead;
@@ -146,7 +149,11 @@ autowah_init(struct effect *p)
     /*
      * GUI Init
      */
+#ifdef HAVE_GTK
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
@@ -169,7 +176,11 @@ autowah_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_wah_speed), pautowah);
 
     speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
+//    speed = gtk_vscale_new(adj_speed);
     gtk_range_set_update_policy(GTK_RANGE(speed), GTK_UPDATE_DELAYED);
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
+#endif
     gtk_table_attach(GTK_TABLE(parmTable), speed, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -224,7 +235,7 @@ autowah_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_wah), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 3, 4,
+    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -238,7 +249,7 @@ autowah_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(mix), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_mix), &(pautowah->mixx));
 
-    gtk_table_attach(GTK_TABLE(parmTable), mix, 3, 4, 5, 6,
+    gtk_table_attach(GTK_TABLE(parmTable), mix, 3, 4, 3, 4,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |

@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.3  2004/07/07 19:18:42  fonin
+ * GTK2 port
+ *
  * Revision 1.2  2003/12/28 10:16:08  fonin
  * Code lickup
  *
@@ -114,7 +117,11 @@ eqbank_init(struct effect *p)
 
     peq = (struct eqbank_params *) p->params;
 
+#ifdef HAVE_GTK
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
@@ -138,6 +145,10 @@ eqbank_init(struct effect *p)
 	adj_boost[i] = gtk_adjustment_new(0,
 					  FB_MIN, FB_MAX, 1.0, 5.0, 1.0);
 	boost[i] = gtk_vscale_new(GTK_ADJUSTMENT(adj_boost[i]));
+#ifdef HAVE_GTK2
+	gtk_widget_set_size_request(GTK_WIDGET(boost[i]),0,100);
+#endif
+
 	sl_wrappers[i].par = peq;
 	sl_wrappers[i].slider_id = i;
 	gtk_signal_connect(GTK_OBJECT(adj_boost[i]), "value_changed",

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2004/07/07 19:18:42  fonin
+ * GTK2 port
+ *
  * Revision 1.3  2003/04/18 18:22:04  fonin
  * Cleanup.
  *
@@ -124,7 +127,11 @@ noise_init(struct effect *p)
     /*
      * GUI Init
      */
+#ifdef HAVE_GTK
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
@@ -146,6 +153,9 @@ noise_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_noise_threshold), pnoise);
 
     threshold = gtk_vscale_new(GTK_ADJUSTMENT(adj_threshold));
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(GTK_WIDGET(threshold),0,100);
+#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), threshold, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS

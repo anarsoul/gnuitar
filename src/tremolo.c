@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2004/07/07 19:18:42  fonin
+ * GTK2 port
+ *
  * Revision 1.8  2003/03/09 20:53:16  fonin
  * Meaningful params "speed" and "amplitude". Structures were redesigned
  * for new feature of on-the-fly change of sampling params.
@@ -112,7 +115,11 @@ tremolo_init(struct effect *p)
     /*
      * GUI Init
      */
+#ifdef HAVE_GTK
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
@@ -136,6 +143,9 @@ tremolo_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_tremolo_speed), ptremolo);
 
     speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
+#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), speed, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS

@@ -50,4 +50,10 @@ gint            delete_event(GtkWidget * widget, GdkEvent * event,
 
 extern GtkWidget *processor;
 
+#ifdef HAVE_GTK
+#  define MYGTK_TEXT(text) GTK_TEXT(text)
+#elif defined(HAVE_GTK2)
+#  define MYGTK_TEXT(text) text
+#endif
+
 #endif

@@ -155,7 +155,11 @@ reverb_init(struct effect *p)
     /*
      * GUI Init
      */
+#ifdef HAVE_GTK
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
@@ -179,6 +183,9 @@ reverb_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_reverb_delay), preverb);
 
     delay = gtk_vscale_new(GTK_ADJUSTMENT(adj_delay));
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(GTK_WIDGET(delay),0,100);
+#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), delay, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS

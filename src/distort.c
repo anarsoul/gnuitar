@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2004/07/07 19:18:42  fonin
+ * GTK2 port
+ *
  * Revision 1.9  2003/03/11 22:04:00  fonin
  * Measure control sliders in standard units (ms, %).
  *
@@ -128,7 +131,11 @@ distort_init(struct effect *p)
     /*
      * GUI Init
      */
+#ifdef HAVE_GTK
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+#elif defined HAVE_GTK2
+    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
@@ -148,6 +155,9 @@ distort_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_distort_drive), pdistort);
 
     drive = gtk_vscale_new(GTK_ADJUSTMENT(adj_drive));
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(GTK_WIDGET(drive),0,100);
+#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), drive, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
