@@ -30,11 +30,9 @@ extern void     distort2_create(struct effect *);
 
 struct distort2_params {
     int             r1,
-                    level,
-                    r2,
-                    lastval[MAX_CHANNELS],
-                    noisegate;
+                    r2;
     int             lowpass;
+    int		    noisegate;
     struct filter_data fd;
     struct filter_data noise;
 };
