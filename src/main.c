@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2003/03/09 21:05:57  fonin
+ * Internal redesign for new "change sampling params" feature.
+ * New functions init_sound() and close_sound().
+ *
  * Revision 1.12  2003/02/11 21:45:03  fonin
  * URL fixes.
  *
@@ -92,20 +96,26 @@
 #include "pump.h"
 #include "tracker.h"
 #include "gui.h"
+#include "utils.h"
 
 #ifndef _WIN32
 pthread_t       audio_thread;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  suspend = PTHREAD_COND_INITIALIZER;
+
 #else
 HANDLE          audio_thread;
+HANDLE          input_bufs_done,
+                output_bufs_done;
 DWORD           thread_id;
 #endif
 
-static int      stop = 0;	/* in Windows version, stop has special
-				 * values: 0 - recording/playback is on 1
-				 * - playback is paused 2 - exit thread 3
-				 * - recording started, begin playback now
-				 * For UNIX: 0 - recording/playback is on 1 
-				 * * - exit thread */
+static int      stop = 0;	/* Possible values:
+				 * 0 - recording/playback is on
+				 * 1 - playback is paused
+				 * 2 - exit thread
+				 * 3 - recording started, 
+				 * begin playback now (Windows only) */
 #ifndef _WIN32
 int             fd;
 #else
@@ -116,12 +126,15 @@ MMRESULT        err;
 			 * We use N WAVEHDR's for recording (ie,
 			 * double-buffering)
 			 */
-WAVEHDR         wave_header[NBUFFERS];	/* input header */
-WAVEHDR         write_header[NBUFFERS];	/* output headers */
-char            cur_wr_hdr[NBUFFERS];	/* available write headers array */
-char            wrbuf[BUFFER_SIZE * NBUFFERS];	/* write buffers */
-char            rdbuf[BUFFER_SIZE * NBUFFERS];	/* receive buffer */
-int             procbuf[BUFFER_SIZE];	/* procesing buffer */
+WAVEHDR         wave_header[MAX_BUFFERS];	/* input header */
+WAVEHDR         write_header[MAX_BUFFERS];	/* output headers */
+char            cur_wr_hdr[MAX_BUFFERS];	/* available write headers 
+						 * array */
+char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* write buffers */
+char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* receive buffer */
+int             procbuf[MAX_BUFFER_SIZE];	/* procesing buffer */
+int             active_in_buffers = 0,
+                active_out_buffers = 0;
 
 void            serror(DWORD err, TCHAR * str);
 #endif
@@ -138,37 +151,39 @@ audio_thread_start(void *V)
     int             count,
                     i;
 #ifndef _WIN32
-    SAMPLE          rdbuf[BUFFER_SIZE / 2];	/* receive buffer */
-    int             procbuf[BUFFER_SIZE / 2];
+    SAMPLE          rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];	/* receive 
+								 * buffer */
+    int             procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
 
-    while (!stop) {
-	count = read(fd, rdbuf, BUFFER_SIZE);
-	if (count != BUFFER_SIZE) {
+    while (stop != 2) {
+	if (stop == 1) {
+	    pthread_cond_wait(&suspend, &mutex);
+	}
+
+	count = read(fd, rdbuf, buffer_size);
+	if (count != buffer_size) {
 	    fprintf(stderr, "Cannot read samples!\n");
 	    close(fd);
-	    exit(0);
+	    exit(ERR_WAVEINRECORD);
 	}
-	count /= 2;
+	count /= bits / 8;
 
 	for (i = 0; i < count; i++)
 	    procbuf[i] = rdbuf[i];
-
 	pump_sample(procbuf, count);
 
 	for (i = 0; i < count; i++) {
 	    int             W = procbuf[i];
-	    if (W < -32767)
-		W = -32767;
-	    if (W > 32767)
-		W = 32767;
+	    if (W < -MAX_SAMPLE)
+		W = -MAX_SAMPLE;
+	    if (W > MAX_SAMPLE)
+		W = MAX_SAMPLE;
 	    rdbuf[i] = W;
 	}
 
-	count = write(fd, rdbuf, BUFFER_SIZE);
-	if (count != BUFFER_SIZE) {
+	count = write(fd, rdbuf, buffer_size);
+	if (count != buffer_size) {
 	    fprintf(stderr, "Cannot write samples!\n");
-	    close(fd);
-	    exit(0);
 	}
     }
 #else
@@ -195,6 +210,7 @@ audio_thread_start(void *V)
 	case MM_WIM_DATA:{
 		int             hdr_avail = -1;	/* available write header
 						 * index */
+		active_in_buffers--;
 		if (stop == 1) {
 		    continue;
 		}
@@ -212,7 +228,7 @@ audio_thread_start(void *V)
 		    /*
 		     * find unused output buffer and queue it to output 
 		     */
-		    for (i = 0; i < NBUFFERS; i++)
+		    for (i = 0; i < nbuffers; i++)
 			if (cur_wr_hdr[i] == 1) {
 			    hdr_avail = i;
 			    cur_wr_hdr[i] = 0;	/* ready to queue */
@@ -224,10 +240,10 @@ audio_thread_start(void *V)
 
 			for (i = 0; i < count; i++) {
 			    int             W = procbuf[i];
-			    if (W < -32767)
-				W = -32767;
-			    if (W > 32767)
-				W = 32767;
+			    if (W < -MAX_SAMPLE)
+				W = -MAX_SAMPLE;
+			    if (W > MAX_SAMPLE)
+				W = MAX_SAMPLE;
 			    ((SAMPLE *) (write_header[hdr_avail].
 					 lpData))[i] = W;
 			}
@@ -235,14 +251,14 @@ audio_thread_start(void *V)
 			err =
 			    waveOutWrite(out, &write_header[hdr_avail],
 					 sizeof(WAVEHDR));
-
 			if (err) {
 			    serror(err, "\nwriting samples - ");
-			}
+			} else
+			    active_out_buffers++;
 		    } else
 			printf("\nbuffer overrun.");
 		} else {
-		    // printf("\nbuffer underrun.");
+		    /* printf("\nbuffer underrun."); */
 		}
 		/*
 		 * Now we need to requeue this buffer so the driver can
@@ -252,6 +268,9 @@ audio_thread_start(void *V)
 		 */
 		waveInAddBuffer(in, (WAVEHDR *) msg.lParam,
 				sizeof(WAVEHDR));
+		active_in_buffers++;
+		if (active_in_buffers == 0 && stop == 1)
+		    SetEvent(input_bufs_done);
 		continue;
 	    }
 	    /*
@@ -279,17 +298,21 @@ audio_thread_start(void *V)
 		 * played). Some drivers need this to be cleared 
 		 */
 		((WAVEHDR *) msg.lParam)->dwFlags &= ~WHDR_DONE;
-		for (i = 0; i < NBUFFERS; i++)
+		for (i = 0; i < nbuffers; i++)
 		    if (&write_header[i] == (WAVEHDR *) msg.lParam) {
 			cur_wr_hdr[i] = 1;
 			break;
 		    }
+		active_out_buffers++;
+		if (active_out_buffers == 0 && stop == 1)
+		    SetEvent(output_bufs_done);
 		continue;
 	    }
 	default:
 	    ;
 	}
     }
+    CloseHandle(audio_thread);
     return 0;
 #endif
 }
@@ -312,20 +335,35 @@ serror(DWORD err, TCHAR * str)
 	fprintf(stderr, "0x%08X returned!\r\n", err);
     }
 }
+#endif
 
+#ifdef DEMO
+#   ifdef _WIN32
+VOID            CALLBACK
+expired(HWND hwnd, UINT msg, UINT timer_id, DWORD time)
+{
+    gtk_main_quit();
+    close_sound();
+    printf("%s", DEMO_MSG);
+    exit(ERR_DEMOEXPIRED);
+}
+
+#   else
+#   endif
 #endif
 
 /*
- * graceful application shutdown 
+ * sound shutdown 
  */
 void
-die(void)
+close_sound(void)
 {
     int             i;
 
-    stop = 2;
-    pump_stop();
-    tracker_done();
+    /*
+     * pause sound 
+     */
+    stop = 1;
 
 #ifndef _WIN32
     close(fd);
@@ -335,11 +373,19 @@ die(void)
      */
     waveOutReset(out);
     waveInReset(in);
+
+    /*
+     * Wait until all output buffers return
+     */
+    WaitForSingleObject(output_bufs_done, INFINITE);
+    WaitForSingleObject(input_bufs_done, INFINITE);
+
     /*
      * Unprepare WAVE buffers 
      */
-    for (i = 0; i < NBUFFERS; i++) {
+    for (i = 0; i < nbuffers; i++) {
 	waveOutUnprepareHeader(out, &write_header[i], sizeof(WAVEHDR));
+	waveInUnprepareHeader(in, &wave_header[i], sizeof(WAVEHDR));
     }
 
     /*
@@ -356,54 +402,19 @@ die(void)
 #endif
 }
 
-#ifndef _WIN32
 /*
- * Calculate base-2 logarithm of the value, up to 512k
+ * sound initialization
  */
-short
-log2(int x)
-{
-    int             pow[] =
-	{ 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,
-	16384, 32768,
-	65536, 131072, 262144, 524288
-    };
-    int             i;
-    for (i = 0; i < sizeof(pow) / sizeof(int); i++) {
-	if (pow[i] == x)
-	    return i;
-    }
-    return 0;
-}
-#endif
-
-#ifdef DEMO
-#   ifdef _WIN32
-VOID            CALLBACK
-expired(HWND hwnd, UINT msg, UINT timer_id, DWORD time)
-{
-    gtk_main_quit();
-    die();
-    printf("%s", DEMO_MSG);
-    exit(10);
-}
-
-#   else
-#   endif
-#endif
-
 int
-main(int argc, char **argv)
+init_sound(void)
 {
+    int             i;
+
 #ifndef _WIN32
-    int             max_priority,
-                    i;
-    struct sched_param p;
-
-
     if ((fd = open("/dev/dsp", O_RDWR)) == -1) {
 	fprintf(stderr, "\nCannot open audio device!");
-	return -1;
+	stop = 2;
+	return ERR_WAVEINOPEN;
     }
 
     /*
@@ -417,118 +428,88 @@ main(int argc, char **argv)
      *                           9 for 512
      *                           etc.
      */
-    i = 0x7fff0000 + log2(BUFFER_SIZE);
+    i = 0x7fff0000 + log2(buffer_size);
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
 	fprintf(stderr, "\nCannot setup fragments!");
 	close(fd);
-	return -1;
-    }
-
-    if (ioctl(fd, SNDCTL_DSP_SETDUPLEX, 0) == -1) {
-	fprintf(stderr, "\nCannot setup fullduplex audio!");
-	close(fd);
-	return -1;
+	stop = 2;
+	return ERR_WAVEFRAGMENT;
     }
 
     if (ioctl(fd, SNDCTL_DSP_GETCAPS, &i) == -1) {
 	fprintf(stderr, "\nCannot get soundcard capabilities!");
 	close(fd);
-	return -1;
+	stop = 2;
+	return ERR_WAVEGETCAPS;
     }
 
     if (!(i & DSP_CAP_DUPLEX)) {
 	fprintf(stderr,
 		"\nSorry but your soundcard isn't full duplex capable!");
 	close(fd);
-	return -1;
+	stop = 2;
+	return ERR_WAVENOTDUPLEX;
     }
 
-    i = AFMT_S16_LE;
-    if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
-	fprintf(stderr, "\nCannot setup 16 bit audio!");
+    if (ioctl(fd, SNDCTL_DSP_SETDUPLEX, 0) == -1) {
+	fprintf(stderr, "\nCannot setup fullduplex audio!");
 	close(fd);
-	return -1;
+	stop = 2;
+	return ERR_WAVEDUPLEX;
     }
 
-    i = NCHANNELS - 1;
+    switch (bits) {
+    case 16:{
+	    i = AFMT_S16_LE;
+	    break;
+	}
+    case 8:{
+	    i = AFMT_S8;
+	    break;
+	}
+    }
+    if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
+	fprintf(stderr, "\nCannot setup %d bit audio!", bits);
+	close(fd);
+	stop = 2;
+	return ERR_WAVESETBIT;
+    }
+
+    i = nchannels - 1;
     if (ioctl(fd, SNDCTL_DSP_STEREO, &i) == -1) {
 	fprintf(stderr, "\nCannot setup mono audio!");
 	close(fd);
-	return -1;
+	stop = 2;
+	return ERR_WAVESETCHANNELS;
     }
 
-    i = SAMPLE_RATE;
+    i = sample_rate;
     if (ioctl(fd, SNDCTL_DSP_SPEED, &i) == -1) {
 	fprintf(stderr, "\nCannot setup sampling frequency %dHz!", i);
 	close(fd);
-	return -1;
+	stop = 2;
+	return ERR_WAVESETRATE;
     }
 #else
     WAVEFORMATEX    format;	/* wave format */
-    int             i;
-
-#ifdef DEMO
-    /*
-     * For demo version, we exit after a random time, 10 up to 15 minutes
-     */
-    srand(time(NULL));
-#   ifdef _WIN32
-    SetTimer(GetActiveWindow(), DEMO_TIMER,
-	     (unsigned int) (1000 * 60 * 10 +
-			     1000 * 60 * 5 * rand() / (RAND_MAX + 1.0)),
-	     expired);
-#   else
-#   endif
-#endif
-
-    ZeroMemory(&wave_header[0], sizeof(WAVEHDR) * NBUFFERS);
-    ZeroMemory(&write_header[0], sizeof(WAVEHDR) * NBUFFERS);
-
-    /*
-     * we are NOT in record now - signal to the audio thread 
-     */
-    stop = 1;
-
-    /*
-     * set high priority to the process 
-     */
-    /*
-     * if(!SetPriorityClass(GetCurrentProcess(),HIGH_PRIORITY_CLASS)) {
-     * fprintf(stderr,"\nFailed to set realtime priority to process:
-     * %s.",GetLastError()); } 
-     */
-    /*
-     * create audio thread 
-     */
-    audio_thread =
-	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_thread_start, 0,
-		     0, &thread_id);
-    if (!audio_thread) {
-	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
-		GetLastError());
-	return (-1);
-    }
-    /*
-     * set realtime priority to the thread 
-     */
-    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
-	fprintf(stderr,
-		"\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
-		GetLastError());
-    }
-    CloseHandle(audio_thread);
 
     /*
      * set audio parameters - sampling rate, number of channels etc. 
      */
     format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = NCHANNELS;
-    format.nSamplesPerSec = SAMPLE_RATE;
-    format.wBitsPerSample = 16;
+    format.nChannels = nchannels;
+    format.nSamplesPerSec = sample_rate;
+    format.wBitsPerSample = bits;
     format.nBlockAlign = format.nChannels * (format.wBitsPerSample / 8);
     format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
     format.cbSize = 0;
 
+    ZeroMemory(&wave_header[0], sizeof(WAVEHDR) * MAX_BUFFERS);
+    ZeroMemory(&write_header[0], sizeof(WAVEHDR) * MAX_BUFFERS);
+
+    nbuffers = MIN_BUFFER_SIZE * MAX_BUFFERS / buffer_size;
+    if (nbuffers > MAX_BUFFERS)
+	nbuffers = MAX_BUFFERS;
     /*
      * Open Digital Audio In device 
      */
@@ -539,7 +520,8 @@ main(int argc, char **argv)
 	serror(err,
 	       "There was an error opening the Digital Audio In device\r\n");
 	stop = 2;
-	exit(-1);
+	TerminateThread(audio_thread, ERR_WAVEINOPEN);
+	return ERR_WAVEINOPEN;
     }
 
     /*
@@ -551,14 +533,16 @@ main(int argc, char **argv)
 	serror(err,
 	       "There was an error opening the Digital Audio Out device!\r\n");
 	stop = 2;
-	exit(-1);
+	waveInClose(in);
+	TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
+	return ERR_WAVEOUTOPEN;
     }
-    for (i = 0; i < NBUFFERS; i++) {
-	write_header[i].lpData = wrbuf + i * BUFFER_SIZE;
+    for (i = 0; i < nbuffers; i++) {
+	write_header[i].lpData = wrbuf + i * buffer_size;
 	/*
 	 * Fill in WAVEHDR fields for buffer starting address and size 
 	 */
-	write_header[i].dwBufferLength = BUFFER_SIZE;
+	write_header[i].dwBufferLength = buffer_size;
 	/*
 	 * Leave other WAVEHDR fields at 0 
 	 */
@@ -571,15 +555,18 @@ main(int argc, char **argv)
 	    fprintf(stderr, "ERROR: preparing WAVEHDR %d! -- %08X\n", i,
 		    err);
 	    stop = 2;
-	    exit(1);
+	    close_sound();
+	    TerminateThread(audio_thread, ERR_WAVEOUTHDR);
+	    return ERR_WAVEOUTHDR;
 	}
 	cur_wr_hdr[i] = 1;
+	active_out_buffers++;
     }
 
 
-    for (i = 0; i < NBUFFERS; i++) {
-	wave_header[i].dwBufferLength = BUFFER_SIZE;
-	wave_header[i].lpData = rdbuf + i * BUFFER_SIZE;
+    for (i = 0; i < nbuffers; i++) {
+	wave_header[i].dwBufferLength = buffer_size;
+	wave_header[i].lpData = rdbuf + i * buffer_size;
 	/*
 	 * Fill in WAVEHDR fields for buffer starting address. We've
 	 * already filled in the size fields above 
@@ -596,7 +583,9 @@ main(int argc, char **argv)
 	     waveInPrepareHeader(in, &wave_header[i], sizeof(WAVEHDR)))) {
 	    serror(err, "Error preparing WAVEHDR!\n");
 	    stop = 2;
-	    exit(-1);
+	    close_sound();
+	    TerminateThread(audio_thread, ERR_WAVEINHDR);
+	    return ERR_WAVEINHDR;
 	}
 	/*
 	 * Queue WAVEHDR (recording hasn't started yet) 
@@ -604,8 +593,11 @@ main(int argc, char **argv)
 	if ((err = waveInAddBuffer(in, &wave_header[i], sizeof(WAVEHDR)))) {
 	    serror(err, "Error queueing WAVEHDR!\n");
 	    stop = 2;
-	    exit(-1);
+	    close_sound();
+	    TerminateThread(audio_thread, ERR_WAVEINQUEUE);
+	    return ERR_WAVEINQUEUE;
 	}
+	active_in_buffers++;
     }
     /*
      * Start recording. Our secondary thread will now be receiving
@@ -614,14 +606,29 @@ main(int argc, char **argv)
     if ((err = waveInStart(in))) {
 	serror(err, "Error starting record!\n");
 	stop = 2;
-	exit(-1);
+	close_sound();
+	TerminateThread(audio_thread, ERR_WAVEINRECORD);
+	return ERR_WAVEINRECORD;
     }
+#endif
     stop = 0;
 
-#endif
+    return ERR_NOERROR;
+}
 
 
+int
+main(int argc, char **argv)
+{
+    int             error = 0;
 #ifndef _WIN32
+    int             max_priority;
+    struct sched_param p;
+
+
+    if ((error = init_sound()) != ERR_NOERROR)
+	return error;
+
     max_priority = sched_get_priority_max(SCHED_FIFO);
     p.sched_priority = max_priority;
 
@@ -632,13 +639,62 @@ main(int argc, char **argv)
     }
     if (pthread_create(&audio_thread, NULL, audio_thread_start, NULL)) {
 	fprintf(stderr, "\nAudio thread creation failed!");
-	exit(1);
+	return ERR_THREAD;
     }
     /*
      * We were running to this point as setuid root program.
      * Switching to our native user id
      */
     setuid(getuid());
+#else
+
+#ifdef DEMO
+    /*
+     * For demo version, we exit after a random time, 10 up to 15 minutes
+     */
+    srand(time(NULL));
+    SetTimer(GetActiveWindow(), DEMO_TIMER,
+	     (unsigned int) (1000 * 60 * 10 +
+			     1000 * 60 * 5 * rand() / (RAND_MAX + 1.0)),
+	     expired);
+#endif
+
+    /*
+     * we are NOT in record now - signal to the audio thread 
+     */
+    stop = 1;
+
+    /*
+     * set high priority to the process 
+     */
+/*
+    if(!SetPriorityClass(GetCurrentProcess(),HIGH_PRIORITY_CLASS)) {
+	fprintf(stderr,"\nFailed to set realtime priority to process:%s.",GetLastError());
+    } 
+ */
+    /*
+     * create audio thread 
+     */
+    audio_thread =
+	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_thread_start, 0,
+		     0, &thread_id);
+    if (!audio_thread) {
+	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
+		GetLastError());
+	return (ERR_THREAD);
+    }
+
+    if ((error = init_sound()) != ERR_NOERROR)
+	return error;
+
+    /*
+     * set realtime priority to the thread 
+     */
+    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
+	fprintf(stderr,
+		"\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
+		GetLastError());
+    }
 #endif
 
     printf("\n\n" COPYRIGHT
@@ -650,6 +706,10 @@ main(int argc, char **argv)
     pump_start(argc, argv);
     gtk_main();
 
-    die();
-    return 0;
+    stop = 2;
+    pump_stop();
+    tracker_done();
+    close_sound();
+
+    return ERR_NOERROR;
 }
