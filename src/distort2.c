@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2003/04/17 12:22:00  fonin
+ * More search paths for lookup dir.
+ *
  * Revision 1.4  2003/04/16 18:40:00  fonin
  * - lookup dir search paths for Win32;
  * - R1 parameter should be inverted 100% == 1% and vice versa.
@@ -321,6 +324,8 @@ distort2_create(struct effect *p)
     int             i;
     char           *lookup_dirs[] = { "/usr/share/gnuitar/distort2",
 	"/usr/share/gnuitar-" VERSION "/distort2",
+	"/usr/local/share/gnuitar/distort2",
+	"/usr/local/share/gnuitar-" VERSION "/distort2",
 	"./distort2",
 	"\\Program Files\\gnuitar\\distort2",
 	".\\distort2"
@@ -351,7 +356,7 @@ distort2_create(struct effect *p)
     /*
      * Find the lookup directory 
      */
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 7; i++) {
 	if (access(lookup_dirs[i], R_OK | X_OK) == 0) {
 	    strncpy(lookup_dir, lookup_dirs[i], 255);
 	    break;
