@@ -1,3 +1,80 @@
+2003-03-28 22:01  fonin
+
+	* TODO: Updated tasks.
+
+2003-03-28 22:00  fonin
+
+	* NEWS: Updated the changes.
+
+2003-03-28 21:58  fonin
+
+	* gnuitar.spec: New version number and history updates.
+
+2003-03-28 21:57  fonin
+
+	* configure, configure.in: Updated configure - new version number.
+
+2003-03-28 21:56  fonin
+
+	* src/pump.c: Sampling rate is 44100 by default.
+
+2003-03-28 21:55  fonin
+
+	* src/gui.h: Version 0.3.0.
+
+2003-03-28 21:54  fonin
+
+	* docs/faq.html, docs/index.html, docs/install.html,
+	docs/readme.html, FAQ, README: Updated documentation.
+
+2003-03-25 21:56  fonin
+
+	* src/gui.c: Added tooltips to most important controls.
+
+2003-03-25 16:03  fonin
+
+	* src/gui.c: New control in options dialog for the buffer overrun
+	threshold.
+
+2003-03-25 16:03  fonin
+
+	* src/main.c: Work around buffer overruns with DirectSound
+	playback.
+
+2003-03-23 22:06  fonin
+
+	* src/utils.h: Added constants for program states, and for
+	DirectSound-related error codes.
+
+2003-03-23 22:05  fonin
+
+	* src/main.c: New playback method via DirectSound.
+
+2003-03-23 22:05  fonin
+
+	* src/gui.c: sample_dlg(): checkbox to switch playback method
+	between DirectSound and MME.
+
+2003-03-15 22:07  fonin
+
+	* src/main.c: Moved function expired(), fixed compilation error.
+
+2003-03-15 21:46  fonin
+
+	* README, gnuitar.spec: Ziet url changed.
+
+2003-03-15 21:33  fonin
+
+	* ChangeLog: Last minute updates.
+
+2003-03-15 11:59  fonin
+
+	* gnuitar.mak: Default target is Release.
+
+2003-03-14 21:23  fonin
+
+	* gnuitar.kdevprj, gnuitar.lsm: Cleanup.
+
 2003-03-14 21:21  fonin
 
 	* gnuitar.dsp, gnuitar.mak: Updated windoze project files.
