@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2003/04/16 18:40:00  fonin
+ * - lookup dir search paths for Win32;
+ * - R1 parameter should be inverted 100% == 1% and vice versa.
+ *
  * Revision 1.3  2003/04/16 13:58:39  fonin
  * - trying to guess the lookup directory;
  * - filling the lookup table with constant 32767 by default.
@@ -35,14 +39,15 @@
 
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #ifndef _WIN32
 #    include <unistd.h>
-#    include <fcntl.h>
 #else
 #    include <io.h>
 #endif
 #include "distort2.h"
 #include "gui.h"
+#include "utils.h"
 
 SAMPLE          tube[MAX_SAMPLE + 1];	/* distortion lookup table */
 static char     lookup_dir[255] = "";
@@ -62,7 +67,8 @@ load_distort2_lookup(int r1, int r2, int sr)
 	tube[i] = 32767;
 
     strncpy(filename, lookup_dir, 255);
-    strncat(filename, "/distort2lookup_");
+    strcat(filename,FILESEP);
+    strncat(filename, "distort2lookup_");
     // sprintf(tmp,"%i",sr);
     strcat(filename, "44100");
     strncat(filename, tmp, 255);
@@ -86,7 +92,7 @@ load_distort2_lookup(int r1, int r2, int sr)
 void
 update_distort2_r1(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->r1 = (int) adj->value / 5;
+    params->r1 = (100 - (int) adj->value) / 5;
     params->r1 -= params->r1 % 2;
     if (params->r1 == 0)
 	params->r1 = 1;
@@ -175,7 +181,7 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_r1 = gtk_adjustment_new(pdistort->r1 * 5, 1.0, 101, 1.0, 1.0, 1.0);
+    adj_r1 = gtk_adjustment_new(100 - pdistort->r1 * 5, 1.0, 101, 1.0, 1.0, 1.0);
     r1_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), r1_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -315,7 +321,9 @@ distort2_create(struct effect *p)
     int             i;
     char           *lookup_dirs[] = { "/usr/share/gnuitar/distort2",
 	"/usr/share/gnuitar-" VERSION "/distort2",
-	"./distort2"
+	"./distort2",
+	"\\Program Files\\gnuitar\\distort2",
+	".\\distort2"
     };
 
     p->params =
@@ -343,7 +351,7 @@ distort2_create(struct effect *p)
     /*
      * Find the lookup directory 
      */
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 5; i++) {
 	if (access(lookup_dirs[i], R_OK | X_OK) == 0) {
 	    strncpy(lookup_dir, lookup_dirs[i], 255);
 	    break;
