@@ -1,5 +1,5 @@
 %define ver 0.1.0
-%define rel 2b
+%define rel 3b
 %define prefix /usr/local
 
 Summary: a GTK+ based guitar processor. Includes such effects as reverberator, sustain, distortion, phasor, wah-wah.
