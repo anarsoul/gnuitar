@@ -1,3 +1,164 @@
+2003-03-13 22:29  fonin
+
+	* Makefile.in, configure, configure.in, src/Makefile.am,
+	src/Makefile.in: New make files.
+
+2003-03-13 22:28  fonin
+
+	* TODO: New TODO.
+
+2003-03-13 22:27  fonin
+
+	* docs/faq.html: Added a not about using sustain against noise.
+
+2003-03-13 22:24  fonin
+
+	* src/: phasor.c, phasor.h: New parameter "bandpass" - turn on
+	bandpass function.
+
+2003-03-13 22:23  fonin
+
+	* src/gui.c: Selecting the current bank when the switch is pressed.
+
+2003-03-12 23:00  fonin
+
+	* INSTALL: Notes on command-line windows build.
+
+2003-03-12 22:58  fonin
+
+	* FAQ: More notes on noise reduction.
+
+2003-03-12 22:55  fonin
+
+	* src/phasor.c: - meaningful measure units; - code cleanup.
+
+2003-03-12 22:55  fonin
+
+	* src/phasor.h: Speed member of effect structure is an extra.
+
+2003-03-12 22:54  fonin
+
+	* src/sustain.c: Better presets.
+
+2003-03-12 22:53  fonin
+
+	* src/: delay.c, echo.c: - meaningful sliders measure units; - code
+	cleanup.
+
+2003-03-12 22:52  fonin
+
+	* src/: delay.h, echo.h: Comments on structure members added.
+
+2003-03-12 00:04  fonin
+
+	* src/: chorus.c, distort.c, sustain.c: Measure control sliders in
+	standard units (ms, %).
+
+2003-03-09 23:16  fonin
+
+	* docs/install.html: Few words on command line build under Windows.
+
+2003-03-09 23:12  fonin
+
+	* src/: pump.c, pump.h: New variables for new "change sampling
+	params" feature.
+
+2003-03-09 23:10  fonin
+
+	* src/gui.h: Version 0.2.1.
+
+2003-03-09 23:10  fonin
+
+	* src/gui.c: - new toggle button to start/stop recording; - new
+	menu item for sampling params; - new dialog for sampling params.
+
+2003-03-09 23:05  fonin
+
+	* src/main.c: Internal redesign for new "change sampling params"
+	feature.  New functions init_sound() and close_sound().
+
+2003-03-09 23:02  fonin
+
+	* src/: rcfilter.c, rcfilter.h: Internal redesign for new "change
+	sampling params" feature.
+
+2003-03-09 23:00  fonin
+
+	* src/: utils.c, utils.h: Utility constants and functions.
+
+2003-03-09 22:58  fonin
+
+	* src/tracker.c: Redesign for the new "change sampling params"
+	feature.
+
+2003-03-09 22:57  fonin
+
+	* src/reverb.c: - bugfix with delay control - it was not working
+	correct; - internal redesign for sampling params change feature.
+
+2003-03-09 22:53  fonin
+
+	* src/: tremolo.c, tremolo.h, vibrato.c, vibrato.h: Meaningful
+	params "speed" and "amplitude". Structures were redesigned for new
+	feature of on-the-fly change of sampling params.
+
+2003-03-09 22:49  fonin
+
+	* src/: chorus.c, chorus.h, distort.c, distort.h: Structures were
+	redesigned to allow to change sampling params.
+
+2003-03-09 22:46  fonin
+
+	* src/: autowah.c, autowah.h: - parameter "speed" removed from
+	effect internal structure, df (delta ef)   instead; - cleanup of
+	dead code and variables in autowah_filter(); - parameter speed is
+	measured in 1 wave per N msec.
+
+2003-03-09 11:40  fonin
+
+	* .cvsignore, gnuitar.kdevprj, gnuitar.lsm: Initial revision
+
+2003-03-09 11:40  fonin
+
+	* .cvsignore, gnuitar.kdevprj, gnuitar.lsm: new project started
+
+2003-02-12 17:38  fonin
+
+	* docs/install.html: Italized the quote about M$ command line
+	compiler.
+
+2003-02-12 00:22  fonin
+
+	* INSTALL, docs/install.html: M$ Visual C notes added.
+
+2003-02-11 23:48  fonin
+
+	* docs/readme.html: Another URL fix.
+
+2003-02-11 23:45  fonin
+
+	* src/: gui.h, main.c: URL fixes.
+
+2003-02-11 23:43  fonin
+
+	* docs/: install.html, readme.html: HTML and URL fixes.
+
+2003-02-06 21:51  fonin
+
+	* NEWS: Date of release changed.
+
+2003-02-06 21:51  fonin
+
+	* README: Updated a link linux-sound.org.
+
+2003-02-06 21:44  fonin
+
+	* gnuitar.dsp: Added more files to the project.
+
+2003-02-06 21:42  fonin
+
+	* ChangeLog: Update of changelog.
+
 2003-02-06 21:42  fonin
 
 	* TODO: Many tasks are done
