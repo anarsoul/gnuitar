@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2003/12/21 08:40:36  dexterus
+ * biquad files amd eqbank working
+ *
  * Revision 1.13  2003/04/12 20:02:10  fonin
  * New noise gate effect.
  *
@@ -89,6 +92,8 @@
 #include "reverb.h"
 #include "tracker.h"
 #include "noise.h"
+#include "eqbank.h"
+#include "distort_ts9.h"
 
 struct effect  *effects[MAX_EFFECTS];
 int             n = 0;
@@ -154,6 +159,7 @@ struct effect_creator effect_list[] = {
     {"sustain", sustain_create},
     {"distort2", distort2_create},
     {"noise gate", noise_create},
+	{"eq bank", eqbank_create},
     {NULL, NULL}
 };
 
