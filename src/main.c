@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2003/02/03 17:24:04  fonin
+ * Disclaimer and legal notice text moved to a string constants to gui.h
+ *
  * Revision 1.9  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -631,6 +634,10 @@ main(int argc, char **argv)
      */
     setuid(getuid());
 #endif
+
+    printf("\n\n"COPYRIGHT \
+	    "This program is a free software and distributed under GPL license;\n" \
+	    "see Help->About for details.\n");
 
     gtk_init(&argc, &argv);
     init_gui();
