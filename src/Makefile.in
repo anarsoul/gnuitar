@@ -83,7 +83,7 @@ gnuitar_SOURCES = main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	pump.h chorus.h delay.h echo.h tracker.h tremolo.h \
 	vibrato.h autowah.h phasor.h rcfilter.h \
 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
-	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h
+	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h chebyshev.c chebyshev.h
 
 
 INCLUDES = \
@@ -107,7 +107,7 @@ LIBS = @LIBS@
 gnuitar_OBJECTS =  main.o pump.o chorus.o delay.o echo.o tracker.o \
 tremolo.o vibrato.o autowah.o phasor.o rcfilter.o gui.o distort.o \
 distort2.o sustain.o reverb.o backbuf.o utils.o noise.o biquad.o \
-eqbank.o
+eqbank.o chebyshev.o
 gnuitar_DEPENDENCIES = 
 gnuitar_LDFLAGS = 
 CFLAGS = @CFLAGS@
@@ -122,11 +122,11 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 TAR = gtar
 GZIP_ENV = --best
 DEP_FILES =  .deps/autowah.P .deps/backbuf.P .deps/biquad.P \
-.deps/chorus.P .deps/delay.P .deps/distort.P .deps/distort2.P \
-.deps/echo.P .deps/eqbank.P .deps/gui.P .deps/main.P .deps/noise.P \
-.deps/phasor.P .deps/pump.P .deps/rcfilter.P .deps/reverb.P \
-.deps/sustain.P .deps/tracker.P .deps/tremolo.P .deps/utils.P \
-.deps/vibrato.P
+.deps/chebyshev.P .deps/chorus.P .deps/delay.P .deps/distort.P \
+.deps/distort2.P .deps/echo.P .deps/eqbank.P .deps/gui.P .deps/main.P \
+.deps/noise.P .deps/phasor.P .deps/pump.P .deps/rcfilter.P \
+.deps/reverb.P .deps/sustain.P .deps/tracker.P .deps/tremolo.P \
+.deps/utils.P .deps/vibrato.P
 SOURCES = $(gnuitar_SOURCES)
 OBJECTS = $(gnuitar_OBJECTS)
 
