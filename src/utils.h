@@ -41,6 +41,22 @@
 #define ERR_WAVEINHDR		13	/* error preparing record header */
 #define ERR_WAVEINQUEUE		14	/* error queuing record header */
 #define ERR_WAVEINRECORD	15	/* recording error */
+#define ERR_DSOUNDOPEN		16
+#define ERR_DSOUNDBUFFER	17
+#define ERR_DSOUNDPLAYBACK	18
+#define ERR_DSCOOPLEVEL		19
+
+
+/*
+ * Program states:
+ */
+#define STATE_PROCESS		0	/* 0 - recording/playback is on */
+#define STATE_PAUSE		1	/* 1 - playback is paused */
+#define STATE_EXIT		2	/* 2 - exit thread */
+#define STATE_START		3	/* 3 - the thread is just started
+					 * (first loop), playback is on */
+#define STATE_START_PAUSE	4	/* 4 - application is starting,
+					 * playback is paused */
 
 #include "pump.h"
 #ifdef _WIN32
