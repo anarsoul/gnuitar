@@ -1,14 +1,69 @@
-For 0.1.0 Release
-- extensively testing to find security issues, memory leaks etc.
-- about box and logo
-- documentation
-- push effects on the _top_ of stack
+TODO:
+0.2.0
++ fix delay and set rt priority to the thread
+  - research latency time on different kinds of drivers and
+    fragment sizes (for low-end computers)
++ в write/load процедурах делать не sizeof(тип), а sizeof(переменная)
+- disclaimer and copyright update in each source
+- bug with GTK critical error on finish
+- icon for the program
+- more docs
+  - HTML docs and a convert script to produce text versions
+  - launch browser to show documentation from the GNUitar
+  + user documentation with effects description
+  - note on high priority thread and hangups
+  + legal issues
+  - order info
+- meaningful names for effects
+  - measure all in standard SI units (ms, etc.)
+    +- reverb
++ problems with banks list - does not support national characters
++ demo version
++ good effects presets
++ fix tracker module (write to .WAV file)
++ problem with tremolo.c - memory bound error
++ lick up the project file
++ graceful app shutdown (function die)
 
-For future releases:
+0.2.1
+- sample rate/fragments/stereo/bits controls on the fly
+- meaningful names for effects
+  - measure all in standard SI units (ms, etc.)
+    + vibrato
+    - tremolo
+    + reverb
+    - distortion
+    - chorus
+    - delay
+    - echo
+    - wah
+    - sustain
+- cleanup effects
+  - delay
+  - echo
+
+0.3.0
+- DirectSound API Win32
+- WDM Kernel Streaming Win32
+
+0.4.0
+- plugins
+
+0.5.0
+- equalizer effect
+- noise reduction as separate effect
+
+0.6.0
+- tuner
+- external pedal and switch
+
+0.7.0
+- play .wav in the background
+
+For future releases (misc):
 + tracker
-  - gzip track file on the fly
+  - gzip/compress track file on the fly, depending on the OS
   - improve quality (now it writes sound with cutoff frequencies)
-- allow to control the sampling rate and buffer size (now it's hard-coded)
-- equalizer
-- noise redution as separate effect
-- think about plugins
+- rewrite pump module to gain maximum performance
+- improve portability:
+  - fix pre-assumed little-endian architecture; perform explicit check
