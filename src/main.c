@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2003/03/25 14:03:01  fonin
+ * Work around buffer overruns with DirectSound playback.
+ *
  * Revision 1.15  2003/03/23 20:05:42  fonin
  * New playback method via DirectSound.
  *
@@ -126,6 +129,8 @@ DWORD           thread_id;
 LPDIRECTSOUND   snd = NULL;	/* DirectSound object */
 LPDIRECTSOUNDBUFFER dbuffer = NULL;	/* DS buffer */
 short           dsound = 1;	/* flag - do we use DirectSound for output ? */
+unsigned short	overrun_threshold=4;	/* after this number of fragments 
+					 * overran buffer will be recovered  */
 HWAVEIN         in;		/* input sound handle */
 HWAVEOUT        out;		/* output sound handle */
 MMRESULT        err;
@@ -249,7 +254,7 @@ audio_thread_start(void *V)
 		    /*
 		     * find unused output buffer and queue it to output 
 		     */
-		    for (i = 0; dsound && i < nbuffers; i++)
+		    for (i = 0; !dsound && i < nbuffers; i++)
 			if (cur_wr_hdr[i] == 1) {
 			    hdr_avail = i;
 			    cur_wr_hdr[i] = 0;	/* ready to queue */
@@ -278,20 +283,30 @@ audio_thread_start(void *V)
 			     * is equal to the write position
 			     * returned by the call above
 			     */
-			    if (state == STATE_START)
-				bufpos = write_pos;
+			    if (state == STATE_START) {
+				bufpos = write_pos+buffer_size;
+			    }
 			    /*
 			     * otherwise we just increment buffer position
 			     * by the fragment size
 			     */
-			    else
-				bufpos += buffer_size;
+			    else {
+				/* workaround buffer overrun */
+				if(bufpos<write_pos &&
+				    /* this condition handles buffer wrap around */
+				    write_pos-bufpos>buffer_size*overrun_threshold &&
+				    write_pos-bufpos<buffer_size*200) {
+				    bufpos=write_pos+buffer_size;
+				    fprintf(stderr,"\nbuffer overrun !");
+				}
+				else bufpos += buffer_size;
+			    }
 			    /*
 			     * handle wrap around 
 			     */
 			    if (bufpos >= MIN_BUFFER_SIZE * MAX_BUFFERS)
 				bufpos = 0;
-// fprintf(stdout,"\n%d,%d,%d,%d",read_pos,write_pos,bufpos-write_pos,bufpos);
+//fprintf(stdout,"\n%d,%d,%d,%d",read_pos,write_pos,bufpos-write_pos,bufpos);
 
 			    if (res == DS_OK) {
 				res = IDirectSoundBuffer_Lock(dbuffer,
@@ -330,19 +345,13 @@ audio_thread_start(void *V)
 				}
 
 			    }
-			}
-
-			for (i = 0, j = 0, k = 0; i < count; i++) {
-			    int             W = procbuf[i];
-			    if (W < -MAX_SAMPLE)
-				W = -MAX_SAMPLE;
-			    if (W > MAX_SAMPLE)
-				W = MAX_SAMPLE;
-			    if (!dsound)
-				((SAMPLE *) (write_header[hdr_avail].
-					     lpData))[i] = W;
-			    else {
+			    for (i = 0, j = 0, k = 0; i < count; i++) {
+				int             W = procbuf[i];
 				SAMPLE         *curpos;
+				if (W < -MAX_SAMPLE)
+				    W = -MAX_SAMPLE;
+				if (W > MAX_SAMPLE)
+				    W = MAX_SAMPLE;
 
 				if (j * sizeof(SAMPLE) >= len1
 				    && pos2 != NULL
@@ -355,25 +364,7 @@ audio_thread_start(void *V)
 				}
 				*(SAMPLE *) curpos = W;
 			    }
-			}
 
-			/*
-			 * start playback - MME output 
-			 */
-			if (!dsound) {
-			    err =
-				waveOutWrite(out, &write_header[hdr_avail],
-					     sizeof(WAVEHDR));
-			    if (err) {
-				serror(err, "\nwriting samples - ");
-			    } else
-				active_out_buffers++;
-			}
-			/*
-			 * start playback - DirectSound output 
-			 */
-			else {
-			    HRESULT         res;
 			    res =
 				IDirectSoundBuffer_Unlock(dbuffer, pos1,
 							  j *
@@ -405,44 +396,66 @@ audio_thread_start(void *V)
 				    break;
 				}
 			    }
-			}
-
-			/*
-			 * Start DirectSound playback, if this is a first
-			 * recorded buffer 
-			 */
-			if (state == STATE_START) {
-			    res =
-				IDirectSoundBuffer_Play(dbuffer, 0, 0,
+			    /*
+			     * Start DirectSound playback, if this is a first
+			     * recorded buffer 
+			     */
+			    if (state == STATE_START) {
+				res =
+				    IDirectSoundBuffer_Play(dbuffer, 0, 0,
 							DSBPLAY_LOOPING);
-			    if (res != DS_OK) {
-				fprintf(stderr,
+				if (res != DS_OK) {
+				    fprintf(stderr,
 					"\nCannot start playback via DirectSound: ");
-				switch (res) {
-				case DSERR_INVALIDCALL:{
+				    switch (res) {
+				    case DSERR_INVALIDCALL:{
 					fprintf(stderr,
 						"DSERR_INVALIDCALL");
 					break;
 				    }
-				case DSERR_INVALIDPARAM:{
+				    case DSERR_INVALIDPARAM:{
 					fprintf(stderr,
 						"DSERR_INVALIDPARAM");
 					break;
 				    }
-				case DSERR_BUFFERLOST:{
+				    case DSERR_BUFFERLOST:{
 					fprintf(stderr,
 						"DSERR_BUFFERLOST");
 					break;
 				    }
-				case DSERR_PRIOLEVELNEEDED:{
+				    case DSERR_PRIOLEVELNEEDED:{
 					fprintf(stderr,
 						"DSERR_PRIOLEVELNEEDED ");
 					break;
 				    }
+				    }
+				    state = STATE_EXIT;
 				}
-				state = STATE_EXIT;
+				state = STATE_PROCESS;
 			    }
-			    state = STATE_PROCESS;
+			}
+
+			/*
+			 * start playback - MME output 
+			 */
+			else {
+			    for (i = 0; i < count; i++) {
+				int             W = procbuf[i];
+				if (W < -MAX_SAMPLE)
+				    W = -MAX_SAMPLE;
+				if (W > MAX_SAMPLE)
+				    W = MAX_SAMPLE;
+				((SAMPLE *) (write_header[hdr_avail].
+					     lpData))[i] = W;
+			    }
+
+			    err =
+				waveOutWrite(out, &write_header[hdr_avail],
+					     sizeof(WAVEHDR));
+			    if (err) {
+				serror(err, "\nwriting samples - ");
+			    } else
+				active_out_buffers++;
 			}
 		    } else
 			printf("\nbuffer overrun.");
@@ -486,7 +499,7 @@ audio_thread_start(void *V)
 		 * that this WAVEHDR was sent via waveOutWrite and was
 		 * played). Some drivers need this to be cleared 
 		 */
-		if (!dsound)
+		if (dsound)
 		    break;
 		((WAVEHDR *) msg.lParam)->dwFlags &= ~WHDR_DONE;
 		for (i = 0; i < nbuffers; i++)
@@ -581,7 +594,12 @@ close_sound(void)
     if (!dsound)
 	waveOutClose(out);
     else {
-	// IDirectSound_Close();
+	if(dbuffer)
+	    IDirectSoundBuffer_Release(dbuffer);
+	if(snd)
+	    IDirectSound_Release(snd);
+	dbuffer=NULL;
+	snd=NULL;
     }
     waveInClose(in);
 #endif
