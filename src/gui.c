@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2003/03/23 20:05:18  fonin
+ * sample_dlg(): checkbox to switch playback method between DirectSound and MME.
+ *
  * Revision 1.15  2003/03/13 20:23:45  fonin
  * Selecting the current bank when the switch is pressed.
  *
@@ -115,6 +118,7 @@ extern pthread_mutex_t mutex;
 extern pthread_cond_t suspend;
 #else
 extern HANDLE   audio_thread;
+extern short    dsound;
 #endif
 
 static GtkItemFactoryEntry mainGui_menu[] = {
@@ -711,6 +715,14 @@ update_latency_label(GtkWidget * widget, gpointer sparams)
     gtk_label_set_text(GTK_LABEL(sp->latency_label), tmp);
 }
 
+#ifdef _WIN32
+void
+toggle_directsound(GtkWidget * widget, gpointer junk)
+{
+    dsound = !dsound;
+}
+#endif
+
 /*
  * Sampling parameters dialog
  */
@@ -722,6 +734,10 @@ sample_dlg(GtkWidget * widget, gpointer data)
     GtkWidget      *hpack1;
     GtkWidget      *hpack2;
     GtkWidget      *hpack3;
+#ifdef _WIN32
+    GtkWidget      *hpack4;
+    GtkWidget      *directsound;
+#endif
     GtkWidget      *rate_label;
     GtkWidget      *bits_label;
     GtkWidget      *channels_label;
@@ -757,6 +773,10 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(vpack0), hpack1, TRUE, TRUE, 1);
     hpack2 = gtk_hbox_new(FALSE, 1);
     gtk_box_pack_start(GTK_BOX(vpack0), hpack2, TRUE, TRUE, 1);
+#ifdef _WIN32
+    hpack4 = gtk_hbox_new(FALSE, 1);
+    gtk_box_pack_start(GTK_BOX(vpack0), hpack4, TRUE, TRUE, 1);
+#endif
     hpack3 = gtk_hbox_new(FALSE, 1);
     gtk_box_pack_start(GTK_BOX(vpack0), hpack3, TRUE, TRUE, 1);
 
@@ -823,6 +843,16 @@ sample_dlg(GtkWidget * widget, gpointer data)
 			  GTK_JUSTIFY_LEFT);
     gtk_box_pack_end(GTK_BOX(hpack3), sparams.latency_label, TRUE, TRUE,
 		     1);
+
+#ifdef _WIN32
+    directsound =
+	gtk_check_button_new_with_label("Output via DirectSound");
+    gtk_signal_connect(GTK_OBJECT(directsound), "toggled",
+		       GTK_SIGNAL_FUNC(toggle_directsound), NULL);
+    gtk_box_pack_end(GTK_BOX(hpack4), directsound, TRUE, TRUE, 1);
+    if (dsound)
+	GTK_TOGGLE_BUTTON(directsound)->active = 1;
+#endif
 
     buttons_pack = gtk_hbox_new(FALSE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(buttons_pack), 15);
@@ -1032,12 +1062,12 @@ init_gui(void)
 
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
-    gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 3, 4, 
-	__GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 
-	__GTKATTACHOPTIONS(GTK_SHRINK |	GTK_FILL), 5, 5);
-    gtk_table_attach(GTK_TABLE(tbl), start, 0, 1, 2, 3, 
-	__GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 
-	__GTKATTACHOPTIONS(GTK_SHRINK |	GTK_FILL), 5, 5);
+    gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 3, 4,
+		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL),
+		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 5, 5);
+    gtk_table_attach(GTK_TABLE(tbl), start, 0, 1, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL),
+		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 5, 5);
 
     gtk_table_attach(GTK_TABLE(tbl), up, 2, 3, 1, 2, __GTKATTACHOPTIONS(0),
 		     __GTKATTACHOPTIONS(0), 5, 5);
