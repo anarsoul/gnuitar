@@ -20,9 +20,12 @@
  * $Id$
  *
  * $Log$
- * Revision 1.19  2004/10/21 11:19:18  dexterus
- * Bug in the win 32 section related to sample type (SAMPLE insted of DSP_SAMPLE ) fixed -- win32 working
+ * Revision 1.20  2005/04/06 19:34:58  fonin
+ * Fixed the accidental typo with "count=bits >> 8" that caused the floating exception
  *
+ * Revision 1.19  2004/10/21 11:19:18  dexterus
+ * Bug in the win 32 section related to sample type (SAMPLE insted of
+ * DSP_SAMPLE ) fixed -- win32 working
  *
  * Revision 1.18  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
@@ -187,7 +190,7 @@ audio_thread_start(void *V)
 	    close(fd);
 	    exit(ERR_WAVEINRECORD);
 	}
-	count /= bits >> 8;
+	count /= bits / 8;
 
 	for (i = 0; i < count; i++)
 	    procbuf[i] = rdbuf[i];
