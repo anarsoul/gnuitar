@@ -1,5 +1,5 @@
 %define ver 0.1.0
-%define rel 1b
+%define rel 2b
 %define prefix /usr/local
 
 Summary: a GTK+ based guitar processor. Includes such effects as reverberator, sustain, distortion, phasor, wah-wah.
@@ -49,6 +49,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{prefix}/share/%{name}/*
 
 %changelog
+* Sun Mar 11 2001 Max Rudensky	<fonin@ziet.zhitomir.ua>
+- Fixed closing main window. There was a bug - after close application 
+still was in memory.
 * Thu Jan 01 2001 Max Rudensky <fonin@ziet.zhitomir.ua>
 - First release
 
