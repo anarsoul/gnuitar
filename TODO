@@ -79,7 +79,12 @@ TODO:
 + GTK2
   - test on Windows
 - equalizer effect
+  - 5kHz limit problem
 - swap slider controls
++ process all in floats to decrease SNR ? Convert only on input and output ?
+  (as IFDEF)
+- distortion ?
+- autowah - combined with other filters distorts the sound
 
 0.4.0
 - rework distortion
