@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Tremolo effect
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2003/01/29 19:33:42  fonin
+ * Fixed array referencing error that caused random crashes.
+ * Win32 port.
+ *
  * Revision 1.3  2001/06/02 14:05:59  fonin
  * Added GNU disclaimer.
  *
@@ -34,7 +38,12 @@
 #include "tremolo.h"
 #include <math.h>
 #include <stdlib.h>
-#include <unistd.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#else
+#    define M_PI 3.14159265358979323846E0
+#    include <io.h>
+#endif
 #include "gui.h"
 
 void            tremolo_filter(struct effect *p, struct data_block *db);
@@ -174,26 +183,26 @@ tremolo_filter(struct effect *p, struct data_block *db)
     count = db->len;
 
     while (count) {
-	tp->history[tp->index++] = *s;	/*
+	tp->history[tp->index++] = *s;	/* 
 					 * add sample to history 
 					 */
 	if (tp->index == tp->tremolo_size)
-	    tp->index = 0;	/*
+	    tp->index = 0;	/* 
 				 * wrap around 
 				 */
 
 	ef_index = tp->index;
 	if (tp->index < tp->tremolo_index)
 	    ef_index += tp->tremolo_size;
+	tp->tremolo_phase++;
+	if (tp->tremolo_phase >= tp->tremolo_speed)
+	    tp->tremolo_phase = 0;
+
 	tp->tremolo_index =
 	    ef_index - tp->tremolo_amplitude - tp->tremolo_amplitude -
 	    tp->phase_buffer[tp->tremolo_phase *
 			     tp->tremolo_phase_buffer_size /
 			     tp->tremolo_speed];
-	tp->tremolo_phase++;
-	if (tp->tremolo_phase >= tp->tremolo_speed)
-	    tp->tremolo_phase = 0;
-
 	if (tp->tremolo_index >= tp->tremolo_size)
 	    tp->tremolo_index -= tp->tremolo_size;
 	if (tp->tremolo_index < 0)
