@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2003/04/18 18:22:04  fonin
+ * Cleanup.
+ *
  * Revision 1.2  2003/04/16 14:00:07  fonin
  * - fix with updating the time controls;
  * - all features work now including fade out time, fade in time,
@@ -47,14 +50,12 @@ void
 update_noise_threshold(GtkAdjustment * adj, struct noise_params *params)
 {
     params->threshold = (int) adj->value * 10;
-    printf("\nthreshold=%i", params->threshold);
 }
 
 void
 update_noise_hold(GtkAdjustment * adj, struct noise_params *params)
 {
     params->hold_time = (int) adj->value * nchannels * sample_rate / 1000;
-    printf("\nhold=%i", params->hold_time);
 }
 
 void
@@ -74,7 +75,6 @@ void
 update_noise_attack(GtkAdjustment * adj, struct noise_params *params)
 {
     params->attack = (int) adj->value * nchannels * sample_rate / 1000;
-    printf("\nattack=%i", params->attack);
 }
 
 void
