@@ -1,11 +1,14 @@
 				GNUitar
 			Guitar processor software
 
-(C) 2000,2001 Max V.Rudensky <fonin@ziet.zhitomir.ua>
+(C) 2000-2003 Max V.Rudensky <fonin@ziet.zhitomir.ua>
+
+1. What is GNUitar ?
 
 GNUitar is a real-time sound effects software that allows 
-you to use your Linux box as guitar processor. It has GTK+ based 
-interface.
+you to use your computer as a guitar processor. It has GTK+ based 
+interface. It can be compiled on any flavor of UNIX that have
+GTK+ 1.2, Glib, pthreads and OSS sound driver. It also works on Windows.
 
 Program is based on 2 works:
     o Ele 0.1 by Morris Slutsky
@@ -13,45 +16,77 @@ Program is based on 2 works:
     o Guitar FX Processor by Marin Vlah
       http://fly.srk.fer.hr/~mvlah/fx_processor.html
 
-Most part of effects were shamelessly stolen from these programs
-and wrapped into GUI widgets. Distortion was taken from ELE and 
-improved by me.
+2. Download
+
+http://freshmeat.net/projects/gnuitar
+http://ziet.zhitomir.ua/~fonin/downloads.php
 
 
-GETTING
-~~~~~~~
-http://ziet.zhitomir.ua/~fonin/code.html
+3. Requirements
 
-
-REQUIREMENTS
-~~~~~~~~~~~~
 You will need
-    o GTK+ version 1.2.6 or fresher
+    o GTK+ version 1.2.6 or better; program was not tested with GTK 2.0;
+    o GLIB 1.2 or better
+    o POSIX threads on UNIX
     o full-duplex sound card
+    o GCC on UNIX, Microsoft Visual C++ 6.0 on Windows
 
-Program works fine on my Pentium II/433.
-It was tested only on single computer, volunteers for extended tests ?
 
-gnuitar executable file should be setuid root to process sound with 
+4. Performance
+
+The bottleneck of the real-time sound software is CPU, and quality
+of sound driver (the latter also is very depend on OS).
+It was reported that GNUitar works pretty well on Celeron II/300.
+Pentium/166 is not sufficient to run GNUitar.
+Please send your reports with 
+
+4.1 UNIX notes
+
+GNUitar executable file should be setuid root to process sound with 
 real-time priority; otherwise you'll hear glitches and delays while 
 switching between windows. It switches to real user id as soon as 
-it set realtime priority to pumper thread, so it shouldn't break 
+it set real-time priority to effect-processing thread, and before
+any GTK initializations are being performed, so it shouldn't break 
 security on your system.
+
+4.2. Windows notes
+
+Windows have hard problems with latency when processing audio in real time.
+This causes GNUitar to perform bad on Windows. I never succeed to reduce
+latency lower than 60ms. These are few performance notes:
+- close all unnecessary applications before you launch GNUitar;
+- try to re-launch it few times, if the initial latency is bad;
+- make sure you have the latest driver for your soundcard;
  
 See INSTALL file for common installation notes.
 
 
-FEATURES
-~~~~~~~~
+5. Usage
+
+The meanings of controls are quite straightforward.
+
+The right area contains available effects. The central area
+indicates currently used effects. The buttons right to it should be
+used to add/remove effects and change its order.
+Each effect has separate control window with appropriate controls.
+
+The left area contains available effect layouts, and button
+to add the one. Layout is a "snapshot" of your effects and its' 
+settings, that you can load/save using "File" menu.
+
+Big "Switch" button is used to switch layouts. In this manner,
+you can change current sound by one mouse/keyboard click.
+
 You can write track of what you play to a file. Just click
 check-box "Write track" at the bottom of program window, enter 
 filename and play. Don't forget that continuous track write 
-can overfill your hard drive.
+can fill out your hard drive.
 The track file format is raw data, word length, signed,
-48000 Hz sampling rate, 1 channel. You can convert it with 
-SoX program like this
+44100 Hz sampling rate, 1 channel. In future, sampling format may change,
+however you will always be informed about actual format.
+You can convert it with SoX program like this
 
-    sox -w -s -c 1 -r 48000 track.raw track.wav, 
+    sox -w -s -c 1 -r 44100 track.raw track.wav, 
 
 and then to MP3:
 
@@ -60,16 +95,38 @@ and then to MP3:
 Sox is available at http://home.sprynet.com/~cbagwell/sox.html, 
 and Bladeenc is at http://home8.swipnet.se/~w-82625.
 
-BUGS
-~~~~
-Program is in beta stage. Any feedback is appreciated. The simplest 
-way is to through out the program if it buggy or won't do what you want, 
-and find something else, but it's also the simplest way 
-to kill any young projects.
-
-To request a new feature, or report a bug, or whatever else mail me 
-fonin@ziet.zhitomir.ua.
+Windows users can write track directly to .wav file
+(currently it is not available on UNIX).
 
 
-Best regards,
-Max Rudensky.
+6. Bugs
+
+Probably they are there :-) Send bug reports to fonin@ziet.zhitomir.ua
+
+
+7. About Free Software Development
+
+You should always keep in mind, that development of free software
+doesn't work in the same way as commercial development. Every
+successful free software project has an active userbase behind it. This
+means that your comments, ideas and bug reports are extremely
+important. If something doesn't work, or some feature is missing,
+please mail me about it. Thank you in advance! You can send GNUitar
+related mails to me at mailto:fonin@ziet.zhitomir.ua.
+
+
+8. Related Links
+
+http://freshmeat.net/projects/gnuitar and
+http://ziet.zhitomir.ua/~fonin/downloads.php - GNUitar project pages
+http://www.linuxsound.org - excellent categorized list of Unix sound software
+http://home.sprynet.com/~cbagwell/sox.html - SoX playback/record/processing
+  software
+http://home8.swipnet.se/~w-82625 - BladeEnc, free MP3 encoder
+
+
+9. Author
+
+Max Rudensky <fonin@ziet.zhitomir.ua>
+	     <fonin@yahoo.com>
+	     http://ziet.zhitomir.ua/~fonin
