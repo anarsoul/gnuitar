@@ -6,9 +6,8 @@ TODO:
 + в write/load процедурах делать не sizeof(тип), а sizeof(переменная)
 + disclaimer and copyright update in each source
 + LGPL notice everywhere
-- bug with GTK critical error on finish
 + icon for the program
-- перед релизом марафет в исходниках - dos2unix, indent и вручную все проверить.
++ перед релизом марафет в исходниках - dos2unix, indent и вручную все проверить.
 + win32 - при нажатии на write track, а затем cancel, чекбокс остается
   нажатым.
 - more docs
@@ -36,24 +35,39 @@ TODO:
 + graceful app shutdown (function die)
 
 0.2.1
++ meaningful return codes
++ fix - multiply all time controls to the number of channels
+  and adjust time controls according to the sample rate
++ sample rate/fragments/stereo/bits controls on the fly
+  + sampling params dialog
+  + start/stop toggle button
+  + inner implementation: Linux
+    + обрабатывать значение latency
+    + правильно обрабатывать различные форматы данных
+      - 8/16 бит
+      + моно/стерео
+  + inner implementation: Windows
++ meaningful names for effects
+  + measure all in standard SI units (ms, etc.)
+    and care about array bounds (like in tremolo and vibrato)
+    + vibrato
+    + tremolo
+    + reverb
+    + distortion
+    + chorus
+    + delay
+    + echo
+    + wah
+    + sustain
+    + phasor
++ cleanup effects
+  + delay
+  + echo
+
+0.2.2
 - convert the names of presets to UTF8 strings, before append it
   to the bank list, as recommended by GTK-Win32 manual.
-- sample rate/fragments/stereo/bits controls on the fly
-- versioning of the presets
-- meaningful names for effects
-  - measure all in standard SI units (ms, etc.)
-    + vibrato
-    - tremolo
-    + reverb
-    - distortion
-    - chorus
-    - delay
-    - echo
-    - wah
-    - sustain
-- cleanup effects
-  - delay
-  - echo
+- bug with GTK critical error on finish
 
 0.3.0
 - DirectSound API Win32
