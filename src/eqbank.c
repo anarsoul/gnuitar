@@ -20,6 +20,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.4  2004/10/21 11:16:26  dexterus
+ * Made to work with new biquad.c version (1.3)
+ * Overall functional
+ *
  * Revision 1.3  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -35,7 +39,7 @@
  */
 
 /* Number of filters in bank */
-#define FB_NB 10
+#define FB_NB 14
 /* Minimal value in Decibels ( for UI purpose only) */
 #define FB_MIN -10
 /* Maximal Value in Decibels */
@@ -44,11 +48,12 @@
 /* Array with the center frequencies of the filters in Hertz
  * Beware, to large values for the ends, may result in instability
  */
-const int       fb_cf[FB_NB] =
-    { 40, 100, 200, 320, 640, 1000, 1600, 2200, 3000, 4200 };
+
+const int fb_cf[FB_NB] =
+		{40,100,200,320,640,1000,1600,2200,3000,4000,6000,8000,12000,16000};
 /* Array with the bandwidths of each filter in Hertz */
-const int       fb_bw[FB_NB] =
-    { 30, 120, 160, 320, 640, 800, 1200, 1200, 1400, 1800 };
+const int fb_bw[FB_NB] =
+    {30,120,160,320,640,800,1200,1200,1400,1800,2600,4000,6000,8000};
 
 
 #include <stdlib.h>
@@ -227,41 +232,33 @@ eqbank_filter(struct effect *p, struct data_block *db)
     int             count,
                     i;
 
-    SAMPLE         *s;
+    DSP_SAMPLE         *s;
 
     struct eqbank_params *ep;
     double          t;
+	int cchannel;
 
     ep = p->params;
-
+	
     count = db->len;
     s = db->data;
 
-    while (count > 0) {
+    while (count ) {
+	
+	
+	cchannel = 0;
 	t = *s;
 	for (i = 0; i < FB_NB; i++)
-	    t = doBiquad(t, &ep->filters[i]);
+	    t = doBiquad(t, &ep->filters[i], cchannel);
 	t *= ep->ocoeff;
 	if (t > MAX_SAMPLE)
 	    t = MAX_SAMPLE;
 	if (t < -MAX_SAMPLE)
 	    t = -MAX_SAMPLE;
 	*s = t;
-	if (nchannels > 1) {
-	    s++;
-	    count--;
-	    t = *s;
-	    for (i = 0; i < FB_NB; i++)
-		t = doBiquadC(t, &ep->filters[i]);
-	    t *= ep->ocoeff;
-	    if (t > MAX_SAMPLE)
-		t = MAX_SAMPLE;
-	    if (t < -MAX_SAMPLE)
-		t = -MAX_SAMPLE;
-	    *s = t;
-	}
-
-
+	if (cchannel < nchannels - 1) 
+		cchannel++;
+	  
 	s++;
 	count--;
     }
@@ -275,8 +272,12 @@ void
 eqbank_done(struct effect *p)
 {
     struct eqbank_params *ep;
+	unsigned int i;
 
     ep = (struct eqbank_params *) p->params;
+	
+	for (i = 0; i < FB_NB; i++) 
+		free( ep->filters[i].mem);
 
     free(ep->filters);
     free(ep->boosts);
@@ -340,12 +341,15 @@ eqbank_create(struct effect *p)
     p->params =
 	(struct eqbank_params *) malloc(sizeof(struct eqbank_params));
     peq = (struct eqbank_params *) p->params;
-    peq->filters = (struct Biquad *) malloc(sizeof(struct Biquad) * FB_NB);
+    peq->filters = (struct Biquad *) malloc(sizeof(struct Biquad) * FB_NB );
     peq->boosts = (int *) malloc(sizeof(int) * FB_NB);
-    for (i = 0; i < FB_NB; i++) {
-	memset((void *) &peq->filters[i], 0, sizeof(struct Biquad));
-	SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], 0, &peq->filters[i]);
-	peq->boosts[i] = 0;
+    for (i = 0; i < FB_NB; i++) 
+	{
+		memset((void *) &peq->filters[i], 0, sizeof(struct Biquad));
+		peq->filters[i].mem = (double*) malloc( (nchannels * sizeof (double)) << 2);
+		memset((void *) peq->filters[i].mem, 0, (nchannels * sizeof (double)) << 2);
+		SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], 0, &peq->filters[i]);
+		peq->boosts[i] = 0;
     }
     peq->ocoeff = 1;
 

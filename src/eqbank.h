@@ -20,6 +20,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.3  2004/10/21 11:16:26  dexterus
+ * Made to work with new biquad.c version (1.3)
+ * Overall functional
+ *
  * Revision 1.2  2003/12/28 10:16:08  fonin
  * Code lickup
  *
@@ -30,7 +34,10 @@
 
 
 #include "pump.h"
-#include "biquad.h"
+
+#ifndef _BIQUAD_H_
+	#include "biquad.h"
+#endif
 
 extern void     eqbank_create(struct effect *);
 
@@ -40,5 +47,7 @@ struct eqbank_params {
     float           ocoeff;	/* contant to multiply with for volume */
     struct Biquad  *filters;
 };
+
+
 
 #endif
