@@ -1,14 +1,14 @@
-%define ver 0.1.0
-%define rel 3b
-%define prefix /usr/local
+%define ver 0.2.0
+%define rel 1
+%define prefix /usr
 
 Summary: a GTK+ based guitar processor. Includes such effects as reverberator, sustain, distortion, phasor, wah-wah.
 Name: gnuitar
 Version: %{ver}
 Release: %{rel}
-Source: http://ziet.zhitomir.ua/~fonin/code/gnuitar-%{ver}.tar.gz
+Source: http://ziet.zhitomir.ua/~fonin/projects/gnuitar/gnuitar-%{ver}.tar.gz
 Copyright: GPL
-URL: http://ziet.zhitomir.ua/~fonin/code.html
+URL: http://ziet.zhitomir.ua/~fonin/downloads.php
 Requires: gtk+ >= 1.2.6
 Group: Applications/Multimedia
 Packager: Max V. Rudensky <fonin@ziet.zhitomir.ua>
@@ -25,6 +25,7 @@ Includes effects:
 	o tremolo
 	o vibrato
 	o chorus/flanger
+	o phasor
 See 'README' for more information.
 
 %prep
@@ -44,11 +45,22 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files
 %defattr(-,root,root)
-%doc COPYING ChangeLog TODO README AUTHORS
+%doc COPYING ChangeLog TODO README AUTHORS NEWS docs
 %attr(4755,root,root) %{prefix}/bin/gnuitar
-%{prefix}/share/%{name}/*
+%prefix/*
 
 %changelog
+* Thu Feb 6 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
+- Windows port;
+- Write track to .wav file in Win32 version;
+- Meaningful measure units for vibrato and reverb effects (ms and percents);
+- HTML documentation; launch browser from a program to see the doc;
+- Tremolo bugfix: certain values of the effect params caused array bound
+  error and segfault;
+- Fix: when a the write track checkbox is clicked, and then action is cancelled,
+  checkbox remains toggled.
+- Added icon ;-)
+- Major code cleanups for easier maintenance.
 * Sun Mar 25 2001 Max Rudensky	<fonin@ziet.zhitomir.ua>
 - Removed "Clip" function from distortion. I found it ambiguous and 
   not elegant.
