@@ -20,6 +20,7 @@ CFG=gnuitar - Win32 Debug
 !MESSAGE "gnuitar - Win32 Release" (based on "Win32 (x86) Console Application")
 !MESSAGE "gnuitar - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE "gnuitar - Win32 Demo" (based on "Win32 (x86) Console Application")
+!MESSAGE "gnuitar - Win32 Release 586" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -43,7 +44,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /G6 /MT /W3 /GX /Ot /Oa /Og /Oi /Op /Oy /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
 # ADD BASE RSC /l 0x419 /d "NDEBUG"
 # ADD RSC /l 0x419 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -75,7 +76,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
+# ADD LINK32 glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib /nologo /version:0.20 /subsystem:console /debug /machine:I386 /pdbtype:sept
+# SUBTRACT LINK32 /profile /pdb:none
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
@@ -102,6 +104,31 @@ LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib /nologo /subsystem:console /machine:I386
 # ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib /nologo /subsystem:console /machine:I386
 
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "gnuitar___Win32_Release_586"
+# PROP BASE Intermediate_Dir "gnuitar___Win32_Release_586"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "Release_586"
+# PROP Intermediate_Dir "Release_586"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+# ADD BASE RSC /l 0x419 /d "NDEBUG"
+# ADD RSC /l 0x419 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib /nologo /subsystem:console /machine:I386
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib /nologo /subsystem:console /machine:I386
+
 !ENDIF 
 
 # Begin Target
@@ -109,6 +136,7 @@ LINK32=link.exe
 # Name "gnuitar - Win32 Release"
 # Name "gnuitar - Win32 Debug"
 # Name "gnuitar - Win32 Demo"
+# Name "gnuitar - Win32 Release 586"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -238,6 +266,10 @@ SOURCE=.\src\rcfilter.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\resource.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\reverb.h
 # End Source File
 # Begin Source File
@@ -327,6 +359,38 @@ SOURCE=.\missing
 # Begin Source File
 
 SOURCE=.\mkinstalldirs
+# End Source File
+# End Group
+# Begin Group "Effects"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\effects\HeyDay
+# End Source File
+# Begin Source File
+
+SOURCE=.\effects\Phase_destruction
+# End Source File
+# Begin Source File
+
+SOURCE=.\effects\Vibrato
+# End Source File
+# End Group
+# Begin Group "Resources"
+
+# PROP Default_Filter "*.rc"
+# Begin Source File
+
+SOURCE=.\gnuitar.ico
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\gnuitar.rc
+# End Source File
+# Begin Source File
+
+SOURCE=.\gnuitar_small.ico
 # End Source File
 # End Group
 # End Target
