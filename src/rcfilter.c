@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2005/04/06 19:34:20  fonin
+ * Code lickup
+ *
  * Revision 1.6  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -45,7 +48,7 @@
 #include <math.h>
 #include <string.h>
 #ifdef _WIN32
-#    define M_PI 3.14159265358979323846E0
+#    include "utils.h"		/* for M_PI */
 #endif
 
 void
@@ -116,14 +119,8 @@ RC_set_freq(double f, struct filter_data *pp)
 {
     pp->R = 1000.0;
     pp->C = other(f * nchannels, pp->R);
-if(isnan(pp->C))
-    printf("isnan(pp->C)\n");
     pp->invR = 1.0 / pp->R;
-if(isnan(pp->invR))
-    printf("isnan(pp->invR)\n");
     pp->dt_div_C = (1.0 / (sample_rate * nchannels)) / pp->C;
-if(isnan(pp->dt_div_C))
-    printf("isnan(pp->dt_div_C)\n");
 }
 
 void
@@ -140,19 +137,11 @@ RC_filter(DSP_SAMPLE *sound, int count, int mode, int filter_no,
 	    pp->last_sample[filter_no][mode][currchannel];
 	pp->last_sample[filter_no][mode][currchannel] = (double) *sound;
 
-if(isnan(du))
-    printf("isnan(du)!\n");
 	di = pp->invR * (du -
 			 pp->i[filter_no][mode][currchannel] *
 			 pp->dt_div_C);
-if(isnan(di))
-    printf("isnan(di)!\n");
 	pp->i[filter_no][mode][currchannel] += di;
-if(isnan(pp->i[filter_no][mode][currchannel]))
-    printf("isnan(pp->i[filter_no][mode][currchannel])!\n");
 
-if(isnan(*sound))
-    printf("isnan(sound)\n");
 	if (mode == HIGHPASS)
 	    *sound =
 		((pp->i[filter_no][mode][currchannel] * pp->R) *

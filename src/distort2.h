@@ -30,16 +30,15 @@
 extern void     distort2_create(struct effect *);
 
 struct distort2_params {
-    int             r2;
-    int             lowpass;
-    int		    noisegate;
-    int		    treble;
+    int         r2;
+    int		noisegate;
+    int		treble;
     struct filter_data fd;
     struct filter_data noise;
-	double c0,d1,lyf;
-	double last[MAX_CHANNELS];
-	double lastupsample;
-	struct Biquad  cheb, cheb1;  /*chebishev filters */
+    double	c0,d1,lyf;
+    double 	last[MAX_CHANNELS];
+    double	lastupsample;
+    struct Biquad cheb, cheb1;  /*chebishev filters */
 };
 
 #endif
