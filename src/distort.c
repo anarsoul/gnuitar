@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/03/09 20:49:45  fonin
+ * Structures were redesigned to allow to change sampling params.
+ *
  * Revision 1.7  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -240,7 +243,7 @@ distort_init(struct effect *p)
 void
 distort_filter(struct effect *p, struct data_block *db)
 {
-    int             count,
+    int             count,currchannel=0,
                    *s;
     struct distort_params *dp;
 
@@ -251,6 +254,7 @@ distort_filter(struct effect *p, struct data_block *db)
      */
     count = db->len;
     s = db->data;
+
     RC_highpass(db->data, db->len, &(dp->fd));
 
     while (count) {
@@ -263,12 +267,14 @@ distort_filter(struct effect *p, struct data_block *db)
 	/*
 	 * apply sat 
 	 */
-	if ((*s - dp->lastval) > dp->sat)
-	    *s = dp->lastval + dp->sat;
-	else if ((dp->lastval - *s) > dp->sat)
-	    *s = dp->lastval - dp->sat;
+	if ((*s - dp->lastval[currchannel]) > dp->sat)
+	    *s = dp->lastval[currchannel] + dp->sat;
+	else if ((dp->lastval[currchannel] - *s) > dp->sat)
+	    *s = dp->lastval[currchannel] - dp->sat;
 
-	dp->lastval = *s;
+	dp->lastval[currchannel] = *s;
+	if(nchannels>1)
+	    currchannel=!currchannel;
 
 	*s *= dp->level;
 	*s /= 256;

@@ -32,7 +32,7 @@ struct distort_params {
     int             sat,
                     level,
                     drive,
-                    lastval,
+                    lastval[MAX_CHANNELS],
                     noisegate;
     int             lowpass;
     struct filter_data fd;

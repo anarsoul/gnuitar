@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/03/09 20:49:45  fonin
+ * Structures were redesigned to allow to change sampling params.
+ *
  * Revision 1.8  2003/02/05 21:10:10  fonin
  * Cleanup before release.
  *
@@ -314,7 +317,8 @@ chorus_filter(struct effect *p, struct data_block *db)
                     Ang;
     int             tmp,
                     tot,
-                    rgn;
+                    rgn,
+		    currchannel=0;
 
     cp = (struct chorus_params *) p->params;
 
@@ -323,7 +327,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 
 
 #define MaxDly ((int)cp->depth * 8)
-    AngInc = cp->speed / 1000.0f;
+    AngInc = cp->speed / (nchannels*1000.0f);
     Ang = cp->ang;
 
     /*
@@ -354,18 +358,20 @@ chorus_filter(struct effect *p, struct data_block *db)
 	    break;
 	};
 
-	tot = backbuff_get(cp->memory, (unsigned int) dly);
+	tot = backbuff_get(cp->memory[currchannel], (unsigned int) dly);
 	tot *= cp->wet;
 	tot /= 256;
 	tot += tmp;
 	tot = (tot < -32767) ? -32767 : (tot > 32767) ? 32767 : tot;
 	rgn =
-	    (backbuff_get(cp->memory,
+	    (backbuff_get(cp->memory[currchannel],
 			  (unsigned int) dly) * cp->regen) / 256 + *s;
 	rgn = (rgn < -32767) ? -32767 : (rgn > 32767) ? 32767 : rgn;
-	backbuff_add(cp->memory, rgn);
+	backbuff_add(cp->memory[currchannel], rgn);
 	*s = tot;
 
+	if(nchannels>1)
+	    currchannel=!currchannel;
 	s++;
 	count--;
     }
@@ -379,11 +385,14 @@ void
 chorus_done(struct effect *p)
 {
     struct chorus_params *cp;
+    int i;
 
     cp = (struct chorus_params *) p->params;
 
-    backbuff_done(cp->memory);
-    free(cp->memory);
+    for(i=0;i<MAX_CHANNELS;i++) {
+	backbuff_done(cp->memory[i]);
+	free(cp->memory[i]);
+    }
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -447,6 +456,8 @@ void
 chorus_create(struct effect *p)
 {
     struct chorus_params *cp;
+    int i;
+
     p->params =
 	(struct chorus_params *) malloc(sizeof(struct chorus_params));
     p->proc_init = chorus_init;
@@ -456,13 +467,12 @@ chorus_create(struct effect *p)
     p->proc_done = chorus_done;
     p->proc_save = chorus_save;
     p->proc_load = chorus_load;
-
     cp = (struct chorus_params *) p->params;
-    cp->memory = (struct backBuf *) malloc(sizeof(struct backBuf));
-    backbuff_init(cp->memory, SAMPLE_RATE);	/* 
-						 * 1 second memory 
-						 */
-
+    
+    for(i=0;i<MAX_CHANNELS;i++) {
+	cp->memory[i] = (struct backBuf *) malloc(sizeof(struct backBuf));
+	backbuff_init(cp->memory[i], sample_rate);	/* 1 second memory */
+    }
     cp->ang = 0.0f;
     cp->depth = 50;
     cp->speed = 5;
