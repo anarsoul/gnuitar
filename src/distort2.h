@@ -29,10 +29,10 @@
 extern void     distort2_create(struct effect *);
 
 struct distort2_params {
-    int             r1,
-                    r2;
-    int             lowpass;
+    int             r2;
+//    int             lowpass;
     int		    noisegate;
+    int		    treble;
     struct filter_data fd;
     struct filter_data noise;
 };
