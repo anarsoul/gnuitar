@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2004/10/21 11:05:40  dexterus
+ * Fully working realtime version
+ * Fixed bugs , improved sound, added oversampling
+ * Note: this is an mathematically accurate simulation of Ibanez Tube Screamer 9, with the excetion of diodes electrical parmaters ( modified to make it sound more aggresive )
+ *
  * Revision 1.8  2004/08/10 15:11:01  fonin
  * Reworked distortion - process in realtime rather then use lookup table
  *
@@ -60,16 +65,25 @@
 #include "distort2.h"
 #include "gui.h"
 #include "utils.h"
+#include <math.h>
 
-#define UPSAMPLE 8.0
 
+#define UPSAMPLE				4
+
+#define DIST2_DOWNSCALE			16.0 / MAX_SAMPLE  /* Used to reduce the signal to the limits needed by the simulation */
+#define DIST2_UPSCALE			MAX_SAMPLE * 0.2 /* And back to the normal range */
+/* taken as a funtion of MAX_SAMPLE because that is the reference for what the 'normal' signal should be */
+
+#ifdef _MSC_VER  /* Check if the compiler is Visual C */
+	#pragma intrinsic (exp,log)
+#endif _MSC_VER
 
 void            distort2_filter(struct effect *p, struct data_block *db);
 
 void
 update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->r2 = (int) adj->value * 100;
+    params->r2 = (int) adj->value * 5000;
     params->r2 -= params->r2 % 10;
     params->r2 += 50;
 }
@@ -211,33 +225,25 @@ distort2_init(struct effect *p)
 void
 distort2_filter(struct effect *p, struct data_block *db)
 {
-    int			count;
+//#define mUt				  30*1e-3
+#define mUt				  30*1e+2	/* the original value doesn't produce enough distortion , maybe wrong electrical parameters ? */
+#define Is				 10*1e-12
+
+	int			i,count;
     static int		curr_channel = 0;
     DSP_SAMPLE 		*s;
     struct distort2_params *dp;
-    float		Ts;
-    float		mUt=30*10e-3;
-    float		Is=10*10e-12;
-    float		c0,d1;
-    float		RC=(0.047*10e-6)*(4.7*10e+3);
-    float		x,y,x1,f,df,dx;
-    static float	last[MAX_CHANNELS]={0,0};
-    static float 	lyf=0;
-    float		upsample[MAX_BUFFER_SIZE*(int)UPSAMPLE];
-
-#define DRIVE (dp->r2*100)
+    static double			x,y,x1,f,df,dx,e1,e2;
+    static double upsample [UPSAMPLE];
+    
+#define DRIVE (dp->r2)
 
     dp = (struct distort2_params *) p->params;
-
+//	  DRIVE = (dp->r2*100);
     count = db->len;
     s = db->data;
 
-    Ts=1.0/sample_rate;
-
-    /* Init stuff
-     * This is the rc filter tied to ground. */
-    c0=Ts/(Ts+RC);
-    d1=RC/(Ts+RC);
+    
 
 //    RC_highpass(db->data, db->len, &(dp->fd));
 
@@ -246,39 +252,63 @@ distort2_filter(struct effect *p, struct data_block *db)
      */
     while (count) {
 	/* scale down to -1..1 range */
-	x = (float)*s / (float)MAX_SAMPLE;
-
-	/* first compute the linear rc filter current output */
-	y=c0*x+d1*lyf;
-	lyf=y;
-	x1=(x-y)/4700.0;
-
-	/* start seaching from time previous point , improves speed */
-	y=last[curr_channel]; 
-	do {
-	    /* The calculus can be optimized.
-	     * Here it is like this for readability.
-	     * f(y) = 0 , y= ? */
-    	    f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  
-	    /* df/dy */
-	    df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); 
-	    /* This is the newton's algo, it searches a root of a function,
-	     * f here, which must equal 0, using it's derivate. */
-	    dx=f/df;
-	    y-=dx;
+	x = *s ;
+	x *= DIST2_DOWNSCALE ;
+	
+	/* fist we prepare the lineary interpoled upsamples */
+	y = 0;
+	upsample[0] = dp->lastupsample;
+	y = 1.0 / UPSAMPLE;  /* temporary usage of y */
+	for (i=1; i< UPSAMPLE; i++)
+	{
+		upsample[i] = dp->lastupsample + ( x - dp->lastupsample) *y;
+		y += 1.0 / UPSAMPLE;
 	}
-	while ((dx>0.1)||(dx<-0.1));
-	/* when dx gets very small, we found a solution. */
+	dp->lastupsample = x;
+	/* Now the actual upsampled processing */
+	for (i=0; i<UPSAMPLE; i++)
+	{
+		x = upsample[i]; /*get one of the upsamples */
 
-	last[curr_channel]=y;
+		/* first compute the linear rc filter current output */
+		y = dp->c0*x + dp->d1 * dp->lyf;
+		dp->lyf = y;
+		x1 = (x-y) / 4700.0;
+
+		/* start seaching from time previous point , improves speed */
+		y = dp->last[curr_channel]; 
+		do {
+	    
+			/* f(y) = 0 , y= ? */
+			e1 = exp ( (x-y) / mUt );  e2 = 1.0 / e1;
+    	
+			/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
+			f = x1 + (x-y)/ DRIVE + Is * (e1 - e2);
+	
+		    /* df/dy */
+			/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
+			df = -1.0 / DRIVE - Is / mUt * (e1 + e2);
+	
+		    /* This is the newton's algo, it searches a root of a function,
+			* f here, which must equal 0, using it's derivate. */
+			dx=f/df;
+			y-=dx;
+		}
+		while ((dx>0.01)||(dx<-0.01));
+		/* when dx gets very small, we found a solution. */
+
+		dp->last[curr_channel] = y;
+		y = doBiquad( y, &dp->cheb, 0);
+		y = doBiquad( y, &dp->cheb1, 0);
+	}
 
 	/* scale up from -1..1 range */
-	*s=y*MAX_SAMPLE;
+	*s = y * DIST2_UPSCALE;
 
-	if(*s > MAX_SAMPLE)
+	/*if(*s > MAX_SAMPLE)
 	    *s=MAX_SAMPLE;
 	else if(*s < -MAX_SAMPLE)
-	    *s=-MAX_SAMPLE;
+	    *s=-MAX_SAMPLE;*/
 
 	s++;
 	count--;
@@ -294,6 +324,10 @@ distort2_filter(struct effect *p, struct data_block *db)
 void
 distort2_done(struct effect *p)
 {
+	struct distort2_params *ap;
+	
+	ap = (struct distort2_params *) p->params;
+	free(ap->cheb.mem); free(ap->cheb1.mem);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -334,8 +368,9 @@ void
 distort2_create(struct effect *p)
 {
     struct distort2_params *ap;
-    int             i;
-
+    int         i;
+	double		Ts, Ts1;
+	double		RC=(0.047*1e-6)*(4.7*1e+3);
     p->params =
 	(struct distort2_params *) malloc(sizeof(struct distort2_params));
     ap = (struct distort2_params *) p->params;
@@ -357,4 +392,22 @@ distort2_create(struct effect *p)
 //    RC_set_freq(ap->lowpass, &(ap->fd));
     RC_setup(10, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
+	// RC Filter tied to ground setup
+	Ts = 1.0/sample_rate;
+	Ts1 = Ts / UPSAMPLE;  /* Ts1 is Ts for upsampled processing  */
+	/* Init stuff
+    /* This is the rc filter tied to ground. */
+    ap->c0 = Ts1 / (Ts1 + RC);
+    ap->d1 = RC / (Ts1 + RC);
+	ap->lyf = 0;
+
+	for (i=0; i < nchannels; i++)
+		ap->last[i] = 0;
+	ap->lastupsample = 0;
+	ap->cheb.mem = (double*) malloc ( nchannels * sizeof (double) * 4 );
+	memset ( (void*) ap->cheb.mem, 0 , nchannels * sizeof (double) * 4 );
+	ap->cheb1.mem = (double*) malloc ( nchannels * sizeof (double) * 4 );
+	memset ( (void*) ap->cheb1.mem, 0 , nchannels * sizeof (double) * 4 );
+	CalcChebyshev2(sample_rate * UPSAMPLE, 12000, 1, 1, &ap->cheb);  /*2 lowPass Chebyshev fiters */
+	CalcChebyshev2(sample_rate * UPSAMPLE, 5500, 1, 1, &ap->cheb1);  /* used in downsampling	*/
 }
