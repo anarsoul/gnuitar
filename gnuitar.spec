@@ -1,4 +1,4 @@
-%define ver 0.2.1
+%define ver 0.3.0
 %define rel 1
 %define prefix /usr
 
@@ -50,6 +50,10 @@ rm -rf ${RPM_BUILD_ROOT}
 %prefix/*
 
 %changelog
+* Fri Mar 28 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
+- Release 0.3.0
+- DirectSound playback on Windows DRAMATICALLY improves the latency
+- Tooltips added for most major controls.
 * Thu Mar 13 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
 - Release 0.2.1
 - Change sampling params from the interface;
