@@ -62,6 +62,13 @@ not get error messages (please note that it produces few dozens of warnings,
 it is ok). If you get something like "Linker error: cannot resolve external
 symbols ...", this means that you've done something wrong when preparing
 build environment.
+
+  Command-line users should first run the file
+C:\Program Files\Microsoft Visual Studio\VC98\Bin\vcvars32.bat,
+to set environment variables, and then run:
+
+  `nmake /f gnuitar.mak'
+
 If all went fine, you should pickup the file gnuitar.exe
 in the folder gnuitar\Release\ or gnuitar\Release 586\ depending on
 which configuration did you chose. Now, copy the gnuitar executable
