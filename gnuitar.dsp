@@ -294,6 +294,10 @@ SOURCE=.\src\vibrato.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\Authors
+# End Source File
+# Begin Source File
+
 SOURCE=.\ChangeLog
 # End Source File
 # Begin Source File
@@ -306,11 +310,35 @@ SOURCE=.\Faq
 # End Source File
 # Begin Source File
 
+SOURCE=.\docs\faq.html
+# End Source File
+# Begin Source File
+
+SOURCE=.\docs\index.html
+# End Source File
+# Begin Source File
+
 SOURCE=.\install
 # End Source File
 # Begin Source File
 
+SOURCE=.\docs\install.html
+# End Source File
+# Begin Source File
+
+SOURCE=.\docs\Makefile
+# End Source File
+# Begin Source File
+
+SOURCE=.\News
+# End Source File
+# Begin Source File
+
 SOURCE=.\readme
+# End Source File
+# Begin Source File
+
+SOURCE=.\docs\readme.html
 # End Source File
 # Begin Source File
 
