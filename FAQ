@@ -41,3 +41,5 @@ A: You should adjust your mixer properly. Set the line input to maximum level,
      Please understand that the program processes both signal and noise,
      and the noise in the output is just the input noise amplified and
      distorted by effects.
+   o use the effect "sustain" as a pre-amp. Set "Gate" and "Sustain"
+     parameters to 100%.
