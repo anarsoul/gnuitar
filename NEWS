@@ -1,4 +1,4 @@
-4 February 2003, Version 0.2.0
+6 February 2003, Version 0.2.0
 - Windows port;
 - Write track to .wav file in Win32 version;
 - Meaningful measure units for vibrato and reverb effects (ms and percents);
