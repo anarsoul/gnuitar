@@ -29,10 +29,11 @@
 typedef gint16 SAMPLE;
 #else
 typedef short SAMPLE;
-#define NCHANNELS 1
+#define NBUFFERS 512		/* number of input/output sound buffers */
 #endif
 
-#define BUFFER_SIZE 128
+#define NCHANNELS 1
+#define BUFFER_SIZE 128*2
 #define SAMPLE_RATE 44100
 #define MAX_EFFECTS 50
 #define EFFECT_AMOUNT 9
