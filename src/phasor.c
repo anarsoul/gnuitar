@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:21:58  fonin
- * Initial revision
+ * Revision 1.2  2001/01/13 10:02:12  fonin
+ * Initial filter is passthru
+ *
+ * Revision 1.1.1.1  2001/01/11 13:21:58  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -232,7 +235,7 @@ phasor_create(struct effect *p)
     p->params =
 	(struct phasor_params *) malloc(sizeof(struct phasor_params));
     p->proc_init = phasor_init;
-    p->proc_filter = phasor_filter;
+    p->proc_filter = passthru;
     p->proc_done = phasor_done;
     p->proc_load = phasor_load;
     p->proc_save = phasor_save;
