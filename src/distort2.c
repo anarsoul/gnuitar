@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/04/21 09:35:51  fonin
+ * Bugfix with missing parameter in strncat(), line 74.
+ *
  * Revision 1.5  2003/04/17 12:22:00  fonin
  * More search paths for lookup dir.
  *
@@ -71,7 +74,7 @@ load_distort2_lookup(int r1, int r2, int sr)
 
     strncpy(filename, lookup_dir, 255);
     strcat(filename,FILESEP);
-    strncat(filename, "distort2lookup_");
+    strcat(filename, "distort2lookup_");
     // sprintf(tmp,"%i",sr);
     strcat(filename, "44100");
     strncat(filename, tmp, 255);
@@ -346,7 +349,7 @@ distort2_create(struct effect *p)
     ap->r2 = 510;
     ap->r1 = 1;
     ap->lowpass = 350;
-    ap->noisegate = 6000;
+    ap->noisegate = 3000;
 
     RC_setup(10, 1.5, &(ap->fd));
     RC_set_freq(ap->lowpass, &(ap->fd));
