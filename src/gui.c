@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2003/03/25 14:03:31  fonin
+ * New control in options dialog for the buffer overrun threshold.
+ *
  * Revision 1.16  2003/03/23 20:05:18  fonin
  * sample_dlg(): checkbox to switch playback method between DirectSound and MME.
  *
@@ -119,6 +122,7 @@ extern pthread_cond_t suspend;
 #else
 extern HANDLE   audio_thread;
 extern short    dsound;
+extern unsigned short overrun_threshold;
 #endif
 
 static GtkItemFactoryEntry mainGui_menu[] = {
@@ -717,9 +721,16 @@ update_latency_label(GtkWidget * widget, gpointer sparams)
 
 #ifdef _WIN32
 void
-toggle_directsound(GtkWidget * widget, gpointer junk)
+toggle_directsound(GtkWidget * widget, gpointer threshold)
 {
     dsound = !dsound;
+    gtk_widget_set_sensitive(GTK_WIDGET(threshold), dsound);
+}
+
+void
+update_threshold(GtkWidget * widget, gpointer threshold)
+{
+    overrun_threshold=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(threshold));
 }
 #endif
 
@@ -737,6 +748,10 @@ sample_dlg(GtkWidget * widget, gpointer data)
 #ifdef _WIN32
     GtkWidget      *hpack4;
     GtkWidget      *directsound;
+    GtkWidget      *threshold;
+    GtkWidget      *threshold_label;
+    GtkWidget      *threshold_fragments;
+    GtkObject      *threshold_adj;
 #endif
     GtkWidget      *rate_label;
     GtkWidget      *bits_label;
@@ -845,13 +860,32 @@ sample_dlg(GtkWidget * widget, gpointer data)
 		     1);
 
 #ifdef _WIN32
+    /* DirectSound checkbox */
     directsound =
 	gtk_check_button_new_with_label("Output via DirectSound");
-    gtk_signal_connect(GTK_OBJECT(directsound), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_directsound), NULL);
-    gtk_box_pack_end(GTK_BOX(hpack4), directsound, TRUE, TRUE, 1);
+    gtk_box_pack_start(GTK_BOX(hpack4), directsound, TRUE, TRUE, 1);
     if (dsound)
 	GTK_TOGGLE_BUTTON(directsound)->active = 1;
+
+    /* threshold spin button */
+    threshold_label = gtk_label_new("Overrun threshold:");
+    gtk_box_pack_start(GTK_BOX(hpack4), threshold_label, TRUE, FALSE, 1);
+    threshold_adj =
+	gtk_adjustment_new(overrun_threshold, 0, 200,
+			   1, 1, 0);
+    threshold =
+	gtk_spin_button_new(GTK_ADJUSTMENT(threshold_adj), 1, 0);
+    dummy1 = GTK_SPIN_BUTTON(threshold);
+    dummy2 = &(dummy1->entry);
+    gtk_entry_set_editable(dummy2, FALSE);
+    gtk_widget_set_usize(threshold, 30, 0);
+    gtk_box_pack_start(GTK_BOX(hpack4), threshold, FALSE, FALSE, 1);
+    threshold_fragments = gtk_label_new("fragments");
+    gtk_box_pack_start(GTK_BOX(hpack4), threshold_fragments, TRUE, FALSE, 1);
+    gtk_signal_connect(GTK_OBJECT(directsound), "toggled",
+		       GTK_SIGNAL_FUNC(toggle_directsound), threshold);
+    gtk_signal_connect(GTK_OBJECT(threshold_adj), "value_changed",
+		       GTK_SIGNAL_FUNC(update_threshold), threshold);
 #endif
 
     buttons_pack = gtk_hbox_new(FALSE, 0);
