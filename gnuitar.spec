@@ -1,4 +1,4 @@
-%define ver 0.3.1
+%define ver 0.3.2
 %define rel 1
 %define prefix /usr
 
@@ -6,12 +6,12 @@ Summary: a GTK+ based guitar processor. Includes such effects as reverberator, s
 Name: gnuitar
 Version: %{ver}
 Release: %{rel}
-Source: http://ns2.ziet.zhitomir.ua/~fonin/projects/gnuitar/gnuitar-%{ver}.tar.gz
+Source: http://www.omnistaronline.com/~fonin/projects/gnuitar/gnuitar-%{ver}.tar.gz
 Copyright: GPL
-URL: http://ns2.ziet.zhitomir.ua/~fonin/downloads.php#gnuitar
+URL: http://www.omnistaronline.com/~fonin/downloads.php#gnuitar
 Requires: gtk+ >= 1.2.6
 Group: Applications/Multimedia
-Packager: Max V. Rudensky <fonin@ziet.zhitomir.ua>
+Packager: Max V. Rudensky <fonin@omnistaronline.com>
 BuildRoot: /var/tmp/%{name}-root
 
 %description
@@ -27,17 +27,6 @@ Includes effects:
 	o chorus/flanger
 	o phasor
 	o noise gate
-
-%package distort2
-Summary: a GTK+ based guitar processor. Includes such effects as reverberator, sustain, distortion, phasor, wah-wah.
-Release: %{rel}
-Group: Applications/Multimedia
-Requires: gnuitar >= 0.3.1
-Provides: gnuitar-distort2
-Obsoletes: gnuitar-distort2
-
-%description distort2
-Lookup tables for distort2 effect of GNUitar.
 
 %prep
 rm -rf $RPM_BUILD_ROOT
@@ -60,11 +49,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %attr(4755,root,root) %{prefix}/bin/gnuitar
 %prefix/share/doc/gnuitar/*
 #%prefix/share/gnuitar/win32/*
-%prefix/share/gnuitar/distort2/distort2lookup_44100_1_510
-
-%files distort2
-%defattr(-,root,root)
-%prefix/share/gnuitar/distort2/*
 
 %changelog
 * Thu Apr 18 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
