@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2003/05/30 12:49:23  fonin
+ * log2() renamed to my_log2() since log2 is a reserved word on MacOS X.
+ *
  * Revision 1.3  2003/04/16 18:40:56  fonin
  * my_itoa() is defined for Windows also.
  *
@@ -37,7 +40,7 @@
  * Calculate base-2 logarithm of the value, up to 512k
  */
 short
-log2(int x)
+my_log2(int x)
 {
     int             pow[] =
 	{ 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,

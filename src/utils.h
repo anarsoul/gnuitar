@@ -75,7 +75,7 @@
 #    define FILESEP "/"
 #endif
 
-extern short    log2(int);
+extern short    my_log2(int);
 extern char    *my_itoa(int i);
 
 #endif

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2003/05/30 12:49:23  fonin
+ * log2() renamed to my_log2() since log2 is a reserved word on MacOS X.
+ *
  * Revision 1.21  2003/05/01 19:09:25  fonin
  * Bugfix with spawnl() syntax - the last parameter always should be NULL.
  *
@@ -688,7 +691,7 @@ update_latency_label(GtkWidget * widget, gpointer sparams)
     /*
      * OSS cannot accept buffer size that is not a level of 2 
      */
-    while (log2(bufsize) == 0) {
+    while (my_log2(bufsize) == 0) {
 	if (bufsize > old_bufsize) {
 	    bufsize += MIN_BUFFER_SIZE;
 	} else {

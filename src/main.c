@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2003/05/30 12:49:23  fonin
+ * log2() renamed to my_log2() since log2 is a reserved word on MacOS X.
+ *
  * Revision 1.16  2003/03/25 14:03:01  fonin
  * Work around buffer overruns with DirectSound playback.
  *
@@ -631,7 +634,7 @@ init_sound(void)
      *                           9 for 512
      *                           etc.
      */
-    i = 0x7fff0000 + log2(buffer_size);
+    i = 0x7fff0000 + my_log2(buffer_size);
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
 	fprintf(stderr, "\nCannot setup fragments!");
 	close(fd);
