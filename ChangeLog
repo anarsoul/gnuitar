@@ -1,19 +1,423 @@
-2001-01-11	Max Rudensky	<fonin@ziet.zhitomir.ua>
-	* First release
+2003-02-06 21:42  fonin
 
-2001-03-11	Max Rudensky	<fonin@ziet.zhitomir.ua>
-	* Fixed closing main window. There was a bug - after close 
-	application still was in memory.
+	* TODO: Many tasks are done
 
-2001-03-25	Max Rudensky	<fonin@ziet.zhitomir.ua>
-	* Removed "Clip" function from distortion. I found it ambiguous and 
-	  unelegant.
-	* Make effect control windows ignore "delete_event", to prevent 
-	  accidentally close.
-	* Bank clist widget width auto-resizing
-	* Few entries in TODO
-	* Added section "BUGS" to README
-	* Program does setuid(real user id) immediately after setting 
-	  real time priority to pumper thread. All open(...,O_CREAT | O_EXCL) 
-	  (file open error if the file already exists) through the code 
-	  replaced with simply O_CREAT (file will be overwritten).
+2003-02-06 21:41  fonin
+
+	* gnuitar.spec: Fixed problems with build.
+
+2003-02-06 21:41  fonin
+
+	* gnuitar_small.ico: White icon.
+
+2003-02-06 21:40  fonin
+
+	* docs/readme.html: - fix with HTML syntax error - corrected link
+	to linux-sound.org
+
+2003-02-05 23:41  fonin
+
+	* src/gnuitar.rc: The last version of this file was broken.
+
+2003-02-05 23:41  fonin
+
+	* src/resource.h: Making the big icon to be the first.
+
+2003-02-05 23:20  fonin
+
+	* gnuitar.dsw: We don't need now this workspace :-)
+
+2003-02-05 23:20  fonin
+
+	* gnuitar.ico, gnuitar_small.ico: New icons.
+
+2003-02-05 23:17  fonin
+
+	* src/: gnuitar.rc, resource.h: Cleanup before release.
+
+2003-02-05 23:10  fonin
+
+	* src/: chorus.c, main.c, pump.c, reverb.c: Cleanup before release.
+
+2003-02-05 23:08  fonin
+
+	* src/gnuitar.xpm: New icon.
+
+2003-02-05 23:07  fonin
+
+	* src/gui.c: Fix: when a the write track checkbox is clicked, and
+	then action is cancelled, checkbox remained toggled.
+
+2003-02-04 22:42  fonin
+
+	* docs/readme.html: Cleanup.
+
+2003-02-04 22:42  fonin
+
+	* src/gui.h: Added macro VERSION.
+
+2003-02-04 22:42  fonin
+
+	* src/gui.c: Heuristic to search for docs through the few
+	directories.
+
+2003-02-03 20:48  fonin
+
+	* docs/: Makefile, faq.html, index.html, install.html, readme.html:
+	HTML documentation.
+
+2003-02-03 20:47  fonin
+
+	* NEWS: More info about 0.1.0-b3 release.
+
+2003-02-03 20:46  fonin
+
+	* gnuitar.dsp, gnuitar.mak: Updated MSVC project files.
+
+2003-02-03 20:38  fonin
+
+	* src/reverb.c: Meaningful measure units for wet, dry and regen
+	parameters.
+
+2003-02-03 20:23  fonin
+
+	* NEWS: NEWS section.
+
+2003-02-03 20:06  fonin
+
+	* src/Makefile.in: Configure files were re-generated.
+
+2003-02-03 20:05  fonin
+
+	* Makefile.am, Makefile.in, aclocal.m4, configure, configure.in:
+	Configure files re-generated.
+
+2003-02-03 20:04  fonin
+
+	* autogen.sh: Script that generates configure script.
+
+2003-02-03 19:24  fonin
+
+	* src/gui.c: Launch HTML browser to view docs.
+
+2003-02-03 19:24  fonin
+
+	* src/: gui.h, main.c: Disclaimer and legal notice text moved to a
+	string constants to gui.h
+
+2003-02-03 19:23  fonin
+
+	* src/pump.c: One more newline after the effects were loaded by
+	pump_start().
+
+2003-02-03 13:41  fonin
+
+	* INSTALL: Added Windows build notes and other methods of install.
+
+2003-02-03 13:40  fonin
+
+	* README: More docs.
+
+2003-02-03 13:40  fonin
+
+	* gnuitar.ico, gnuitar_small.ico: Icon files for Win32 port.
+
+2003-02-03 13:39  fonin
+
+	* src/: autowah.c, autowah.h, backbuf.c, backbuf.h, chorus.c,
+	chorus.h, delay.c, delay.h, distort.c, distort.h, echo.c, echo.h,
+	gnuitar.rc, gui.c, gui.h, main.c, phasor.c, phasor.h, pump.c,
+	pump.h, rcfilter.c, rcfilter.h, resource.h, reverb.c, reverb.h,
+	sustain.c, sustain.h, tracker.c, tracker.h, tremolo.c, tremolo.h,
+	vibrato.c, vibrato.h: Copyright year changed.
+
+2003-02-03 13:36  fonin
+
+	* src/gui.c: Add icon to the main window on startup.
+
+2003-02-03 13:35  fonin
+
+	* src/gnuitar.xpm: XPM icon.
+
+2003-02-03 13:35  fonin
+
+	* src/: gnuitar.rc, resource.h: Resource file for Windows build.
+
+2003-02-02 00:19  fonin
+
+	* src/vibrato.c: Removed unreferenced local variable.
+
+2003-02-02 00:17  fonin
+
+	* TODO: New plans.
+
+2003-02-02 00:16  fonin
+
+	* FAQ, INSTALL, README: Documentation updated.
+
+2003-02-01 21:15  fonin
+
+	* src/: autowah.c, chorus.c, delay.c, distort.c, echo.c, phasor.c,
+	reverb.c, sustain.c, tremolo.c: Use sizeof(variable) instead
+	sizeof(type) in load/save procedures, when reading/writing from
+	file.
+
+2003-02-01 21:14  fonin
+
+	* src/vibrato.h: New constant VIBRATO_THRESHOLD moved from
+	vibrato.c
+
+2003-02-01 21:13  fonin
+
+	* src/vibrato.c: Changed the units of slider bars from computer
+	ones to ms and %
+
+2003-01-31 21:47  fonin
+
+	* src/pump.h: The default fragment size is 2560 on Win32, it is
+	approximately 60ms @44100 sampling rate. 60ms is the initial sound
+	driver latency.
+
+2003-01-31 21:45  fonin
+
+	* src/: delay.c, reverb.c: Better effect presets.
+
+2003-01-31 21:44  fonin
+
+	* README: More notes.
+
+2003-01-31 21:44  fonin
+
+	* FAQ: Another answer.
+
+2003-01-31 17:18  fonin
+
+	* src/main.c: Few cleanups, more comments; start recording AFTER
+	all input buffers are queued.
+
+2003-01-30 23:36  fonin
+
+	* gnuitar.dsp, gnuitar.mak: Added DEMO configuration.
+
+2003-01-30 23:35  fonin
+
+	* src/: autowah.c, chorus.c, delay.c, distort.c, echo.c, phasor.c,
+	reverb.c, sustain.c, tremolo.c, vibrato.c: Got rid of
+	rnd_window_pos().
+
+2003-01-30 23:33  fonin
+
+	* src/main.c: - Added demo version code for Win32; - NCHANNELS now
+	is used in UNIX build.
+
+2003-01-30 23:32  fonin
+
+	* src/: gui.c, gui.h: Removed gui_done()
+
+2003-01-30 23:31  fonin
+
+	* src/gui.c: - worked around the Win32-GTK bug with non-ASCII
+	characters in Win32 build; - show only filename in the bank list,
+	instead of full path; - get rid of rnd_window_pos()
+
+2003-01-30 23:30  fonin
+
+	* src/pump.h: NCHANNELS is always there regardless of the platform.
+
+2003-01-29 21:34  fonin
+
+	* src/: autowah.c, autowah.h, backbuf.c, backbuf.h, chorus.c,
+	chorus.h, delay.c, delay.h, distort.c, distort.h, echo.c, echo.h,
+	gui.c, gui.h, main.c, phasor.c, phasor.h, pump.c, pump.h,
+	rcfilter.c, rcfilter.h, reverb.c, reverb.h, sustain.c, sustain.h,
+	tracker.c, tracker.h, tremolo.h, vibrato.c, vibrato.h: Win32 port.
+
+2003-01-29 21:33  fonin
+
+	* src/tremolo.c: Fixed array referencing error that caused random
+	crashes.  Win32 port.
+
+2003-01-29 21:32  fonin
+
+	* gnuitar.dsp, gnuitar.dsw, gnuitar.mak: MSVC project files.
+
+2001-06-02 17:27  fonin
+
+	* src/gui.c: Added about dialog.
+
+2001-06-02 17:05  fonin
+
+	* src/: autowah.c, autowah.h, backbuf.c, backbuf.h, chorus.h,
+	delay.c, delay.h, distort.c, distort.h, echo.c, echo.h, gui.h,
+	main.c, phasor.c, phasor.h, pump.c, pump.h, rcfilter.c, rcfilter.h,
+	reverb.c, reverb.h, sustain.c, sustain.h, tracker.c, tracker.h,
+	tremolo.c, tremolo.h, vibrato.c, vibrato.h: Added GNU disclaimer.
+
+2001-06-02 17:05  fonin
+
+	* src/gui.c: Effects pushed to the END of stack.  Added GNU
+	disclaimer.
+
+2001-06-02 16:59  fonin
+
+	* src/chorus.c: Fixed bug caused backbuff_get() assertion in
+	chorus_filter().  Added GNU disclaimer.
+
+2001-04-27 17:29  fonin
+
+	* src/Makefile.in: Added -lpthread to LIBS cause configure script
+	wont detect it on FreeBSD.
+
+2001-04-27 17:29  fonin
+
+	* src/main.c: <sys/soundcard.h> for better compatibility with
+	FreeBSD.
+
+2001-03-27 21:33  fonin
+
+	* TODO: Added new task
+
+2001-03-25 21:15  fonin
+
+	* ChangeLog: Added entry about setuid and open().
+
+2001-03-25 20:42  fonin
+
+	* gnuitar.spec: Added setuid explanations to ChangeLog.
+
+2001-03-25 20:42  fonin
+
+	* src/main.c: Switching back to real user identifier immediately
+	after setting realtime priority.
+
+2001-03-25 20:42  fonin
+
+	* README: Explanations about setuid. Removed warning about setuid
+	root.
+
+2001-03-25 20:42  fonin
+
+	* src/: pump.c, tracker.c: open() can overwrite existing files from
+	now, because program switches back to real user priorities after
+	start.
+
+2001-03-25 20:42  fonin
+
+	* TODO: Different sentence at 1st point
+
+2001-03-25 15:32  fonin
+
+	* gnuitar.spec: Forget to change version number.
+
+2001-03-25 15:11  fonin
+
+	* gnuitar.spec: Added changes from beta3 release.
+
+2001-03-25 15:11  fonin
+
+	* ChangeLog: Changes for beta3 release.
+
+2001-03-25 15:11  fonin
+
+	* TODO: Done few tasks and added tasks for future.
+
+2001-03-25 15:11  fonin
+
+	* README: Added section BUGS.
+
+2001-03-25 15:10  fonin
+
+	* src/: Makefile.in, autowah.c, backbuf.c, chorus.c, delay.c,
+	distort.h, echo.c, gui.h, phasor.c, reverb.c, sustain.c, tremolo.c,
+	vibrato.c: Effect window control ignores delete event.
+
+2001-03-25 15:10  fonin
+
+	* src/distort.c: Removed clip functionality. Effect control window
+	ignores delete event.
+
+2001-03-25 15:10  fonin
+
+	* src/: main.c, pump.c: Text messages begin from newline rather
+	than end with it.
+
+2001-03-25 15:09  fonin
+
+	* src/gui.c: Added function delete_event(). Effect control windows
+	use it to ignore windows destroy event.
+
+2001-03-11 22:30  fonin
+
+	* gnuitar.spec: Release 0.1.0-b2
+
+2001-03-11 22:16  fonin
+
+	* src/gui.c: Fixed destroying of main window.
+
+2001-01-14 23:28  fonin
+
+	* src/tracker.c: Fix: track write could overwrite existing files if
+	executing in suid root mode.
+
+2001-01-13 12:03  fonin
+
+	* README: Spell fixes
+
+2001-01-13 12:03  fonin
+
+	* Makefile.in, configure, configure.in, mkinstalldirs: New
+	configure
+
+2001-01-13 12:02  fonin
+
+	* src/pump.c: Fix: setuid root program shouldnt overwrite existing
+	files.
+
+2001-01-13 12:02  fonin
+
+	* src/phasor.c: Initial filter is passthru
+
+2001-01-13 12:02  fonin
+
+	* TODO: More TODO
+
+2001-01-12 00:06  fonin
+
+	* Makefile.am, Makefile.in, gnuitar.spec: effects/Makefile.am now
+	is full working.
+
+2001-01-11 15:22  fonin
+
+	* src/: reverb.c, reverb.h, sustain.c, sustain.h, tracker.c,
+	tracker.h, tremolo.c, tremolo.h, vibrato.c, vibrato.h: Initial
+	revision
+
+2001-01-11 15:22  fonin
+
+	* src/: reverb.c, reverb.h, sustain.c, sustain.h, tracker.c,
+	tracker.h, tremolo.c, tremolo.h, vibrato.c, vibrato.h: Version
+	0.1.0 Release 1 beta
+
+2001-01-11 15:19  fonin
+
+	* aclocal.m4, configure, TODO, missing, Makefile.am, install-sh,
+	configure.in, mkinstalldirs, ChangeLog, Makefile.in, gnuitar.spec,
+	COPYING, AUTHORS, INSTALL, README, src/Makefile.am, src/autowah.c,
+	src/autowah.h, src/backbuf.c, src/backbuf.h, src/chorus.c,
+	src/chorus.h, src/Makefile.in, src/delay.c, src/delay.h,
+	src/distort.c, src/distort.h, src/echo.c, src/echo.h, src/gui.c,
+	src/gui.h, src/main.c, src/phasor.c, src/phasor.h, src/pump.c,
+	src/pump.h, src/rcfilter.c, src/rcfilter.h: Initial revision
+
+2001-01-11 15:19  fonin
+
+	* aclocal.m4, configure, TODO, missing, Makefile.am, install-sh,
+	configure.in, mkinstalldirs, ChangeLog, Makefile.in, gnuitar.spec,
+	COPYING, AUTHORS, INSTALL, README, src/Makefile.am, src/autowah.c,
+	src/autowah.h, src/backbuf.c, src/backbuf.h, src/chorus.c,
+	src/chorus.h, src/Makefile.in, src/delay.c, src/delay.h,
+	src/distort.c, src/distort.h, src/echo.c, src/echo.h, src/gui.c,
+	src/gui.h, src/main.c, src/phasor.c, src/phasor.h, src/pump.c,
+	src/pump.h, src/rcfilter.c, src/rcfilter.h: Version 0.1.0 Release 1
+	beta
+
