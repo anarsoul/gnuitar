@@ -1,3 +1,7 @@
+18 April 2003, Version 0.3.1
+- New distortion effect
+- Noise gate effect
+
 28 March 2003, Version 0.3.0
 - DirectSound playback on Windows DRAMATICALLY improves the latency
 - Tooltips added for most major controls.
