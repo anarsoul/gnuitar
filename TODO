@@ -1,6 +1,14 @@
-+ tracker
-  - gzip track file on the fly
-- restrict effects' tuning windows destruction
-- equalizer
+For 0.1.0 Release
+- extensively testing to find security issues (like symlinking /etc/shadow to 
+  /dev/dsp or read /etc/shadow as bank profile), memory leaks etc.
 - about box and logo
 - documentation
+
+For future releases:
++ tracker
+  - gzip track file on the fly
+  - improve quality (now it writes sound with cutoff frequencies)
+- allow to control the sampling rate and buffer size (now it's hard-coded)
+- equalizer
+- noise redution as separate effect
+- think about plugins
