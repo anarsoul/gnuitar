@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/02/05 21:10:10  fonin
+ * Cleanup before release.
+ *
  * Revision 1.8  2003/02/03 17:23:26  fonin
  * One more newline after the effects were loaded by pump_start().
  *
@@ -270,6 +273,6 @@ load_pump(char *fname)
 			 &effect_list[effect_tag].str);
 	n++;
     }
-    fprintf(stderr,"\n");
+    fprintf(stderr, "\n");
     audio_lock = 0;
 }

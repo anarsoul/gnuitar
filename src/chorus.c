@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/02/05 21:10:10  fonin
+ * Cleanup before release.
+ *
  * Revision 1.7  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -331,8 +334,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tmp *= cp->dry;
 	tmp /= 256;
 	switch (cp->mode) {
-	case 0:		/* 
-				 * * chorus */
+	case 0:		/* chorus */
 	    dly = MaxDly * (1024 + sinLookUp[(int) cp->ang]);
 	    dly /= 2048;
 	    Ang += AngInc;
@@ -341,8 +343,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	    if (dly < 0)
 		dly = 0;
 	    break;
-	case 1:		/* 
-				 * * flange */
+	case 1:		/* flange */
 	    dly = 16 * MaxDly * (1024 + sinLookUp[(int) Ang] / 16);
 	    dly /= 2048;
 	    Ang += AngInc;

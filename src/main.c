@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2003/02/05 21:10:10  fonin
+ * Cleanup before release.
+ *
  * Revision 1.10  2003/02/03 17:24:04  fonin
  * Disclaimer and legal notice text moved to a string constants to gui.h
  *
@@ -99,7 +102,7 @@ static int      stop = 0;	/* in Windows version, stop has special
 				 * - playback is paused 2 - exit thread 3
 				 * - recording started, begin playback now
 				 * For UNIX: 0 - recording/playback is on 1 
-				 * - exit thread */
+				 * * - exit thread */
 #ifndef _WIN32
 int             fd;
 #else
@@ -359,7 +362,7 @@ log2(int x)
 {
     int             pow[] =
 	{ 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,
-16384, 32768,
+	16384, 32768,
 	65536, 131072, 262144, 524288
     };
     int             i;
@@ -373,7 +376,7 @@ log2(int x)
 
 #ifdef DEMO
 #   ifdef _WIN32
-VOID CALLBACK
+VOID            CALLBACK
 expired(HWND hwnd, UINT msg, UINT timer_id, DWORD time)
 {
     gtk_main_quit();
@@ -635,9 +638,9 @@ main(int argc, char **argv)
     setuid(getuid());
 #endif
 
-    printf("\n\n"COPYRIGHT \
-	    "This program is a free software and distributed under GPL license;\n" \
-	    "see Help->About for details.\n");
+    printf("\n\n" COPYRIGHT
+	   "This program is a free software and distributed under GPL license;\n"
+	   "see Help->About for details.\n");
 
     gtk_init(&argc, &argv);
     init_gui();
