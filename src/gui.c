@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2003/03/13 20:23:45  fonin
+ * Selecting the current bank when the switch is pressed.
+ *
  * Revision 1.14  2003/03/09 21:10:12  fonin
  * - new toggle button to start/stop recording;
  * - new menu item for sampling params;
@@ -564,6 +567,7 @@ bank_switch_pressed(GtkWidget * widget, gpointer data)
     else
 	bank_row++;
     fname = gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
+    gtk_clist_select_row(GTK_CLIST(bank), bank_row, 0);
     load_pump(fname);
 }
 
