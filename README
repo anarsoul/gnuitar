@@ -32,12 +32,13 @@ You will need
 Program works fine on my Pentium II/433.
 It was tested only on single computer, volunteers for extended tests ?
 
-gnuitar executable file should have suid bit to process sound with 
+gnuitar executable file should be setuid root to process sound with 
 real-time priority; otherwise you'll hear glitches and delays while 
-switching between windows.
+switching between windows. It switches to real user id as soon as 
+it set realtime priority to pumper thread, so it shouldn't break 
+security on your system.
  
-See INSTALL file for common installation notes. I'm too lazy to 
-write my own one.
+See INSTALL file for common installation notes.
 
 
 FEATURES
@@ -59,19 +60,12 @@ and then to MP3:
 Sox is available at http://home.sprynet.com/~cbagwell/sox.html, 
 and Bladeenc is at http://home8.swipnet.se/~w-82625.
 
-
-			    ATTENTION !
-THIS PROGRAM IS RUNNING SETUID ROOT, E.G. WITH SUPERUSER PRIVILEGES.
-NO WARRANTY ! USE ON YOUR OWN RISK !
-
-All file writes can't overwrite existing files.
-
-
 BUGS
 ~~~~
 Program is in beta stage. Any feedback is appreciated. The simplest 
-way is to through out the program and find something else, but in such 
-a way you kill young projects.
+way is to through out the program if it buggy or won't do what you want, 
+and find something else, but it's also the simplest way 
+to kill any young projects.
 
 To request a new feature, or report a bug, or whatever else mail me 
 fonin@ziet.zhitomir.ua.
