@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2003/03/28 19:56:08  fonin
+ * Sampling rate is 44100 by default.
+ *
  * Revision 1.10  2003/03/09 21:12:41  fonin
  * New variables for new "change sampling params" feature.
  *
@@ -94,7 +97,7 @@ extern void     initSinLookUp(void);	/*
 					 */
 
 unsigned short  nchannels = 1;
-unsigned int    sample_rate = MAX_SAMPLE_RATE;
+unsigned int    sample_rate = 44100;
 unsigned short  bits = 16;
 unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
 #ifdef _WIN32
