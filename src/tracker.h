@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Tracker module - write samples to file
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,9 +24,9 @@
 #define _TRACKER_H_ 1
 
 extern void     tracker_out(const char *outfile);
-extern void     tracker_in(const char *infile);
+//extern void     tracker_in(const char *infile);
 extern void     tracker_done();
-extern void     track_read(int *s, int count);
+//extern void     track_read(int *s, int count);
 extern void     track_write(int *s, int count);
 
 #endif

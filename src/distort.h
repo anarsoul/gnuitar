@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Distortion effect
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ struct distort_params {
                     level,
                     drive,
                     lastval,
-		    noisegate;
+                    noisegate;
     int             lowpass;
     struct filter_data fd;
     struct filter_data noise;

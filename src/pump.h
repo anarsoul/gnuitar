@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Pump module - processing sound
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,10 +25,18 @@
 
 #include <gtk/gtk.h>
 
-#define BUFFER_SIZE 256
-#define SAMPLE_RATE 48000
+#ifndef _WIN32
+typedef gint16 SAMPLE;
+#else
+typedef short SAMPLE;
+#define NCHANNELS 1
+#endif
+
+#define BUFFER_SIZE 128
+#define SAMPLE_RATE 44100
 #define MAX_EFFECTS 50
 #define EFFECT_AMOUNT 9
+
 /*
  * Indices in effect_creator[] array
  */

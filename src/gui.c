@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.5  2001/06/02 14:27:14  fonin
  * Added about dialog.
  *
@@ -37,10 +40,15 @@
  * Version 0.1.0 Release 1 beta
  *
  */
-
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <time.h>
+
+#ifdef _WIN32
+#    include <ctype.h>
+#    include <string.h>
+#endif
+
 #include "gui.h"
 #include "pump.h"
 #include "tracker.h"
@@ -78,13 +86,13 @@ GtkWidget      *down;
 GtkWidget      *del;
 GtkWidget      *add;
 GtkWidget      *tracker;
-gint            curr_row = -1;	/*
+gint            curr_row = -1;	/* 
 				 * current row in processor list 
 				 */
-gint            effects_row = -1;	/*
+gint            effects_row = -1;	/* 
 					 * current row in known effects list 
 					 */
-gint            bank_row = -1;	/*
+gint            bank_row = -1;	/* 
 				 * current row in bank list 
 				 */
 
@@ -106,12 +114,12 @@ quit(GtkWidget * widget, gpointer data)
 void
 rnd_window_pos(GtkWindow * wnd)
 {
-    int             x,
+/*    int             x,
                     y;
     srand(time(NULL));
     x = 1 + (int) (800.0 * rand() / (RAND_MAX + 1.0));
     y = 1 + (int) (600.0 * rand() / (RAND_MAX + 1.0));
-    gtk_widget_set_uposition(GTK_WIDGET(wnd), x, y);
+    gtk_widget_set_uposition(GTK_WIDGET(wnd), x, y);*/
 }
 
 void
@@ -127,7 +135,7 @@ about_dlg(void)
     about = gtk_window_new(GTK_WINDOW_DIALOG);
     about_label =
 	gtk_label_new
-	("GNUitar 0.1.0 beta 4\nCopyright (C) 2001 Max Rudensky <fonin@ziet.zhitomir.ua>\nhttp://ziet.zhitomir.ua/~fonin/code\n\n");
+	("GNUitar 0.2.0\nCopyright (C) 2000,2001,2003 Max Rudensky <fonin@ziet.zhitomir.ua>\nhttp://ziet.zhitomir.ua/~fonin/\n\n");
     gtk_window_set_title(GTK_WINDOW(about), "About");
     gtk_container_set_border_width(GTK_CONTAINER(about), 8);
     gtk_widget_set_usize(about, 518, 358);
@@ -180,7 +188,8 @@ about_dlg(void)
     gtk_widget_show_all(about);
 }
 
-gint delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
+gint
+delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 {
     return (TRUE);
 }
@@ -282,9 +291,14 @@ add_pressed(GtkWidget * widget, gpointer data)
 {
     int             idx;
     int             i;
+    struct effect  *tmp_effect;
 
     if (n < MAX_EFFECTS && effects_row >= 0
 	&& effects_row <= EFFECT_AMOUNT) {
+	tmp_effect=(struct effect *) malloc(sizeof(struct effect));
+	effect_list[effects_row].create_f(tmp_effect);
+	tmp_effect->proc_init(tmp_effect);
+
 	audio_lock = 1;
 	if (curr_row >= 0 && curr_row < n) {
 	    idx = curr_row + 1;
@@ -295,9 +309,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	} else {
 	    idx = n++;
 	}
-	effects[idx] = (struct effect *) malloc(sizeof(struct effect));
-	effect_list[effects_row].create_f(effects[idx]);
-	effects[idx]->proc_init(effects[idx]);
+	effects[idx]=tmp_effect;
 	audio_lock = 0;
 
 	gtk_clist_insert(GTK_CLIST(processor), idx,
@@ -311,8 +323,25 @@ void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
     char           *fname;
+#ifdef _WIN32
+    int		    str_len,i;
+#endif
 
     fname = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+
+#ifdef _WIN32
+    /*
+     * GTK for Windows have a bug related to non-ascii characters
+     * in the strings. We replace all non-ascii chars to ? character,
+     * but we are unable now to switch to that bank
+     */
+    str_len=strlen(fname);
+    for(i=0;i<str_len;i++)
+	if(!isascii(fname[i])) {
+//	    fname[i]='?';
+	}
+#endif
+
     gtk_clist_append(GTK_CLIST(bank), &fname);
     gtk_widget_destroy(GTK_WIDGET(filesel));
     gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5,
@@ -422,7 +451,11 @@ tracker_pressed(GtkWidget * widget, gpointer data)
 	write_track = 1;
 	filesel = gtk_file_selection_new("Enter track name");
 	gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel),
+#ifndef _WIN32
 					"*.raw");
+#else
+					"*.wav");
+#endif
 	gtk_signal_connect(GTK_OBJECT
 			   (GTK_FILE_SELECTION(filesel)->ok_button),
 			   "clicked", GTK_SIGNAL_FUNC(start_tracker),

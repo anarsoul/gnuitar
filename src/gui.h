@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Graphics user interface: definitions
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@
 void            rnd_window_pos(GtkWindow * wnd);
 void
                 init_gui(void);
-gint delete_event(GtkWidget* widget, GdkEvent* event, gpointer data);
+gint            delete_event(GtkWidget * widget, GdkEvent * event,
+			     gpointer data);
 
 extern GtkWidget *processor;
 

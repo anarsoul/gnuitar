@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Reverberation effect
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,12 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <unistd.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#else
+#    include <io.h>
+#    include <string.h>
+#endif
 #include "reverb.h"
 #include "gui.h"
 
@@ -293,9 +298,8 @@ reverb_filter(struct effect *p, struct data_block *db)
     delay /= 256.0;
     delay *= (float) dr->history->nChunks;
     dd = (int) delay;
-    dd =
-	(dd < 1) ? 1 : (dd >=
-			dr->history->nChunks) ? dr->history->nChunks -
+    dd = (dd < 1) ? 1 : (dd >=
+			 dr->history->nChunks) ? dr->history->nChunks -
 	1 : dd;
 
     /*

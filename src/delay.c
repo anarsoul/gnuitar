@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Delay effect
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.3  2001/06/02 14:05:59  fonin
  * Added GNU disclaimer.
  *
@@ -34,7 +37,11 @@
 #include "delay.h"
 #include "gui.h"
 #include <stdlib.h>
-#include <unistd.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#else
+#    include <io.h>
+#endif
 
 void            delay_filter(struct effect *p, struct data_block *db);
 
@@ -222,7 +229,8 @@ delay_filter(struct effect *p, struct data_block *db)
 	for (i = 0; i < dp->delay_count; i++) {
 	    if (dp->index >= dp->idelay[i]) {
 		if (dp->index - dp->idelay[i] ==
-		    dp->delay_start + i * dp->delay_step) dp->idelay[i]++;
+		    dp->delay_start + i * dp->delay_step)
+		    dp->idelay[i]++;
 	    } else {
 		if (dp->delay_size + dp->index - dp->idelay[i] ==
 		    dp->delay_start + i * dp->delay_step)

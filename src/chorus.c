@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Chorus effect
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.3  2001/06/02 13:59:04  fonin
  * Fixed bug caused backbuff_get() assertion in chorus_filter().
  * Added GNU disclaimer.
@@ -36,7 +39,12 @@
 #include "backbuf.h"
 #include "gui.h"
 #include <math.h>
-#include <unistd.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#else
+#    define M_PI 3.14159265358979323846E0
+#    include <io.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -314,9 +322,9 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tmp *= cp->dry;
 	tmp /= 256;
 	switch (cp->mode) {
-	case 0:		/*
-			 * chorus 
-			 */
+	case 0:		/* 
+				 * chorus 
+				 */
 	    dly = MaxDly * (1024 + sinLookUp[(int) cp->ang]);
 	    dly /= 2048;
 	    Ang += AngInc;
@@ -325,9 +333,9 @@ chorus_filter(struct effect *p, struct data_block *db)
 	    if (dly < 0)
 		dly = 0;
 	    break;
-	case 1:		/*
-			 * flange 
-			 */
+	case 1:		/* 
+				 * flange 
+				 */
 	    dly = 16 * MaxDly * (1024 + sinLookUp[(int) Ang] / 16);
 	    dly /= 2048;
 	    Ang += AngInc;
@@ -345,7 +353,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tot = (tot < -32767) ? -32767 : (tot > 32767) ? 32767 : tot;
 	rgn =
 	    (backbuff_get(cp->memory,
-			 (unsigned int) dly) * cp->regen) / 256 + *s;
+			  (unsigned int) dly) * cp->regen) / 256 + *s;
 	rgn = (rgn < -32767) ? -32767 : (rgn > 32767) ? 32767 : rgn;
 	backbuff_add(cp->memory, rgn);
 	*s = tot;
@@ -443,7 +451,7 @@ chorus_create(struct effect *p)
 
     cp = (struct chorus_params *) p->params;
     cp->memory = (struct backBuf *) malloc(sizeof(struct backBuf));
-    backbuff_init(cp->memory, SAMPLE_RATE);	/*
+    backbuff_init(cp->memory, SAMPLE_RATE);	/* 
 						 * 1 second memory 
 						 */
 

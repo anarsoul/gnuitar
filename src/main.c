@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Main module
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.5  2001/06/02 14:05:59  fonin
  * Added GNU disclaimer.
  *
@@ -37,36 +40,84 @@
  *
  */
 
+/*
+ * TODO:
+ * - fix delay and set rt priority to the thread
+ * - problems with banks list - does not support national characters
+ * - demo version
+ * - clean compiler warnings
+ * - graceful app shutdown (function die)
+ * - lick up the project file
+ * - hunt memory leaks
+ * + fix tracker module (write to .WAV file)
+ * + problem with tremolo.c - memory bound error
+ */
+
 #include <stdio.h>
-#include <unistd.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#    include <sys/ioctl.h>
+#    include <sys/time.h>
+#    include <sched.h>
+#    include <pthread.h>
+#    include <sys/soundcard.h>
+#else
+#    include <time.h>
+#    include <io.h>
+#    include <stdlib.h>
+#    include <windows.h>
+#    include <process.h>
+#    include <mmsystem.h>
+#endif
 #include <fcntl.h>
-#include <sys/ioctl.h>
 #include <sys/types.h>
-#include <sys/time.h>
-#include <signal.h>
-#include <sched.h>
-#include <pthread.h>
-#include <sys/soundcard.h>
 
 #include "pump.h"
 #include "tracker.h"
 #include "gui.h"
 
+#ifndef _WIN32
 pthread_t       audio_thread;
-
+#else
+HANDLE          audio_thread;
+DWORD           thread_id;
+#endif
 
 static int      stop = 0;
+#ifndef _WIN32
 int             fd;
+#else
+#define NBUFFERS 512*2		/* number of input/output sound buffers */
+HWAVEIN         in;		/* input sound handle       */
+HWAVEOUT        out;		/* output sound handle      */
+MMRESULT        err;
+			/*
+			 * We use N WAVEHDR's for recording (ie,
+			 * double-buffering)
+			 */
+WAVEHDR         wave_header[NBUFFERS];	/* input header   */
+WAVEHDR         write_header[NBUFFERS];	/* output headers */
+char            cur_wr_hdr[NBUFFERS];	/* available write headers array */
+char            wrbuf[BUFFER_SIZE * NBUFFERS];	/* write buffers  */
+char            rdbuf[BUFFER_SIZE * NBUFFERS];	/* receive buffer */
+int             procbuf[BUFFER_SIZE];	/* procesing buffer       */
+
+void            serror(DWORD err, TCHAR * str);
+#endif
 
 char            version[32] = "GNUitar $Name$";
 
+#ifndef _WIN32
 void           *
+#else
+DWORD WINAPI
+#endif
 audio_thread_start(void *V)
 {
     int             count,
                     i;
-
-    short           rdbuf[BUFFER_SIZE / 2];
+#ifndef _WIN32
+    SAMPLE          rdbuf[BUFFER_SIZE / 2];	/* receive buffer */
     int             procbuf[BUFFER_SIZE / 2];
 
     while (!stop) {
@@ -76,13 +127,14 @@ audio_thread_start(void *V)
 	    close(fd);
 	    exit(0);
 	}
+	count /= 2;
 
-	for (i = 0; i < count / 2; i++)
+	for (i = 0; i < count; i++)
 	    procbuf[i] = rdbuf[i];
 
-	pump_sample(procbuf, count / 2);
+	pump_sample(procbuf, count);
 
-	for (i = 0; i < count / 2; i++) {
+	for (i = 0; i < count; i++) {
 	    int             W = procbuf[i];
 	    if (W < -32767)
 		W = -32767;
@@ -98,17 +150,210 @@ audio_thread_start(void *V)
 	    exit(0);
 	}
     }
+#else
+    MSG             msg;
+
+    /*
+     * Wait for a message sent to me by the audio driver 
+     */
+    while (stop != 2) {
+	if (!GetMessage(&msg, 0, 0, 0)) {
+	    printf("\nWM_QUIT !\n");
+	    return 0;
+	}
+
+	/*
+	 * Figure out which message was sent 
+	 */
+	switch (msg.message) {
+	case WM_QUIT:{
+		printf("\naudio thread - WM_QUIT\n");
+		return 0;
+	    }
+	    /*
+	     * A buffer has been filled by the driver 
+	     */
+	case MM_WIM_DATA:{
+		int             hdr_avail = -1;	/* available write header
+						 * index */
+		if (stop == 1) {
+		    continue;
+		}
+
+		count = ((WAVEHDR *) msg.lParam)->dwBytesRecorded;
+		if (count && !audio_lock) {
+		    count /= 2;
+		    for (i = 0; i < count; i++) {
+			procbuf[i] =
+			    ((SAMPLE *) (((WAVEHDR *) msg.lParam)->
+					lpData))[i];
+		    }
+
+
+		    /*
+		     * find unused output buffer and queue it to output 
+		     */
+		    for (i = 0; i < NBUFFERS; i++)
+			if (cur_wr_hdr[i] == 1) {
+			    hdr_avail = i;
+			    cur_wr_hdr[i] = 0;	/* ready to queue */
+			    break;
+			}
+
+		    if (hdr_avail != -1) {
+			pump_sample(procbuf, count);
+
+			for (i = 0; i < count; i++) {
+			    int             W = procbuf[i];
+			    if (W < -32767)
+				W = -32767;
+			    if (W > 32767)
+				W = 32767;
+			    ((SAMPLE *) (write_header[hdr_avail].
+					lpData))[i] = W;
+			}
+
+			err =
+			    waveOutWrite(out, &write_header[hdr_avail],
+					 sizeof(WAVEHDR));
+
+			if (err) {
+			    serror(err, "\nwriting samples - ");
+			}
+			// printf("\nqueue buffer %d",hdr_avail);
+		    } else
+			printf("\nbuffer overrun.");
+		} else {
+//		    printf("\nbuffer underrun.");
+		}
+		/*
+		 * Now we need to requeue this buffer so the driver can
+		 * use it for another block of audio data. NOTE: We
+		 * shouldn't need to waveInPrepareHeader() a WAVEHDR that
+		 * has already been prepared once 
+		 */
+		waveInAddBuffer(in, (WAVEHDR *) msg.lParam,
+				sizeof(WAVEHDR));
+		continue;
+	    }
+	    /*
+	     * Our main thread is opening the WAVE device 
+	     */
+	case MM_WIM_OPEN:{
+		continue;
+	    }
+	    /*
+	     * Our main thread is closing the WAVE device 
+	     */
+	case MM_WIM_CLOSE:{
+		/*
+		 * Terminate this thread (by return'ing) 
+		 */
+		break;
+	    }
+	    /*
+	     * Audio driver is ready to playback next block 
+	     */
+	case MM_WOM_DONE:{
+		/*
+		 * Clear the WHDR_DONE bit (which the driver set last time 
+		 * that this WAVEHDR was sent via waveOutWrite and was
+		 * played). Some drivers need this to be cleared 
+		 */
+		((WAVEHDR *) msg.lParam)->dwFlags &= ~WHDR_DONE;
+		for (i = 0; i < NBUFFERS; i++)
+		    if (&write_header[i] == (WAVEHDR *) msg.lParam) {
+			cur_wr_hdr[i] = 1;
+			break;
+		    }
+		continue;
+	    }
+	default:
+	    ;
+	}
+    }
+    return 0;
+#endif
 }
 
+#ifdef _WIN32
+/*
+ * Retrieves and displays an error message for the passed Wave In error
+ * number. It does this using mciGetErrorString().
+ */
+
 void
-signal_ctrlc(int sig)
+serror(DWORD err, TCHAR * str)
 {
-    stop = 1;
+    char            buffer[128];
+
+    fprintf(stderr, "ERROR 0x%08X: %s", err, str);
+    if (mciGetErrorString(err, &buffer[0], sizeof(buffer))) {
+	fprintf(stderr, "%s\r\n", &buffer[0]);
+    } else {
+	fprintf(stderr, "0x%08X returned!\r\n", err);
+    }
 }
+
+#endif
+
+/* graceful application shutdown */
+void die(void) {
+    int i;
+
+    stop = 2;
+    pump_stop();
+    tracker_done();
+
+#ifndef _WIN32
+    close(fd);
+#else
+    /*
+     * Stop Windows queuing of buffers 
+     */
+    waveOutReset(out);
+    waveInReset(in);
+    /*
+     * Unprepare WAVE buffers 
+     */
+    for (i = 0; i < NBUFFERS; i++) {
+	waveOutUnprepareHeader(out, &write_header[i], sizeof(WAVEHDR));
+    }
+
+    /*
+     * We should unprepare the read headers here,
+     * but it is possible not to do it at all,
+     * since we didn't use malloc()'s to allocate them
+     */
+
+    /*
+     * Close WAVE devices
+     */
+    waveOutClose(out);
+    waveInClose(in);
+#endif
+}
+
+#ifndef _WIN32
+/*
+ * Calculate base-2 logarithm of the value, up to 512k
+ */
+short log2(int x) {
+    int pow[]={1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,
+	       65536,131072,262144,524288};
+    int i;
+    for(i=0;i<sizeof(pow)/sizeof(int);i++) {
+	if(pow[i]==x)
+	    return i;
+    }
+    return 0;
+}
+#endif
 
 int
 main(int argc, char **argv)
 {
+#ifndef _WIN32
     int             max_priority,
                     i;
     struct sched_param p;
@@ -119,7 +364,18 @@ main(int argc, char **argv)
 	return -1;
     }
 
-    i = 0x7fff0008;
+    /*
+     * unlimited fragments, fragment size is equal to the buffer size,
+     * so we operate with one full fragment at a time
+     * The value is encoded like this:
+     * 0xMMMMSSSS, where
+     *   ^^^^      == number of fragments, 7fff = unlimited
+     *       ^^^^  == 2-base logarithm of a fragment size,
+     *                e.g. it is 8 for 256-byte fragment,
+     *                           9 for 512
+     *                           etc.
+     */
+    i = 0x7fff0000 + log2(BUFFER_SIZE);
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
 	fprintf(stderr, "\nCannot setup fragments!");
 	close(fd);
@@ -165,13 +421,144 @@ main(int argc, char **argv)
 	close(fd);
 	return -1;
     }
+#else
+    WAVEFORMATEX    format;	/* wave format */
+    int             i;
 
-    gtk_init(&argc, &argv);
-    init_gui();
+    ZeroMemory(&wave_header[0], sizeof(WAVEHDR) * NBUFFERS);
+    ZeroMemory(&write_header[0], sizeof(WAVEHDR) * NBUFFERS);
+
+    /*
+     * we are NOT in record now - signal to the audio thread 
+     */
+    stop = 1;
+
+    /* set high priority to the process */
+    if(!SetPriorityClass(GetCurrentProcess(),HIGH_PRIORITY_CLASS)) {
+	fprintf(stderr,"\nFailed to set realtime priority to process: %s.",GetLastError());
+    }
+    /* create audio thread */
+    audio_thread =
+	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_thread_start, 0,
+		     0, &thread_id);
+    if (!audio_thread) {
+	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
+		GetLastError());
+	return (-1);
+    }
+    /* set realtime priority to the thread */
+    if(!SetThreadPriority(audio_thread,THREAD_PRIORITY_TIME_CRITICAL)) {
+	fprintf(stderr,"\nFailed to set realtime priority to thread: %s. Continuing with default priority.",GetLastError());
+    }
+    CloseHandle(audio_thread);
+
+    /* set audio parameters - sampling rate, number of channels etc. */
+    format.wFormatTag = WAVE_FORMAT_PCM;
+    format.nChannels = NCHANNELS;
+    format.nSamplesPerSec = SAMPLE_RATE;
+    format.wBitsPerSample = 16;
+    format.nBlockAlign = format.nChannels * (format.wBitsPerSample / 8);
+    format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+    format.cbSize = 0;
+
+    /*
+     * Open Digital Audio In device 
+     */
+    err =
+	waveInOpen(&in, WAVE_MAPPER, &format, (DWORD) thread_id, 0,
+		   CALLBACK_THREAD);
+    if (err) {
+	serror(err,
+	       "There was an error opening the Digital Audio In device\r\n");
+	stop = 2;
+	exit(-1);
+    }
+
+    /*
+     * Open the Digital Audio Out device. 
+     */
+    if ((err =
+	 waveOutOpen(&out, WAVE_MAPPER, &format, (DWORD) thread_id, 0,
+		     CALLBACK_THREAD))) {
+	serror(err,
+	       "There was an error opening the Digital Audio Out device!\r\n");
+	stop = 2;
+	exit(-1);
+    }
+    for (i = 0; i < NBUFFERS; i++) {
+	write_header[i].lpData = wrbuf + i * BUFFER_SIZE;
+	/*
+	 * Fill in WAVEHDR fields for buffer starting address and size 
+	 */
+	write_header[i].dwBufferLength = BUFFER_SIZE;
+	/*
+	 * Leave other WAVEHDR fields at 0 
+	 */
+	/*
+	 * Prepare the N WAVEHDR's 
+	 */
+	if ((err =
+	     waveOutPrepareHeader(out, &write_header[i],
+				  sizeof(WAVEHDR)))) {
+	    fprintf(stderr, "ERROR: preparing WAVEHDR %d! -- %08X\n", i,
+		    err);
+	    stop = 2;
+	    exit(1);
+	}
+	cur_wr_hdr[i] = 1;
+    }
 
 
-    pump_start(argc, argv);
+    for (i = 0; i < NBUFFERS; i++) {
+	wave_header[i].dwBufferLength = BUFFER_SIZE;
+	wave_header[i].lpData = rdbuf + i * BUFFER_SIZE;
+	/*
+	 * Fill in WAVEHDR fields for buffer starting address. We've
+	 * already filled in the size fields above 
+	 */
+	wave_header[i].dwFlags = 0;
+	/*
+	 * Leave other WAVEHDR fields at 0 
+	 */
 
+	/*
+	 * Prepare the WAVEHDR's 
+	 */
+	if ((err =
+	     waveInPrepareHeader(in, &wave_header[i], sizeof(WAVEHDR)))) {
+	    serror(err, "Error preparing WAVEHDR!\n");
+	    stop = 2;
+	    exit(-1);
+	}
+	/*
+	 * Queue WAVEHDR (recording hasn't started yet) 
+	 */
+	if ((err = waveInAddBuffer(in, &wave_header[i], sizeof(WAVEHDR)))) {
+	    serror(err, "Error queueing WAVEHDR!\n");
+	    stop = 2;
+	    exit(-1);
+	}
+	/*
+	 * we are recording now 
+	 */
+	if (i == 0) {
+	    /*
+	     * Start recording. Our secondary thread will now be receiving
+	     * and processing audio data
+	     */
+	    if ((err = waveInStart(in))) {
+		serror(err, "Error starting record!\n");
+		stop = 2;
+		exit(-1);
+	    }
+	    stop = 0;
+	}
+    }
+
+#endif
+
+
+#ifndef _WIN32
     max_priority = sched_get_priority_max(SCHED_FIFO);
     p.sched_priority = max_priority;
 
@@ -180,25 +567,22 @@ main(int argc, char **argv)
 	    ("\nFailed to set scheduler priority. (Are you running as root?)");
 	printf("\nContinuing with default priority");
     }
-
     if (pthread_create(&audio_thread, NULL, audio_thread_start, NULL)) {
 	fprintf(stderr, "\nAudio thread creation failed!");
 	exit(1);
     }
-
     /*
      * We were running to this point as setuid root program.
      * Switching to our native user id
      */
     setuid(getuid());
+#endif
 
+    gtk_init(&argc, &argv);
+    init_gui();
+    pump_start(argc, argv);
     gtk_main();
 
-    pump_stop();
-
-    tracker_done();
-
-    close(fd);
-
+    die();
     return 0;
 }

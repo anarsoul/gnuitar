@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Pump module - processeing sound
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.5  2001/06/02 14:05:59  fonin
  * Added GNU disclaimer.
  *
@@ -40,7 +43,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#else
+#    include <io.h>
+#endif
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -62,15 +69,15 @@
 
 struct effect  *effects[MAX_EFFECTS];
 int             n = 0;
-unsigned short  audio_lock = 0;	/*
+unsigned short  audio_lock = 0;	/* 
 				 * when nonzero pause pumping 
 				 */
 extern char     version[];
-unsigned short  write_track = 0;	/*
+unsigned short  write_track = 0;	/* 
 					 * when nonzero we should write
 					 * sample to disk 
 					 */
-extern void     initSinLookUp(void);	/*
+extern void     initSinLookUp(void);	/* 
 					 * from chorus.c 
 					 */
 
@@ -200,11 +207,7 @@ save_pump(char *fname)
 	perror("Save failed");
 	return;
     }
-    /*
-     * Chown file to one who launched us
-     */
-/*    chown(fname, getuid(), getgid());
-*/
+
     /*
      * writing signature 
      */

@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Backbuf - circular buffer for delay
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.3  2001/06/02 14:05:59  fonin
  * Added GNU disclaimer.
  *

@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Phasor effect
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.4  2001/06/02 14:05:59  fonin
  * Added GNU disclaimer.
  *
@@ -38,7 +41,11 @@
 #include "gui.h"
 #include <math.h>
 #include <stdlib.h>
-#include <unistd.h>
+#ifndef _WIN32
+#    include <unistd.h>
+#else
+#    include <io.h>
+#endif
 
 void            phasor_filter(struct effect *p, struct data_block *db);
 

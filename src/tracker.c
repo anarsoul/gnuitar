@@ -1,7 +1,7 @@
 /*
  * GNUitar
  * Tracker module - write samples to file
- * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ * Copyright (C) 2000,2001 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2003/01/29 19:34:00  fonin
+ * Win32 port.
+ *
  * Revision 1.4  2001/06/02 14:05:59  fonin
  * Added GNU disclaimer.
  *
@@ -39,84 +42,92 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
+#ifndef _WIN32
+#     include <unistd.h>
+#     include <sys/ioctl.h>
+#else
+#     include <io.h>
+#     include <string.h>
+#     include <windows.h>
+#     include <mmsystem.h>
+#endif
 #include <sys/stat.h>
-#include <sys/ioctl.h>
 #include <sys/types.h>
 
-static int     *buffer;
-/*
- * static FILE *fout = NULL;
- * 
- * static FILE *fin = NULL; 
- */
+#ifndef _WIN32
 static int      fout = -1;
-static int      fin = -1;
-static int      fin_ix = 0;
-static int      fin_size = 0;
+#else
+static HMMIO    fout=NULL;
+static MMCKINFO data,riff;
+#endif
 
 void
 tracker_out(const char *outfile)
 {
+#ifndef _WIN32
     fout = open(outfile, O_NONBLOCK | O_WRONLY | O_CREAT, 0644);
     if (ioctl(fout, O_NONBLOCK, 0) == -1)
 	perror("ioctl");
+#else
+    MMCKINFO fmt;
+    WAVEFORMATEX format;
 
-}
+    ZeroMemory(&riff,sizeof(MMCKINFO));
+    ZeroMemory(&fmt,sizeof(MMCKINFO));
+    ZeroMemory(&format,sizeof(WAVEFORMATEX));
 
-void
-tracker_in(const char *infile)
-{
-    struct stat     fs;
-    fin = open(infile, O_RDONLY, 0);
-    if (fin == -1) {
-	perror(infile);
+    fout = mmioOpen(outfile,NULL,MMIO_CREATE|MMIO_WRITE);
+    if(fout!=NULL) {
+	riff.fccType=mmioFOURCC('W','A','V','E');
+	if(mmioCreateChunk(fout,&riff,MMIO_CREATERIFF)!=MMSYSERR_NOERROR) {
+	    fprintf(stderr,"\nCreating RIFF chunk failed.");
+	    return;
+	}
+	fmt.ckid=mmioStringToFOURCC("fmt",0);
+	if(mmioCreateChunk(fout,&fmt,0)!=MMSYSERR_NOERROR) {
+	    fprintf(stderr,"\nCreating FMT chunk failed.");
+	    return;
+	}
+	format.wFormatTag = WAVE_FORMAT_PCM;
+	format.nChannels = NCHANNELS;
+	format.nSamplesPerSec = SAMPLE_RATE;
+	format.wBitsPerSample = 16;
+	format.nBlockAlign = format.nChannels * (format.wBitsPerSample / 8);
+	format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+	format.cbSize = 0;
+	mmioWrite(fout,&format,sizeof(WAVEFORMATEX)-2);
+	mmioAscend(fout,&fmt,0);
+	ZeroMemory(&data,sizeof(MMCKINFO));
+	data.ckid=/*data.fccType=*/mmioFOURCC('d','a','t','a');
+	if(mmioCreateChunk(fout,&data,0)!=MMSYSERR_NOERROR) {
+	    fprintf(stderr,"\nCreating data chunk failed.");
+	    return;
+	}
     }
-    fstat(fin, &fs);
-    fin_size = fs.st_size >> 2;
-    fin_size -= 39000;
-    printf("Reading %d bytes.\n", fin_size * 4);
-    buffer = (int *) malloc(fin_size * 4);
-    read(fin, buffer, 4 * fin_size);
-    close(fin);
+#endif
 }
 
 void
 tracker_done()
 {
+#ifndef _WIN32
     if (fout > 0)
 	close(fout);
-
-    if (fin != -1)
-	close(fin);
-
-    if (buffer)
-	free(buffer);
-}
-
-void
-track_read(int *s, int count)
-{
-    static int      r[512];
-    int             i;
-    for (i = 0; i < count; i++)
-	r[i] = 0;
-    i = count;
-    if (fin_ix + count >= fin_size)
-	i = fin_size - fin_ix;
-    memcpy(r, buffer + fin_ix, i * 4);
-    for (i = 0; i < count; i++)
-	s[i] += r[i];
-    fin_ix += i;
-    if (fin_ix >= fin_size)
-	fin_ix = 0;
+#else
+    if(fout!=NULL) {
+	mmioAscend(fout,&data,0);
+	mmioAscend(fout,&riff,0);
+	mmioClose(fout,0);
+    }
+#endif
 }
 
 
 void
 track_write(int *s, int count)
 {
-    __int16_t       tmp[BUFFER_SIZE];
+    SAMPLE          tmp[BUFFER_SIZE/sizeof(SAMPLE)];
+
     int             i;
 
     /*
@@ -124,5 +135,10 @@ track_write(int *s, int count)
      */
     for (i = 0; i < count; i++)
 	tmp[i] = s[i];
-    write(fout, tmp, sizeof(__int16_t) * count);
+#ifndef _WIN32
+    write(fout, tmp, sizeof(SAMPLE) * count);
+#else
+    if(fout!=NULL)
+	mmioWrite(fout,tmp,sizeof(SAMPLE)*count);
+#endif
 }
