@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2003/03/12 20:53:54  fonin
+ * - meaningful sliders measure units;
+ * - code cleanup.
+ *
  * Revision 1.8  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -62,14 +66,18 @@ void            delay_filter(struct effect *p, struct data_block *db);
 void
 update_delay_decay(GtkAdjustment * adj, struct delay_params *params)
 {
-    params->delay_decay = (int) adj->value;
+    params->delay_decay = (int) adj->value * 10;
 }
 
 void
 update_delay_time(GtkAdjustment * adj, struct delay_params *params)
 {
-    params->delay_start = (int) adj->value;
-    params->delay_step = (int) adj->value;
+    int             new_time;
+    new_time = (int) adj->value * sample_rate * nchannels / 1000;
+    params->delay_start = params->delay_step = new_time;
+    params->index = 0;
+    memset(params->history, 0, MAX_SIZE);
+    memset(params->idelay, 0, MAX_COUNT * sizeof(int));
 }
 
 void
@@ -126,9 +134,9 @@ delay_init(struct effect *p)
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
-    adj_decay = gtk_adjustment_new(pdelay->delay_decay,
-				   100.0, 1000.0, 1.0, 1.0, 1.0);
-    decay_label = gtk_label_new("Decay");
+    adj_decay = gtk_adjustment_new(pdelay->delay_decay / 10,
+				   10.0, 101.0, 1.0, 1.0, 1.0);
+    decay_label = gtk_label_new("Decay\n%");
     gtk_table_attach(GTK_TABLE(parmTable), decay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -148,9 +156,12 @@ delay_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
 
-    adj_time = gtk_adjustment_new(pdelay->delay_step,
-				  100.0, MAX_STEP, 1.0, 1.0, 1.0);
-    time_label = gtk_label_new("Time");
+    adj_time =
+	gtk_adjustment_new(pdelay->delay_step * 1000 /
+			   (sample_rate * nchannels), 1.0,
+			   MAX_STEP * 1000 / (sample_rate * nchannels),
+			   1.0, 1.0, 1.0);
+    time_label = gtk_label_new("Time\nms");
     gtk_table_attach(GTK_TABLE(parmTable), time_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -172,7 +183,7 @@ delay_init(struct effect *p)
 
     adj_repeat = gtk_adjustment_new(pdelay->delay_count,
 				    1.0, MAX_COUNT, 1.0, 1.0, 1.0);
-    repeat_label = gtk_label_new("Repeat");
+    repeat_label = gtk_label_new("Repeat\ntimes");
     gtk_table_attach(GTK_TABLE(parmTable), repeat_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -243,10 +254,9 @@ delay_filter(struct effect *p, struct data_block *db)
 		if (dp->index - dp->idelay[i] ==
 		    dp->delay_start + i * dp->delay_step)
 		    dp->idelay[i]++;
-	    } else {
-		if (dp->delay_size + dp->index - dp->idelay[i] ==
-		    dp->delay_start + i * dp->delay_step)
-		    dp->idelay[i]++;
+	    } else if (dp->delay_size + dp->index - dp->idelay[i] ==
+		       dp->delay_start + i * dp->delay_step) {
+		dp->idelay[i]++;
 	    }
 	    if (dp->idelay[i] == dp->delay_size)
 		dp->idelay[i] = 0;
@@ -344,6 +354,5 @@ delay_create(struct effect *p)
     pdelay->idelay = (int *) malloc(MAX_COUNT * sizeof(int));
     pdelay->index = 0;
 
-    for (i = 0; i < MAX_COUNT; i++)
-	pdelay->idelay[i] = 0;
+    memset(pdelay->idelay, 0, MAX_COUNT * sizeof(int));
 }

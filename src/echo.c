@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2003/03/12 20:53:54  fonin
+ * - meaningful sliders measure units;
+ * - code cleanup.
+ *
  * Revision 1.7  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -59,7 +63,7 @@ void
 void
 update_echo_decay(GtkAdjustment * adj, struct echo_params *params)
 {
-    params->echo_decay = (int) adj->value;
+    params->echo_decay = (int) adj->value * 10;
 }
 
 void
@@ -71,7 +75,7 @@ update_echo_count(GtkAdjustment * adj, struct echo_params *params)
 void
 update_echo_size(GtkAdjustment * adj, struct echo_params *params)
 {
-    params->echo_size = (int) adj->value;
+    params->echo_size = (int) adj->value * sample_rate * nchannels / 1000;
 }
 
 void
@@ -131,9 +135,9 @@ echo_init(struct effect *p)
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
-    adj_decay = gtk_adjustment_new(pecho->echo_decay,
-				   1.0, 1000.0, 0.1, 1.0, 1.0);
-    decay_label = gtk_label_new("Decay");
+    adj_decay = gtk_adjustment_new(pecho->echo_decay / 10,
+				   1.0, 100.0, 1.0, 10.0, 1.0);
+    decay_label = gtk_label_new("Decay\n%");
     gtk_table_attach(GTK_TABLE(parmTable), decay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -155,7 +159,7 @@ echo_init(struct effect *p)
 
     adj_count = gtk_adjustment_new(pecho->buffer_count,
 				   1.0, MAX_ECHO_COUNT, 1.0, 1.0, 1.0);
-    count_label = gtk_label_new("Count");
+    count_label = gtk_label_new("Repeat\ntimes");
     gtk_table_attach(GTK_TABLE(parmTable), count_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -174,9 +178,13 @@ echo_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-    adj_size = gtk_adjustment_new(pecho->echo_size,
-				  1.0, MAX_ECHO_SIZE, 1.0, 1.0, 1.0);
-    size_label = gtk_label_new("Size");
+    adj_size =
+	gtk_adjustment_new(pecho->echo_size * 1000 /
+			   (sample_rate * nchannels), 1.0,
+			   MAX_ECHO_SIZE * 1000 / (sample_rate *
+						   nchannels), 1.0, 1.0,
+			   1.0);
+    size_label = gtk_label_new("Delay\nms");
     gtk_table_attach(GTK_TABLE(parmTable), size_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -324,7 +332,7 @@ echo_create(struct effect *p)
     pecho->buffer_count = 20;
 
     pecho->history = (int **) malloc(MAX_ECHO_COUNT * sizeof(int *));
-    pecho->index = (int *) malloc(MAX_ECHO_COUNT * sizeof(int));
+    pecho->index = (int *) calloc(MAX_ECHO_COUNT, sizeof(int));
     pecho->size = (int *) malloc(MAX_ECHO_COUNT * sizeof(int));
     pecho->factor = (int *) malloc(MAX_ECHO_COUNT * sizeof(int));
 
@@ -341,9 +349,6 @@ echo_create(struct effect *p)
 
     for (i = 0; i < MAX_ECHO_COUNT; i++) {
 	pecho->size[i] = pecho->factor[i] * MAX_ECHO_SIZE;
-	pecho->history[i] = (int *) malloc(pecho->size[i] * sizeof(int));
-	for (j = 0; j < pecho->size[i]; j++)
-	    pecho->history[i][j] = 0;
-	pecho->index[i] = 0;
+	pecho->history[i] = (int *) calloc(pecho->size[i], sizeof(int));
     }
 }
