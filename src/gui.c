@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2003/04/11 18:33:56  fonin
+ * my_itoa() moved to utils.h.
+ *
  * Revision 1.18  2003/03/25 19:56:57  fonin
  * Added tooltips to most important controls.
  *
@@ -174,30 +177,6 @@ gint            bank_row = -1;	/*
 				 */
 
 extern unsigned short write_track;
-
-char           *
-my_itoa(int i)
-{
-    switch (i) {
-    case 48000:
-	return "48000";
-    case 44100:
-	return "44100";
-    case 22050:
-	return "22050";
-    case 16000:
-	return "16000";
-    case 8:
-	return "8";
-    case 16:
-	return "16";
-    case 1:
-	return "1";
-    case 2:
-	return "2";
-    }
-    return "";
-}
 
 /*
  * Cleaning and quit from application

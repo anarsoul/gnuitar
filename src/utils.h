@@ -64,5 +64,6 @@
 #endif
 
 extern short    log2(int);
+char           *my_itoa(int i);
 
 #endif
