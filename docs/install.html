@@ -27,25 +27,6 @@ for libiconv)<br>
 <a href=http://www.gimp.org/~tml/gimp/win32/gtk+-dev-1.3.0-20030115.zip>http://www.gimp.org/~tml/gimp/win32/gtk+-dev-1.3.0-20030115.zip</a><br>
 Please note that these links may change with the software updates.
 
-<p>You can obtain free Microsoft Visual C compiler from these two links:<br>
-<A HREF="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">.NET Framework SDK</A><br>
-<A HREF="http://www.microsoft.com/msdownload/platformsdk/sdkupdate/">Platform SDK</A>
-<p>(The next two paragraphs is a quote from <a href=http://winprog.org/tutorial target=top>
-    Forger's manual</a>).
-
-<p><i>"Microsoft has quietly released it's command line compiler and linker tools as 
-part of the .NET Framework SDK. The Framework SDK comes with everything you 
-need to for .NET development (C# compiler etc...) including the command line 
-compiler <CODE>cl.exe</CODE> which, while it's intended for use with the .NET 
-framework, is the same compiler that comes with Visual C++ Standard.
-<p>Since this is the .NET SDK, it doesn't come with the headers and libraries 
-required for Win32 API development, as these are part of the Platform SDK.
-<p>The Platform SDK is free as well. You only need the Core SDK,
-but feel free to download the other components as you desire.
-As a bonus, if you download the Platform SDK documentation (which I highly 
-recommend) you will have a complete local and up to date Win32 reference which 
-is MUCH easier to use than MSDN online."</i>
-
 <p>You need to prepare your build environment, before you start to compile.
 Most of the packages above contain 2 important directories: "lib" and "include".
 Copy the contents of the "lib" directory of each package to the folder
@@ -64,6 +45,12 @@ not get error messages (please note that it produces few dozens of warnings,
 it is ok). If you get something like "Linker error: cannot resolve external
 symbols ...", this means that you've done something wrong when preparing
 build environment.<br>
+<p>Command-line users should first run the file
+C:\Program Files\Microsoft Visual Studio\VC98\Bin\vcvars32.bat,
+to set environment variables, and then run:
+<pre>
+nmake /f gnuitar.mak
+</pre>
 If all went fine, you should pickup the file gnuitar.exe
 in the folder gnuitar\Release\ or gnuitar\Release 586\ depending on
 which configuration did you chose. Now, copy the gnuitar executable
@@ -93,7 +80,7 @@ rpm -i gnuitar-x.y.z.i386.rpm
 
 <h1>Linux - Create Your RPM</h1>
 
-<p>You can create your own rpm package on Linux. To do so, you need
+<>pYou can create your own rpm package on Linux. To do so, you need
 first to install the package "rpm-build" from your Linux CD
 (first check does the /usr/src/redhat/ directory exist, if yes then you
 already have it installed). Then, copy the file gnuitar.spec
