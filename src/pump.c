@@ -2,8 +2,11 @@
  * $Id$
  *
  * $Log$
- * Revision 1.1  2001/01/11 13:22:01  fonin
- * Initial revision
+ * Revision 1.2  2001/01/13 10:02:35  fonin
+ * Fix: setuid root program shouldnt overwrite existing files.
+ *
+ * Revision 1.1.1.1  2001/01/11 13:22:01  fonin
+ * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -165,14 +168,23 @@ save_pump(char *fname)
     int             i;
     int             fd = 0;
 
+    /*
+     * This is root suid program, so we won't write over/truncate 
+     * existing files (/etc/passwd or /etc/shadow for example)
+     */
     fprintf(stderr, "\nWriting profile (%s)...", fname);
     if (
 	(fd =
-	 open(fname, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND,
+	 open(fname, O_WRONLY | O_CREAT | O_EXCL /*O_TRUNC | O_APPEND*/,
 	      S_IREAD | S_IWRITE)) < 0) {
 	perror("Save failed");
 	return;
     }
+    /*
+     * Chown file to one who launched us
+     */
+    chown(fname,getuid(),getgid());
+
     /*
      * writing signature 
      */
