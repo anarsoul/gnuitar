@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2001/04/27 14:29:14  fonin
+ * <sys/soundcard.h> for better compatibility with FreeBSD.
+ *
  * Revision 1.3  2001/03/25 17:42:55  fonin
  * Switching back to real user identifier immediately after setting realtime priority.
  *
@@ -22,7 +25,7 @@
 #include <signal.h>
 #include <sched.h>
 #include <pthread.h>
-#include <linux/soundcard.h>
+#include <sys/soundcard.h>
 
 #include "pump.h"
 #include "tracker.h"
