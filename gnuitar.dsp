@@ -217,6 +217,10 @@ SOURCE=.\src\tremolo.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\utils.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\vibrato.c
 # ADD CPP /W3
 # End Source File
@@ -283,6 +287,10 @@ SOURCE=.\src\tracker.h
 # Begin Source File
 
 SOURCE=.\src\tremolo.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\utils.h
 # End Source File
 # Begin Source File
 
