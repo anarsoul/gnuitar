@@ -21,6 +21,8 @@ dnl AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs.
 AC_ARG_PROGRAM
+AC_PROG_AWK
+AC_PROG_LN_S
 AC_PROG_CC
 AC_PROG_INSTALL
 
