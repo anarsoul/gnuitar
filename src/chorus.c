@@ -1,7 +1,29 @@
 /*
+ * GNUitar
+ * Chorus effect
+ * Copyright (C) 2000,2001 Max Rudensky		<fonin@ziet.zhitomir.ua>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2001/06/02 13:59:04  fonin
+ * Fixed bug caused backbuff_get() assertion in chorus_filter().
+ * Added GNU disclaimer.
+ *
  * Revision 1.2  2001/03/25 12:10:49  fonin
  * Effect window control ignores delete event.
  *
@@ -204,7 +226,7 @@ chorus_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     adj_regen =
-	gtk_adjustment_new(pchorus->regen, 0.0, 50.0, 1.0, 1.0, 1.0);
+	gtk_adjustment_new(pchorus->regen, 0.0, 256.0, 1.0, 1.0, 1.0);
     regen_label = gtk_label_new("Regen");
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 9, 10, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -293,8 +315,8 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tmp /= 256;
 	switch (cp->mode) {
 	case 0:		/*
-				 * * chorus 
-				 */
+			 * chorus 
+			 */
 	    dly = MaxDly * (1024 + sinLookUp[(int) cp->ang]);
 	    dly /= 2048;
 	    Ang += AngInc;
@@ -304,8 +326,8 @@ chorus_filter(struct effect *p, struct data_block *db)
 		dly = 0;
 	    break;
 	case 1:		/*
-				 * * flange 
-				 */
+			 * flange 
+			 */
 	    dly = 16 * MaxDly * (1024 + sinLookUp[(int) Ang] / 16);
 	    dly /= 2048;
 	    Ang += AngInc;
@@ -322,15 +344,14 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tot += tmp;
 	tot = (tot < -32767) ? -32767 : (tot > 32767) ? 32767 : tot;
 	rgn =
-	    backbuff_get(cp->memory,
-			 (unsigned int) dly * cp->regen) / 256 + *s;
+	    (backbuff_get(cp->memory,
+			 (unsigned int) dly) * cp->regen) / 256 + *s;
 	rgn = (rgn < -32767) ? -32767 : (rgn > 32767) ? 32767 : rgn;
 	backbuff_add(cp->memory, rgn);
 	*s = tot;
 
 	s++;
 	count--;
-
     }
 
     cp->ang = Ang;
