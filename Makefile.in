@@ -78,22 +78,21 @@ VERSION = @VERSION@
 SUBDIRS = src
 a1dir = $(datadir)/doc/gnuitar/docs
 a1_DATA = docs
-a2dir = $(pkgdatadir)/distort2
-a2_DATA = distort2
 docdir = $(datadir)/doc/gnuitar
 doc_DATA = docs/*.html NEWS ChangeLog FAQ AUTHORS COPYING INSTALL README TODO
-distort2dir = $(pkgdatadir)
-distort2_DATA = distort2/*
-win32dir = $(pkgdatadir)/win32
-win32_DATA = gnuitar.ico gnuitar.dsp gnuitar.mak gnuitar_small.ico
+win32 = gnuitar.ico gnuitar.dsp gnuitar.mak gnuitar_small.ico gnuitar.vcproj \
+	gnuitar.sln
 
-EXTRA_DIST = gnuitar.spec
+
+EXTRA_DIST = gnuitar.spec docs/*.html docs/Makefile docs/toc.sh \
+	FAQ $(win32) 
+
 
 BZIP2_ENV = -9
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
-DATA =  $(a1_DATA) $(a2_DATA) $(distort2_DATA) $(doc_DATA) $(win32_DATA)
+DATA =  $(a1_DATA) $(doc_DATA)
 
 DIST_COMMON =  README AUTHORS COPYING ChangeLog INSTALL Makefile.am \
 Makefile.in NEWS TODO aclocal.m4 configure configure.in install-sh \
@@ -140,44 +139,6 @@ uninstall-a1DATA:
 	  rm -f $(DESTDIR)$(a1dir)/$$p; \
 	done
 
-install-a2DATA: $(a2_DATA)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(a2dir)
-	@list='$(a2_DATA)'; for p in $$list; do \
-	  if test -f $(srcdir)/$$p; then \
-	    echo " $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(a2dir)/$$p"; \
-	    $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(a2dir)/$$p; \
-	  else if test -f $$p; then \
-	    echo " $(INSTALL_DATA) $$p $(DESTDIR)$(a2dir)/$$p"; \
-	    $(INSTALL_DATA) $$p $(DESTDIR)$(a2dir)/$$p; \
-	  fi; fi; \
-	done
-
-uninstall-a2DATA:
-	@$(NORMAL_UNINSTALL)
-	list='$(a2_DATA)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(a2dir)/$$p; \
-	done
-
-install-distort2DATA: $(distort2_DATA)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(distort2dir)
-	@list='$(distort2_DATA)'; for p in $$list; do \
-	  if test -f $(srcdir)/$$p; then \
-	    echo " $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(distort2dir)/$$p"; \
-	    $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(distort2dir)/$$p; \
-	  else if test -f $$p; then \
-	    echo " $(INSTALL_DATA) $$p $(DESTDIR)$(distort2dir)/$$p"; \
-	    $(INSTALL_DATA) $$p $(DESTDIR)$(distort2dir)/$$p; \
-	  fi; fi; \
-	done
-
-uninstall-distort2DATA:
-	@$(NORMAL_UNINSTALL)
-	list='$(distort2_DATA)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(distort2dir)/$$p; \
-	done
-
 install-docDATA: $(doc_DATA)
 	@$(NORMAL_INSTALL)
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
@@ -195,25 +156,6 @@ uninstall-docDATA:
 	@$(NORMAL_UNINSTALL)
 	list='$(doc_DATA)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(docdir)/$$p; \
-	done
-
-install-win32DATA: $(win32_DATA)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(win32dir)
-	@list='$(win32_DATA)'; for p in $$list; do \
-	  if test -f $(srcdir)/$$p; then \
-	    echo " $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(win32dir)/$$p"; \
-	    $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(win32dir)/$$p; \
-	  else if test -f $$p; then \
-	    echo " $(INSTALL_DATA) $$p $(DESTDIR)$(win32dir)/$$p"; \
-	    $(INSTALL_DATA) $$p $(DESTDIR)$(win32dir)/$$p; \
-	  fi; fi; \
-	done
-
-uninstall-win32DATA:
-	@$(NORMAL_UNINSTALL)
-	list='$(win32_DATA)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(win32dir)/$$p; \
 	done
 
 # This directory's subdirectories are mostly independent; you can cd
@@ -348,6 +290,7 @@ distdir: $(DISTFILES)
 	distdir=`cd $(distdir) && pwd`; \
 	cd $(top_srcdir) \
 	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --foreign Makefile
+	$(mkinstalldirs) $(distdir)/docs
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
@@ -379,15 +322,13 @@ installcheck: installcheck-recursive
 install-exec-am:
 install-exec: install-exec-recursive
 
-install-data-am: install-a1DATA install-a2DATA install-distort2DATA \
-		install-docDATA install-win32DATA
+install-data-am: install-a1DATA install-docDATA
 install-data: install-data-recursive
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 install: install-recursive
-uninstall-am: uninstall-a1DATA uninstall-a2DATA uninstall-distort2DATA \
-		uninstall-docDATA uninstall-win32DATA
+uninstall-am: uninstall-a1DATA uninstall-docDATA
 uninstall: uninstall-recursive
 all-am: Makefile $(DATA)
 all-redirect: all-recursive
@@ -395,9 +336,7 @@ install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
 installdirs: installdirs-recursive
 installdirs-am:
-	$(mkinstalldirs)  $(DESTDIR)$(a1dir) $(DESTDIR)$(a2dir) \
-		$(DESTDIR)$(distort2dir) $(DESTDIR)$(docdir) \
-		$(DESTDIR)$(win32dir)
+	$(mkinstalldirs)  $(DESTDIR)$(a1dir) $(DESTDIR)$(docdir)
 
 
 mostlyclean-generic:
@@ -430,13 +369,12 @@ maintainer-clean-am:  maintainer-clean-tags maintainer-clean-generic \
 maintainer-clean: maintainer-clean-recursive
 	-rm -f config.status
 
-.PHONY: uninstall-a1DATA install-a1DATA uninstall-a2DATA install-a2DATA \
-uninstall-distort2DATA install-distort2DATA uninstall-docDATA \
-install-docDATA uninstall-win32DATA install-win32DATA \
-install-data-recursive uninstall-data-recursive install-exec-recursive \
-uninstall-exec-recursive installdirs-recursive uninstalldirs-recursive \
-all-recursive check-recursive installcheck-recursive info-recursive \
-dvi-recursive mostlyclean-recursive distclean-recursive clean-recursive \
+.PHONY: uninstall-a1DATA install-a1DATA uninstall-docDATA \
+install-docDATA install-data-recursive uninstall-data-recursive \
+install-exec-recursive uninstall-exec-recursive installdirs-recursive \
+uninstalldirs-recursive all-recursive check-recursive \
+installcheck-recursive info-recursive dvi-recursive \
+mostlyclean-recursive distclean-recursive clean-recursive \
 maintainer-clean-recursive tags tags-recursive mostlyclean-tags \
 distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
 dvi-am dvi check check-am installcheck-am installcheck install-exec-am \

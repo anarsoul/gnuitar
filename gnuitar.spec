@@ -38,7 +38,7 @@ make
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install prefix=${RPM_BUILD_ROOT}%{prefix}
+make install-strip prefix=${RPM_BUILD_ROOT}%{prefix}
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}

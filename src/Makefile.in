@@ -86,6 +86,8 @@ gnuitar_SOURCES = main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h chebyshev.c chebyshev.h
 
 
+EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
+
 INCLUDES = \
 	-DG_LOG_DOMAIN=\"gnuitar\" \
 	$(GTK_CFLAGS) $(CONFIG_DEFS) \

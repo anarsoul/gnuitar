@@ -1,16 +1,14 @@
 SUBDIRS = src
 a1dir = $(datadir)/doc/gnuitar/docs
 a1_DATA = docs
-a2dir = $(pkgdatadir)/distort2
-a2_DATA = distort2
 docdir = $(datadir)/doc/gnuitar
 doc_DATA = docs/*.html NEWS ChangeLog FAQ AUTHORS COPYING INSTALL README TODO
-distort2dir = $(pkgdatadir)
-distort2_DATA = distort2/*
-win32dir = $(pkgdatadir)/win32
-win32_DATA = gnuitar.ico gnuitar.dsp gnuitar.mak gnuitar_small.ico
+win32 = gnuitar.ico gnuitar.dsp gnuitar.mak gnuitar_small.ico gnuitar.vcproj \
+	gnuitar.sln
 
-EXTRA_DIST = gnuitar.spec
+
+EXTRA_DIST = gnuitar.spec docs/*.html docs/Makefile docs/toc.sh \
+	FAQ $(win32) 
 
 BZIP2_ENV = -9
 
