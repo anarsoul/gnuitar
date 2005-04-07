@@ -240,10 +240,8 @@ size      - controls delay time
 7.7. Distortion 2
 
 Another cool distortion. Emulates Ibanez TS9 pedal.
-You need to install gnuitar-distort2 package to change drive/colour controls.
 
 drive      - power of effect
-colour     - can't tell what is it :-)
 lowpass    - low-band filter that can be used to change the sound feel.
 
 7.8. Noise Gate
@@ -319,8 +317,9 @@ http://home.sprynet.com/~cbagwell/sox.html - SoX playback/record/processing
   software
 http://home8.swipnet.se/~w-82625 - BladeEnc, free MP3 encoder
 
-13. Author
+13. Authors
 
 Max Rudensky <fonin@omnistaronline.com>
 	     <fonin@yahoo.com>
 	     http://www.omnistaronline.com/~fonin
+Eugen Bogdan aka Dexterus <dexterus@hackernetwork.com>
