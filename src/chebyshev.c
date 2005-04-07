@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2005/04/07 18:36:35  fonin
+ * Fix with PI constant
+ *
  * Revision 1.2  2005/04/06 19:34:20  fonin
  * Code lickup
  *
@@ -60,12 +63,12 @@ CalcChebyshev2(double Fs, double Fc, double ripple, int lowpass,
                     d,
                     tt,
                     tt2;
-    // x=-cos(PI2/4+PI2/2);
-    // y=sin(PI2/4+PI2/2);
+    // x=-cos(M_PI/4+M_PI/2);
+    // y=sin(M_PI/4+M_PI/2);
     // c=-0.99915455413031497832540334286332;
     // v=0.041111761828599317357934264608497;
-    c = -cos(PI2 / 4);
-    v = sin(PI2 / 4);
+    c = -cos(M_PI / 4);
+    v = sin(M_PI / 4);
     if (ripple > 0) {
 	t = 100.0 / (100.0 - ripple);
 	x = sqrt(t * t - 1);
@@ -81,7 +84,7 @@ CalcChebyshev2(double Fs, double Fc, double ripple, int lowpass,
     }
     tt = 2 * tan(0.5);
     tt2 = tt * tt;
-    om = 2 * PI2 * Fc / Fs;
+    om = 2 * M_PI * Fc / Fs;
     m = c * c + v * v;
     d = 4 - 4 * c * tt + m * tt2;
     x0 = tt2 / d;
