@@ -1,7 +1,7 @@
 				GNUitar
 			Guitar processor software
 
-(C) 2000-2004 Max V.Rudensky <fonin@omnistaronline.com>
+(C) 2000-2005 Max V.Rudensky <fonin@gnuitar.com>
 
 1. What is GNUitar ?
 
@@ -21,9 +21,9 @@ to compile it yourself; see section 10 "Legal Issues").
 
 2. Download
 
+http://www.gnuitar.com/downloads.php
 http://freshmeat.net/projects/gnuitar
 http://sourceforge.net/projects/gnuitar
-http://www.omnistaronline.com/~fonin/downloads.php
 
 3. Requirements
 
@@ -269,7 +269,7 @@ hysteresis   - the threshold required to turn off the playback when
  o Windows version is not very stable yet. There could be problems
    with memory leaks and with sound initialisation/closing.
 
-Send bug reports to fonin@omnistaronline.com
+Send bug reports to fonin@gnuitar.com
 
 9. About Free Software Development
 
@@ -279,47 +279,33 @@ successful free software project has an active userbase behind it. This
 means that your comments, ideas and bug reports are extremely
 important. If something doesn't work, or some feature is missing,
 please mail me about it. Thank you in advance! You can send GNUitar
-related mails to me at mailto:fonin@omnistaronline.com.
+related mails to me at mailto:fonin@gnuitar.com.
 
 10. Legal Issues
 
 GNUitar is a free software and is distributed under the terms of 
-GNU GPL license. However you should pay a small amount of $10 to obtain 
-Windows binary. You are still free to compile it yourself from sources, 
-or get a compiled binary from a friend. Please note that this does not 
-contradict with GNU concept, and it is not like the commercial licenses.
-Paragraph 1 of the GPL license states: "You may charge a fee for the
-physical act of transferring a copy, and you may at your option offer warranty 
-protection in exchange for a fee."
+GNU GPL license.
 You are free to copy and share the program with other people, 
 you are not limited with the number of computers where you can use it. 
 You can redistribute the program and the works based on it 
 under the terms of GPL license. You have complete sources and detailed compile 
-instructions to build the program yourself, so you always have a choice 
-not to pay. You have full freedom with using and sharing the program,
+instructions to build the program yourself, as well as binaries.
+You have full freedom with using and sharing the program,
 according to the GNU software concept.
-You may regard this charge as a charge for build service.
-In return for quite a small amount you will get high-quality software
-with full freedom to use and share it (compare it with commercial
-guitar processors licenses and the hardware effects cost).
 
-11. Order Information - Windows Users
+11. Related Links
 
-Follow this link:
-https://www2.2checkout.com/2co/buyer/purchase?sid=225737&quantity=1&product_id=1
-
-12. Related Links
-
-http://freshmeat.net/projects/gnuitar and
-http://www.omnistaronline.com/~fonin/downloads.php - GNUitar project pages
+http://www.gnuitar.com/downloads.php and
+http://sourceforge.net/projects/gnuitar and
+http://freshmeat.net/projects/gnuitar - GNUitar project pages
 http://linux-sound.org - excellent categorized list of Unix sound software
 http://home.sprynet.com/~cbagwell/sox.html - SoX playback/record/processing
   software
 http://home8.swipnet.se/~w-82625 - BladeEnc, free MP3 encoder
 
-13. Authors
+12. Authors
 
-Max Rudensky <fonin@omnistaronline.com>
+Max Rudensky <fonin@gnuitar.com>
 	     <fonin@yahoo.com>
 	     http://www.omnistaronline.com/~fonin
 Eugen Bogdan aka Dexterus <dexterus@hackernetwork.com>
