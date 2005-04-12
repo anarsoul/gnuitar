@@ -45,6 +45,7 @@ RSC=rc.exe
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
 # ADD CPP /nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+# SUBTRACT CPP /Fr
 # ADD BASE RSC /l 0x419 /d "NDEBUG"
 # ADD RSC /l 0x419 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -152,6 +153,14 @@ SOURCE=.\src\backbuf.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\biquad.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\chebyshev.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\chorus.c
 # ADD CPP /W3
 # End Source File
@@ -173,6 +182,10 @@ SOURCE=.\src\distort2.c
 
 SOURCE=.\src\echo.c
 # ADD CPP /W3
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\eqbank.c
 # End Source File
 # Begin Source File
 
@@ -245,6 +258,14 @@ SOURCE=.\src\backbuf.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\biquad.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\chebyshev.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\chorus.h
 # End Source File
 # Begin Source File
@@ -262,6 +283,10 @@ SOURCE=.\src\distort2.h
 # Begin Source File
 
 SOURCE=.\src\echo.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\eqbank.h
 # End Source File
 # Begin Source File
 

@@ -45,6 +45,9 @@ CLEAN :
 	-@erase "$(INTDIR)\autowah.obj"
 	-@erase "$(INTDIR)\backbuf.obj"
 	-@erase "$(INTDIR)\chorus.obj"
+	-@erase "$(INTDIR)\chebyshev.obj"
+	-@erase "$(INTDIR)\biquad.obj"
+	-@erase "$(INTDIR)\eqbank.obj"
 	-@erase "$(INTDIR)\delay.obj"
 	-@erase "$(INTDIR)\distort.obj"
 	-@erase "$(INTDIR)\distort2.obj"
@@ -80,6 +83,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\autowah.obj" \
 	"$(INTDIR)\backbuf.obj" \
 	"$(INTDIR)\chorus.obj" \
+	"$(INTDIR)\chebyshev.obj" \
+	"$(INTDIR)\biquad.obj" \
+	"$(INTDIR)\eqbank.obj" \
 	"$(INTDIR)\delay.obj" \
 	"$(INTDIR)\distort.obj" \
 	"$(INTDIR)\echo.obj" \
@@ -120,6 +126,12 @@ CLEAN :
 	-@erase "$(INTDIR)\backbuf.obj"
 	-@erase "$(INTDIR)\backbuf.sbr"
 	-@erase "$(INTDIR)\chorus.obj"
+	-@erase "$(INTDIR)\chebyshev.obj"
+	-@erase "$(INTDIR)\biquad.obj"
+	-@erase "$(INTDIR)\eqbank.obj"
+	-@erase "$(INTDIR)\chebyshev.sbr"
+	-@erase "$(INTDIR)\biquad.sbr"
+	-@erase "$(INTDIR)\eqbank.sbr"
 	-@erase "$(INTDIR)\chorus.sbr"
 	-@erase "$(INTDIR)\delay.obj"
 	-@erase "$(INTDIR)\delay.sbr"
@@ -171,6 +183,9 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc"
 BSC32_SBRS= \
 	"$(INTDIR)\autowah.sbr" \
 	"$(INTDIR)\backbuf.sbr" \
+	"$(INTDIR)\chebyshev.sbr" \
+	"$(INTDIR)\biquad.sbr" \
+	"$(INTDIR)\eqbank.sbr" \
 	"$(INTDIR)\chorus.sbr" \
 	"$(INTDIR)\delay.sbr" \
 	"$(INTDIR)\distort.sbr" \
@@ -199,6 +214,9 @@ LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi3
 LINK32_OBJS= \
 	"$(INTDIR)\autowah.obj" \
 	"$(INTDIR)\backbuf.obj" \
+	"$(INTDIR)\chebyshev.obj" \
+	"$(INTDIR)\biquad.obj" \
+	"$(INTDIR)\eqbank.obj" \
 	"$(INTDIR)\chorus.obj" \
 	"$(INTDIR)\delay.obj" \
 	"$(INTDIR)\distort.obj" \
@@ -238,6 +256,9 @@ CLEAN :
 	-@erase "$(INTDIR)\autowah.obj"
 	-@erase "$(INTDIR)\backbuf.obj"
 	-@erase "$(INTDIR)\chorus.obj"
+	-@erase "$(INTDIR)\chebyshev.obj"
+	-@erase "$(INTDIR)\biquad.obj"
+	-@erase "$(INTDIR)\eqbank.obj"
 	-@erase "$(INTDIR)\delay.obj"
 	-@erase "$(INTDIR)\distort.obj"
 	-@erase "$(INTDIR)\distort2.obj"
@@ -272,6 +293,9 @@ LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi3
 LINK32_OBJS= \
 	"$(INTDIR)\autowah.obj" \
 	"$(INTDIR)\backbuf.obj" \
+	"$(INTDIR)\chebyshev.obj" \
+	"$(INTDIR)\biquad.obj" \
+	"$(INTDIR)\eqbank.obj" \
 	"$(INTDIR)\chorus.obj" \
 	"$(INTDIR)\delay.obj" \
 	"$(INTDIR)\distort.obj" \
@@ -314,6 +338,9 @@ CLEAN :
 	-@erase "$(INTDIR)\delay.obj"
 	-@erase "$(INTDIR)\distort.obj"
 	-@erase "$(INTDIR)\distort2.obj"
+	-@erase "$(INTDIR)\chebyshev.obj"
+	-@erase "$(INTDIR)\biquad.obj"
+	-@erase "$(INTDIR)\eqbank.obj"
 	-@erase "$(INTDIR)\echo.obj"
 	-@erase "$(INTDIR)\gnuitar.res"
 	-@erase "$(INTDIR)\gui.obj"
@@ -345,6 +372,9 @@ LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi3
 LINK32_OBJS= \
 	"$(INTDIR)\autowah.obj" \
 	"$(INTDIR)\backbuf.obj" \
+	"$(INTDIR)\chebyshev.obj" \
+	"$(INTDIR)\biquad.obj" \
+	"$(INTDIR)\eqbank.obj" \
 	"$(INTDIR)\chorus.obj" \
 	"$(INTDIR)\delay.obj" \
 	"$(INTDIR)\distort.obj" \
@@ -1193,6 +1223,138 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\vibrato.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ENDIF 
+
+SOURCE=.\src\biquad.c
+
+!IF  "$(CFG)" == "gnuitar - Win32 Release"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
+
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+
+"$(INTDIR)\biquad.obj"	"$(INTDIR)\biquad.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
+
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ENDIF 
+
+SOURCE=.\src\eqbank.c
+
+!IF  "$(CFG)" == "gnuitar - Win32 Release"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\eqbank.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
+
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+
+"$(INTDIR)\eqbank.obj"	"$(INTDIR)\eqbank.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\eqbank.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
+
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\eqbank.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ENDIF 
+
+SOURCE=.\src\biquad.c
+
+!IF  "$(CFG)" == "gnuitar - Win32 Release"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
+
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+
+"$(INTDIR)\biquad.obj"	"$(INTDIR)\biquad.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
+
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
   $(CPP_SWITCHES) $(SOURCE)
 <<
