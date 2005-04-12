@@ -21,6 +21,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/D HAVE_GTK /D FLOAT_DSP"
 				InlineFunctionExpansion="2"
 				OptimizeForProcessor="2"
 				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,DEMO=1"
@@ -73,8 +74,11 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/D HAVE_GTK /D FLOAT_DSP"
 				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="TRUE"
 				ImproveFloatingPointConsistency="TRUE"
+				FavorSizeOrSpeed="1"
 				OptimizeForProcessor="2"
 				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE"
 				StringPooling="TRUE"
@@ -126,7 +130,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/D &quot;HAVE_GTK&quot;"
+				AdditionalOptions="/D HAVE_GTK /D FLOAT_DSP"
 				Optimization="0"
 				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE"
 				BasicRuntimeChecks="3"
@@ -181,8 +185,11 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/D HAVE_GTK /D FLOAT_DSP"
 				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="TRUE"
 				ImproveFloatingPointConsistency="TRUE"
+				FavorSizeOrSpeed="1"
 				OptimizeForProcessor="1"
 				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE"
 				StringPooling="TRUE"
