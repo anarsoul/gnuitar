@@ -10,10 +10,10 @@
    that your sound card is full-duplex, and full-duplex mode is supported
    by the driver.<br>
    Another reason may be that your sound card does not support
-   the sampling parameters of 44100 Hz/16bit/mono. Currently it is
-   impossible to fix without recompilation; this will be changed in the future
-   releases. To recompile, change sampling parameters in the file
-   src/pump.h.<br>
+   the default sampling parameters of 44100 Hz/16bit/mono (which
+   is possible only for ancient sound cards :-)
+   Press "STOP" button, go to menu -&gt; Options, open the options dialog and
+   try to set different parameters.<br>
 <br>
 <b>Q:</b> It seems GNUitar works, but I can't hear effects applied 
    to my guitar sound. "Clean" sound of the guitar is send to the speakers,
@@ -27,11 +27,13 @@
    to suppress clean sound.<br>
 <br>
 <b>Q:</b> GNUitar noises terribly !<br>
-<b>A:</b> You should adjust your mixer properly. Set the line input to maximum level,
+<b>Q:</b> The output signal is over-amplified/distorted !<br>
+<b>A:</b> The trick is with the levels of signal. 
+   You should adjust your mixer properly. Set the line input to maximum level,
    wave out and master volume to middle level, and then start to decrease
    master volume until the noise will become minimal. Increase volume
    on your external amplifier.<br>
-   The reason of problem is that most soundcards have poor signal/noise ratio
+   The reason of problem is that some soundcards have poor signal/noise ratio
    in full-duplex mode.
    To eliminate noise, you may do the following:<br>
    <ul>
