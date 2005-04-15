@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/04/15 14:32:39  fonin
+ * Few improvements with the effects save/load; fixed nasty bug with CR/LF translation when saving preset files on Win32
+ *
  * Revision 1.16  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -237,14 +240,21 @@ passthru(struct effect *p, struct data_block *db)
 {
 }
 
+/* for UNIX; O_BINARY exists only on Win32. We must open() files with this 
+ * flag because otherwise it gets corrupted by the CR/LF translation */
+#ifndef O_BINARY
+#  define O_BINARY 0
+#endif
+
 void
 save_pump(char *fname)
 {
     int             i;
     int             fd = 0;
 
-    fprintf(stderr, "\nWriting profile (%s)...", fname);
-    if ((fd = open(fname, O_WRONLY | O_CREAT, S_IREAD | S_IWRITE)) < 0) {
+    fprintf(stderr, "\nWriting preset (%s)...", fname);
+    if ((fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+                                            S_IREAD | S_IWRITE)) < 0) {
 	perror("Save failed");
 	return;
     }
@@ -252,11 +262,11 @@ save_pump(char *fname)
     /*
      * writing signature 
      */
-    write(fd, version, 32);
+    write(fd, version, 13);
     for (i = 0; i < n; i++) {
 	if (effects[i]->proc_save != NULL) {
-	    write(fd, &effects[i]->id, sizeof(unsigned short));
-	    write(fd, &effects[i]->toggle, sizeof(short));
+	    write(fd, &effects[i]->id, sizeof(effects[i]->id));
+	    write(fd, &effects[i]->toggle, sizeof(effects[i]->toggle));
 	    effects[i]->proc_save(effects[i], fd);
 	}
     }
@@ -268,10 +278,10 @@ void
 load_pump(char *fname)
 {
     int             fd = 0;
-    short           effect_tag = -1;
-    char            rc_version[32];
+    unsigned short  effect_tag = MAX_EFFECTS+1;
+    char            rc_version[32]="";
 
-    if (!(fd = open(fname, O_RDONLY, S_IREAD | S_IWRITE))) {
+    if (!(fd = open(fname, O_RDONLY | O_BINARY, S_IREAD | S_IWRITE))) {
 	perror("Load failed");
 	return;
     }
@@ -279,8 +289,8 @@ load_pump(char *fname)
     /*
      * reading signature and compare with our version 
      */
-    read(fd, rc_version, 32);
-    if (strncmp(version, rc_version, 7) != 0) {
+    read(fd, rc_version, 13);
+    if (strncmp(version, rc_version, 13) != 0) {
 	fprintf(stderr, "\nThis is not my rc file.");
 	close(fd);
 	return;
@@ -291,8 +301,11 @@ load_pump(char *fname)
     pump_stop();
 
     n = 0;
-    while (read(fd, &effect_tag, sizeof(short)) > 0) {
-	assert((effect_tag >= 0 && effect_tag <= EFFECT_AMOUNT));
+    while (read(fd, &effect_tag, sizeof(unsigned short)) > 0) {
+	if(effect_tag < 0 || effect_tag > EFFECT_AMOUNT) {
+            fprintf(stderr,"\nInvalid effect %i, load finished",effect_tag);
+            break;
+        }
 
 	fprintf(stderr, "\nloading %s", effect_list[effect_tag].str);
 
@@ -305,6 +318,7 @@ load_pump(char *fname)
 			 &effect_list[effect_tag].str);
 	n++;
     }
+    close(fd);
     fprintf(stderr, "\n");
     audio_lock = 0;
 }
