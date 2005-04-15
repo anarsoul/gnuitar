@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2005/04/15 14:33:29  fonin
+ * Code lickup
+ *
  * Revision 1.10  2005/04/06 19:34:20  fonin
  * Code lickup
  *
@@ -157,7 +160,7 @@ distort2_init(struct effect *p)
     parmTable = gtk_table_new(4, 2, FALSE);
 
     adj_drive = gtk_adjustment_new((pdistort->r2 + 50) / 100,
-				   1.0, 101.0, 1, 1, 1);
+				   1.0, 101.0, 0, 0, 0);
     drive_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -169,7 +172,7 @@ distort2_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_distort2_drive), pdistort);
     drive = gtk_vscale_new(GTK_ADJUSTMENT(adj_drive));
 #ifdef HAVE_GTK2
-    gtk_widget_set_size_request(GTK_WIDGET(drive),0,100);
+    gtk_wget_set_size_request(GTK_WIDGET(drive),0,100);
 #endif
 
     gtk_table_attach(GTK_TABLE(parmTable), drive, 0, 1, 1, 2,
@@ -261,7 +264,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	x = *s ;
 	x *= DIST2_DOWNSCALE ;
 	
-	/* fist we prepare the lineary interpoled upsamples */
+	/* first we prepare the lineary interpoled upsamples */
 	y = 0;
 	upsample[0] = dp->lastupsample;
 	y = 1.0 / UPSAMPLE;  /* temporary usage of y */
@@ -281,7 +284,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    dp->lyf = y;
 	    x1 = (x-y) / 4700.0;
 
-	    /* start seaching from time previous point , improves speed */
+	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel]; 
 	    do {
 		/* f(y) = 0 , y= ? */
@@ -389,7 +392,6 @@ distort2_create(struct effect *p)
     p->proc_done = distort2_done;
 
     ap->r2 = 520;
-//    ap->lowpass = 150;
     ap->noisegate = 3500;
     ap->treble = 0;
 
@@ -413,7 +415,7 @@ distort2_create(struct effect *p)
     ap->cheb1.mem = (double*) malloc ( nchannels * sizeof (double) * 4 );
     memset ( (void*) ap->cheb1.mem, 0 , nchannels * sizeof (double) * 4 );
 
-    /* 2 lowPass Chebyshev fiters used in downsampling */
+    /* 2 lowPass Chebyshev filters used in downsampling */
     CalcChebyshev2(sample_rate * UPSAMPLE, 12000, 1, 1, &ap->cheb);
     CalcChebyshev2(sample_rate * UPSAMPLE, 5500, 1, 1, &ap->cheb1);
 }
