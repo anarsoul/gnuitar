@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.5  2005/04/15 14:32:08  fonin
+ * Fixed nasty bug with effect saving/loading
+ *
  * Revision 1.4  2004/10/21 11:16:26  dexterus
  * Made to work with new biquad.c version (1.3)
  * Overall functional
@@ -147,7 +150,7 @@ eqbank_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
     for (i = 0; i < FB_NB; i++) {
-	adj_boost[i] = gtk_adjustment_new(0,
+	adj_boost[i] = gtk_adjustment_new(peq->boosts[i],
 					  FB_MIN, FB_MAX, 1.0, 5.0, 1.0);
 	boost[i] = gtk_vscale_new(GTK_ADJUSTMENT(adj_boost[i]));
 #ifdef HAVE_GTK2
@@ -188,7 +191,7 @@ eqbank_init(struct effect *p)
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 3);
-    adj_output = gtk_adjustment_new(0, -20, 30, 1.0, 5.0, 1.0);
+    adj_output = gtk_adjustment_new(peq->volume, -20, 30, 1.0, 5.0, 1.0);
     output = gtk_vscale_new(GTK_ADJUSTMENT(adj_output));
     gtk_signal_connect(GTK_OBJECT(adj_output), "value_changed",
 		       GTK_SIGNAL_FUNC(update_eqbank_volume),
@@ -221,9 +224,6 @@ eqbank_init(struct effect *p)
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
-
-
-
 }
 
 void
@@ -257,27 +257,23 @@ eqbank_filter(struct effect *p, struct data_block *db)
 	    t = -MAX_SAMPLE;
 	*s = t;
 	if (cchannel < nchannels - 1) 
-		cchannel++;
+	    cchannel++;
 	  
 	s++;
 	count--;
     }
-
-
-
-
 }
 
 void
 eqbank_done(struct effect *p)
 {
     struct eqbank_params *ep;
-	unsigned int i;
+    unsigned int i;
 
     ep = (struct eqbank_params *) p->params;
 	
-	for (i = 0; i < FB_NB; i++) 
-		free( ep->filters[i].mem);
+    for (i = 0; i < FB_NB; i++) 
+    	free( ep->filters[i].mem);
 
     free(ep->filters);
     free(ep->boosts);
@@ -296,7 +292,7 @@ eqbank_save(struct effect *p, int fd)
 
     ep = (struct eqbank_params *) p->params;
 
-    write(fd, &ep->boosts, sizeof(int) * FB_NB);
+    write(fd, ep->boosts, sizeof(int) * FB_NB);
     write(fd, &ep->volume, sizeof(int));
 
 }
@@ -308,13 +304,17 @@ eqbank_load(struct effect *p, int fd)
     int             i;
 
     ep = (struct eqbank_params *) p->params;
-
-    read(fd, &ep->boosts, sizeof(int) * FB_NB);
+    read(fd, ep->boosts, sizeof(int) * FB_NB);
     read(fd, &ep->volume, sizeof(int));
     for (i = 0; i < FB_NB; i++) {
-	memset((void *) &ep->filters[i], 0, sizeof(struct Biquad));
+        ep->filters[i].a0=0;
+        ep->filters[i].a1=0;
+        ep->filters[i].a2=0;
+        ep->filters[i].b1=0;
+        ep->filters[i].b2=0;
 	SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], 0, &ep->filters[i]);
     }
+
     ep->ocoeff = pow(10, ep->volume / 20.0);
 
     if (p->toggle == 0) {
@@ -322,6 +322,7 @@ eqbank_load(struct effect *p, int fd)
     } else {
 	p->proc_filter = eqbank_filter;
     }
+
 }
 
 void
@@ -344,13 +345,13 @@ eqbank_create(struct effect *p)
     peq->filters = (struct Biquad *) malloc(sizeof(struct Biquad) * FB_NB );
     peq->boosts = (int *) malloc(sizeof(int) * FB_NB);
     for (i = 0; i < FB_NB; i++) 
-	{
-		memset((void *) &peq->filters[i], 0, sizeof(struct Biquad));
-		peq->filters[i].mem = (double*) malloc( (nchannels * sizeof (double)) << 2);
-		memset((void *) peq->filters[i].mem, 0, (nchannels * sizeof (double)) << 2);
-		SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], 0, &peq->filters[i]);
-		peq->boosts[i] = 0;
+    {
+    	memset((void *) &peq->filters[i], 0, sizeof(struct Biquad));
+    	peq->filters[i].mem = (double*) malloc( (nchannels * sizeof (double)) << 2);
+    	memset((void *) peq->filters[i].mem, 0, (nchannels * sizeof (double)) << 2);
+	SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], 0, &peq->filters[i]);
+	peq->boosts[i] = 0;
     }
     peq->ocoeff = 1;
-
+    peq->volume=0;
 }
