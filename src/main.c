@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/04/15 14:37:41  fonin
+ * Fixed version variable
+ *
  * Revision 1.20  2005/04/06 19:34:58  fonin
  * Fixed the accidental typo with "count=bits >> 8" that caused the floating exception
  *
@@ -125,7 +128,7 @@ static int      state = STATE_PROCESS;	/*
 					 * State of the program 
 					 * (see utils.h for possible values)
 					 */
-char            version[32] = "GNUitar $Name$";
+char            version[13] = "GNUitar "VERSION;
 
 #ifndef _WIN32
 pthread_t       audio_thread;
