@@ -1,7 +1,7 @@
 # Microsoft Developer Studio Generated NMAKE File, Based on gnuitar.dsp
 !IF "$(CFG)" == ""
 CFG=gnuitar - Win32 Release
-!MESSAGE No configuration specified. Defaulting to gnuitar - Win32 Debug.
+!MESSAGE No configuration specified. Defaulting to gnuitar - Win32 Release.
 !ENDIF 
 
 !IF "$(CFG)" != "gnuitar - Win32 Release" && "$(CFG)" != "gnuitar - Win32 Debug" && "$(CFG)" != "gnuitar - Win32 Demo" && "$(CFG)" != "gnuitar - Win32 Release 586"
@@ -71,7 +71,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
@@ -176,7 +176,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_PROJ=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "_DEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
@@ -282,7 +282,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
@@ -361,7 +361,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 RSC_PROJ=/l 0x419 /fo"$(INTDIR)\gnuitar.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\gnuitar.bsc" 
@@ -446,7 +446,7 @@ SOURCE=.\src\autowah.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\autowah.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -456,7 +456,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\autowah.obj"	"$(INTDIR)\autowah.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -466,7 +466,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\autowah.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -476,7 +476,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\autowah.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -490,7 +490,7 @@ SOURCE=.\src\backbuf.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\backbuf.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -500,7 +500,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\backbuf.obj"	"$(INTDIR)\backbuf.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -510,7 +510,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\backbuf.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -520,7 +520,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\backbuf.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -534,7 +534,7 @@ SOURCE=.\src\chorus.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\chorus.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -544,7 +544,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\chorus.obj"	"$(INTDIR)\chorus.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -554,7 +554,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\chorus.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -564,7 +564,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\chorus.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -578,7 +578,7 @@ SOURCE=.\src\delay.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\delay.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -588,7 +588,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\delay.obj"	"$(INTDIR)\delay.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -598,7 +598,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\delay.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -608,7 +608,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\delay.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -622,7 +622,7 @@ SOURCE=.\src\distort.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\distort.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -632,7 +632,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\distort.obj"	"$(INTDIR)\distort.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -642,7 +642,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\distort.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -652,7 +652,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\distort.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -698,7 +698,7 @@ SOURCE=.\src\echo.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\echo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -708,7 +708,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\echo.obj"	"$(INTDIR)\echo.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -718,7 +718,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\echo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -728,7 +728,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\echo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -742,7 +742,7 @@ SOURCE=.\src\gui.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\gui.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -752,7 +752,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\gui.obj"	"$(INTDIR)\gui.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -762,7 +762,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\gui.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -772,7 +772,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\gui.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -850,7 +850,7 @@ SOURCE=.\src\phasor.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\phasor.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -860,7 +860,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\phasor.obj"	"$(INTDIR)\phasor.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -870,7 +870,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\phasor.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -880,7 +880,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\phasor.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -894,7 +894,7 @@ SOURCE=.\src\pump.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\pump.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -904,7 +904,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\pump.obj"	"$(INTDIR)\pump.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -914,7 +914,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\pump.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -924,7 +924,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\pump.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -938,7 +938,7 @@ SOURCE=.\src\rcfilter.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\rcfilter.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -948,7 +948,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\rcfilter.obj"	"$(INTDIR)\rcfilter.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -958,7 +958,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\rcfilter.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -968,7 +968,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\rcfilter.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -982,7 +982,7 @@ SOURCE=.\src\reverb.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\reverb.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -992,7 +992,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\reverb.obj"	"$(INTDIR)\reverb.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1002,7 +1002,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\reverb.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1012,7 +1012,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\reverb.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1026,7 +1026,7 @@ SOURCE=.\src\sustain.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\sustain.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1036,7 +1036,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\sustain.obj"	"$(INTDIR)\sustain.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1046,7 +1046,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\sustain.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1056,7 +1056,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\sustain.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1070,7 +1070,7 @@ SOURCE=.\src\tracker.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\tracker.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1080,7 +1080,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\tracker.obj"	"$(INTDIR)\tracker.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1090,7 +1090,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\tracker.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1100,7 +1100,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\tracker.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1114,7 +1114,7 @@ SOURCE=.\src\tremolo.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\tremolo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1124,7 +1124,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\tremolo.obj"	"$(INTDIR)\tremolo.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1134,7 +1134,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\tremolo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1144,7 +1144,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\tremolo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1190,7 +1190,7 @@ SOURCE=.\src\vibrato.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\vibrato.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1200,7 +1200,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\vibrato.obj"	"$(INTDIR)\vibrato.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1210,7 +1210,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\vibrato.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1220,7 +1220,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\vibrato.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1234,7 +1234,7 @@ SOURCE=.\src\biquad.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1244,7 +1244,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\biquad.obj"	"$(INTDIR)\biquad.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1254,7 +1254,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1264,7 +1264,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1278,7 +1278,7 @@ SOURCE=.\src\eqbank.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\eqbank.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1288,7 +1288,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\eqbank.obj"	"$(INTDIR)\eqbank.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1298,7 +1298,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\eqbank.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1308,7 +1308,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\eqbank.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1322,7 +1322,7 @@ SOURCE=.\src\biquad.c
 
 !IF  "$(CFG)" == "gnuitar - Win32 Release"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1332,7 +1332,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 "$(INTDIR)\biquad.obj"	"$(INTDIR)\biquad.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1342,7 +1342,7 @@ CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
 
-CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1352,7 +1352,7 @@ CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOL
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
-CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\biquad.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1361,6 +1361,51 @@ CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "NDEBUG" /D "_CO
 
 
 !ENDIF 
+
+SOURCE=.\src\chebyshev.c
+
+!IF  "$(CFG)" == "gnuitar - Win32 Release"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\chebyshev.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
+
+CPP_SWITCHES=/nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "HAVE_GTK" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+
+"$(INTDIR)\chebyshev.obj"	"$(INTDIR)\chebyshev.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Demo"
+
+CPP_SWITCHES=/nologo /G6 /MT /W3 /GX /O2 /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D DEMO=1 /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\chebyshev.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
+
+CPP_SWITCHES=/nologo /G5 /MT /W3 /GX /O2 /Op /Ob2 /D "WIN32" /D "HAVE_GTK" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\gnuitar.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\chebyshev.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ENDIF 
+
 
 SOURCE=.\src\gnuitar.rc
 
