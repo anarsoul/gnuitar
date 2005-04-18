@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/04/18 12:55:50  fonin
+ * Fixed a typo in src/distort2.c
+ *
  * Revision 1.11  2005/04/15 14:33:29  fonin
  * Code lickup
  *
@@ -172,7 +175,7 @@ distort2_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_distort2_drive), pdistort);
     drive = gtk_vscale_new(GTK_ADJUSTMENT(adj_drive));
 #ifdef HAVE_GTK2
-    gtk_wget_set_size_request(GTK_WIDGET(drive),0,100);
+    gtk_widget_set_size_request(GTK_WIDGET(drive),0,100);
 #endif
 
     gtk_table_attach(GTK_TABLE(parmTable), drive, 0, 1, 1, 2,
