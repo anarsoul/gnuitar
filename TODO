@@ -78,16 +78,27 @@ TODO:
 0.3.2
 + GTK2
   - test on Windows
-?+ equalizer effect
++ equalizer effect
   + 5kHz limit problem
 - swap slider controls
+  - seems impossible ???
 + process all in floats to decrease SNR ? Convert only on input and output ?
   (as IFDEF)
 + distortion
-- autowah - combined with other filters distorts the sound
++ correct build files for MSVC6.0
+- help contents on Windows 2000
+- sigfault on help contents with netscape, linux
++ review the docs, especially build notes for the console MSVC users
+- check autowah on windows
 
 0.4.0
 - pitch shifter
+- load preset files from the command line
+- group effects and give it meaningful names
+- new noise gate effect
+- i18n
+- effects with a sinusoidal phase/amplitude shape (tremolo,chorus)
+  offer other shapes (square, triangular)
 
 0.5.0
 - tuner
@@ -100,3 +111,7 @@ Ongoing bugs (misc):
 - convert the names of presets to UTF8 strings, before append it
   to the bank list, as recommended by GTK-Win32 manual.
 - bug with GTK critical error on finish
+
+Misc something:
+- port to wxWidgets
+- have a text boxes connected to the sliders, to directly edit the values
