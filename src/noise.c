@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2005/04/24 19:11:04  fonin
+ * Added comments
+ *
  * Revision 1.5  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -278,15 +281,20 @@ void
 noise_filter(struct effect *p, struct data_block *db)
 {
 
-    int             count;
-    DSP_SAMPLE     *s;
-    struct noise_params *dn;
-    static int      hold_counter;
-    static int      release_counter;
-    static float    release_amp = 1.0;
-    static float    attack_amp = 1.0;
-    static int      attack_counter = 0;
-    static short    fadeout = 0;
+    int             	 count;
+    DSP_SAMPLE     	 *s;
+    struct noise_params  *dn;
+    static unsigned int  hold_counter=0;    /* how much longer before we start 
+					     * to supress the signal */
+    static unsigned int  release_counter=0; /* how much longer before we 
+					     * fade out to nothing - 
+					     * fadeout counter */
+    static float    	 release_amp = 1.0;
+    static float	 attack_amp = 1.0;
+    static unsigned int  attack_counter = 0;
+    static short         fadeout = 0;	/* if non-zero, we use hysteresis to
+					 * suppress the sound.
+					 * Otherwise, we use the threshold.  */
 
     dn = (struct noise_params *) p->params;
 
@@ -294,37 +302,54 @@ noise_filter(struct effect *p, struct data_block *db)
     s = db->data;
 
     while (count) {
-	if ((((*s > 0 && *s < dn->threshold)
-	      || (*s < 0 && *s > -dn->threshold)) && !fadeout)
+	/* signal is below the threshold, we're not already fading out */
+	if ((((*s >= 0 && *s < dn->threshold)
+	      || (*s <= 0 && *s > -dn->threshold)) && !fadeout)
 	    ||
-	    (((*s > 0 && *s < dn->hysteresis)
-	      || (*s < 0 && *s > -dn->hysteresis)) && fadeout)) {
+	    /* or signal is below the hysteresis (stop threshold),
+	     * and we're already fading out */
+	    (((*s >= 0 && *s < dn->hysteresis)
+	      || (*s <= 0 && *s > -dn->hysteresis)) && fadeout)) {
+
+	    /* When the signal is near the zero for the hold time long,
+	     * we do the fadeout  */
 	    hold_counter++;
 	    if (hold_counter >= dn->hold_time) {
-		if ((*s > 0 && *s < dn->hysteresis)
-		    || (*s < 0 && *s > -dn->hysteresis)) {
+		/* we're within the hysteresis - init the fadein attack vars,
+		 * also we'll now react on threshold instead of hysteresis
+		 * (fadeout = 0) */
+		if ((*s >= 0 && *s < dn->hysteresis)
+		    || (*s <= 0 && *s > -dn->hysteresis)) {
 		    attack_counter = 0;
 		    attack_amp = 1;
 		    fadeout = 0;
 		}
+
+		/* we're fading out - adjust the fadeout amplify coefficient */
 		if (dn->release_time && release_counter < dn->release_time) {
 		    release_counter++;
 		    release_amp =
 			((float) dn->release_time -
 			 (float) release_counter) /
 			(float) dn->release_time;
-		} else if (!dn->release_time) {
+		/* otherwise, cut off the signal immediately */
+		} else if (!dn->release_time)
 		    release_amp = 0;
-		}
 	    }
+	/* signal is above the threshold/hysteresis */
 	} else {
+	    /* Init vars. Don't be confused by setting up a fadeout.
+	     * It only will start if we'll become lower than hysteresis. */
 	    hold_counter = 0;
 	    release_counter = 0;
 	    release_amp = 1.0;
 	    fadeout = 1;
+
+	    /* if fadein is setup, we adjust the attack amp.coeff. */
 	    if (dn->attack && attack_counter < dn->attack) {
 		attack_counter++;
 		attack_amp = (float) attack_counter / (float) dn->attack;
+	    /* otherwise, it's always 1 */
 	    } else
 		attack_amp = 1;
 	}
