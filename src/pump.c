@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/04/24 19:11:22  fonin
+ * Optimized for zero input (after the noise filter) to avoid the extra calcs
+ *
  * Revision 1.17  2005/04/15 14:32:39  fonin
  * Few improvements with the effects save/load; fixed nasty bug with CR/LF translation when saving preset files on Win32
  *
@@ -137,10 +140,21 @@ pump_sample(DSP_SAMPLE *s, int size)
     db.data = s;
     db.len = size;
 
+    /* no input, no output :-) to avoid extra calc. Optimized for noise gate,
+     * when all input is zero.
+     * This is the heuristics - since there is no the standard function
+     * in the ANSI C library that reliably compares the memory region
+     * with the given byte, we compare just a few excerpts from an array.
+     * If everything is zero, we have a large chances that all array is zero. */
+    if(s[0]==0 && s[1]==0 && s[16]==0 && s[17]==0 &&
+          s[24]==0 && s[25]==0 && s[32]==0 && s[33]==0 &&
+	  s[buffer_size-1]==0) {
+	/* nothing */
+    }
     /*
      * Pumping
      */
-    for (i = 0; i < n; i++) {
+    else for (i = 0; i < n; i++) {
 	effects[i]->proc_filter(effects[i], &db);
     }
 

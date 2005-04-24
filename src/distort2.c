@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/04/24 19:11:22  fonin
+ * Optimized for zero input (after the noise filter) to avoid the extra calcs
+ *
  * Revision 1.12  2005/04/18 12:55:50  fonin
  * Fixed a typo in src/distort2.c
  *
@@ -252,17 +255,29 @@ distort2_filter(struct effect *p, struct data_block *db)
     struct distort2_params *dp;
     static double	x,y,x1,f,df,dx,e1,e2;
     static double upsample [UPSAMPLE];
-    
 #define DRIVE (dp->r2)
-
     dp = (struct distort2_params *) p->params;
     count = db->len;
     s = db->data;
+
+    /* no input, no output :-) to avoid extra calc. Optimized for noise gate,
+     * when all input is zero.
+     * This is the heuristics - since there is no the standard function
+     * in the ANSI C library that reliably compares the memory region
+     * with the given byte, we compare just a few excerpts from an array.
+     * If everything is zero, we have a large chances that all array is zero. */
+    if(s[0]==0 && s[1]==0 && s[16]==0 && s[17]==0 &&
+          s[24]==0 && s[25]==0 && s[32]==0 && s[33]==0 &&
+	  s[buffer_size-1]==0) {
+	dp->last[0]=dp->last[1]=dp->lastupsample=0;
+        return;
+    }
 
     /*
      * process signal; x - input, in the range -1, 1
      */
     while (count) {
+
 	/* scale down to -1..1 range */
 	x = *s ;
 	x *= DIST2_DOWNSCALE ;
@@ -288,7 +303,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    x1 = (x-y) / 4700.0;
 
 	    /* start searching from time previous point , improves speed */
-	    y = dp->last[curr_channel]; 
+	    y = dp->last[curr_channel];
 	    do {
 		/* f(y) = 0 , y= ? */
 		e1 = exp ( (x-y) / mUt );  e2 = 1.0 / e1;
@@ -309,8 +324,8 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    /* when dx gets very small, we found a solution. */
 
 	    dp->last[curr_channel] = y;
-	    y = doBiquad( y, &dp->cheb, 0);
-	    y = doBiquad( y, &dp->cheb1, 0);
+	    y = doBiquad( y, &dp->cheb, curr_channel);
+	    y = doBiquad( y, &dp->cheb1, curr_channel);
 	}
 
 	/* scale up from -1..1 range */
@@ -326,6 +341,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 
 	if (nchannels > 1)
 	    curr_channel = !curr_channel;
+
     }
     if(dp->treble)
 	RC_lowpass(db->data, db->len, &(dp->noise));
