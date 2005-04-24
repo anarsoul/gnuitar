@@ -23,9 +23,7 @@ Program is inspired by 2 works:<ul>
 <li>Guitar FX Processor by Marin Vlah<br>
 <a href=http://fly.srk.fer.hr/~mvlah/fx_processor.html target=top>http://fly.srk.fer.hr/~mvlah/fx_processor.html</a></li>
 </ul>
-GNUitar is free software and is distributed under GNU GPL license;
-however you should pay to obtain Windows binary (you are still free
-to compile it yourself; see section "Legal Issues").
+GNUitar is free software and is distributed under GNU GPL license.
 
 <h1><a name=download>Download</a></h1>
 
@@ -36,11 +34,11 @@ to compile it yourself; see section "Legal Issues").
 <h1><a name=requirements>Requirements</a></h1>
 
 <p>You will need:<ul>
-<li>GTK+ version 1.2.6 or better; program was not tested with GTK 2.0;
+<li>GTK+ version 1.2.6 or better; also we support now GTK+ 2.x branch;
 <li>GLIB 1.2 or better</li>
 <li>POSIX threads on UNIX</li>
 <li>full-duplex sound card</li>
-<li>To compile: GCC on UNIX, Microsoft Visual C++ 6.0 on Windows</li>
+<li>To compile: GCC on UNIX, Microsoft Visual C++ 6.0 or 7.0 on Windows</li>
 </ul>
 
 <h1><a name=performance>Performance</a></h1>
@@ -266,16 +264,27 @@ echo attempts to achieve a large hall echo.
 
 <h2><a name=noise>Noise Gate</a></h2>
 
-<p>Simple noise reduction effect. Should be used BEFORE distortion.
+<p>Simple noise reduction effect.<br>
+<b>IMPORTANT NOTES:</b><br>
+<ul>
+<li>Should be used <b>BEFORE</b> the distortion.</li>
+<li>If you want to achieve a note slight attack (fade in),
+    you must increase the Hold time as much as possible.
+    Otherwise with the low Attack time and low signal you
+    the effect will be constantly false triggered, therefore
+    breaking the fadein effect</li>
+</ul>
 
+<p>Controls are:
 <ul>
 <li>threshold    - minimal volume of the sound required to pass signal
                    to the output.</li>
 <li>hold         - if the signal is below threshold during this time,
-                   it will be muted. Should be as low as possible.</li>
+                   it will be muted. Should be as low as possible.
+		   Simply - it is an effect triggering time.</li>
 <li>release time - if the signal is below threshold, the playback
                    is not muted immediately but fades out this time instead</li>
-<li>attack       - if the signal is above the trheshold, it will fade in
+<li>attack       - if the signal is above the threshold, it will fade in
                    this time. Ususally should be 0, but having it
 		   non-zero will produce interesting effect just like the
 		   violin sound.</li>
