@@ -1,14 +1,14 @@
 %define ver 0.3.2
-%define rel 1
+%define rel 2
 %define prefix /usr
 
 Summary: a GTK+ based guitar processor. Includes such effects as reverberator, sustain, distortion, phasor, wah-wah.
 Name: gnuitar
 Version: %{ver}
 Release: %{rel}
-Source: http://www.omnistaronline.com/~fonin/projects/gnuitar/gnuitar-%{ver}.tar.gz
+Source: gnuitar-%{ver}.tar.gz
 Copyright: GPL
-URL: http://www.omnistaronline.com/~fonin/downloads.php#gnuitar
+URL: http://www.gnuitar.com
 Requires: gtk+ >= 1.2.6
 Group: Applications/Multimedia
 Packager: Max V. Rudensky <fonin@omnistaronline.com>
@@ -51,6 +51,12 @@ rm -rf ${RPM_BUILD_ROOT}
 #%prefix/share/gnuitar/win32/*
 
 %changelog
+* Mon Apr 18 2005 Max Rudensky <fonin@gnuitar.com>
+- Pre-release 0.3.2:
+- re-worked distortion
+- new equalizer effect
+- many cleanups & bugfixes
+
 * Thu Apr 18 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
 - Release 0.3.1
 - New distortion effect
