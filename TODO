@@ -80,18 +80,20 @@ TODO:
   - test on Windows
 + equalizer effect
   + 5kHz limit problem
-- swap slider controls
-  - seems impossible ???
 + process all in floats to decrease SNR ? Convert only on input and output ?
   (as IFDEF)
 + distortion
 + correct build files for MSVC6.0
-- help contents on Windows 2000
-- sigfault on help contents with netscape, linux
++ help contents on Windows 2000
++ sigfault on help contents with netscape, linux
+  (looks like it is a netscape own error)
 + review the docs, especially build notes for the console MSVC users
-- check autowah on windows
++ check autowah on windows
 
 0.4.0
+- allow to read help only with sound off, or auto-stop the sound
+- tooltips to the noise gate window with important notes
+- remove mix control from autowah
 - pitch shifter
 - load preset files from the command line
 - group effects and give it meaningful names
@@ -113,5 +115,7 @@ Ongoing bugs (misc):
 - bug with GTK critical error on finish
 
 Misc something:
-- port to wxWidgets
+- port to wxWidgets ?
 - have a text boxes connected to the sliders, to directly edit the values
+- how to swap a slider controls, to make a bottom be on top and vice versa ?
+  So we move the slider up to increase the value, instead of moving it down...
