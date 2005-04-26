@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/04/26 13:38:05  fonin
+ * Fixed help contents bug on Win2k
+ *
  * Revision 1.23  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -354,9 +357,9 @@ help_contents(void)
 	}
     }
     if (strcmp(path, "") != 0) {
-	if (spawnlp(P_NOWAIT, "start", "start", path, NULL) == -1) {
-	    perror("spawn");
-	}
+	if (spawnlp(P_NOWAIT, "start", "start", path, NULL) == -1)
+            if (spawnlp(P_NOWAIT, "cmd", "/c", "start", path, NULL) == -1)
+	        perror("spawn");
     }
 #endif
 }
