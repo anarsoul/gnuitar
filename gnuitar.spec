@@ -51,11 +51,19 @@ rm -rf ${RPM_BUILD_ROOT}
 #%prefix/share/gnuitar/win32/*
 
 %changelog
+* Tue 26 Apr 2005 Max Rudensky <fonin@gnuitar.com>
+- Second pre-release 0.3.2:
+- fixed the help contents bug on win2k
+- fixed the 100% cpu load bug with zeroes in the distort2 input
+- fixed autowah on windows
+
 * Mon Apr 18 2005 Max Rudensky <fonin@gnuitar.com>
 - Pre-release 0.3.2:
 - re-worked distortion
 - new equalizer effect
+- GTK 2 port
 - many cleanups & bugfixes
+- updated docs
 
 * Thu Apr 18 2003 Max Rudensky <fonin@ziet.zhitomir.ua>
 - Release 0.3.1

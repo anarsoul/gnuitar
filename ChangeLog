@@ -1,3 +1,300 @@
+2005-04-29 14:24  fonin
+
+	* src/autowah.c: Return back the 1.5 amplify coeff
+
+2005-04-29 14:24  fonin
+
+	* TODO, src/phasor.c, src/vibrato.c, src/distort.c: Better presets
+
+2005-04-26 16:38  fonin
+
+	* gnuitar.spec: Subrelease 2
+
+2005-04-26 16:38  fonin
+
+	* src/gui.c: Fixed help contents bug on Win2k
+
+2005-04-26 16:37  fonin
+
+	* src/autowah.c: Declaring dry[] in the autowah_filter as static
+	fixes the 100% CPU usage on windows; also amplify coefficients
+	changed from 1.5 to 1.0
+
+2005-04-26 16:37  fonin
+
+	* TODO: Fixed few items
+
+2005-04-24 22:11  fonin
+
+	* TODO: Updated roadmap for 0.4.0
+
+2005-04-24 22:11  fonin
+
+	* src/: distort2.c, pump.c: Optimized for zero input (after the
+	noise filter) to avoid the extra calcs
+
+2005-04-24 22:11  fonin
+
+	* src/noise.c: Added comments
+
+2005-04-24 22:10  fonin
+
+	* README, docs/readme.html: Updated about GTK+ 2.x and windows
+	binaries; also notes about noise filter.
+
+2005-04-18 15:55  fonin
+
+	* src/distort2.c: Fixed a typo in src/distort2.c
+
+2005-04-15 17:53  fonin
+
+	* INSTALL, docs/install.html: Updated download URLs for Windows
+	build
+
+2005-04-15 17:37  fonin
+
+	* src/main.c: Fixed version variable
+
+2005-04-15 17:33  fonin
+
+	* src/distort2.c: Code lickup
+
+2005-04-15 17:33  fonin
+
+	* src/distort2.h: Removed unused effect members
+
+2005-04-15 17:32  fonin
+
+	* src/pump.c: Few improvements with the effects save/load; fixed
+	nasty bug with CR/LF translation when saving preset files on Win32
+
+2005-04-15 17:32  fonin
+
+	* src/eqbank.c: Fixed nasty bug with effect saving/loading
+
+2005-04-15 17:31  fonin
+
+	* gnuitar.mak, gnuitar.dsp: Workable MSVC6.0 project/build files
+
+2005-04-14 17:01  fonin
+
+	* FAQ, docs/faq.html: Minor changes - fixed a note about changing
+	the sampling parameters
+
+2005-04-12 17:25  fonin
+
+	* gnuitar.dsp, gnuitar.mak: Attempt to update MSVC 6 built files...
+
+2005-04-12 17:25  fonin
+
+	* docs/readme.html, README, docs/index.html: Updated copyright
+	years and URLs - we are now GNUITAR.COM ! Removed order section
+
+2005-04-12 17:24  fonin
+
+	* gnuitar.sln, gnuitar.vcproj: Updated compile settings, added
+	HAVE_GTK and FLOAT_DSP flags to all configurations
+
+2005-04-07 21:39  fonin
+
+	* gnuitar.sln, gnuitar.vcproj: Project files for MSVC 7
+
+2005-04-07 21:36  fonin
+
+	* src/: chebyshev.c, utils.h: Fix with PI constant
+
+2005-04-07 21:36  fonin
+
+	* Makefile.am, Makefile.in, gnuitar.spec, src/Makefile.am,
+	src/Makefile.in: Updated build files to allow to build an RPM from
+	a .spec file
+
+2005-04-07 11:30  fonin
+
+	* README, docs/readme.html: Updated README - distort2 and Authors
+	section
+
+2005-04-07 11:30  fonin
+
+	* TODO: Updated TODO
+
+2005-04-06 23:13  fonin
+
+	* scripts/gendistort.sh: This script is not needed no more since we
+	reworked distort2 effect.
+
+2005-04-06 22:35  fonin
+
+	* src/: Makefile.am, Makefile.in: Added chebyshev.* files to the
+	build tree
+
+2005-04-06 22:34  fonin
+
+	* src/main.c: Fixed the accidental typo with "count=bits >> 8" that
+	caused the floating exception
+
+2005-04-06 22:34  fonin
+
+	* src/: biquad.c, biquad.h, chebyshev.c, chebyshev.h, distort2.c,
+	distort2.h, rcfilter.c: Code lickup
+
+2005-04-06 22:33  fonin
+
+	* README: Updated URLs
+
+2005-04-06 22:33  fonin
+
+	* AUTHORS: Eugen Bogdan is added to AUTHORS
+
+2005-04-06 22:33  fonin
+
+	* gnuitar.spec: Updated version and URLs; removed distort2 package
+
+2005-04-06 22:32  fonin
+
+	* configure, configure.in: Few options to check for some C
+	functions
+
+2004-10-21 14:23  dexterus
+
+	* src/: chebyshev.c, chebyshev.h: computes a chebyshev lowpass
+	filter, usage with biquad.c
+
+2004-10-21 14:19  dexterus
+
+	* src/main.c: Bug in the win 32 section related to sample type
+	(SAMPLE insted of DSP_SAMPLE ) fixed -- win32 working
+
+2004-10-21 14:16  dexterus
+
+	* src/: eqbank.c, eqbank.h: Made to work with new biquad.c version
+	(1.3) Overall functional
+
+2004-10-21 14:13  dexterus
+
+	* src/: biquad.c, biquad.h: Fixed calculus error Added support for
+	any numer of channels iniline support delimited to Visual C
+
+2004-10-21 14:06  dexterus
+
+	* src/distort2.h: Fully working realtime version Fixed bugs ,
+	improved sound, added oversampling Added a few more necessary
+	distort2_params Note: this is an mathematically accurate simulation
+	of Ibanez Tube Screamer 9, with the excetion of diodes electrical
+	parmaters ( modified to make it sound more aggresive )
+
+2004-10-21 14:05  dexterus
+
+	* src/distort2.c: Fully working realtime version Fixed bugs ,
+	improved sound, added oversampling Note: this is an mathematically
+	accurate simulation of Ibanez Tube Screamer 9, with the excetion of
+	diodes electrical parmaters ( modified to make it sound more
+	aggresive )
+
+2004-08-10 18:21  fonin
+
+	* src/: sustain.c, tracker.c, tracker.h, tremolo.c, tremolo.h,
+	vibrato.c, vibrato.h: Support processing in float/int - type
+	DSP_SAMPLE
+
+2004-08-10 18:15  fonin
+
+	* src/gen_distort2_lookup.c: Distortion 2 reworked to process in
+	realtime. We don't need lookup tables.
+
+2004-08-10 18:13  fonin
+
+	* src/gui.h: Updated domains, email and version
+
+2004-08-10 18:11  fonin
+
+	* src/: Makefile.am, Makefile.in: Removed gen_distort2_lookup from
+	distro
+
+2004-08-10 18:11  fonin
+
+	* src/: distort2.c, distort2.h: Reworked distortion - process in
+	realtime rather then use lookup table
+
+2004-08-10 18:07  fonin
+
+	* src/: autowah.c, backbuf.h, chorus.c, delay.c, delay.h,
+	distort.c, echo.c, echo.h, main.c, noise.c, pump.c, pump.h,
+	rcfilter.c, rcfilter.h, reverb.c, reverb.h, sustain.c, tracker.c,
+	tracker.h, tremolo.c, tremolo.h, vibrato.c, vibrato.h: Support
+	processing in float/int - type DSP_SAMPLE
+
+2004-08-10 17:59  fonin
+
+	* README, docs/readme.html: Updated domains and email; few small
+	changes
+
+2004-08-10 17:58  fonin
+
+	* TODO: New roadmap
+
+2004-08-09 15:19  fonin
+
+	* configure, configure.in: Options to configure with GTK2, process
+	in float rather than in int, clip the sound that exceeds 32767 in
+	every filter rather than on output only
+
+2004-07-07 22:20  fonin
+
+	* docs/readme.html: Minor email update
+
+2004-07-07 22:18  fonin
+
+	* src/: autowah.c, chorus.c, delay.c, distort.c, distort2.c,
+	echo.c, eqbank.c, gui.c, gui.h, noise.c, phasor.c, reverb.c,
+	sustain.c, tremolo.c, vibrato.c: GTK2 port
+
+2004-07-07 22:18  fonin
+
+	* configure, configure.in, Makefile.in, aclocal.m4,
+	src/Makefile.am, src/Makefile.in: New auto-configuration files for
+	GTK2
+
+2004-07-07 22:17  fonin
+
+	* TODO: New Roadmap
+
+2003-12-28 12:16  fonin
+
+	* src/: biquad.c, biquad.h, eqbank.c, eqbank.h, pump.c, pump.h:
+	Code lickup
+
+2003-12-28 12:14  fonin
+
+	* src/: Makefile.am, Makefile.in: Equalizer files added
+
+2003-12-22 09:45  dexterus
+
+	* src/: biquad.c, biquad.h, eqbank.c, eqbank.h: no message
+
+2003-12-21 10:40  dexterus
+
+	* src/: pump.c, pump.h: biquad files amd eqbank working
+
+2003-05-30 15:49  fonin
+
+	* src/: gui.c, main.c, utils.c, utils.h: log2() renamed to
+	my_log2() since log2 is a reserved word on MacOS X.
+
+2003-05-01 22:09  fonin
+
+	* src/gui.c: Bugfix with spawnl() syntax - the last parameter
+	always should be NULL.
+
+2003-04-21 12:35  fonin
+
+	* src/distort2.c: Bugfix with missing parameter in strncat(), line
+	74.
+
+2003-04-18 21:37  fonin
+
+	* ChangeLog: Version 0.3.1.
+
 2003-04-18 21:29  fonin
 
 	* TODO: Updating plans.
@@ -23,18 +320,6 @@
 2003-04-17 15:22  fonin
 
 	* src/distort2.c: More search paths for lookup dir.
-
-2003-04-17 14:59  fonin
-
-	* distort2/distort2lookup_44100_10_510: Yet another one
-
-2003-04-17 14:59  fonin
-
-	* distort2/: distort2lookup_44100_10_520,
-	distort2lookup_44100_12_520, distort2lookup_44100_14_520,
-	distort2lookup_44100_16_520, distort2lookup_44100_18_520,
-	distort2lookup_44100_2_520, distort2lookup_44100_6_520,
-	distort2lookup_44100_8_520: Added more lookup tables.
 
 2003-04-17 14:58  fonin
 
@@ -90,288 +375,6 @@
 
 	* scripts/: beautify.sh, gendistort.sh, strip_lookup_table:
 	Maintenance scripts.
-
-2003-04-16 17:01  fonin
-
-	* distort2/: distort2lookup_44100_10_10,
-	distort2lookup_44100_10_100, distort2lookup_44100_10_110,
-	distort2lookup_44100_10_120, distort2lookup_44100_10_130,
-	distort2lookup_44100_10_140, distort2lookup_44100_10_150,
-	distort2lookup_44100_10_160, distort2lookup_44100_10_170,
-	distort2lookup_44100_10_180, distort2lookup_44100_10_190,
-	distort2lookup_44100_10_20, distort2lookup_44100_10_200,
-	distort2lookup_44100_10_210, distort2lookup_44100_10_220,
-	distort2lookup_44100_10_230, distort2lookup_44100_10_240,
-	distort2lookup_44100_10_250, distort2lookup_44100_10_260,
-	distort2lookup_44100_10_270, distort2lookup_44100_10_280,
-	distort2lookup_44100_10_290, distort2lookup_44100_10_30,
-	distort2lookup_44100_10_300, distort2lookup_44100_10_310,
-	distort2lookup_44100_10_320, distort2lookup_44100_10_330,
-	distort2lookup_44100_10_340, distort2lookup_44100_10_350,
-	distort2lookup_44100_10_360, distort2lookup_44100_10_370,
-	distort2lookup_44100_10_380, distort2lookup_44100_10_390,
-	distort2lookup_44100_10_40, distort2lookup_44100_10_400,
-	distort2lookup_44100_10_410, distort2lookup_44100_10_420,
-	distort2lookup_44100_10_430, distort2lookup_44100_10_440,
-	distort2lookup_44100_10_450, distort2lookup_44100_10_460,
-	distort2lookup_44100_10_470, distort2lookup_44100_10_480,
-	distort2lookup_44100_10_490, distort2lookup_44100_10_50,
-	distort2lookup_44100_10_500, distort2lookup_44100_10_60,
-	distort2lookup_44100_10_70, distort2lookup_44100_10_80,
-	distort2lookup_44100_10_90, distort2lookup_44100_12_10,
-	distort2lookup_44100_12_100, distort2lookup_44100_12_110,
-	distort2lookup_44100_12_120, distort2lookup_44100_12_130,
-	distort2lookup_44100_12_140, distort2lookup_44100_12_150,
-	distort2lookup_44100_12_160, distort2lookup_44100_12_170,
-	distort2lookup_44100_12_180, distort2lookup_44100_12_190,
-	distort2lookup_44100_12_20, distort2lookup_44100_12_200,
-	distort2lookup_44100_12_210, distort2lookup_44100_12_220,
-	distort2lookup_44100_12_230, distort2lookup_44100_12_240,
-	distort2lookup_44100_12_250, distort2lookup_44100_12_260,
-	distort2lookup_44100_12_270, distort2lookup_44100_12_280,
-	distort2lookup_44100_12_290, distort2lookup_44100_12_30,
-	distort2lookup_44100_12_300, distort2lookup_44100_12_310,
-	distort2lookup_44100_12_320, distort2lookup_44100_12_330,
-	distort2lookup_44100_12_340, distort2lookup_44100_12_350,
-	distort2lookup_44100_12_360, distort2lookup_44100_12_370,
-	distort2lookup_44100_12_380, distort2lookup_44100_12_390,
-	distort2lookup_44100_12_40, distort2lookup_44100_12_400,
-	distort2lookup_44100_12_410, distort2lookup_44100_12_420,
-	distort2lookup_44100_12_430, distort2lookup_44100_12_440,
-	distort2lookup_44100_12_450, distort2lookup_44100_12_460,
-	distort2lookup_44100_12_470, distort2lookup_44100_12_480,
-	distort2lookup_44100_12_490, distort2lookup_44100_12_50,
-	distort2lookup_44100_12_500, distort2lookup_44100_12_510,
-	distort2lookup_44100_12_60, distort2lookup_44100_12_70,
-	distort2lookup_44100_12_80, distort2lookup_44100_12_90,
-	distort2lookup_44100_14_10, distort2lookup_44100_14_100,
-	distort2lookup_44100_14_110, distort2lookup_44100_14_120,
-	distort2lookup_44100_14_130, distort2lookup_44100_14_140,
-	distort2lookup_44100_14_150, distort2lookup_44100_14_160,
-	distort2lookup_44100_14_170, distort2lookup_44100_14_180,
-	distort2lookup_44100_14_190, distort2lookup_44100_14_20,
-	distort2lookup_44100_14_200, distort2lookup_44100_14_210,
-	distort2lookup_44100_14_220, distort2lookup_44100_14_230,
-	distort2lookup_44100_14_240, distort2lookup_44100_14_250,
-	distort2lookup_44100_14_260, distort2lookup_44100_14_270,
-	distort2lookup_44100_14_280, distort2lookup_44100_14_290,
-	distort2lookup_44100_14_30, distort2lookup_44100_14_300,
-	distort2lookup_44100_14_310, distort2lookup_44100_14_320,
-	distort2lookup_44100_14_330, distort2lookup_44100_14_340,
-	distort2lookup_44100_14_350, distort2lookup_44100_14_360,
-	distort2lookup_44100_14_370, distort2lookup_44100_14_380,
-	distort2lookup_44100_14_390, distort2lookup_44100_14_40,
-	distort2lookup_44100_14_400, distort2lookup_44100_14_410,
-	distort2lookup_44100_14_420, distort2lookup_44100_14_430,
-	distort2lookup_44100_14_440, distort2lookup_44100_14_450,
-	distort2lookup_44100_14_460, distort2lookup_44100_14_470,
-	distort2lookup_44100_14_480, distort2lookup_44100_14_490,
-	distort2lookup_44100_14_50, distort2lookup_44100_14_500,
-	distort2lookup_44100_14_510, distort2lookup_44100_14_60,
-	distort2lookup_44100_14_70, distort2lookup_44100_14_80,
-	distort2lookup_44100_14_90, distort2lookup_44100_16_10,
-	distort2lookup_44100_16_100, distort2lookup_44100_16_110,
-	distort2lookup_44100_16_120, distort2lookup_44100_16_130,
-	distort2lookup_44100_16_140, distort2lookup_44100_16_150,
-	distort2lookup_44100_16_160, distort2lookup_44100_16_170,
-	distort2lookup_44100_16_180, distort2lookup_44100_16_190,
-	distort2lookup_44100_16_20, distort2lookup_44100_16_200,
-	distort2lookup_44100_16_210, distort2lookup_44100_16_220,
-	distort2lookup_44100_16_230, distort2lookup_44100_16_240,
-	distort2lookup_44100_16_250, distort2lookup_44100_16_260,
-	distort2lookup_44100_16_270, distort2lookup_44100_16_280,
-	distort2lookup_44100_16_290, distort2lookup_44100_16_30,
-	distort2lookup_44100_16_300, distort2lookup_44100_16_310,
-	distort2lookup_44100_16_320, distort2lookup_44100_16_330,
-	distort2lookup_44100_16_340, distort2lookup_44100_16_350,
-	distort2lookup_44100_16_360, distort2lookup_44100_16_370,
-	distort2lookup_44100_16_380, distort2lookup_44100_16_390,
-	distort2lookup_44100_16_40, distort2lookup_44100_16_400,
-	distort2lookup_44100_16_410, distort2lookup_44100_16_420,
-	distort2lookup_44100_16_430, distort2lookup_44100_16_440,
-	distort2lookup_44100_16_450, distort2lookup_44100_16_460,
-	distort2lookup_44100_16_470, distort2lookup_44100_16_480,
-	distort2lookup_44100_16_490, distort2lookup_44100_16_50,
-	distort2lookup_44100_16_500, distort2lookup_44100_16_510,
-	distort2lookup_44100_16_60, distort2lookup_44100_16_70,
-	distort2lookup_44100_16_80, distort2lookup_44100_16_90,
-	distort2lookup_44100_18_10, distort2lookup_44100_18_100,
-	distort2lookup_44100_18_110, distort2lookup_44100_18_120,
-	distort2lookup_44100_18_130, distort2lookup_44100_18_140,
-	distort2lookup_44100_18_150, distort2lookup_44100_18_160,
-	distort2lookup_44100_18_170, distort2lookup_44100_18_180,
-	distort2lookup_44100_18_190, distort2lookup_44100_18_20,
-	distort2lookup_44100_18_200, distort2lookup_44100_18_210,
-	distort2lookup_44100_18_220, distort2lookup_44100_18_230,
-	distort2lookup_44100_18_240, distort2lookup_44100_18_250,
-	distort2lookup_44100_18_260, distort2lookup_44100_18_270,
-	distort2lookup_44100_18_280, distort2lookup_44100_18_290,
-	distort2lookup_44100_18_30, distort2lookup_44100_18_300,
-	distort2lookup_44100_18_310, distort2lookup_44100_18_320,
-	distort2lookup_44100_18_330, distort2lookup_44100_18_340,
-	distort2lookup_44100_18_350, distort2lookup_44100_18_360,
-	distort2lookup_44100_18_370, distort2lookup_44100_18_380,
-	distort2lookup_44100_18_390, distort2lookup_44100_18_40,
-	distort2lookup_44100_18_400, distort2lookup_44100_18_410,
-	distort2lookup_44100_18_420, distort2lookup_44100_18_430,
-	distort2lookup_44100_18_440, distort2lookup_44100_18_450,
-	distort2lookup_44100_18_460, distort2lookup_44100_18_470,
-	distort2lookup_44100_18_480, distort2lookup_44100_18_490,
-	distort2lookup_44100_18_50, distort2lookup_44100_18_500,
-	distort2lookup_44100_18_510, distort2lookup_44100_18_60,
-	distort2lookup_44100_18_70, distort2lookup_44100_18_80,
-	distort2lookup_44100_18_90, distort2lookup_44100_1_10,
-	distort2lookup_44100_1_100, distort2lookup_44100_1_110,
-	distort2lookup_44100_1_120, distort2lookup_44100_1_130,
-	distort2lookup_44100_1_140, distort2lookup_44100_1_150,
-	distort2lookup_44100_1_160, distort2lookup_44100_1_170,
-	distort2lookup_44100_1_180, distort2lookup_44100_1_190,
-	distort2lookup_44100_1_20, distort2lookup_44100_1_200,
-	distort2lookup_44100_1_210, distort2lookup_44100_1_220,
-	distort2lookup_44100_1_230, distort2lookup_44100_1_240,
-	distort2lookup_44100_1_250, distort2lookup_44100_1_260,
-	distort2lookup_44100_1_270, distort2lookup_44100_1_280,
-	distort2lookup_44100_1_290, distort2lookup_44100_1_30,
-	distort2lookup_44100_1_300, distort2lookup_44100_1_310,
-	distort2lookup_44100_1_320, distort2lookup_44100_1_330,
-	distort2lookup_44100_1_340, distort2lookup_44100_1_350,
-	distort2lookup_44100_1_360, distort2lookup_44100_1_370,
-	distort2lookup_44100_1_380, distort2lookup_44100_1_390,
-	distort2lookup_44100_1_40, distort2lookup_44100_1_400,
-	distort2lookup_44100_1_410, distort2lookup_44100_1_420,
-	distort2lookup_44100_1_430, distort2lookup_44100_1_440,
-	distort2lookup_44100_1_450, distort2lookup_44100_1_460,
-	distort2lookup_44100_1_470, distort2lookup_44100_1_480,
-	distort2lookup_44100_1_490, distort2lookup_44100_1_50,
-	distort2lookup_44100_1_500, distort2lookup_44100_1_510,
-	distort2lookup_44100_1_520, distort2lookup_44100_1_60,
-	distort2lookup_44100_1_70, distort2lookup_44100_1_80,
-	distort2lookup_44100_1_90, distort2lookup_44100_20_100,
-	distort2lookup_44100_20_110, distort2lookup_44100_20_120,
-	distort2lookup_44100_20_130, distort2lookup_44100_20_140,
-	distort2lookup_44100_20_150, distort2lookup_44100_20_160,
-	distort2lookup_44100_20_170, distort2lookup_44100_20_180,
-	distort2lookup_44100_20_190, distort2lookup_44100_20_200,
-	distort2lookup_44100_20_210, distort2lookup_44100_20_220,
-	distort2lookup_44100_20_230, distort2lookup_44100_20_240,
-	distort2lookup_44100_20_250, distort2lookup_44100_20_260,
-	distort2lookup_44100_20_270, distort2lookup_44100_20_280,
-	distort2lookup_44100_20_290, distort2lookup_44100_20_300,
-	distort2lookup_44100_20_310, distort2lookup_44100_20_320,
-	distort2lookup_44100_20_330, distort2lookup_44100_20_340,
-	distort2lookup_44100_20_350, distort2lookup_44100_20_360,
-	distort2lookup_44100_20_370, distort2lookup_44100_20_380,
-	distort2lookup_44100_20_390, distort2lookup_44100_20_400,
-	distort2lookup_44100_20_410, distort2lookup_44100_20_420,
-	distort2lookup_44100_20_430, distort2lookup_44100_20_440,
-	distort2lookup_44100_20_450, distort2lookup_44100_20_460,
-	distort2lookup_44100_20_470, distort2lookup_44100_20_480,
-	distort2lookup_44100_20_490, distort2lookup_44100_20_50,
-	distort2lookup_44100_20_500, distort2lookup_44100_20_510,
-	distort2lookup_44100_20_520, distort2lookup_44100_20_60,
-	distort2lookup_44100_20_70, distort2lookup_44100_20_80,
-	distort2lookup_44100_20_90, distort2lookup_44100_2_10,
-	distort2lookup_44100_2_100, distort2lookup_44100_2_110,
-	distort2lookup_44100_2_120, distort2lookup_44100_2_130,
-	distort2lookup_44100_2_140, distort2lookup_44100_2_150,
-	distort2lookup_44100_2_160, distort2lookup_44100_2_170,
-	distort2lookup_44100_2_180, distort2lookup_44100_2_190,
-	distort2lookup_44100_2_20, distort2lookup_44100_2_200,
-	distort2lookup_44100_2_210, distort2lookup_44100_2_220,
-	distort2lookup_44100_2_230, distort2lookup_44100_2_240,
-	distort2lookup_44100_2_250, distort2lookup_44100_2_260,
-	distort2lookup_44100_2_270, distort2lookup_44100_2_280,
-	distort2lookup_44100_2_290, distort2lookup_44100_2_30,
-	distort2lookup_44100_2_300, distort2lookup_44100_2_310,
-	distort2lookup_44100_2_320, distort2lookup_44100_2_330,
-	distort2lookup_44100_2_340, distort2lookup_44100_2_350,
-	distort2lookup_44100_2_360, distort2lookup_44100_2_370,
-	distort2lookup_44100_2_380, distort2lookup_44100_2_390,
-	distort2lookup_44100_2_40, distort2lookup_44100_2_400,
-	distort2lookup_44100_2_410, distort2lookup_44100_2_420,
-	distort2lookup_44100_2_430, distort2lookup_44100_2_440,
-	distort2lookup_44100_2_450, distort2lookup_44100_2_460,
-	distort2lookup_44100_2_470, distort2lookup_44100_2_480,
-	distort2lookup_44100_2_490, distort2lookup_44100_2_50,
-	distort2lookup_44100_2_500, distort2lookup_44100_2_510,
-	distort2lookup_44100_2_60, distort2lookup_44100_2_70,
-	distort2lookup_44100_2_80, distort2lookup_44100_2_90,
-	distort2lookup_44100_4_100, distort2lookup_44100_4_110,
-	distort2lookup_44100_4_120, distort2lookup_44100_4_130,
-	distort2lookup_44100_4_140, distort2lookup_44100_4_150,
-	distort2lookup_44100_4_160, distort2lookup_44100_4_170,
-	distort2lookup_44100_4_180, distort2lookup_44100_4_190,
-	distort2lookup_44100_4_200, distort2lookup_44100_4_210,
-	distort2lookup_44100_4_220, distort2lookup_44100_4_230,
-	distort2lookup_44100_4_240, distort2lookup_44100_4_250,
-	distort2lookup_44100_4_260, distort2lookup_44100_4_270,
-	distort2lookup_44100_4_280, distort2lookup_44100_4_290,
-	distort2lookup_44100_4_300, distort2lookup_44100_4_310,
-	distort2lookup_44100_4_320, distort2lookup_44100_4_330,
-	distort2lookup_44100_4_340, distort2lookup_44100_4_350,
-	distort2lookup_44100_4_360, distort2lookup_44100_4_370,
-	distort2lookup_44100_4_380, distort2lookup_44100_4_390,
-	distort2lookup_44100_4_400, distort2lookup_44100_4_410,
-	distort2lookup_44100_4_420, distort2lookup_44100_4_430,
-	distort2lookup_44100_4_440, distort2lookup_44100_4_450,
-	distort2lookup_44100_4_460, distort2lookup_44100_4_470,
-	distort2lookup_44100_4_480, distort2lookup_44100_4_490,
-	distort2lookup_44100_4_50, distort2lookup_44100_4_500,
-	distort2lookup_44100_4_510, distort2lookup_44100_4_520,
-	distort2lookup_44100_4_60, distort2lookup_44100_4_70,
-	distort2lookup_44100_4_80, distort2lookup_44100_4_90,
-	distort2lookup_44100_50_510, distort2lookup_44100_6_10,
-	distort2lookup_44100_6_100, distort2lookup_44100_6_110,
-	distort2lookup_44100_6_120, distort2lookup_44100_6_130,
-	distort2lookup_44100_6_140, distort2lookup_44100_6_150,
-	distort2lookup_44100_6_160, distort2lookup_44100_6_170,
-	distort2lookup_44100_6_180, distort2lookup_44100_6_190,
-	distort2lookup_44100_6_20, distort2lookup_44100_6_200,
-	distort2lookup_44100_6_210, distort2lookup_44100_6_220,
-	distort2lookup_44100_6_230, distort2lookup_44100_6_240,
-	distort2lookup_44100_6_250, distort2lookup_44100_6_260,
-	distort2lookup_44100_6_270, distort2lookup_44100_6_280,
-	distort2lookup_44100_6_290, distort2lookup_44100_6_30,
-	distort2lookup_44100_6_300, distort2lookup_44100_6_310,
-	distort2lookup_44100_6_320, distort2lookup_44100_6_330,
-	distort2lookup_44100_6_340, distort2lookup_44100_6_350,
-	distort2lookup_44100_6_360, distort2lookup_44100_6_370,
-	distort2lookup_44100_6_380, distort2lookup_44100_6_390,
-	distort2lookup_44100_6_40, distort2lookup_44100_6_400,
-	distort2lookup_44100_6_410, distort2lookup_44100_6_420,
-	distort2lookup_44100_6_430, distort2lookup_44100_6_440,
-	distort2lookup_44100_6_450, distort2lookup_44100_6_460,
-	distort2lookup_44100_6_470, distort2lookup_44100_6_480,
-	distort2lookup_44100_6_490, distort2lookup_44100_6_50,
-	distort2lookup_44100_6_500, distort2lookup_44100_6_510,
-	distort2lookup_44100_6_60, distort2lookup_44100_6_70,
-	distort2lookup_44100_6_80, distort2lookup_44100_6_90,
-	distort2lookup_44100_8_10, distort2lookup_44100_8_100,
-	distort2lookup_44100_8_110, distort2lookup_44100_8_120,
-	distort2lookup_44100_8_130, distort2lookup_44100_8_140,
-	distort2lookup_44100_8_150, distort2lookup_44100_8_160,
-	distort2lookup_44100_8_170, distort2lookup_44100_8_180,
-	distort2lookup_44100_8_190, distort2lookup_44100_8_20,
-	distort2lookup_44100_8_200, distort2lookup_44100_8_210,
-	distort2lookup_44100_8_220, distort2lookup_44100_8_230,
-	distort2lookup_44100_8_240, distort2lookup_44100_8_250,
-	distort2lookup_44100_8_260, distort2lookup_44100_8_270,
-	distort2lookup_44100_8_280, distort2lookup_44100_8_290,
-	distort2lookup_44100_8_30, distort2lookup_44100_8_300,
-	distort2lookup_44100_8_310, distort2lookup_44100_8_320,
-	distort2lookup_44100_8_330, distort2lookup_44100_8_340,
-	distort2lookup_44100_8_350, distort2lookup_44100_8_360,
-	distort2lookup_44100_8_370, distort2lookup_44100_8_380,
-	distort2lookup_44100_8_390, distort2lookup_44100_8_40,
-	distort2lookup_44100_8_400, distort2lookup_44100_8_410,
-	distort2lookup_44100_8_420, distort2lookup_44100_8_430,
-	distort2lookup_44100_8_440, distort2lookup_44100_8_450,
-	distort2lookup_44100_8_460, distort2lookup_44100_8_470,
-	distort2lookup_44100_8_480, distort2lookup_44100_8_490,
-	distort2lookup_44100_8_50, distort2lookup_44100_8_500,
-	distort2lookup_44100_8_510, distort2lookup_44100_8_60,
-	distort2lookup_44100_8_70, distort2lookup_44100_8_80,
-	distort2lookup_44100_8_90: Lookup tables for distortion 2 effect.
 
 2003-04-16 17:01  fonin
 
@@ -670,11 +673,11 @@
 
 2003-03-09 11:40  fonin
 
-	* .cvsignore, gnuitar.kdevprj, gnuitar.lsm: Initial revision
+	* .cvsignore, gnuitar.kdevprj, gnuitar.lsm: new project started
 
 2003-03-09 11:40  fonin
 
-	* .cvsignore, gnuitar.kdevprj, gnuitar.lsm: new project started
+	* .cvsignore, gnuitar.kdevprj, gnuitar.lsm: Initial revision
 
 2003-02-12 17:38  fonin
 

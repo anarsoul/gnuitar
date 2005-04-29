@@ -1,3 +1,14 @@
+26 Apr 2005, Version 0.3.2-pre2
+- fixed the help contents bug on win2k
+- fixed the 100% cpu load bug with zeroes in the distort2 input
+- fixed autowah on windows
+
+18 Apr 2005, Version 0.3.2-pre1
+- re-worked distort2 effect; no need to download few Mbytes of lookup tables
+- equalizer effect
+- GTK 2 port
+- updated docs
+
 18 April 2003, Version 0.3.1
 - New distortion effect
 - Noise gate effect
