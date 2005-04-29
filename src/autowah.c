@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/04/29 11:24:59  fonin
+ * Return back the 1.5 amplify coeff
+ *
  * Revision 1.11  2005/04/26 13:37:39  fonin
  * Declaring dry[] in the autowah_filter as static fixes the 100% CPU usage on windows; also amplify coefficients changed from 1.5 to 1.0
  *
@@ -91,7 +94,7 @@ update_wah_freqlow(GtkAdjustment * adj, struct autowah_params *params)
     params->freq_low = (float) adj->value;
     params->f = params->freq_low;
 
-    RC_setup(10, 1, params->fd);
+    RC_setup(10, 1.5, params->fd);
     RC_set_freq(params->f, params->fd);
 }
 
@@ -99,7 +102,7 @@ void
 update_wah_freqhi(GtkAdjustment * adj, struct autowah_params *params)
 {
     params->freq_high = (float) adj->value;
-    RC_setup(10, 1, params->fd);
+    RC_setup(10, 1.5, params->fd);
     RC_set_freq(params->f, params->fd);
 }
 
@@ -289,7 +292,7 @@ autowah_filter(struct effect *p, struct data_block *db)
     if (ap->wah_count != 0) {
 	LC_filter(db->data, db->len, HIGHPASS,ap->freq_high, ap->fd);
     }
- */
+*/
     ap->f += ap->df;
     if (ap->f >= ap->freq_high) {
 	ap->df = -ap->df;
