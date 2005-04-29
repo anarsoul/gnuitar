@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/04/29 11:24:42  fonin
+ * Better presets
+ *
  * Revision 1.12  2004/08/10 15:21:16  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -291,7 +294,7 @@ vibrato_create(struct effect *p)
 
     pvibrato = (struct vibrato_params *) p->params;
 
-    pvibrato->vibrato_amplitude = 800.0 / MAX_SAMPLE;
+    pvibrato->vibrato_amplitude = 5000.0 / MAX_SAMPLE;
     pvibrato->vibrato_speed = MAX_VIBRATO_BUFSIZE * 0.2 / nchannels;
     pvibrato->vibrato_phase_buffer_size = MAX_VIBRATO_BUFSIZE;
 

@@ -89,6 +89,8 @@ TODO:
   (looks like it is a netscape own error)
 + review the docs, especially build notes for the console MSVC users
 + check autowah on windows
++ better presets for distort1 and phasor
+- autowah breaks the updated low and high values
 
 0.4.0
 - allow to read help only with sound off, or auto-stop the sound

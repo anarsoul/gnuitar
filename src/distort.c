@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/04/29 11:24:43  fonin
+ * Better presets
+ *
  * Revision 1.11  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -363,8 +366,8 @@ distort_create(struct effect *p)
     p->id = DISTORT;
     p->proc_done = distort_done;
 
-    ap->sat = 20000;
-    ap->level = 100;
+    ap->sat = 10000;
+    ap->level = 20;
     ap->drive = 555;
     ap->lowpass = 350;
     ap->noisegate = 3000;

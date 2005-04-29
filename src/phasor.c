@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/04/29 11:24:42  fonin
+ * Better presets
+ *
  * Revision 1.11  2004/07/07 19:18:42  fonin
  * GTK2 port
  *
@@ -334,7 +337,7 @@ phasor_create(struct effect *p)
     pphasor->freq_low = 300.0;
     pphasor->freq_high = 2500.0;
     pphasor->f = pphasor->freq_low;
-    pphasor->df = 7.0;
+    pphasor->df = 42.0;
     pphasor->bandpass = 0;
 
     RC_setup(10, 1.5, &(pphasor->fd));
