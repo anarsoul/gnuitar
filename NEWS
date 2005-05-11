@@ -1,3 +1,6 @@
+5 May 2005, Version 0.3.2
+- some minor cleanups
+
 26 Apr 2005, Version 0.3.2-pre2
 - fixed the help contents bug on win2k
 - fixed the 100% cpu load bug with zeroes in the distort2 input

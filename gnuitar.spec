@@ -1,5 +1,5 @@
 %define ver 0.3.2
-%define rel 2
+%define rel 3
 %define prefix /usr
 
 Summary: a GTK+ based guitar processor. Includes such effects as reverberator, sustain, distortion, phasor, wah-wah.
@@ -51,6 +51,9 @@ rm -rf ${RPM_BUILD_ROOT}
 #%prefix/share/gnuitar/win32/*
 
 %changelog
+* Wed 11 May 2005 Max Rudensky <fonin@gnuitar.com>
+- 0.3.2 release - after some cleanups
+
 * Tue 26 Apr 2005 Max Rudensky <fonin@gnuitar.com>
 - Second pre-release 0.3.2:
 - fixed the help contents bug on win2k
