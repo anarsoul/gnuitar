@@ -51,10 +51,10 @@ rm -rf ${RPM_BUILD_ROOT}
 #%prefix/share/gnuitar/win32/*
 
 %changelog
-* Wed 11 May 2005 Max Rudensky <fonin@gnuitar.com>
+* Wed May 11 2005 Max Rudensky <fonin@gnuitar.com>
 - 0.3.2 release - after some cleanups
 
-* Tue 26 Apr 2005 Max Rudensky <fonin@gnuitar.com>
+* Tue Apr 26 2005 Max Rudensky <fonin@gnuitar.com>
 - Second pre-release 0.3.2:
 - fixed the help contents bug on win2k
 - fixed the 100% cpu load bug with zeroes in the distort2 input
