@@ -92,6 +92,22 @@ TODO:
 + better presets for distort1 and phasor
 + autowah breaks the updated low and high values
 
+0.3.3 bugfix release
+- Distortion 2 effect values are reset when a layout is loaded.
+- The EQ bank remembers the values, but they are most definitely not applied to 
+the sound. (You can recreate this by having an EQ bank with harsh EQ 
+settings, saving the layout, quitting/reloading this layout, then you will 
+hear the the effect is not applied. If the slider parameter is adjusted, then 
+that particular EQ band then works again.)
+- A simple volume effect would be useful. The 2nd distortion effect is great but 
+sometimes I find it increases the volume to the point where clipping starts 
+to occur. When this happens, I currently have to use the volume of an EQ bank 
+to reduce the volume to get rid of the clipping. A simple volume effect would 
+work great here.
+- Another feature which might be useful, would be a .gnuitar folder within the 
+home area?? which remembers the options settings eg latency, and reloads 
+these settings next time Gnuitar is run.
+
 0.4.0
 - allow to read help only with sound off, or auto-stop the sound
 - tooltips to the noise gate window with important notes
@@ -107,6 +123,8 @@ TODO:
 0.5.0
 - tuner
 ?- external pedal and switch
+- Output through jack-audio-connection kit might be something to think about in 
+future versions? 
 
 0.6.0
 - play .wav in the background
