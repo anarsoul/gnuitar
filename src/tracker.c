@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2005/07/25 12:05:29  fonin
+ * Workaround for crappy sound in .raw files - thanks Antti S. Lankila <alankila@bel.fi>
+ *
  * Revision 1.9  2004/08/10 15:21:16  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -146,8 +149,14 @@ track_write(DSP_SAMPLE *s, int count)
     /*
      * Convert to 16bit raw data
      */
-    for (i = 0; i < count; i++)
-	tmp[i] = s[i];
+    for (i = 0; i < count; i++) {
+       int W = s[i];
+       if (W < -MAX_SAMPLE)
+           W = -MAX_SAMPLE;
+       if (W > MAX_SAMPLE)
+           W = MAX_SAMPLE;
+       tmp[i] = W;
+    }
 #ifndef _WIN32
     write(fout, tmp, sizeof(SAMPLE) * count);
 #else
