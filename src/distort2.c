@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/07/25 12:05:04  fonin
+ * Workaround for NaN problem - thanks Antti S. Lankila <alankila@bel.fi>
+ *
  * Revision 1.13  2005/04/24 19:11:22  fonin
  * Optimized for zero input (after the noise filter) to avoid the extra calcs
  *
@@ -322,6 +325,10 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    }
 	    while ((dx>0.01)||(dx<-0.01));
 	    /* when dx gets very small, we found a solution. */
+
+	    /* we can get NaN after all, let's check for this */
+	    if(isnan(y))
+		y=0.0;
 
 	    dp->last[curr_channel] = y;
 	    y = doBiquad( y, &dp->cheb, curr_channel);
