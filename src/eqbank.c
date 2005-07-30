@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.6  2005/07/30 18:01:39  fonin
+ * Fixed bug in eqbank_load() - loaded values did not get applied
+ *
  * Revision 1.5  2005/04/15 14:32:08  fonin
  * Fixed nasty bug with effect saving/loading
  *
@@ -312,7 +315,7 @@ eqbank_load(struct effect *p, int fd)
         ep->filters[i].a2=0;
         ep->filters[i].b1=0;
         ep->filters[i].b2=0;
-	SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], 0, &ep->filters[i]);
+	SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], ep->boosts[i], &ep->filters[i]);
     }
 
     ep->ocoeff = pow(10, ep->volume / 20.0);

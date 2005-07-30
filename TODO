@@ -94,7 +94,7 @@ TODO:
 
 0.3.3 bugfix release
 - Distortion 2 effect values are reset when a layout is loaded.
-- The EQ bank remembers the values, but they are most definitely not applied to 
++ The EQ bank remembers the values, but they are most definitely not applied to 
 the sound. (You can recreate this by having an EQ bank with harsh EQ 
 settings, saving the layout, quitting/reloading this layout, then you will 
 hear the the effect is not applied. If the slider parameter is adjusted, then 
