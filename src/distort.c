@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/07/31 10:23:20  fonin
+ * All processing in temp variable; added clipping code
+ *
  * Revision 1.12  2005/04/29 11:24:43  fonin
  * Better presets
  *
@@ -261,6 +264,7 @@ distort_filter(struct effect *p, struct data_block *db)
                     currchannel = 0;
     DSP_SAMPLE     *s;
     struct distort_params *dp;
+    double	    t;
 
     dp = (struct distort_params *) p->params;
     /*
@@ -276,23 +280,33 @@ distort_filter(struct effect *p, struct data_block *db)
 	/*
 	 * apply drive  
 	 */
-	*s *= dp->drive;
-	*s /= 16;
+	t=*s;
+	t *= dp->drive;
+	t /= 16;
 
 	/*
 	 * apply sat 
 	 */
-	if ((*s - dp->lastval[currchannel]) > dp->sat)
-	    *s = dp->lastval[currchannel] + dp->sat;
-	else if ((dp->lastval[currchannel] - *s) > dp->sat)
-	    *s = dp->lastval[currchannel] - dp->sat;
+	if ((t - dp->lastval[currchannel]) > dp->sat)
+	    t = dp->lastval[currchannel] + dp->sat;
+	else if ((dp->lastval[currchannel] - t) > dp->sat)
+	    t = dp->lastval[currchannel] - dp->sat;
 
-	dp->lastval[currchannel] = *s;
+	dp->lastval[currchannel] = t;
 	if (nchannels > 1)
 	    currchannel = !currchannel;
 
-	*s *= dp->level;
-	*s /= 256;
+	t *= dp->level;
+	t /= 256;
+#ifdef CLIP_EVERYWHERE
+	if (t > MAX_SAMPLE)
+	    t = MAX_SAMPLE;
+	if (t < -MAX_SAMPLE)
+	    t = -MAX_SAMPLE;
+#endif
+	if(isnan(t))
+	    t=0;
+	*s=t;
 
 	s++;
 	count--;
