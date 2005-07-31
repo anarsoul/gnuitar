@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.7  2005/07/31 10:23:49  fonin
+ * Tiny code lickup
+ *
  * Revision 1.6  2005/07/30 18:01:39  fonin
  * Fixed bug in eqbank_load() - loaded values did not get applied
  *
@@ -238,29 +241,28 @@ eqbank_filter(struct effect *p, struct data_block *db)
     DSP_SAMPLE         *s;
 
     struct eqbank_params *ep;
-    double          t;
-	int cchannel;
+    double		  t;
+    int			  cchannel=0;
 
     ep = p->params;
 	
     count = db->len;
     s = db->data;
 
-    while (count ) {
-	
-	
-	cchannel = 0;
+    while (count) {
 	t = *s;
 	for (i = 0; i < FB_NB; i++)
 	    t = doBiquad(t, &ep->filters[i], cchannel);
 	t *= ep->ocoeff;
+#ifdef CLIP_EVERYWHERE
 	if (t > MAX_SAMPLE)
 	    t = MAX_SAMPLE;
 	if (t < -MAX_SAMPLE)
 	    t = -MAX_SAMPLE;
+#endif
 	*s = t;
-	if (cchannel < nchannels - 1) 
-	    cchannel++;
+	if (nchannels > 1)
+	    cchannel = !cchannel;
 	  
 	s++;
 	count--;
