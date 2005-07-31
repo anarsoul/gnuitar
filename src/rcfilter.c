@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2005/07/31 10:22:54  fonin
+ * Check for NaN values on input and output
+ *
  * Revision 1.7  2005/04/06 19:34:20  fonin
  * Code lickup
  *
@@ -76,6 +79,8 @@ LC_filter(DSP_SAMPLE *sound, int count, int filter_no, double freq,
     dt_div_L = 1.0 / (L * sample_rate * nchannels);
 
     for (t = 0; t < count; t++) {
+	if(isnan(*sound))
+	    *sound=0;
 	du = (double) *sound - pp->last_sample[filter_no][0][currchannel];
 	pp->last_sample[filter_no][0][currchannel] = (double) *sound;
 
@@ -90,6 +95,8 @@ LC_filter(DSP_SAMPLE *sound, int count, int filter_no, double freq,
 	*sound=(int)(pp->i[filter_no][0][currchannel][currchannel]*pp->amplify); 
 */
 	*sound = (int) (pp->i[filter_no][0][currchannel] * 500.0);
+	if(isnan(*sound))
+	    *sound=0;
 	if (nchannels > 1)
 	    currchannel = !currchannel;
 
@@ -133,6 +140,8 @@ RC_filter(DSP_SAMPLE *sound, int count, int mode, int filter_no,
                     currchannel = 0;
 
     for (t = 0; t < count; t++) {
+	if(isnan(*sound))
+	    *sound=0;
 	du = (double) *sound -
 	    pp->last_sample[filter_no][mode][currchannel];
 	pp->last_sample[filter_no][mode][currchannel] = (double) *sound;
@@ -153,6 +162,8 @@ RC_filter(DSP_SAMPLE *sound, int count, int mode, int filter_no,
 		       pp->amplify);
 	if (nchannels > 1)
 	    currchannel = !currchannel;
+	if(isnan(*sound))
+	    *sound=0;
 
 	sound++;
     }

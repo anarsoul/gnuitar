@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.5  2005/07/31 10:22:54  fonin
+ * Check for NaN values on input and output
+ *
  * Revision 1.4  2005/04/06 19:34:20  fonin
  * Code lickup
  *
@@ -63,7 +66,7 @@ SetEqBiquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
     f->b2 = -(1 - fi / k) / x;
 }
 
-#if !defined(MSC_VER)
+#if !defined(_MSC_VER)
 #if defined(__GNUC__)
 /* check if the compiler is not Visual C so we must declare the fuction here */
 __inline double
@@ -78,6 +81,10 @@ doBiquad(double x, struct Biquad *f, int channel)
     mem = f->mem + (channel << 2);
     y = x * f->a0 + mem[0] * f->a1 + mem[1] * f->a2 + mem[2] * f->b1 +
 	mem[3] * f->b2;
+    if(isnan(y))
+	y=0;
+    if(isnan(x))
+	x=0;
     mem[1] = mem[0];
     mem[0] = x;
     mem[3] = mem[2];
