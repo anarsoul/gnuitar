@@ -19,6 +19,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.6  2005/08/07 12:42:05  alankila
+ * Do not use << 2 because double can be wider than 4.
+ * Better say what you mean.
+ *
  * Revision 1.5  2005/07/31 10:22:54  fonin
  * Check for NaN values on input and output
  *
@@ -78,7 +82,7 @@ doBiquad(double x, struct Biquad *f, int channel)
 {
     double          y,
                    *mem;
-    mem = f->mem + (channel << 2);
+    mem = f->mem + (channel * sizeof(double));
     y = x * f->a0 + mem[0] * f->a1 + mem[1] * f->a2 + mem[2] * f->b1 +
 	mem[3] * f->b2;
     if(isnan(y))

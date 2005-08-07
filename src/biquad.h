@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.5  2005/08/07 12:42:04  alankila
+ * Do not use << 2 because double can be wider than 4.
+ * Better say what you mean.
+ *
  * Revision 1.4  2005/04/06 19:34:20  fonin
  * Code lickup
  *
@@ -68,7 +72,7 @@ doBiquad(double x, struct Biquad *f, int channel)
 				 
     double          y,
                    *mem;
-    mem = f->mem + (channel << 2);
+    mem = f->mem + (channel * sizeof(double));
     y = x * f->a0 + mem[0] * f->a1 + mem[1] * f->a2 + mem[2] * f->b1 +
 	mem[3] * f->b2;
     mem[1] = mem[0];
