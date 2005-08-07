@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2005/08/07 12:53:42  alankila
+ * - new tuner plugin / effect
+ * - some gcc -Wall shutups
+ * - added the entry required for gnuitar.vcproj as well but I can't test it
+ * - changed pump.h to use enum instead of bunch-of-defines. Hopefully it's
+ *   better that way.
+ *
  * Revision 1.18  2005/04/24 19:11:22  fonin
  * Optimized for zero input (after the noise filter) to avoid the extra calcs
  *
@@ -105,6 +112,7 @@
 #include "tracker.h"
 #include "noise.h"
 #include "eqbank.h"
+#include "tuner.h"
 
 struct effect  *effects[MAX_EFFECTS];
 int             n = 0;
@@ -182,6 +190,7 @@ struct effect_creator effect_list[] = {
     {"distort2", distort2_create},
     {"noise gate", noise_create},
     {"eq bank", eqbank_create},
+    {"tuner", tuner_create},
     {NULL, NULL}
 };
 
@@ -261,7 +270,7 @@ passthru(struct effect *p, struct data_block *db)
 #endif
 
 void
-save_pump(char *fname)
+save_pump(const char *fname)
 {
     int             i;
     int             fd = 0;
@@ -289,7 +298,7 @@ save_pump(char *fname)
 }
 
 void
-load_pump(char *fname)
+load_pump(const char *fname)
 {
     int             fd = 0;
     unsigned short  effect_tag = MAX_EFFECTS+1;

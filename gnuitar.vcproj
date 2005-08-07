@@ -297,6 +297,9 @@
 				RelativePath=".\src\tremolo.c">
 			</File>
 			<File
+				RelativePath=".\src\tuner.c">
+			</File>
+			<File
 				RelativePath=".\src\utils.c">
 			</File>
 			<File
@@ -365,6 +368,9 @@
 			</File>
 			<File
 				RelativePath=".\src\tremolo.h">
+			</File>
+			<File
+				RelativePath=".\src\tuner.h">
 			</File>
 			<File
 				RelativePath=".\src\utils.h">

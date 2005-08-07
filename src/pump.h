@@ -31,7 +31,7 @@ typedef double	DSP_SAMPLE;
 typedef int	DSP_SAMPLE;
 #endif
 
-typedef short   SAMPLE;
+typedef short SAMPLE;
 
 #ifdef _WIN32
 #define MAX_BUFFERS	1024	/* number of input/output sound buffers */
@@ -44,24 +44,24 @@ typedef signed char SAMPLE8;
 #define MAX_CHANNELS 2
 #define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
-#define EFFECT_AMOUNT 13
 
-/*
- * Indices in effect_creator[] array
- */
-#define AUTOWAH 0
-#define DISTORT 1
-#define DELAY	2
-#define REVERB	3
-#define VIBRATO	4
-#define CHORUS	5
-#define ECHO	6
-#define PHASOR	7
-#define TREMOLO	8
-#define SUSTAIN	9
-#define DISTORT2	10
-#define NOISE		11
-#define EQBANK		12
+enum effects {
+    AUTOWAH = 0,
+    DISTORT,
+    DELAY,
+    REVERB,
+    VIBRATO,
+    CHORUS,
+    ECHO,
+    PHASOR,
+    TREMOLO,
+    SUSTAIN,
+    DISTORT2,
+    NOISE,
+    EQBANK,
+    TUNER,
+    EFFECT_AMOUNT
+};
 
 struct data_block {
     DSP_SAMPLE     *data;
@@ -101,8 +101,8 @@ extern struct effect_creator effect_list[];
 extern int      pump_sample(DSP_SAMPLE *s, int size);
 extern void     pump_start(int argc, char **argv);
 extern void     pump_stop(void);
-extern void     save_pump(char *fname);
-extern void     load_pump(char *fname);
+extern void     save_pump(const char *fname);
+extern void     load_pump(const char *fname);
 extern void     passthru(struct effect *p, struct data_block *db);
 
 #endif
