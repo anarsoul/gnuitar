@@ -37,7 +37,7 @@ struct distort2_params {
     double	c0,d1,lyf;
     double 	last[MAX_CHANNELS];
     double	lastupsample;
-    struct Biquad cheb, cheb1;  /* chebyshev filters */
+    struct Biquad cheb, cheb1;  /* 2 chebyshev filters */
 };
 
 #endif

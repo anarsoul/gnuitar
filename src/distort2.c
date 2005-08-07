@@ -20,6 +20,26 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/08/07 12:48:21  alankila
+ * Update distort2 parameters:
+ *
+ * - scale simulation parameters back to -1.0 .. +1.0 range
+ * - use symmetric up/downscaling to not change master volume
+ * - set noisegate filter at loading time
+ * - fix the use of gtk_adjustment to use true ranges
+ * - fix broken #defines with ()
+ * - add defines for the RC filter: 4700 ohms, 47 nF.
+ * - remove some casts, use calloc instead of malloc + zero
+ * - change distortion sound a bit to remove the "lo-fi" sound:
+ *   * set treble noisegate on by default
+ *   * set treble filter range from 6000 up to 8000
+ *   * change treble filter default value from 3500 to 7000
+ *   * require greater precision (keep on deriving while
+ *     fabs(dx) >= one 16-bit sample, before it was about twice that)
+ *   * more upsampling (from 4 -> 6, it sounds a bit better imo)
+ *   * change mUt parameter to 21 * 10^-3 instead of 30 * 10^-3. Smaller
+ *     values provide a bit smoother distortion
+ *
  * Revision 1.14  2005/07/25 12:05:04  fonin
  * Workaround for NaN problem - thanks Antti S. Lankila <alankila@bel.fi>
  *
@@ -84,13 +104,15 @@
 #include "utils.h"
 #include <math.h>
 
+#define RC_R          4700.0          /* ohms */
+#define RC_C          (47 * 1e-9)     /* farads */
 
-#define UPSAMPLE	4
+#define UPSAMPLE	6
 
-#define DIST2_DOWNSCALE	16.0 / MAX_SAMPLE 	/* Used to reduce the signal to */
+#define DIST2_DOWNSCALE	(1.0 / MAX_SAMPLE) 	/* Used to reduce the signal to */
 						/* the limits needed by the     */
 						/* simulation                   */
-#define DIST2_UPSCALE	MAX_SAMPLE * 0.2	/* And back to the normal range */
+#define DIST2_UPSCALE	(MAX_SAMPLE / 1.0)	/* And back to the normal range */
 /* taken as a funtion of MAX_SAMPLE because that is the reference for 
  * what the 'normal' signal should be */
 
@@ -105,7 +127,6 @@ void
 update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 {
     params->r2 = (int) adj->value * 5000;
-    params->r2 -= params->r2 % 10;
     params->r2 += 50;
 }
 
@@ -169,7 +190,7 @@ distort2_init(struct effect *p)
     parmTable = gtk_table_new(4, 2, FALSE);
 
     adj_drive = gtk_adjustment_new((pdistort->r2 + 50) / 100,
-				   1.0, 101.0, 0, 0, 0);
+				   0.0, 100.0, 0, 0, 0);
     drive_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -191,7 +212,7 @@ distort2_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     adj_treble = gtk_adjustment_new(pdistort->noisegate,
-				   1000.0, 6001.0, 1, 1, 1);
+				   1000.0, 8000.0, 1, 1, 0);
     treble_label = gtk_label_new("Treble\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), treble_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -227,6 +248,8 @@ distort2_init(struct effect *p)
     }
 
     treble_switch = gtk_check_button_new_with_label("On");
+    if (pdistort->treble)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(treble_switch), TRUE);
     gtk_signal_connect(GTK_OBJECT(treble_switch), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_treble), pdistort);
 
@@ -246,14 +269,11 @@ distort2_init(struct effect *p)
 void
 distort2_filter(struct effect *p, struct data_block *db)
 {
-/* the original value doesn't produce enough distortion,
- * maybe wrong electrical parameters ? */
-// #define mUt				  30*1e-3
-#define mUt				  30*1e+2
-#define Is				 10*1e-12
+#define mUt				  (21*1e-3)
+#define Is				 (10*1e-12)
 
     int			i,count;
-    static int		curr_channel = 0;
+    int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp;
     static double	x,y,x1,f,df,dx,e1,e2;
@@ -303,7 +323,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    /* first compute the linear rc filter current output */
 	    y = dp->c0*x + dp->d1 * dp->lyf;
 	    dp->lyf = y;
-	    x1 = (x-y) / 4700.0;
+	    x1 = (x-y) / RC_R;
 
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
@@ -323,7 +343,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 		dx=f/df;
 		y-=dx;
 	    }
-	    while ((dx>0.01)||(dx<-0.01));
+	    while (fabs(dx) > DIST2_DOWNSCALE);
 	    /* when dx gets very small, we found a solution. */
 
 	    /* we can get NaN after all, let's check for this */
@@ -361,7 +381,8 @@ distort2_done(struct effect *p)
     struct distort2_params *ap;
 
     ap = (struct distort2_params *) p->params;
-    free(ap->cheb.mem); free(ap->cheb1.mem);
+    free(ap->cheb.mem);
+    free(ap->cheb1.mem);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -395,8 +416,8 @@ distort2_load(struct effect *p, int fd)
     } else {
 	p->proc_filter = distort2_filter;
     }
+    RC_set_freq(ap->noisegate, &(ap->noise));
 }
-
 
 void
 distort2_create(struct effect *p)
@@ -404,7 +425,7 @@ distort2_create(struct effect *p)
     struct distort2_params *ap;
     int         i;
     double	Ts, Ts1;
-    double	RC=(0.047*1e-6)*(4.7*1e+3);
+    double	RC = RC_C * RC_R;
     p->params =
 	(struct distort2_params *) malloc(sizeof(struct distort2_params));
     ap = (struct distort2_params *) p->params;
@@ -418,8 +439,8 @@ distort2_create(struct effect *p)
     p->proc_done = distort2_done;
 
     ap->r2 = 520;
-    ap->noisegate = 3500;
-    ap->treble = 0;
+    ap->noisegate = 7000;
+    ap->treble = 1;
 
     RC_setup(10, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
@@ -436,12 +457,10 @@ distort2_create(struct effect *p)
     for (i=0; i < nchannels; i++)
 	ap->last[i] = 0;
     ap->lastupsample = 0;
-    ap->cheb.mem = (double*) malloc ( nchannels * sizeof (double) * 4 );
-    memset ( (void*) ap->cheb.mem, 0 , nchannels * sizeof (double) * 4 );
-    ap->cheb1.mem = (double*) malloc ( nchannels * sizeof (double) * 4 );
-    memset ( (void*) ap->cheb1.mem, 0 , nchannels * sizeof (double) * 4 );
+    ap->cheb.mem = calloc(nchannels, sizeof (double) * 4);
+    ap->cheb1.mem = calloc(nchannels, sizeof (double) * 4);
 
-    /* 2 lowPass Chebyshev filters used in downsampling */
+    /* 2 lowpass Chebyshev filters for downsampling */
     CalcChebyshev2(sample_rate * UPSAMPLE, 12000, 1, 1, &ap->cheb);
     CalcChebyshev2(sample_rate * UPSAMPLE, 5500, 1, 1, &ap->cheb1);
 }
