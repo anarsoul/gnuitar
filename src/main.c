@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/08/07 13:13:14  alankila
+ * oops: reinstate the MAX_BUFFER_SIZE / sizeof(SAMPLE) in the rdbuf & procbuf.
+ * Removing that was a mistake. Keep the rest, though.
+ *
  * Revision 1.22  2005/08/07 13:03:57  alankila
  * - add select() around the read() part to read and discard buffers if
  *   we begin to fall behind in audio processing
@@ -183,9 +187,9 @@ audio_thread_start(void *V)
     int             count,
                     i;
 #ifndef _WIN32
-    SAMPLE          rdbuf[MAX_BUFFER_SIZE];	/* receive 
-						 * buffer */
-    DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
+    SAMPLE          rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];	/* receive 
+								 * buffer */
+    DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
 
     fd_set read_fds;
     struct timeval read_timeout;

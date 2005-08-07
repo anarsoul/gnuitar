@@ -57,6 +57,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+host_alias = @host_alias@
+host_triplet = @host@
 AWK = @AWK@
 CC = @CC@
 GLIB_CFLAGS = @GLIB_CFLAGS@
@@ -68,7 +70,10 @@ GOBJECT_QUERY = @GOBJECT_QUERY@
 GTK_CFLAGS = @GTK_CFLAGS@
 GTK_CONFIG = @GTK_CONFIG@
 GTK_LIBS = @GTK_LIBS@
+HAVE_LIB = @HAVE_LIB@
+LIB = @LIB@
 LN_S = @LN_S@
+LTLIB = @LTLIB@
 MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 PKG_CONFIG = @PKG_CONFIG@
@@ -77,26 +82,15 @@ VERSION = @VERSION@
 CONFIG_DEFS = @CONFIG_DEFS@
 
 bin_PROGRAMS = gnuitar
-gnuitar_SOURCES = main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
-	vibrato.c autowah.c phasor.c rcfilter.c \
-	gui.c distort.c distort2.c sustain.c reverb.c backbuf.c utils.c \
-	pump.h chorus.h delay.h echo.h tracker.h tremolo.h \
-	vibrato.h autowah.h phasor.h rcfilter.h \
-	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
-	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h chebyshev.c chebyshev.h
+gnuitar_SOURCES = main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c 	vibrato.c autowah.c phasor.c rcfilter.c 	gui.c distort.c distort2.c sustain.c reverb.c backbuf.c utils.c 	pump.h chorus.h delay.h echo.h tracker.h tremolo.h 	vibrato.h autowah.h phasor.h rcfilter.h 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h 	chebyshev.c chebyshev.h tuner.c tuner.h
 
 
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 
-INCLUDES = \
-	-DG_LOG_DOMAIN=\"gnuitar\" \
-	$(GTK_CFLAGS) $(CONFIG_DEFS) \
-	-I$(includedir)
+INCLUDES =  	-DG_LOG_DOMAIN=\"gnuitar\" 	$(GTK_CFLAGS) $(CONFIG_DEFS) 	-I$(includedir)
 
 
-gnuitar_LDADD = \
-	$(GTK_LIBS) \
-
+gnuitar_LDADD =  	$(GTK_LIBS) 
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
@@ -109,7 +103,7 @@ LIBS = @LIBS@
 gnuitar_OBJECTS =  main.o pump.o chorus.o delay.o echo.o tracker.o \
 tremolo.o vibrato.o autowah.o phasor.o rcfilter.o gui.o distort.o \
 distort2.o sustain.o reverb.o backbuf.o utils.o noise.o biquad.o \
-eqbank.o chebyshev.o
+eqbank.o chebyshev.o tuner.o
 gnuitar_DEPENDENCIES = 
 gnuitar_LDFLAGS = 
 CFLAGS = @CFLAGS@
@@ -121,14 +115,14 @@ DIST_COMMON =  Makefile.am Makefile.in
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = gtar
+TAR = tar
 GZIP_ENV = --best
 DEP_FILES =  .deps/autowah.P .deps/backbuf.P .deps/biquad.P \
 .deps/chebyshev.P .deps/chorus.P .deps/delay.P .deps/distort.P \
 .deps/distort2.P .deps/echo.P .deps/eqbank.P .deps/gui.P .deps/main.P \
 .deps/noise.P .deps/phasor.P .deps/pump.P .deps/rcfilter.P \
 .deps/reverb.P .deps/sustain.P .deps/tracker.P .deps/tremolo.P \
-.deps/utils.P .deps/vibrato.P
+.deps/tuner.P .deps/utils.P .deps/vibrato.P
 SOURCES = $(gnuitar_SOURCES)
 OBJECTS = $(gnuitar_OBJECTS)
 
@@ -206,7 +200,7 @@ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
 	  awk '    { files[$$0] = 1; } \
 	       END { for (i in files) print i; }'`; \
 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
+	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
 
 mostlyclean-tags:
 
