@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/08/07 13:03:57  alankila
+ * - add select() around the read() part to read and discard buffers if
+ *   we begin to fall behind in audio processing
+ *
  * Revision 1.21  2005/04/15 14:37:41  fonin
  * Fixed version variable
  *
@@ -98,6 +102,7 @@
 #    include <pthread.h>
 #    include <sys/soundcard.h>
 #else
+#    include <sys/select.h>
 #    include <time.h>
 #    include <io.h>
 #    include <stdlib.h>
@@ -178,21 +183,34 @@ audio_thread_start(void *V)
     int             count,
                     i;
 #ifndef _WIN32
-    SAMPLE          rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];	/* receive 
-								 * buffer */
-    DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
+    SAMPLE          rdbuf[MAX_BUFFER_SIZE];	/* receive 
+						 * buffer */
+    DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
 
+    fd_set read_fds;
+    struct timeval read_timeout;
+    
     while (state != STATE_EXIT) {
 	if (state == STATE_PAUSE) {
 	    pthread_cond_wait(&suspend, &mutex);
 	}
 
-	count = read(fd, rdbuf, buffer_size);
-	if (count != buffer_size) {
-	    fprintf(stderr, "Cannot read samples!\n");
-	    close(fd);
-	    exit(ERR_WAVEINRECORD);
-	}
+
+	/* keep on reading and discard if select says we can read.
+         * this will allow us to catch up if we fall behind */
+        FD_ZERO(&read_fds);
+        FD_SET(fd, &read_fds);
+	read_timeout.tv_sec  = 0;
+	read_timeout.tv_usec = 0;
+        do {
+	    count = read(fd, rdbuf, buffer_size);
+	    if (count != buffer_size) {
+		fprintf(stderr, "Cannot read samples!\n");
+		close(fd);
+		exit(ERR_WAVEINRECORD);
+	    }
+	} while (select(fd+1, &read_fds, NULL, NULL, &read_timeout) != 0);
+	
 	count /= bits / 8;
 
 	for (i = 0; i < count; i++)
