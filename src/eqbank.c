@@ -20,6 +20,12 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.8  2005/08/07 19:38:24  alankila
+ * - symmetrize Volume range from -30 to +30 and set individual gains
+ *   from -9.9 to +9.9 (only 2 digits required to display, not 3 as with 10.0)
+ * - if GTK2, allow flipping the range with gtk_range_set_inverted
+ * - set some packing parameters so that it looks nicer in GTK2
+ *
  * Revision 1.7  2005/07/31 10:23:49  fonin
  * Tiny code lickup
  *
@@ -50,9 +56,9 @@
 /* Number of filters in bank */
 #define FB_NB 14
 /* Minimal value in Decibels ( for UI purpose only) */
-#define FB_MIN -10
+#define FB_MIN -9.9
 /* Maximal Value in Decibels */
-#define FB_MAX 10
+#define FB_MAX 9.9
 
 /* Array with the center frequencies of the filters in Hertz
  * Beware, to large values for the ends, may result in instability
@@ -157,10 +163,11 @@ eqbank_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
     for (i = 0; i < FB_NB; i++) {
 	adj_boost[i] = gtk_adjustment_new(peq->boosts[i],
-					  FB_MIN, FB_MAX, 1.0, 5.0, 1.0);
+					  FB_MIN, FB_MAX, 1.0, 5.0, 0.0);
 	boost[i] = gtk_vscale_new(GTK_ADJUSTMENT(adj_boost[i]));
 #ifdef HAVE_GTK2
-	gtk_widget_set_size_request(GTK_WIDGET(boost[i]),0,100);
+	gtk_widget_set_size_request(GTK_WIDGET(boost[i]),32,100);
+	gtk_range_set_inverted(GTK_RANGE(boost[i]), TRUE);
 #endif
 
 	sl_wrappers[i].par = peq;
@@ -197,8 +204,12 @@ eqbank_init(struct effect *p)
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 3);
-    adj_output = gtk_adjustment_new(peq->volume, -20, 30, 1.0, 5.0, 1.0);
+    adj_output = gtk_adjustment_new(peq->volume, -30, 30, 1.0, 5.0, 0.0);
     output = gtk_vscale_new(GTK_ADJUSTMENT(adj_output));
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(output,55,100);
+    gtk_range_set_inverted(GTK_RANGE(output), TRUE);
+#endif
     gtk_signal_connect(GTK_OBJECT(adj_output), "value_changed",
 		       GTK_SIGNAL_FUNC(update_eqbank_volume),
 		       (void *) peq);
