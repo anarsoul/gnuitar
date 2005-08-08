@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/08/08 12:01:34  fonin
+ * Include utils.h for isnan() on Windows
+ *
  * Revision 1.13  2005/07/31 10:23:20  fonin
  * All processing in temp variable; added clipping code
  *
@@ -70,6 +73,7 @@
 #endif
 #include "distort.h"
 #include "gui.h"
+#include "utils.h"
 
 void            distort_filter(struct effect *p, struct data_block *db);
 
