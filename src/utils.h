@@ -71,6 +71,7 @@
 #        define  F_OK 00
 #    endif
 #    define FILESEP "\\"
+#    define isnan _isnan
 #else
 #    define FILESEP "/"
 #endif
