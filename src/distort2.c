@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/08/08 12:02:11  fonin
+ * include float.h on windows
+ *
  * Revision 1.15  2005/08/07 12:48:21  alankila
  * Update distort2 parameters:
  *
@@ -98,6 +101,7 @@
 #    include <unistd.h>
 #else
 #    include <io.h>
+#    include <float.h>
 #endif
 #include "distort2.h"
 #include "gui.h"
@@ -340,7 +344,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
-		dx=f/df;
+		dx =f/df;
 		y-=dx;
 	    }
 	    while (fabs(dx) > DIST2_DOWNSCALE);
@@ -348,7 +352,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 
 	    /* we can get NaN after all, let's check for this */
 	    if(isnan(y))
-		y=0.0;
+                y=0.0;
 
 	    dp->last[curr_channel] = y;
 	    y = doBiquad( y, &dp->cheb, curr_channel);
