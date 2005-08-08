@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/08/08 12:03:26  fonin
+ * Fixed include sys/select.h which did not work on windows.
+ *
  * Revision 1.23  2005/08/07 13:13:14  alankila
  * oops: reinstate the MAX_BUFFER_SIZE / sizeof(SAMPLE) in the rdbuf & procbuf.
  * Removing that was a mistake. Keep the rest, though.
@@ -99,6 +102,7 @@
 
 #include <stdio.h>
 #ifndef _WIN32
+#    include <sys/select.h>
 #    include <unistd.h>
 #    include <sys/ioctl.h>
 #    include <sys/time.h>
@@ -106,7 +110,6 @@
 #    include <pthread.h>
 #    include <sys/soundcard.h>
 #else
-#    include <sys/select.h>
 #    include <time.h>
 #    include <io.h>
 #    include <stdlib.h>
@@ -209,9 +212,9 @@ audio_thread_start(void *V)
         do {
 	    count = read(fd, rdbuf, buffer_size);
 	    if (count != buffer_size) {
-		fprintf(stderr, "Cannot read samples!\n");
-		close(fd);
-		exit(ERR_WAVEINRECORD);
+		    fprintf(stderr, "Cannot read samples!\n");
+		    close(fd);
+		    exit(ERR_WAVEINRECORD);
 	    }
 	} while (select(fd+1, &read_fds, NULL, NULL, &read_timeout) != 0);
 	
