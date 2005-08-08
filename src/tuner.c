@@ -57,6 +57,10 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.3  2005/08/08 16:30:59  alankila
+ * - noise-reducing 4-tap FIR. This should kill signal fairly completely
+ *   around 11 kHz.
+ *
  * Revision 1.2  2005/08/08 12:02:58  fonin
  * Fixed C++ coding style which did not work on pure C
  *
@@ -236,6 +240,16 @@ tuner_filter(struct effect *p, struct data_block *db)
 	    newval = *s++;
 	    i -= 1;
 	}
+
+	/* smooth signal a bit for noise reduction */
+	/* NR is FIR with y_n = 1/k * sum(x_i) */
+	params->oldval[3] = params->oldval[2];
+	params->oldval[2] = params->oldval[1];
+	params->oldval[1] = params->oldval[0];
+	params->oldval[0] = newval;
+	
+	newval = (params->oldval[3] + params->oldval[2] + params->oldval[1] + params->oldval[0]) / 4;
+	
 	power += newval * newval;
 	params->history[index++] = newval;
 	if (index == HISTORY_SIZE)
@@ -271,7 +285,7 @@ tuner_filter(struct effect *p, struct data_block *db)
         double diff = 0;
         double weight = 0;
         for (i = 0; i < COMPARE_LEN; i += 1) {
-            DSP_SAMPLE tmp = params->history[index+i] - params->history[(index+i+loop_len) % HISTORY_SIZE];
+            DSP_SAMPLE tmp = params->history[(index+i) % HISTORY_SIZE] - params->history[(index+i+loop_len) % HISTORY_SIZE];
             double tmp2 = tmp * tmp;
             diff += tmp2;
             /* give up as soon as possible */
@@ -384,6 +398,11 @@ tuner_create(struct effect *p)
     params->freq = 0;
     params->freq_index = 0;
 
+    params->oldval[3] =
+    params->oldval[2] =
+    params->oldval[1] =
+    params->oldval[0] = 0;
+    
     for (i = 0; i < FREQ_SIZE; i += 1)
 	params->freq_history[i] = 0;
 

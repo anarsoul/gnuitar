@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2005/08/08 16:30:59  alankila
+ * - noise-reducing 4-tap FIR. This should kill signal fairly completely
+ *   around 11 kHz.
+ *
  * Revision 1.1  2005/08/07 12:53:42  alankila
  * - new tuner plugin / effect
  * - some gcc -Wall shutups
@@ -46,6 +50,7 @@ struct tuner_params {
 
     /* signal processing helpers */
     double	    power;
+    DSP_SAMPLE	    oldval[4];
     
     /* raw measurements */
     double	    freq_history[FREQ_SIZE];
