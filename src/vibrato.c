@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/08/08 17:26:19  alankila
+ * - fix vibrato to not do any snapping sounds any more.
+ * - correct fubared _load() and _save() functions
+ * - change the "vibrato phase buffer size" that's really the size of the
+ *   sin lookup table to something semi-reasonable like 16384
+ *   (at later point I'll merge all the sin lookup tables together)
+ *
  * Revision 1.13  2005/04/29 11:24:42  fonin
  * Better presets
  *
@@ -73,14 +80,13 @@ void
 void
 update_vibrato_speed(GtkAdjustment * adj, struct vibrato_params *params)
 {
-    params->vibrato_speed =
-	(int) ((float) sample_rate * nchannels * adj->value / 1000.0);
+    params->vibrato_speed = adj->value / 1000.0;
 }
 
 void
 update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 {
-    params->vibrato_amplitude = adj->value * 50.0 / MAX_SAMPLE;
+    params->vibrato_amplitude = adj->value / 100.0;
 }
 
 void
@@ -128,10 +134,8 @@ vibrato_init(struct effect *p)
     parmTable = gtk_table_new(2, 8, FALSE);
 
     adj_speed =
-	gtk_adjustment_new(pvibrato->vibrato_speed * 1000.0 /
-			   (sample_rate * nchannels), 1.0,
-			   (MAX_VIBRATO_BUFSIZE * 1000.0 /
-			    (sample_rate * nchannels)), 1.0, 1.0, 1.0);
+	gtk_adjustment_new(pvibrato->vibrato_speed * 1000.0, 10.0,
+			   3000.0, 1.0, 1.0, 0.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -154,8 +158,8 @@ vibrato_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
     adj_ampl =
-	gtk_adjustment_new(pvibrato->vibrato_amplitude * MAX_SAMPLE / 50,
-			   0.0, 100.0, 1.0, 1.0, 1.0);
+	gtk_adjustment_new(pvibrato->vibrato_amplitude * 100.0,
+			   0.0, 100.0, 1.0, 1.0, 0.0);
     ampl_label = gtk_label_new("Amplitude\n%");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -202,6 +206,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
     DSP_SAMPLE     *s,
                     ratio;
     int             count;
+    int		    curr_channel = 0;
     struct vibrato_params *vp;
 
     s = db->data;
@@ -211,15 +216,18 @@ vibrato_filter(struct effect *p, struct data_block *db)
 
     while (count) {
 	ratio =
-	    VIBRATO_THRESHOLD +
-	    vp->phase_buffer[vp->vibrato_phase] * vp->vibrato_amplitude;
-	*s = *s * ratio / VIBRATO_THRESHOLD;
+	    MAX_SAMPLE +
+	    vp->phase_buffer[(int) vp->vibrato_phase] * vp->vibrato_amplitude;
+	*s = *s * ratio / MAX_SAMPLE;
 
-	vp->vibrato_phase++;
+	/* move channels synchronously */
+	if (nchannels > 1)
+	    curr_channel = !curr_channel;
+	if (! curr_channel)
+	    vp->vibrato_phase += MAX_VIBRATO_BUFSIZE / vp->vibrato_speed / sample_rate;
 
-	if (vp->vibrato_phase >= vp->vibrato_speed ||
-	    vp->vibrato_phase > MAX_VIBRATO_BUFSIZE)
-	    vp->vibrato_phase = 0;
+	if (vp->vibrato_phase >= MAX_VIBRATO_BUFSIZE)
+	    vp->vibrato_phase -= MAX_VIBRATO_BUFSIZE;
 
 	s++;
 	count--;
@@ -248,8 +256,8 @@ vibrato_save(struct effect *p, int fd)
 
     vp = (struct vibrato_params *) p->params;
 
-    write(fd, &vp->vibrato_speed, sizeof(int));
-    write(fd, &vp->vibrato_amplitude, sizeof(int));
+    write(fd, &vp->vibrato_speed, sizeof(vp->vibrato_speed));
+    write(fd, &vp->vibrato_amplitude, sizeof(vp->vibrato_amplitude));
 }
 
 void
@@ -260,14 +268,8 @@ vibrato_load(struct effect *p, int fd)
 
     vp = (struct vibrato_params *) p->params;
 
-    read(fd, &vp->vibrato_speed, sizeof(int));
-    read(fd, &vp->vibrato_amplitude, sizeof(int));
-    for (i = 0; i < vp->vibrato_phase_buffer_size; i++) {
-	vp->phase_buffer[i] = ((double) vp->vibrato_amplitude *
-				     sin(2 * M_PI * ((double) i / (double)
-						     vp->
-						     vibrato_phase_buffer_size)));
-    }
+    read(fd, &vp->vibrato_speed, sizeof(vp->vibrato_speed));
+    read(fd, &vp->vibrato_amplitude, sizeof(vp->vibrato_amplitude));
 
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -294,19 +296,14 @@ vibrato_create(struct effect *p)
 
     pvibrato = (struct vibrato_params *) p->params;
 
-    pvibrato->vibrato_amplitude = 5000.0 / MAX_SAMPLE;
-    pvibrato->vibrato_speed = MAX_VIBRATO_BUFSIZE * 0.2 / nchannels;
-    pvibrato->vibrato_phase_buffer_size = MAX_VIBRATO_BUFSIZE;
+    pvibrato->vibrato_amplitude = 0.5; /* 0 .. 1 */
+    pvibrato->vibrato_speed = 0.200;   /* seconds */
 
-    pvibrato->phase_buffer =
-	(DSP_SAMPLE *) malloc(MAX_VIBRATO_BUFSIZE * sizeof(DSP_SAMPLE));
+    pvibrato->phase_buffer = calloc(MAX_VIBRATO_BUFSIZE, sizeof(DSP_SAMPLE));
     pvibrato->vibrato_phase = 0;
 
-    for (i = 0; i < pvibrato->vibrato_phase_buffer_size; i++) {
-	pvibrato->phase_buffer[i] = (MAX_SAMPLE *
-					   sin(2 * M_PI * ((double)
-							   i / (double)
-							   pvibrato->
-							   vibrato_phase_buffer_size)));
+    for (i = 0; i < MAX_VIBRATO_BUFSIZE; i++) {
+	pvibrato->phase_buffer[i] = MAX_SAMPLE *
+	   sin(2 * M_PI * i / MAX_VIBRATO_BUFSIZE);
     }
 }

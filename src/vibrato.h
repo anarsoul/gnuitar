@@ -25,15 +25,13 @@
 
 #include "pump.h"
 
-#define MAX_VIBRATO_BUFSIZE MAX_SAMPLE_RATE*MAX_CHANNELS
-#define VIBRATO_THRESHOLD 1500
+#define MAX_VIBRATO_BUFSIZE 16384
 
 extern void     vibrato_create(struct effect *);
 
 struct vibrato_params {
-    float           vibrato_amplitude;
-    int             vibrato_speed,
-                    vibrato_phase_buffer_size,
+    float           vibrato_amplitude,
+       		    vibrato_speed,
                     vibrato_phase;
     DSP_SAMPLE     *phase_buffer;
 };
