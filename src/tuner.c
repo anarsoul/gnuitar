@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.2  2005/08/08 12:02:58  fonin
+ * Fixed C++ coding style which did not work on pure C
+ *
  * Revision 1.1  2005/08/07 12:53:42  alankila
  * - new tuner plugin / effect
  * - some gcc -Wall shutups
@@ -215,6 +218,9 @@ tuner_filter(struct effect *p, struct data_block *db)
     double power = 0;
     double good_loop_len = 0;
     double good_loop_len_n = 0;
+    double max_diff = 0;
+    double max_tmp2 = 0;
+    double freq = 0;
     
     i = db->len;
     s = db->data;
@@ -243,9 +249,9 @@ tuner_filter(struct effect *p, struct data_block *db)
  
     /* don't try to analyse too quiet a signal. */
     if (power < 900) {
-	/* set "no measurement" state */
-	params->freq = 0;
-	return;
+        /* set "no measurement" state */
+        params->freq = 0;
+        return;
     }
     
     /* now look for similarities in the history buffer.
@@ -256,47 +262,48 @@ tuner_filter(struct effect *p, struct data_block *db)
     /* 128 is semirandomly chosen. Higher values would work, too, but I want
      * the loop to have a good chance of finding a match. There shouldn't be
      * any more noise, and the weighing at end should keep precision good. */
-    double max_diff = power * COMPARE_LEN / 128.0;
+    max_diff = power * COMPARE_LEN / 128.0;
     /* this value must be much higher or we give up too early on noisy signal */
-    double max_tmp2 = power / 3.0;
+    max_tmp2 = power / 3.0;
     loop_len = sample_rate / MAX_HZ - 1;
   NEXT_SEARCH:
     while (++loop_len < HISTORY_SIZE - COMPARE_LEN) {
-	double diff = 0;
-	for (i = 0; i < COMPARE_LEN; i += 1) {
-	    DSP_SAMPLE tmp = params->history[index+i] - params->history[(index+i+loop_len) % HISTORY_SIZE];
-	    double tmp2 = tmp * tmp;
-	    diff += tmp2;
-	    /* give up as soon as possible */
-	    if (diff > max_diff || tmp2 > max_tmp2) {
-		/* exit when it looks like the values are getting worse */
-		if (good_loop_len_n != 0 && i < (int) (COMPARE_LEN * 0.98))
-		    goto END_SEARCH;
-		else
-		    goto NEXT_SEARCH;
-	    }
-	}
-	/* weigh results by goodness of match */
-	double weight = 1 - diff / max_diff + 0.001; /* guard against 0 */
-	weight = weight * weight;
-	good_loop_len   += loop_len * weight;
-	good_loop_len_n += weight;
+        double diff = 0;
+        double weight = 0;
+        for (i = 0; i < COMPARE_LEN; i += 1) {
+            DSP_SAMPLE tmp = params->history[index+i] - params->history[(index+i+loop_len) % HISTORY_SIZE];
+            double tmp2 = tmp * tmp;
+            diff += tmp2;
+            /* give up as soon as possible */
+            if (diff > max_diff || tmp2 > max_tmp2) {
+    	        /* exit when it looks like the values are getting worse */
+	        if (good_loop_len_n != 0 && i < (int) (COMPARE_LEN * 0.98))
+	            goto END_SEARCH;
+	        else
+	            goto NEXT_SEARCH;
+            }
+        }
+        /* weigh results by goodness of match */
+        weight = 1 - diff / max_diff + 0.001; /* guard against 0 */
+        weight = weight * weight;
+        good_loop_len   += loop_len * weight;
+        good_loop_len_n += weight;
     }
   END_SEARCH:
 
     /* did we find any? */
     if (good_loop_len_n == 0)
-	return;
+        return;
     
     /* average loop len; hopefully better than any of the discrete values */
     good_loop_len /= good_loop_len_n;
 
     /* If we are reinitializing, prefill the history to improve the time
      * it takes to get a valid median */
-    double freq = sample_rate / good_loop_len;
+    freq = sample_rate / good_loop_len;
     if (params->freq == 0) {
 	for (i = 0; i < FREQ_SIZE; i += 1) {
-	    params->freq_history[i] = freq;
+            params->freq_history[i] = freq;
 	}
 	params->freq = freq;
     }
