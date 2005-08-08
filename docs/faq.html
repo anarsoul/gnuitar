@@ -6,7 +6,9 @@
 <br>
 <b>Q:</b> Program does not work; it produces some error message 
    like "Cannot open input/output sound device"<br>
-<b>A:</b> Make sure your sound card driver is installed properly. Also make sure
+<b>A:</b> First of all, check permissions on /dev/dsp - you should be
+   allowed to read and write it.
+   <br>Make sure your sound card driver is installed properly. Also make sure
    that your sound card is full-duplex, and full-duplex mode is supported
    by the driver.<br>
    Another reason may be that your sound card does not support

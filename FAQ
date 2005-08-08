@@ -1,6 +1,8 @@
 Q: Program does not work; it produces some error message 
    like "Cannot open input/output sound device"
-A: Make sure your sound card driver is installed properly. Also make sure
+A: First of all, check permissions on /dev/dsp - you should be
+   allowed to read and write it.
+   Make sure your sound card driver is installed properly. Also make sure
    that your sound card is full-duplex, and full-duplex mode is supported
    by the driver.
    Another reason may be that your sound card does not support
