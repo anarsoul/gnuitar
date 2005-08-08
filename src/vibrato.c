@@ -1,6 +1,6 @@
 /*
  * GNUitar
- * Vibrato effect
+ * Tremolo effect
  * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/08/08 18:34:45  alankila
+ * - rename effects:
+ *   * vibrato -> tremolo
+ *   * tremolo -> vibrato
+ *   * distort2 -> overdrive
+ *
  * Revision 1.14  2005/08/08 17:26:19  alankila
  * - fix vibrato to not do any snapping sounds any more.
  * - correct fubared _load() and _save() functions
@@ -193,7 +199,7 @@ vibrato_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Vibrato"));
+    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Tremolo"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);

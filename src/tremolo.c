@@ -1,6 +1,6 @@
 /*
  * GNUitar
- * Tremolo effect
+ * Vibrato effect
  * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/08/08 18:34:45  alankila
+ * - rename effects:
+ *   * vibrato -> tremolo
+ *   * tremolo -> vibrato
+ *   * distort2 -> overdrive
+ *
  * Revision 1.11  2004/08/10 15:21:16  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -192,7 +198,7 @@ tremolo_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Tremolo"));
+    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Vibrato"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);

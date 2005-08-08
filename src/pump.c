@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2005/08/08 18:34:45  alankila
+ * - rename effects:
+ *   * vibrato -> tremolo
+ *   * tremolo -> vibrato
+ *   * distort2 -> overdrive
+ *
  * Revision 1.19  2005/08/07 12:53:42  alankila
  * - new tuner plugin / effect
  * - some gcc -Wall shutups
@@ -176,18 +182,19 @@ pump_sample(DSP_SAMPLE *s, int size)
     return 0;
 }
 
+/* note that vibrato & tremolo effects are swapped */
 struct effect_creator effect_list[] = {
     {"autowah", autowah_create},
     {"distort", distort_create},
     {"delay", delay_create},
     {"reverb", reverb_create},
-    {"vibrato", vibrato_create},
+    {"tremolo", vibrato_create},
     {"chorus", chorus_create},
     {"echo", echo_create},
     {"phasor", phasor_create},
-    {"tremolo", tremolo_create},
+    {"vibrato", tremolo_create},
     {"sustain", sustain_create},
-    {"distort2", distort2_create},
+    {"overdrive", distort2_create},
     {"noise gate", noise_create},
     {"eq bank", eqbank_create},
     {"tuner", tuner_create},
