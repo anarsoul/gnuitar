@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/08/09 00:50:22  alankila
+ * - rename window to "Overdrive"
+ *
  * Revision 1.17  2005/08/09 00:16:10  alankila
  * - make mUt tunable, call it Clip
  * - add some safeguards for Newton convergence and sanity checks for result
@@ -302,7 +305,7 @@ distort2_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     gtk_window_set_title(GTK_WINDOW(p->control),
-			 (gchar *) ("Distortion 2"));
+			 (gchar *) ("Overdrive"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
