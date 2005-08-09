@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/08/09 00:16:10  alankila
+ * - make mUt tunable, call it Clip
+ * - add some safeguards for Newton convergence and sanity checks for result
+ *
  * Revision 1.16  2005/08/08 12:02:11  fonin
  * include float.h on windows
  *
@@ -135,6 +139,13 @@ update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 }
 
 void
+update_distort2_mUt(GtkAdjustment * adj, struct distort2_params *params)
+{
+    /* original parameter was 30e-3 */
+    params->mUt = (10.0 + adj->value / 3) * 1e-3;
+}
+
+void
 update_distort2_treble(GtkAdjustment * adj, struct distort2_params *params)
 {
     params->noisegate = (int) adj->value;
@@ -168,6 +179,10 @@ distort2_init(struct effect *p)
     GtkWidget      *drive_label;
     GtkObject      *adj_drive;
 
+    GtkWidget      *mUt;
+    GtkWidget      *mUt_label;
+    GtkObject      *adj_mUt;
+    
     GtkWidget      *treble;
     GtkWidget      *treble_label;
     GtkObject      *adj_treble;
@@ -206,7 +221,7 @@ distort2_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_distort2_drive), pdistort);
     drive = gtk_vscale_new(GTK_ADJUSTMENT(adj_drive));
 #ifdef HAVE_GTK2
-    gtk_widget_set_size_request(GTK_WIDGET(drive),0,100);
+    gtk_widget_set_size_request(GTK_WIDGET(drive),50,100);
 #endif
 
     gtk_table_attach(GTK_TABLE(parmTable), drive, 0, 1, 1, 2,
@@ -215,6 +230,29 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
+    adj_mUt = gtk_adjustment_new((pdistort->mUt / 1e-3 - 10.0) * 3,
+				 0.0, 100.0, 1.0, 5.0, 0);
+    mUt_label = gtk_label_new("Clip\n%");
+    gtk_label_set_justify(GTK_LABEL(mUt_label), GTK_JUSTIFY_CENTER);
+    gtk_table_attach(GTK_TABLE(parmTable), mUt_label, 1, 2, 0, 1,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL |
+					GTK_SHRINK), 0, 0);
+
+    gtk_signal_connect(GTK_OBJECT(adj_mUt), "value_changed",
+		       GTK_SIGNAL_FUNC(update_distort2_mUt), pdistort);
+    mUt = gtk_vscale_new(GTK_ADJUSTMENT(adj_mUt));
+#ifdef HAVE_GTK2
+    gtk_widget_set_size_request(GTK_WIDGET(mUt), 50, 100);
+#endif
+    gtk_table_attach(GTK_TABLE(parmTable), mUt, 1, 2, 1, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK), 0, 0);
+
+    
     adj_treble = gtk_adjustment_new(pdistort->noisegate,
 				   1000.0, 8000.0, 1, 1, 0);
     treble_label = gtk_label_new("Treble\nHz");
@@ -228,7 +266,7 @@ distort2_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_distort2_treble), pdistort);
     treble = gtk_vscale_new(GTK_ADJUSTMENT(adj_treble));
 #ifdef HAVE_GTK2
-    gtk_widget_set_size_request(GTK_WIDGET(treble),0,100);
+    gtk_widget_set_size_request(GTK_WIDGET(treble),50,100);
 #endif
 
     gtk_table_attach(GTK_TABLE(parmTable), treble, 2, 3, 1, 2,
@@ -273,17 +311,17 @@ distort2_init(struct effect *p)
 void
 distort2_filter(struct effect *p, struct data_block *db)
 {
-#define mUt				  (21*1e-3)
 #define Is				 (10*1e-12)
 
-    int			i,count;
+    int			i,count,bailout;
     int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp;
-    static double	x,y,x1,f,df,dx,e1,e2;
+    static double	x,y,x1,f,df,dx,e1,e2,mUt;
     static double upsample [UPSAMPLE];
 #define DRIVE (dp->r2)
     dp = (struct distort2_params *) p->params;
+    mUt = dp->mUt;
     count = db->len;
     s = db->data;
 
@@ -331,6 +369,8 @@ distort2_filter(struct effect *p, struct data_block *db)
 
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
+            /* limit iterations if the algorithm fails to converge */
+            bailout = 10;
 	    do {
 		/* f(y) = 0 , y= ? */
 		e1 = exp ( (x-y) / mUt );  e2 = 1.0 / e1;
@@ -347,13 +387,17 @@ distort2_filter(struct effect *p, struct data_block *db)
 		dx =f/df;
 		y-=dx;
 	    }
-	    while (fabs(dx) > DIST2_DOWNSCALE);
+	    while (fabs(dx) > DIST2_DOWNSCALE && --bailout);
 	    /* when dx gets very small, we found a solution. */
 
 	    /* we can get NaN after all, let's check for this */
 	    if(isnan(y))
                 y=0.0;
-
+            if (y > 1.0)
+                y = 1.0;
+            if (y < -1.0)
+                y = -1.0;
+            
 	    dp->last[curr_channel] = y;
 	    y = doBiquad( y, &dp->cheb, curr_channel);
 	    y = doBiquad( y, &dp->cheb1, curr_channel);
@@ -401,6 +445,7 @@ distort2_save(struct effect *p, int fd)
     ap = (struct distort2_params *) p->params;
 
     write(fd, &ap->r2, sizeof(ap->r2));
+    write(fd, &ap->mUt, sizeof(ap->mUt));
     write(fd, &ap->noise, sizeof(ap->noise));
     write(fd, &ap->treble, sizeof(ap->treble));
 }
@@ -413,6 +458,7 @@ distort2_load(struct effect *p, int fd)
     ap = (struct distort2_params *) p->params;
 
     read(fd, &ap->r2, sizeof(ap->r2));
+    read(fd, &ap->mUt, sizeof(ap->mUt));
     read(fd, &ap->noise, sizeof(ap->noise));
     read(fd, &ap->treble, sizeof(ap->treble));
     if (p->toggle == 0) {
@@ -443,6 +489,7 @@ distort2_create(struct effect *p)
     p->proc_done = distort2_done;
 
     ap->r2 = 520;
+    ap->mUt = (10.0 + 50.0 / 3) * 1e-3;
     ap->noisegate = 7000;
     ap->treble = 1;
 

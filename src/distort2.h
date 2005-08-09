@@ -31,6 +31,7 @@ extern void     distort2_create(struct effect *);
 
 struct distort2_params {
     int         r2;
+    double      mUt;
     int		noisegate;
     int		treble;
     struct filter_data noise;
