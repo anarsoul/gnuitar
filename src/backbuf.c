@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2005/08/10 18:37:54  alankila
+ * - add function for fetching interpolated samples
+ *
  * Revision 1.5  2003/02/03 11:39:25  fonin
  * Copyright year changed.
  *
@@ -66,13 +69,33 @@ backbuff_add(struct backBuf *b, BUF_TYPE d)
     b->storage[b->curpos] = d;
 }
 
+/* XXX optimize this a bit */
 BUF_TYPE
-backbuff_get(struct backBuf *b, unsigned int Delay)
+backbuff_get_interpolated(struct backBuf *b, double delay)
+{
+    BUF_TYPE x, x1, x2;
+    unsigned int delay1 = delay;
+    unsigned int delay2 = delay + 1;
+    
+    if (delay2 == b->nstor)
+        delay2 = 0;
+    
+    x1 = backbuff_get(b, delay1);
+    x2 = backbuff_get(b, delay2);
+
+    delay = delay - delay1;
+    x = x1 * (1 - delay) + x2 * delay;
+    
+    return x;
+}
+
+BUF_TYPE
+backbuff_get(struct backBuf *b, unsigned int delay)
 {
     int             getpos;
-    assert(Delay < b->nstor);
+    assert(delay < b->nstor);
     getpos = (int) b->curpos;
-    getpos -= Delay;
+    getpos -= delay;
     if (getpos < 0)
 	getpos += b->nstor;
 
