@@ -20,6 +20,12 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.10  2005/08/10 11:28:14  alankila
+ * - redesigned eqbank UI. This change may be a bit early as UI changes are
+ *   to be postponed to 0.4.0, but the old one was simply too gruesome, imo
+ * - removed the use of snprintf instead of sprintf. There's no point because
+ *   user can't control those values.
+ *
  * Revision 1.9  2005/08/10 11:06:26  alankila
  * - sync to biquad interface
  * - change storage types of boosts and volume to double to keep fractions
@@ -155,16 +161,12 @@ eqbank_init(struct effect *p)
     Hzlabel = gtk_label_new("Frequency (Hz)");
     Dblabel = gtk_label_new("Boost (dB)");
 
-    gtk_table_attach(GTK_TABLE(parmTable), Hzlabel, 0, 1, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-    gtk_table_attach(GTK_TABLE(parmTable), Dblabel, 0, 1, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+    gtk_table_attach(GTK_TABLE(parmTable), Hzlabel, 1, FB_NB, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 0, 0);
+    gtk_table_attach(GTK_TABLE(parmTable), Dblabel, 0, 1, 0, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 0, 0);
     for (i = 0; i < FB_NB; i++) {
 	adj_boost[i] = gtk_adjustment_new(peq->boosts[i],
 					  FB_MIN, FB_MAX, 1.0, 5.0, 0.0);
@@ -179,35 +181,33 @@ eqbank_init(struct effect *p)
 	gtk_signal_connect(GTK_OBJECT(adj_boost[i]), "value_changed",
 			   GTK_SIGNAL_FUNC(update_eqbank_eq),
 			   (void *) &sl_wrappers[i]);
-	gtk_table_attach(GTK_TABLE(parmTable), boost[i], i + 1, i + 2, 1,
-			 2,
+	gtk_table_attach(GTK_TABLE(parmTable), boost[i], i + 1, i + 2, 0,
+			 1,
 			 __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					    GTK_SHRINK),
 			 __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					    GTK_SHRINK), 3, 3);
-
-#ifndef _WIN32
-	snprintf(s, 6, "%i", fb_cf[i]);
-#else
-	sprintf(s, "%i", fb_cf[i]);
-#endif
-	/* Other function on other compilers ? */
+        
+        if (fb_cf[i] < 1000) {
+            sprintf(s, "%i", fb_cf[i]);
+        } else if (fb_cf[i] % 1000 == 0) {
+            sprintf(s, "%ik", fb_cf[i] / 1000);
+        } else {
+            sprintf(s, "%.1fk", fb_cf[i] / 1000.0);
+        }
+	
+        /* Other function on other compilers ? */
 	boost_label[i] = gtk_label_new(s);
 	gtk_table_attach(GTK_TABLE(parmTable), boost_label[i], i + 1,
-			 i + 2, 0, 1,
-			 __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					    GTK_SHRINK),
-			 __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					    GTK_SHRINK), 3, 3);
+			 i + 2, 1, 2,
+			 __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
+			 __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 3, 3);
 
     }
-    Olabel = gtk_label_new("Output\n Volume (dB)");
-    gtk_table_attach(GTK_TABLE(parmTable), Olabel, FB_NB + 1, FB_NB + 2, 0,
-		     1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 3, 3);
+    Olabel = gtk_label_new("Master");
+    gtk_table_attach(GTK_TABLE(parmTable), Olabel, FB_NB + 1, FB_NB + 2, 1, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 3, 3);
     adj_output = gtk_adjustment_new(peq->volume, -30, 30, 1.0, 5.0, 0.0);
     output = gtk_vscale_new(GTK_ADJUSTMENT(adj_output));
 #ifdef HAVE_GTK2
@@ -217,8 +217,7 @@ eqbank_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(adj_output), "value_changed",
 		       GTK_SIGNAL_FUNC(update_eqbank_volume),
 		       (void *) peq);
-    gtk_table_attach(GTK_TABLE(parmTable), output, FB_NB + 1, FB_NB + 2, 1,
-		     2,
+    gtk_table_attach(GTK_TABLE(parmTable), output, FB_NB + 1, FB_NB + 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -228,12 +227,9 @@ eqbank_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_eqbank), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, FB_NB >> 1,
-		     (FB_NB >> 1) + 1, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 0, 0);
 
     if (p->toggle == 1) {
 	p->toggle = 0;
