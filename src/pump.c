@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/08/10 17:52:40  alankila
+ * - don't test foo < 0 for unsigned
+ *
  * Revision 1.21  2005/08/10 10:54:39  alankila
  * - add output VU meter. The scale is logarithmic, resolves down to -96 dB
  *   although it's somewhat wasteful at the low end.
@@ -423,7 +426,7 @@ load_pump(const char *fname)
 
     n = 0;
     while (read(fd, &effect_tag, sizeof(unsigned short)) > 0) {
-	if(effect_tag < 0 || effect_tag > EFFECT_AMOUNT) {
+	if (effect_tag > EFFECT_AMOUNT) {
             fprintf(stderr,"\nInvalid effect %i, load finished",effect_tag);
             break;
         }
