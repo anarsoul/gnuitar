@@ -20,6 +20,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.4  2005/08/10 11:06:26  alankila
+ * - sync to biquad interface
+ * - change storage types of boosts and volume to double to keep fractions
+ * - use sizeof(params->foo) instead of hardcoded sizes
+ *
  * Revision 1.3  2004/10/21 11:16:26  dexterus
  * Made to work with new biquad.c version (1.3)
  * Overall functional
@@ -42,9 +47,8 @@
 extern void     eqbank_create(struct effect *);
 
 struct eqbank_params {
-    int            *boosts;
-    int             volume;
-    float           ocoeff;	/* contant to multiply with for volume */
+    double          *boosts;
+    double          volume;
     struct Biquad  *filters;
 };
 

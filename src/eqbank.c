@@ -20,6 +20,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.9  2005/08/10 11:06:26  alankila
+ * - sync to biquad interface
+ * - change storage types of boosts and volume to double to keep fractions
+ * - use sizeof(params->foo) instead of hardcoded sizes
+ *
  * Revision 1.8  2005/08/07 19:38:24  alankila
  * - symmetrize Volume range from -30 to +30 and set individual gains
  *   from -9.9 to +9.9 (only 2 digits required to display, not 3 as with 10.0)
@@ -65,7 +70,7 @@
  */
 
 const int fb_cf[FB_NB] =
-		{40,100,200,320,640,1000,1600,2200,3000,4000,6000,8000,12000,16000};
+    {40,100,200,320,640,1000,1600,2200,3000,4000,6000,8000,12000,16000};
 /* Array with the bandwidths of each filter in Hertz */
 const int fb_bw[FB_NB] =
     {30,120,160,320,640,800,1200,1200,1400,1800,2600,4000,6000,8000};
@@ -93,16 +98,15 @@ struct slider_wrapper {
 void
 update_eqbank_eq(GtkAdjustment * adj, struct slider_wrapper *p)
 {
-    p->par->boosts[p->slider_id] = (int) adj->value;
-    SetEqBiquad(sample_rate, fb_cf[p->slider_id], fb_bw[p->slider_id],
-		(int) adj->value, &p->par->filters[p->slider_id]);
+    p->par->boosts[p->slider_id] = adj->value;
+    set_peq_biquad(sample_rate, fb_cf[p->slider_id], fb_bw[p->slider_id],
+		   adj->value, &p->par->filters[p->slider_id]);
 }
 
 void
 update_eqbank_volume(GtkAdjustment * adj, struct eqbank_params *p)
 {
     p->volume = adj->value;
-    p->ocoeff = pow(10, p->volume / 20.0);
 }
 
 void
@@ -252,7 +256,7 @@ eqbank_filter(struct effect *p, struct data_block *db)
     DSP_SAMPLE         *s;
 
     struct eqbank_params *ep;
-    double		  t;
+    double		  t, ocoeff;
     int			  cchannel=0;
 
     ep = p->params;
@@ -260,11 +264,12 @@ eqbank_filter(struct effect *p, struct data_block *db)
     count = db->len;
     s = db->data;
 
+    ocoeff = pow(10, ep->volume / 20.0);
     while (count) {
 	t = *s;
 	for (i = 0; i < FB_NB; i++)
-	    t = doBiquad(t, &ep->filters[i], cchannel);
-	t *= ep->ocoeff;
+	    t = do_biquad(t, &ep->filters[i], cchannel);
+	t *= ocoeff;
 #ifdef CLIP_EVERYWHERE
 	if (t > MAX_SAMPLE)
 	    t = MAX_SAMPLE;
@@ -289,7 +294,7 @@ eqbank_done(struct effect *p)
     ep = (struct eqbank_params *) p->params;
 	
     for (i = 0; i < FB_NB; i++) 
-    	free( ep->filters[i].mem);
+    	free(ep->filters[i].mem);
 
     free(ep->filters);
     free(ep->boosts);
@@ -308,8 +313,8 @@ eqbank_save(struct effect *p, int fd)
 
     ep = (struct eqbank_params *) p->params;
 
-    write(fd, ep->boosts, sizeof(int) * FB_NB);
-    write(fd, &ep->volume, sizeof(int));
+    write(fd, ep->boosts,  sizeof(ep->boosts[0]) * FB_NB);
+    write(fd, &ep->volume, sizeof(ep->volume));
 
 }
 
@@ -320,18 +325,11 @@ eqbank_load(struct effect *p, int fd)
     int             i;
 
     ep = (struct eqbank_params *) p->params;
-    read(fd, ep->boosts, sizeof(int) * FB_NB);
-    read(fd, &ep->volume, sizeof(int));
+    read(fd, ep->boosts,  sizeof(ep->boosts[0]) * FB_NB);
+    read(fd, &ep->volume, sizeof(ep->volume));
     for (i = 0; i < FB_NB; i++) {
-        ep->filters[i].a0=0;
-        ep->filters[i].a1=0;
-        ep->filters[i].a2=0;
-        ep->filters[i].b1=0;
-        ep->filters[i].b2=0;
-	SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], ep->boosts[i], &ep->filters[i]);
+	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], ep->boosts[i], &ep->filters[i]);
     }
-
-    ep->ocoeff = pow(10, ep->volume / 20.0);
 
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -355,19 +353,15 @@ eqbank_create(struct effect *p)
     p->id = EQBANK;
     p->proc_done = eqbank_done;
 
-    p->params =
-	(struct eqbank_params *) malloc(sizeof(struct eqbank_params));
-    peq = (struct eqbank_params *) p->params;
-    peq->filters = (struct Biquad *) malloc(sizeof(struct Biquad) * FB_NB );
-    peq->boosts = (int *) malloc(sizeof(int) * FB_NB);
+    p->params = calloc(1, sizeof(struct eqbank_params));
+    peq = p->params;
+    peq->filters = calloc(FB_NB, sizeof(peq->filters[0]));
+    peq->boosts  = calloc(FB_NB, sizeof(peq->boosts[0]));
     for (i = 0; i < FB_NB; i++) 
     {
-    	memset((void *) &peq->filters[i], 0, sizeof(struct Biquad));
-    	peq->filters[i].mem = (double*) malloc( (nchannels * sizeof (double)) << 2);
-    	memset((void *) peq->filters[i].mem, 0, (nchannels * sizeof (double)) << 2);
-	SetEqBiquad(sample_rate, fb_cf[i], fb_bw[i], 0, &peq->filters[i]);
+    	peq->filters[i].mem = calloc(nchannels, sizeof(double) * 4);
 	peq->boosts[i] = 0;
+	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], peq->boosts[i], &peq->filters[i]);
     }
-    peq->ocoeff = 1;
     peq->volume=0;
 }
