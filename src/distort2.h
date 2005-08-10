@@ -25,7 +25,7 @@
 
 #include "pump.h"
 #include "rcfilter.h"
-#include "chebyshev.h"
+#include "biquad.h"
 
 extern void     distort2_create(struct effect *);
 
