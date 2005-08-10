@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/08/10 18:42:49  alankila
+ * - use interpolating backbuffer
+ * - vastly extend the precision of the sin lookup table
+ * - use the smoothly varying Ang instead of the discrete cp->ang to avoid
+ *   snapping sounds due to discontinuities at fragment edges
+ * - make dry % and wet % mixers do what they say
+ *
  * Revision 1.12  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -73,7 +80,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int             sinLookUp[360];
+int             sinLookUp[36000];
 short           isSinLookUp = 0;
 
 void
@@ -182,7 +189,7 @@ chorus_init(struct effect *p)
     adj_speed =
 	gtk_adjustment_new(sample_rate * 360 /
 			   (pchorus->speed * 1000 * nchannels), 1.0, 3500,
-			   0.1, 1.0, 1.0);
+			   0.1, 1.0, 0.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -207,7 +214,7 @@ chorus_init(struct effect *p)
 
 
     adj_depth =
-	gtk_adjustment_new(pchorus->depth * 2, 0.0, 101.0, 1.0, 1.0, 1.0);
+	gtk_adjustment_new(pchorus->depth * 2, 0.0, 100.0, 1.0, 1.0, 0.0);
     depth_label = gtk_label_new("Depth\n%");
     gtk_table_attach(GTK_TABLE(parmTable), depth_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -228,7 +235,7 @@ chorus_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     adj_wet =
-	gtk_adjustment_new(pchorus->wet / 2.56, 0.0, 101.0, 1.0, 1.0, 1.0);
+	gtk_adjustment_new(pchorus->wet / 2.56, 0.0, 100.0, 1.0, 1.0, 0.0);
     wet_label = gtk_label_new("Wet\n%");
     gtk_table_attach(GTK_TABLE(parmTable), wet_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -249,7 +256,7 @@ chorus_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     adj_dry =
-	gtk_adjustment_new(pchorus->dry / 2.56, 0.0, 101.0, 1.0, 1.0, 1.0);
+	gtk_adjustment_new(pchorus->dry / 2.56, 0.0, 100.0, 1.0, 1.0, 0.0);
     dry_label = gtk_label_new("Dry\n%");
     gtk_table_attach(GTK_TABLE(parmTable), dry_label, 7, 8, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -258,7 +265,7 @@ chorus_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
 
-    gtk_signal_connect(GTK_OBJECT(adj_wet), "value_changed",
+    gtk_signal_connect(GTK_OBJECT(adj_dry), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_dry), pchorus);
 
     dry = gtk_vscale_new(GTK_ADJUSTMENT(adj_dry));
@@ -270,8 +277,8 @@ chorus_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     adj_regen =
-	gtk_adjustment_new(pchorus->regen / 2.56, 0.0, 101.0, 1.0, 1.0,
-			   1.0);
+	gtk_adjustment_new(pchorus->regen / 2.56, 0.0, 100.0, 1.0, 1.0,
+			   0.0);
     regen_label = gtk_label_new("Regen\n%");
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 9, 10, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -331,7 +338,7 @@ chorus_filter(struct effect *p, struct data_block *db)
     struct chorus_params *cp;
     int             count;
     DSP_SAMPLE     *s;
-    int             dly = 0;
+    double          dly = 0;
     float           AngInc,
                     Ang;
     DSP_SAMPLE      tmp,
@@ -344,7 +351,6 @@ chorus_filter(struct effect *p, struct data_block *db)
     s = db->data;
     count = db->len;
 
-//#define MaxDly ((int)cp->depth * 8)
 #define MaxDly (cp->depth * 8)
     AngInc = cp->speed / 1000.0f;
     Ang = cp->ang;
@@ -358,20 +364,20 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tmp /= 256;
 	switch (cp->mode) {
 	case 0:		/* chorus */
-	    dly = MaxDly * (1024 + sinLookUp[(int) cp->ang]);
+	    dly = MaxDly * (32768 + sinLookUp[(int) (Ang * 100)]);
 	    break;
 	case 1:		/* flange */
-	    dly = 16 * MaxDly * (1024 + sinLookUp[(int) Ang] / 16);
+	    dly = 16 * MaxDly * (32768 + sinLookUp[(int) (Ang * 100)] / 16);
 	    break;
 	};
-	dly /= 2048;
+	dly /= 65536;
 	Ang += AngInc;
-	if (Ang >= 359.0f)
-	    Ang = 0.0f;
+	if (Ang > 360)
+	    Ang -= 360;
 	if (dly < 0)
 	    dly = 0;
 
-	tot = backbuff_get(cp->memory[currchannel], (unsigned int) dly);
+	tot = backbuff_get_interpolated(cp->memory[currchannel], dly);
 	tot *= cp->wet;
 	tot /= 256;
 	tot += tmp;
@@ -382,7 +388,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	    tot;
 #endif
 	rgn =
-	    (backbuff_get(cp->memory[currchannel], (unsigned int) dly) *
+	    (backbuff_get_interpolated(cp->memory[currchannel], dly) *
 	     cp->regen) / 256 + *s;
 #ifdef CLIP_EVERYWHERE
 	rgn =
@@ -432,10 +438,10 @@ initSinLookUp(void)
     if (isSinLookUp)
 	return;
     printf("\nInitializing sin lookup table");
-    for (i = 0; i < 360; i++) {
-	arg = ((float) i * M_PI) / 180.0f;
+    for (i = 0; i < 36000; i++) {
+	arg = i * M_PI / 180 / 100;
 	val = sin(arg);
-	sinLookUp[i] = (int) (val * 1024);
+	sinLookUp[i] = (int) (val * 32768);
     }
     isSinLookUp = 1;
 }
