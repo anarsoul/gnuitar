@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2005/08/10 11:02:28  alankila
+ * - sync to biquad interface
+ * - change scale factors in order to not clip in the effect
+ *
  * Revision 1.18  2005/08/09 00:50:22  alankila
  * - rename window to "Overdrive"
  *
@@ -123,7 +127,7 @@
 #define DIST2_DOWNSCALE	(1.0 / MAX_SAMPLE) 	/* Used to reduce the signal to */
 						/* the limits needed by the     */
 						/* simulation                   */
-#define DIST2_UPSCALE	(MAX_SAMPLE / 1.0)	/* And back to the normal range */
+#define DIST2_UPSCALE	(MAX_SAMPLE / 2.0)	/* And back to the normal range */
 /* taken as a funtion of MAX_SAMPLE because that is the reference for 
  * what the 'normal' signal should be */
 
@@ -396,14 +400,15 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    /* we can get NaN after all, let's check for this */
 	    if(isnan(y))
                 y=0.0;
-            if (y > 1.0)
-                y = 1.0;
-            if (y < -1.0)
-                y = -1.0;
+            /* the real limits are -1.0 to +1.0 but we allow for some headroom */
+            if (y > 3.0)
+                y = 3.0;
+            if (y < -3.0)
+                y = -3.0;
             
 	    dp->last[curr_channel] = y;
-	    y = doBiquad( y, &dp->cheb, curr_channel);
-	    y = doBiquad( y, &dp->cheb1, curr_channel);
+	    y = do_biquad( y, &dp->cheb, curr_channel);
+	    y = do_biquad( y, &dp->cheb1, curr_channel);
 	}
 
 	/* scale up from -1..1 range */
@@ -511,10 +516,10 @@ distort2_create(struct effect *p)
     for (i=0; i < nchannels; i++)
 	ap->last[i] = 0;
     ap->lastupsample = 0;
-    ap->cheb.mem = calloc(nchannels, sizeof (double) * 4);
+    ap->cheb.mem  = calloc(nchannels, sizeof (double) * 4);
     ap->cheb1.mem = calloc(nchannels, sizeof (double) * 4);
 
     /* 2 lowpass Chebyshev filters for downsampling */
-    CalcChebyshev2(sample_rate * UPSAMPLE, 12000, 1, 1, &ap->cheb);
-    CalcChebyshev2(sample_rate * UPSAMPLE, 5500, 1, 1, &ap->cheb1);
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE, 12000, 1, 1, &ap->cheb );
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE, 5500,  1, 1, &ap->cheb1);
 }
