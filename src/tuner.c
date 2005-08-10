@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.4  2005/08/10 17:55:11  alankila
+ * - migrate tuner to use the backbuff code
+ *
  * Revision 1.3  2005/08/08 16:30:59  alankila
  * - noise-reducing 4-tap FIR. This should kill signal fairly completely
  *   around 11 kHz.
@@ -215,7 +218,6 @@ tuner_filter(struct effect *p, struct data_block *db)
 {
     struct tuner_params *params;
     int i;
-    int index;
     int loop_len;
     DSP_SAMPLE *s;
     DSP_SAMPLE newval;
@@ -230,7 +232,6 @@ tuner_filter(struct effect *p, struct data_block *db)
     s = db->data;
     params = p->params;
 
-    index = params->index;
     while (i > 0) {
 	if (nchannels > 1) {
 	    /* mix stereo signal */
@@ -251,11 +252,8 @@ tuner_filter(struct effect *p, struct data_block *db)
 	newval = (params->oldval[3] + params->oldval[2] + params->oldval[1] + params->oldval[0]) / 4;
 	
 	power += newval * newval;
-	params->history[index++] = newval;
-	if (index == HISTORY_SIZE)
-	    index = 0;
+	backbuff_add(params->history, newval);
     }
-    params->index = index;
     power /= db->len;
     
     /* smoothed power of the signal */
@@ -285,7 +283,7 @@ tuner_filter(struct effect *p, struct data_block *db)
         double diff = 0;
         double weight = 0;
         for (i = 0; i < COMPARE_LEN; i += 1) {
-            DSP_SAMPLE tmp = params->history[(index+i) % HISTORY_SIZE] - params->history[(index+i+loop_len) % HISTORY_SIZE];
+            DSP_SAMPLE tmp = backbuff_get(params->history, i) - backbuff_get(params->history, i + loop_len);
             double tmp2 = tmp * tmp;
             diff += tmp2;
             /* give up as soon as possible */
@@ -353,6 +351,7 @@ void tuner_done_really(struct effect *p) {
     struct tuner_params *params;
     
     params = p->params;
+    backbuff_done(params->history);
     free(params->history);
     free(p->params);
     gtk_widget_destroy(p->control);
@@ -390,10 +389,8 @@ tuner_create(struct effect *p)
     p->params = calloc(1, sizeof(struct tuner_params));
     params = p->params;
     
-    /* could use history buffer code elsewhere instead */
-
-    params->history = calloc(HISTORY_SIZE, sizeof(params->history[0]));
-    params->index = 0;
+    params->history = calloc(1, sizeof(params->history));
+    backbuff_init(params->history, HISTORY_SIZE);
 
     params->freq = 0;
     params->freq_index = 0;

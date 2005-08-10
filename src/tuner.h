@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2005/08/10 17:55:11  alankila
+ * - migrate tuner to use the backbuff code
+ *
  * Revision 1.2  2005/08/08 16:30:59  alankila
  * - noise-reducing 4-tap FIR. This should kill signal fairly completely
  *   around 11 kHz.
@@ -37,6 +40,8 @@
 #ifndef _TUNER_H_
 #define _TUNER_H_ 1
 
+#include "backbuf.h"
+
 extern void     tuner_create(struct effect *);
 
 /* frequency measurements history buffer size */
@@ -45,8 +50,7 @@ extern void     tuner_create(struct effect *);
 /* data defined in order of progressive refinements */
 struct tuner_params {
     /* backlog of sample data */
-    DSP_SAMPLE	    *history;
-    int		    index;
+    struct backBuf  *history;
 
     /* signal processing helpers */
     double	    power;
