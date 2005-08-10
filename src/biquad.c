@@ -19,6 +19,15 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.7  2005/08/10 11:01:39  alankila
+ * - remove separate chebyshev.c, move the code into biquad.c
+ * - fix the copy in .h to agree with DoBiquad's implementation
+ * - rename functions:
+ *   * DoBiquad       -> do_biquad
+ *   * SetEqBiquad    -> set_peq_biquad
+ *   * CalcChebyshev2 -> set_chebyshev2_biquad
+ * - this change is followed by fixups in effects distort2 & eqbank
+ *
  * Revision 1.6  2005/08/07 12:42:05  alankila
  * Do not use << 2 because double can be wider than 4.
  * Better say what you mean.
@@ -46,13 +55,8 @@
 #   include "utils.h"
 #endif
 
-/*
- * Sampling rate, Center frequency, Bandwidth, Gain (decibels) Highest
- * frequency possible at 44100 Hz is around 5000, due to an overflow error
- * Will fix that 
- */
 void
-SetEqBiquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
+set_peq_biquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
 {
     double          k,
                     om,
@@ -70,14 +74,89 @@ SetEqBiquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
     f->b2 = -(1 - fi / k) / x;
 }
 
+void
+set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass,
+                    struct Biquad *f)
+{
+    double          x,
+                    y,
+                    z,
+                    c,
+                    v,
+                    t,
+                    r,
+                    om,
+                    m,
+                    x0,
+                    x1,
+                    x2,
+                    y1p,
+                    y2,
+                    k,
+                    d,
+                    tt,
+                    tt2;
+    // x=-cos(M_PI/4+M_PI/2);
+    // y=sin(M_PI/4+M_PI/2);
+    // c=-0.99915455413031497832540334286332;
+    // v=0.041111761828599317357934264608497;
+    c = -cos(M_PI / 4);
+    v = sin(M_PI / 4);
+    if (ripple > 0) {
+        t = 100.0 / (100.0 - ripple);
+        x = sqrt(t * t - 1);
+        t = 1 / x;
+        r = t + sqrt(t / x);
+        y = 0.5 * log(r + 1);
+        z = 0.5 * log(r - 1);
+        t = exp(z);
+        z = (t + 1 / t) / 2;
+        t = exp(y);
+        c *= (t - 1 / t) / 2 / z;
+        v *= (t + 1 / t) / 2 / z;
+    }
+    tt = 2 * tan(0.5);
+    tt2 = tt * tt;
+    om = 2 * M_PI * Fc / Fs;
+    m = c * c + v * v;
+    d = 4 - 4 * c * tt + m * tt2;
+    x0 = tt2 / d;
+    x1 = x0 * 2;
+    x2 = x0;
+    y1p = (8 - 2 * m * tt2) / d;
+    y2 = (-4 - 4 * c * tt - m * tt2) / d;
+    if (lowpass)
+        k = sin(0.5 - om / 2) / sin(0.5 + om / 2);
+    else
+        k = -cos(om / 2 + 0.5) / cos(om / 2 - 0.5);
+    d = 1 + k * (y1p - y2 * k);
+    f->a0 = (x0 - k * (x1 - x2 * k)) / d;
+    // coeff[1]=(k*(-2*(x0+x2)+x1*k)+x1)/d;
+    f->a1 = 2 * f->a0;
+    f->a2 = f->a0;
+    // coeff[2]=(k*(x0*k-x1)+x2)/d;
+    f->b1 = (k * (2 + y1p * k - 2 * y2) + y1p) / d;
+    f->b2 = (-k * (k + y1p) + y2) / d;
+    if (!lowpass) {
+        f->a1 = -f->a1;
+        f->b1 = -f->b1;
+        // t=(1-coeff[0]+coeff[1]-coeff[2])/(coeff[3]-coeff[4]);
+    }
+    // else
+    // t=(1-coeff[0]-coeff[1]-coeff[2])/(coeff[3]+coeff[4]);
+
+    // for (i=0;i<5;i++)
+    // coeff[i]*=t;
+}
+
 #if !defined(_MSC_VER)
 #if defined(__GNUC__)
 /* check if the compiler is not Visual C so we must declare the fuction here */
 __inline double
-doBiquad(double x, struct Biquad *f, int channel)
+do_biquad(double x, struct Biquad *f, int channel)
 #else
 double
-doBiquad(double x, struct Biquad *f, int channel)
+do_biquad(double x, struct Biquad *f, int channel)
 #endif
 {
     double          y,

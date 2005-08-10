@@ -246,9 +246,6 @@
 				RelativePath=".\src\biquad.c">
 			</File>
 			<File
-				RelativePath="src\chebyshev.c">
-			</File>
-			<File
 				RelativePath=".\src\chorus.c">
 			</File>
 			<File
@@ -317,9 +314,6 @@
 			</File>
 			<File
 				RelativePath=".\src\biquad.h">
-			</File>
-			<File
-				RelativePath="src\chebyshev.h">
 			</File>
 			<File
 				RelativePath=".\src\chorus.h">

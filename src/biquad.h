@@ -18,6 +18,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.6  2005/08/10 11:01:39  alankila
+ * - remove separate chebyshev.c, move the code into biquad.c
+ * - fix the copy in .h to agree with DoBiquad's implementation
+ * - rename functions:
+ *   * DoBiquad       -> do_biquad
+ *   * SetEqBiquad    -> set_peq_biquad
+ *   * CalcChebyshev2 -> set_chebyshev2_biquad
+ * - this change is followed by fixups in effects distort2 & eqbank
+ *
  * Revision 1.5  2005/08/07 12:42:04  alankila
  * Do not use << 2 because double can be wider than 4.
  * Better say what you mean.
@@ -55,8 +64,14 @@ struct Biquad {
 /*
  * Sampling rate, Center frequency, Bandwidth, Gain (decibels) 
  */
-extern void     SetEqBiquad(double Fs, double Fc, double BW, double G,
-			    struct Biquad *f);
+extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
+			       struct Biquad *f);
+
+/*
+ * Sampling rate, Center frequency, Ripple %, Lowpass?
+ */
+extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
+			              int lowpass, struct Biquad *f);
 
 /*
  * computes one sample ; because inline declared, this will be compiled in 
@@ -67,7 +82,7 @@ extern void     SetEqBiquad(double Fs, double Fc, double BW, double G,
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
 __inline double
-doBiquad(double x, struct Biquad *f, int channel)
+do_biquad(double x, struct Biquad *f, int channel)
 {				
 				 
     double          y,
@@ -75,6 +90,10 @@ doBiquad(double x, struct Biquad *f, int channel)
     mem = f->mem + (channel * sizeof(double));
     y = x * f->a0 + mem[0] * f->a1 + mem[1] * f->a2 + mem[2] * f->b1 +
 	mem[3] * f->b2;
+    if(isnan(y))
+	y=0;
+    if(isnan(x))
+	x=0;
     mem[1] = mem[0];
     mem[0] = x;
     mem[3] = mem[2];
@@ -82,10 +101,10 @@ doBiquad(double x, struct Biquad *f, int channel)
     return y;
 }
 #elif defined(__GNUC__)
-extern __inline double   doBiquad(double x, struct Biquad *f, int channel);
+extern __inline double do_biquad(double x, struct Biquad *f, int channel);
 #else
 /* otherwise declare a standard function */
-extern double   doBiquad(double x, struct Biquad *f, int channel);
+extern double do_biquad(double x, struct Biquad *f, int channel);
 #endif
 
 
