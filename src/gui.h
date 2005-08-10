@@ -50,6 +50,8 @@ gint            delete_event(GtkWidget * widget, GdkEvent * event,
 
 extern GtkWidget *processor;
 
+extern void set_vumeter_value(double peak, double power);
+
 #ifdef HAVE_GTK
 #  define MYGTK_TEXT(text) GTK_TEXT(text)
 #elif defined(HAVE_GTK2)

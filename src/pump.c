@@ -20,6 +20,18 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/08/10 10:54:39  alankila
+ * - add output VU meter. The scale is logarithmic, resolves down to -96 dB
+ *   although it's somewhat wasteful at the low end.
+ * - add bias elimination code -- what I want is just a long-term average
+ *   for estimating the bias. Right now it's a bad estimation of average but
+ *   I'll improve it later on.
+ * - the vu-meter background flashes red if clipping. (I couldn't make the
+ *   bar itself flash red, the colour is maybe not FG or something.)
+ * - add *experimental* noise reduction code. This code will be moved into
+ *   a separate NR effect later on. Right now it's useful for testing, and
+ *   should not perceptibly degrade the signal anyway.
+ *
  * Revision 1.20  2005/08/08 18:34:45  alankila
  * - rename effects:
  *   * vibrato -> tremolo
@@ -142,18 +154,91 @@ unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
+double bias[MAX_CHANNELS];
+
+void
+bias_elimination(struct data_block *db) {
+    int             i;
+    int             curr_channel = 0;
+    int             size = db->len;
+    DSP_SAMPLE      *s = db->data;
+    
+    for (i = 0; i < size; i += 1) {
+        bias[curr_channel] = (8191 * bias[curr_channel] + s[i]) / 8192;
+        s[i] -= bias[curr_channel];
+
+        if (nchannels > 1)
+            curr_channel = !curr_channel;
+    }
+}
+
+/* a practical maximum is 3. Above that you lose too much discant and
+ * it starts to sound like a big-speakered guitar amp... */
+#define NR_SIZE 2
+DSP_SAMPLE nr_last[MAX_CHANNELS][NR_SIZE];
+
+void
+noise_reduction(struct data_block *db) {
+    int             i, j;
+    int             curr_channel = 0;
+    int             size = db->len;
+    DSP_SAMPLE      *s = db->data;
+    double          tmp;
+
+    for (i = 0; i < size; i += 1) {
+        for (j = NR_SIZE; j > 0; j -= 1)
+            nr_last[curr_channel][j-1] = nr_last[curr_channel][j-2];
+        nr_last[curr_channel][0] = s[i];
+
+        tmp = 0;
+        for (j = 0; j < NR_SIZE; j += 1)
+            tmp += nr_last[curr_channel][j];
+        s[i] = tmp / NR_SIZE;
+        
+        if (nchannels > 1)
+            curr_channel = !curr_channel;
+    }
+}
+
+void
+vu_meter(struct data_block *db) {
+    int             i;
+    DSP_SAMPLE      sample, max_sample = 0;
+    double          peak, power = 0;
+    int             size = db->len;
+    DSP_SAMPLE      *s = db->data;
+    
+    for (i = 0; i < size; i += 1) {
+        sample = s[i];
+        power += sample * sample;
+        if (sample < 0)
+            sample = -sample;
+        if (sample > max_sample)
+            max_sample = sample;
+    }
+    /* energy per sample scaled down to 0.0 - 1.0 */
+    power = power / size / MAX_SAMPLE / MAX_SAMPLE;
+    peak = (double) max_sample / MAX_SAMPLE;
+    set_vumeter_value(peak, power);
+}
+    
 int
 pump_sample(DSP_SAMPLE *s, int size)
 {
     struct data_block db;
     int             i;
-
+    
     if (audio_lock)
 	return 0;
 
     db.data = s;
     db.len = size;
 
+    /* NR is enabled only experimentally until 
+     * the noise filter will have been implemented */
+    noise_reduction(&db);
+    bias_elimination(&db);
+ 
     /* no input, no output :-) to avoid extra calc. Optimized for noise gate,
      * when all input is zero.
      * This is the heuristics - since there is no the standard function
@@ -172,6 +257,8 @@ pump_sample(DSP_SAMPLE *s, int size)
 	effects[i]->proc_filter(effects[i], &db);
     }
 
+    vu_meter(&db);
+    
     /*
      * Writing track
      */
@@ -250,6 +337,10 @@ pump_start(int argc, char **argv)
 	effects[n]->proc_init(effects[n]);
 	n++;
     }
+
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        bias[i] = 0;
+    
     audio_lock = 0;
 }
 

@@ -20,6 +20,18 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/08/10 10:54:39  alankila
+ * - add output VU meter. The scale is logarithmic, resolves down to -96 dB
+ *   although it's somewhat wasteful at the low end.
+ * - add bias elimination code -- what I want is just a long-term average
+ *   for estimating the bias. Right now it's a bad estimation of average but
+ *   I'll improve it later on.
+ * - the vu-meter background flashes red if clipping. (I couldn't make the
+ *   bar itself flash red, the colour is maybe not FG or something.)
+ * - add *experimental* noise reduction code. This code will be moved into
+ *   a separate NR effect later on. Right now it's useful for testing, and
+ *   should not perceptibly degrade the signal anyway.
+ *
  * Revision 1.24  2005/04/26 13:38:05  fonin
  * Fixed help contents bug on Win2k
  *
@@ -121,6 +133,8 @@
 #include "tracker.h"
 #include "utils.h"
 
+#define VU_UPDATE_INTERVAL 20.0    /* ms */
+ 
 void            bank_start_save(GtkWidget * widget, gpointer data);
 void            bank_start_load(GtkWidget * widget, gpointer data);
 void            sample_dlg(GtkWidget * widget, gpointer data);
@@ -688,6 +702,49 @@ typedef struct SAMPLE_PARAMS {
     GtkWidget      *latency_label;
 } sample_params;
 
+double vumeter_peak = 0;
+double vumeter_power = 0;
+void set_vumeter_value(double peak, double power) {
+    /* accept peaks, decay exponentially otherwise */
+    if (peak > vumeter_peak)
+        vumeter_peak = peak;
+    else
+        vumeter_peak = (7 * vumeter_peak + peak) / 8;
+
+    vumeter_power = 7 * (vumeter_power + power) / 8;
+}
+
+gboolean
+timeout_update_vumeter(gpointer vumeter) {
+    GtkRcStyle *rc_style = NULL;
+    GdkColor color;
+    double power = 0.0;
+   
+    rc_style = gtk_rc_style_new();
+    if (vumeter_peak > 1.0) {
+
+        /* indicate distortion due to clipping */
+        color.red   = 65535;
+        color.green = 0;
+        color.blue  = 0;
+        
+        rc_style->bg[GTK_STATE_NORMAL] = color; 
+        rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG;
+    }
+    
+    if (vumeter_power != 0.0) {
+        /* every doubling in energy is ~ 3 dB more signal */
+        power = log(vumeter_power) / log(2) * 3;
+        /* 16 bits hold 96 dB resolution */
+        if (power < -96)
+            power = -96;
+        power = (power + 96) / 96;
+    }
+
+    gtk_progress_set_percentage(GTK_PROGRESS(vumeter), power);
+    return TRUE;
+}
+
 void
 update_latency_label(GtkWidget * widget, gpointer sparams)
 {
@@ -1001,6 +1058,7 @@ void
 init_gui(void)
 {
     GtkAccelGroup  *accel_group;
+    GtkWidget      *vumeter;
     int             i;
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
@@ -1147,6 +1205,10 @@ init_gui(void)
     gtk_tooltips_set_tip(tooltips,start,"This button starts/stops the sound processing.",NULL);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
 
+    vumeter = gtk_progress_bar_new();
+    /*
+    mastervol = gtk_adjustment_new();
+    */
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 3, 4,
@@ -1165,7 +1227,8 @@ init_gui(void)
     gtk_table_attach(GTK_TABLE(tbl), add, 4, 5, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), tracker, 0, 1, 5, 6,
-		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
+		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), vumeter, 1, 3, 5, 6, __GTKATTACHOPTIONS(GTK_FILL), __GTKATTACHOPTIONS(0), 2, 2);
 
     gtk_signal_connect(GTK_OBJECT(bank_add), "clicked",
 		       GTK_SIGNAL_FUNC(bank_add_pressed), NULL);
@@ -1189,6 +1252,8 @@ init_gui(void)
 		       GTK_SIGNAL_FUNC(selectrow_effects), NULL);
     gtk_widget_show_all(mainWnd);
 
+    g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter, vumeter);
+    
     /*
      * Attach icon to the window
      */
