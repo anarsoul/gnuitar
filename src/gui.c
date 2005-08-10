@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/08/10 12:09:36  alankila
+ * - oops; forgot couple of lines from last patch, so peak indication didn't
+ *   work!
+ *
  * Revision 1.25  2005/08/10 10:54:39  alankila
  * - add output VU meter. The scale is logarithmic, resolves down to -96 dB
  *   although it's somewhat wasteful at the low end.
@@ -731,16 +735,20 @@ timeout_update_vumeter(gpointer vumeter) {
         rc_style->bg[GTK_STATE_NORMAL] = color; 
         rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG;
     }
+    gtk_widget_modify_style(vumeter, rc_style);
+    gtk_rc_style_unref(rc_style);
     
     if (vumeter_power != 0.0) {
         /* every doubling in energy is ~ 3 dB more signal */
         power = log(vumeter_power) / log(2) * 3;
         /* 16 bits hold 96 dB resolution */
+        if (power > 0)
+            power = 0;
         if (power < -96)
             power = -96;
         power = (power + 96) / 96;
     }
-
+    
     gtk_progress_set_percentage(GTK_PROGRESS(vumeter), power);
     return TRUE;
 }
