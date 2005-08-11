@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/08/11 17:57:21  alankila
+ * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
+ *
  * Revision 1.12  2004/08/10 15:07:31  fonin
  * Support processing in float/int - type DSP_SAMPLE
  *
@@ -62,6 +65,7 @@
 
 #include "delay.h"
 #include "gui.h"
+#include <string.h>
 #include <stdlib.h>
 #ifndef _WIN32
 #    include <unistd.h>

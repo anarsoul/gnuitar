@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.11  2005/08/11 17:57:21  alankila
+ * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
+ *
  * Revision 1.10  2005/08/10 11:28:14  alankila
  * - redesigned eqbank UI. This change may be a bit early as UI changes are
  *   to be postponed to 0.4.0, but the old one was simply too gruesome, imo
@@ -82,6 +85,7 @@ const int fb_bw[FB_NB] =
     {30,120,160,320,640,800,1200,1200,1400,1800,2600,4000,6000,8000};
 
 
+#include <stdio.h>
 #include <stdlib.h>
 #ifndef _WIN32
 #    include <unistd.h>

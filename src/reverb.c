@@ -22,11 +22,11 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #ifndef _WIN32
 #    include <unistd.h>
 #else
 #    include <io.h>
-#    include <string.h>
 #endif
 #include "reverb.h"
 #include "gui.h"

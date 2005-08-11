@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/08/11 17:57:22  alankila
+ * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
+ *
  * Revision 1.24  2005/08/08 12:03:26  fonin
  * Fixed include sys/select.h which did not work on windows.
  *
@@ -101,6 +104,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #ifndef _WIN32
 #    include <sys/select.h>
 #    include <unistd.h>
@@ -112,7 +116,6 @@
 #else
 #    include <time.h>
 #    include <io.h>
-#    include <stdlib.h>
 #    include <windows.h>
 #    include <process.h>
 #    include <mmsystem.h>
@@ -238,6 +241,7 @@ audio_thread_start(void *V)
 	    fprintf(stderr, "Cannot write samples!\n");
 	}
     }
+    return NULL;
 #else
     MSG             msg;
     HRESULT         res;
@@ -591,7 +595,9 @@ serror(DWORD err, TCHAR * str)
 void
 close_sound(void)
 {
+#ifdef _WIN32
     int             i;
+#endif
 
     /*
      * pause sound 

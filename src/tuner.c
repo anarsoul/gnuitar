@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.5  2005/08/11 17:57:22  alankila
+ * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
+ *
  * Revision 1.4  2005/08/10 17:55:11  alankila
  * - migrate tuner to use the backbuff code
  *
@@ -80,6 +83,7 @@
 #include "pump.h"
 #include "tuner.h"
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifndef _WIN32
@@ -235,7 +239,9 @@ tuner_filter(struct effect *p, struct data_block *db)
     while (i > 0) {
 	if (nchannels > 1) {
 	    /* mix stereo signal */
-	    newval = (*s++ + *s++) / 2.0;
+	    newval  = *s++;
+	    newval += *s++;
+	    newval /= 2.0;
 	    i -= 2;
 	} else {
 	    newval = *s++;

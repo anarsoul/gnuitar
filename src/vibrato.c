@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/08/11 17:57:22  alankila
+ * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
+ *
  * Revision 1.15  2005/08/08 18:34:45  alankila
  * - rename effects:
  *   * vibrato -> tremolo
@@ -269,7 +272,6 @@ vibrato_save(struct effect *p, int fd)
 void
 vibrato_load(struct effect *p, int fd)
 {
-    int             i;
     struct vibrato_params *vp;
 
     vp = (struct vibrato_params *) p->params;

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/08/11 17:57:21  alankila
+ * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
+ *
  * Revision 1.26  2005/08/10 12:09:36  alankila
  * - oops; forgot couple of lines from last patch, so peak indication didn't
  *   work!
@@ -117,16 +120,18 @@
  */
 #include <gtk/gtk.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
+#include <string.h>
 #ifdef _WIN32
 #    include <io.h>
-#    include <stdio.h>
 #    include <ctype.h>
-#    include <string.h>
 #    include <windows.h>
 #    include <process.h>
 #    include "resource.h"
 #else
+#    include <libgen.h>
+#    include <math.h>
 #    include <unistd.h>
 #    include <pthread.h>
 #    include "gnuitar.xpm"
@@ -728,6 +733,7 @@ timeout_update_vumeter(gpointer vumeter) {
     if (vumeter_peak > 1.0) {
 
         /* indicate distortion due to clipping */
+	color.pixel = 0; /* unused */
         color.red   = 65535;
         color.green = 0;
         color.blue  = 0;

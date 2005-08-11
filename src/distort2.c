@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2005/08/11 17:57:21  alankila
+ * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
+ *
  * Revision 1.19  2005/08/10 11:02:28  alankila
  * - sync to biquad interface
  * - change scale factors in order to not clip in the effect
@@ -132,7 +135,7 @@
  * what the 'normal' signal should be */
 
 /* Check if the compiler is Visual C or GCC */
-#if defined(_MSC_VER) || defined(__GNUC__)
+#if defined(_MSC_VER)
 #   pragma intrinsic (exp,log)
 #endif
 
