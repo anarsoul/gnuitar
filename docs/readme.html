@@ -3,20 +3,19 @@
     <title>GNUitar - A Guitar processor software</title>
 </head>
 <body>
-<center><b>
-				GNUitar<br>
-			Guitar processor software
-</b>
-</center><br>
-(C) 2000-2005 Max V.Rudensky <a href=mailto:fonin at gnuitar dot com>&lt;fonin at gnuitar dot com&gt</a>
+<h1 style="text-align: center">
+			    <strong>GNUitar</strong><br>
+			    Guitar processor software
+</h1>
+<p>&copy; 2000-2005 Max V. Rudensky <a href=mailto:fonin at gnuitar dot com>&lt;fonin at gnuitar dot com&gt</a></p>
 
 <h1><a name=about>What is GNUitar ?</a></h1>
 
 <p>GNUitar is a real-time sound effects software that allows 
 you to use your computer as a guitar processor. It has GTK+ based 
 interface. It can be compiled on any flavor of UNIX that have
-GTK+ 1.2, Glib, pthreads and OSS sound driver. It also works on Windows.
-Program is inspired by 2 works:<ul>
+GTK+ 1.2, 2.0, Glib, pthreads and OSS sound driver. It also works on Windows.
+This program was inspired by two earlier works:<ul>
 <li>Ele 0.1 by Morris Slutsky<br>
 <a href=http://www-personal.umich.edu/~mslutsky/elepage/index.html target=top>
     http://www-personal.umich.edu/~mslutsky/elepage/index.html</a></li>
@@ -24,10 +23,12 @@ Program is inspired by 2 works:<ul>
 <a href=http://fly.srk.fer.hr/~mvlah/fx_processor.html target=top>http://fly.srk.fer.hr/~mvlah/fx_processor.html</a></li>
 </ul>
 GNUitar is free software and is distributed under GNU GPL license.
+</p>
 
 <p>GNUitar is pronounced like "GNU Guitar". English is not my native language,
-so when I invented this word I did not think how to pronounce it. Unless someone
-will got a better idea, for now let's pronounce it like this.
+so when I invented this word I did not think how it should be pronounced.
+Unless someone has a better idea, let's pronounce it like this for now.
+</p>
 
 <h1><a name=download>Download</a></h1>
 
@@ -38,7 +39,7 @@ will got a better idea, for now let's pronounce it like this.
 <h1><a name=requirements>Requirements</a></h1>
 
 <p>You will need:<ul>
-<li>GTK+ version 1.2.6 or better; also we support now GTK+ 2.x branch;
+<li>GTK+ versions 1.2.6 or better, or GTK+ 2.0 or better</li>
 <li>GLIB 1.2 or better</li>
 <li>POSIX threads on UNIX</li>
 <li>full-duplex sound card</li>
@@ -47,31 +48,30 @@ will got a better idea, for now let's pronounce it like this.
 
 <h1><a name=performance>Performance</a></h1>
 
-<p>GNUitar is a CPU-consuming program. Pentium/166 is sufficient
-to run GNUitar, Pentium II/300 is recommended, and on Pentium II/450
-it will work just fine.
-Real performance is very depend on your CPU/sound card/sound driver/OS
-combination. The best performance can be achieved on Linux,
-because of its great real-time features and advanced OSS sound drivers.
+<p>GNUitar should run on even low-end hardware. It has been reported to work
+on even a Pentium II / 300 MHz computer. However, some of the effects
+demand more CPU power, and probably ~1 GHz machine is required for
+running complicated effect setups.
+</p>
 
 <p>When running the program, make sure you close all unnecessary applications,
-to give more resources to it. Avoid anything that can cause disk I/O
-or CPU usage.
+to free more resourcess. Avoid anything that can cause lots of disk I/O
+or sudden bursts of CPU usage.</p>
 
 <p>GNUitar runs with increased priority; this may cause hang-ups
 and delayed system response on low-end machines. Therefore you
-should care to save all important data in other applications,
-before you launch GNUitar.
+should take care to save all important data in other applications,
+before you launch GNUitar. </p>
 
 <h2><a name=perf_unix>Performance - UNIX notes</a></h2>
 
-<p>GNUitar executable file should be setuid root to process sound with 
-real-time priority; otherwise you'll hear glitches and delays while 
-switching between windows. It switches to real user id as soon as 
-it set real-time priority to effect-processing thread, and before
-any GTK initializations are being performed, so it shouldn't break 
-security on your system.
-GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA !
+<p>GNUitar executable file should be setuid root to process sound using
+real-time priority class; otherwise you'll hear glitches and delays while 
+switching between windows. The program drops privileges as soon as the
+effect-processing thread has been started, even before any GTK+ initialization
+or command line handling, so it should be safe on any system.
+GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA!
+</p>
 
 <h2><a name=perf_windows>Performance - Windows notes</a></h2>
 
@@ -79,7 +79,9 @@ GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA !
 mostly because of its non-uniform drivers architecture. 
 GNUitar latency on Windows is much higher than on Linux. The real latency
 is very depend on sound board driver.
-<p>GNUitar for Windows has two playback methods:
+</p>
+
+<p>GNUitar for Windows has two playback methods:</p>
 <ul>
 <li>Playback via MME</li>
 <li>Playback via DirectSound</li>
@@ -88,6 +90,7 @@ is very depend on sound board driver.
 The second method requires DirectX to be installed and uses DirectSound
 for playback. The method can be switched from the sampling parameters dialog,
 by checking/unchecking the "Playback via DirectSound" checkbox.
+</p>
 <p>DirectSound playback shows the best results that are almost close to
 Linux performance. The MME playback exists for compatibility purposes,
 and for another reason. If a driver is not optimized for DirectSound,
@@ -95,22 +98,23 @@ Windows will automatically emulate DirectSound output using the MME devices.
 If a WDM driver is used (see below), DirectSound support is not implemented
 by the driver developer but by the operating system. MME playback support exists
 specially for this case, when the output via DirectSound is emulated by OS.
-
+</p>
 <h3>Windows Sound Drivers Overview</h3>
 <p>There are few kinds of sound drivers for Windows: old VXD (Win95/98),
 NT4-kernel style, and modern WDM drivers that were introduced in Windows 98/SE.
 AFAIK WDM drivers provide much lower latency. Therefore, avoid VXD drivers; 
 use modern WDM drivers instead, if possible.
-
+</p>
 <p>The difference in latency between two kinds of drivers is really noticeable:
 I had 100ms up to ~400ms on Pentium III/850/ISA AWE64/VXD/MME playback,
 and ~60ms on Pentium MMX/166/Yamaha OPL3/WDM/MME playback laptop.
 Try to start/stop sound few times, if the initial latency is bad.
-
+</p>
 <p>The kind of bus (PCI/ISA) of the sound card does not affect
 the latency very much, the deal is with OS and its architecture.
 So do not through away your old ISA Sound Blaster and replace it with
 modern sound card, first try it on Linux !
+</p>
 
 <h2><a name=latency_control>How To Control Latency</h2>
 <p>The latency can be controlled with a high degree from the GNUitar interface.
@@ -122,7 +126,9 @@ on low-end computers, to decrease the system load and number of buffer overruns
 (drops). The buffer overrun is the immediate result of the bad performance.
 Buffer overruns have a hearable effect of a scratches, sometimes
 periodic (ten overruns per second produce a 10 Hz tone).
+</p>
 <p>General notes on how to achieve the best performance:
+</p>
 <ul>
 <li>The lower is the sampling rate, the better is the latency. Drawback is
 the sound quality.</li>
@@ -142,7 +148,9 @@ increased priority.</li>
 
 <h1><a name=install>Installation</a></h1>
 
+<p>
 See <a href=install.html>INSTALL</a> file for common installation notes.
+</p>
 
 <h1><a name=gui>Interface and Controls</a></h1>
 
@@ -152,17 +160,21 @@ There are few buttons right to it should be used to add/remove effects
 and change its order. Each effect has separate top-level control window with 
 appropriate sliders.  Each effect-control box is shown in the window manager
 task bar.
+</p>
 
 <p>The left area contains available effect layouts, or presets, and button
 to add the one. Layout is a "snapshot" of your effects and its' 
 settings, you can load/save using "File" menu.
+</p>
 
 <p>Big "Switch" button is used to switch layouts. In this manner,
 you can change current sound by one mouse/keyboard click.
+</p>
 
 <p>Big "START/STOP" button is used to start/stop playback.
 You may want to press it few times if you experience buffer overruns
 or broken sound output.
+</p>
 
 <p>You can write track of what you play to a file. Just click
 check-box "Write track" at the bottom of program window, enter 
@@ -170,28 +182,29 @@ filename and play. Don't forget that continuous track write
 can fill out your hard drive.
 The track file format is raw data, word length, signed
 (the sampling rate and mono/stereo are controlled from the sampling parameters
-dialog). You can convert it with SoX program like this<br><pre>
-
-    sox -w -s -c 1 -r 44100 track.raw track.wav, 
-
-</pre>
-and then to MP3:
+dialog). You can convert it with SoX program like this:
+</p>
 <pre>
-
-    bladeenc track.wav
-
+    sox -w -s -c 1 -r 44100 track.raw track.wav, 
 </pre>
+<p>
+and then to MP3:
+</p>
+<pre>
+    bladeenc track.wav
+</pre>
+<p>
 Sox is available at <a href=http://home.sprynet.com/~cbagwell/sox.html target=top>
     http://home.sprynet.com/~cbagwell/sox.html</a>, 
-and Bladeenc is at <a href=http://home8.swipnet.se/~w-82625 target=top>http://home8.swipnet.se/~w-82625</a>.
+and Bladeenc is at <a href=http://home8.swipnet.se/~w-82625 target=top>http://home8.swipnet.se/~w-82625</a>.</p>
 
 <p>Windows users can write track directly to .wav file
-(currently it is not available on UNIX).
+(currently it is not available on UNIX).</p>
 
 <h1><a name=effects>Effects</a></h1>
-
+<p>
 The controls and description of the effects follow below.
-
+</p>
 <h2><a name=autowah>Autowah</a></h2>
 <ul>
 <li>speed    - speed of wah-wah'ing</li>
@@ -201,8 +214,9 @@ The controls and description of the effects follow below.
 </ul>
 
 <h2><a name=reverb>Reverberator</a></h2>
-
+<p>
 Reverberator produces echoed "space" sound. Controls:
+</p>
 <ul>
 <li>delay  - delay time</li>
 <li>wet    - "wet" (processed) sound volume</li>
@@ -211,65 +225,74 @@ Reverberator produces echoed "space" sound. Controls:
 </ul>
 
 <h2><a name=delay>Delay</a></h2>
-
-Another kind of reverberation.
+<p>
+A no-frills time-delay effect.
+</p>
 <ul>
-<li>decay  - this controls how the repeated sound is fading out</li>
-<li>time   - this is the delay time</li>
+<li>decay  - how fast the repeated sound is fading out</li>
+<li>time   - delay time between repeats</li>
 <li>repeat - number of repeats</li>
 </ul>
 
 <h2><a name=distort>Distortion</a></h2>
 <ul>
 <li>distort    - power of effect</li>
-<li>level      - volume, for the case if you need to mute it quickly</li>
+<li>level      - volume in case you need to mute it quickly</li>
 <li>saturation - high-frequency "sand" in the sound</li>
 <li>lowpass    - low-band filter that can be used to change the sound feel</li>
 </ul>
 
-<h2><a name=vibrato>Vibrato</a></h2>
-
-<p>Vibrato sounds like when you turn the master volume on and off very quickly
-(few times per second).
+<h2><a name=tremolo>Tremolo</a></h2>
+<p>
+Tremolo sounds like when you turn the master volume on and off very quickly.
+</p>
 <ul>
 <li>speed     - the speed of modulation</li>
 <li>amplitude - the depth of modulation</li>
 </ul>
 
 <h2><a name=chorus>Chorus</a></h2>
-
+<p>
+Chorus mixes a time-delayed version of input with
+the original signal simulating two players playing the same tune.
+</p>
 <ul>
 <li>depth     - the depth of modulation</li>
 <li>speed     - the speed of modulation</li>
 <li>wet       - "wet" (processed) sound volume</li>
 <li>dry       - "dry" (clean) sound volume</li>
-<li>regen     - hard to explain</li>
+<li>regen     - mixes a time-delayed signal with the original to add more voices</li>
 </ul>
 
 <h2><a name=echo>Echo</a></h2>
 
-<p>Another reverberation effect, not like the others.
-While other reverb effects are just kinds of sound patterns repeating,
-echo attempts to achieve a large hall echo.
+<p>Another reverberation effect, but not like the others.  Echo simulates a
+large hall echo using prime number delays to avoid superimposing any repeating
+voices over each other.  </p>
+
 <ul>
 <li>decay     - this controls how the repeated sound is fading out</li>
 <li>count     - number of repeats</li>
 <li>size      - controls delay time</li>
 </ul>
 
-<h2><a name=distort2>Distortion 2</a></h2>
+<h2><a name=distort2>Overdrive</a></h2>
 
-<p>Another cool distortion. Emulates Ibanez TS9 pedal.
+<p>Another cool distortion. Emulates the distortion circuits in many popular
+overdrive pedals such as Ibanez TS9.</p>
 
 <ul>
 <li>drive      - power of effect</li>
+<li>clip       - changes tone from smooth fuzz to heavier crunch</li>
 <li>lowpass    - low-band filter that can be used to change the sound feel</li>
 </ul>
 
 <h2><a name=noise>Noise Gate</a></h2>
 
-<p>Simple noise reduction effect.<br>
-<b>IMPORTANT NOTES:</b><br>
+<p>Simple noise reduction effect.</p>
+
+<h3>IMPORTANT NOTES</h3>
+
 <ul>
 <li>Should be used <b>BEFORE</b> the distortion.</li>
 <li>If you want to achieve a note slight attack (fade in),
@@ -279,7 +302,7 @@ echo attempts to achieve a large hall echo.
     breaking the fadein effect</li>
 </ul>
 
-<p>Controls are:
+<p>Controls are:</p>
 <ul>
 <li>threshold    - minimal volume of the sound required to pass signal
                    to the output.</li>
@@ -299,6 +322,61 @@ echo attempts to achieve a large hall echo.
 		   the threshold.</li>
 </ul>
 
+<h2><a name=tuner>Tuner</a></h2>
+
+<p> This "effect" opens a window for tuning your guitar. The display contains
+four pieces of information: </p>
+
+<ul>
+<li>the current detected frequency of the sound</li>
+<li>the ideal frequency of the sound</li>
+<li>the note closest to the measured frequency</li>
+<li>an indicator that shows how the two frequencies are related</li>
+</ul>
+
+<h3>How to tune</h3>
+
+<p>In nutshell: if the indicator veers to left, tune up; if it veers to right, tune down.</p>
+
+<p> Tuner is completely agnostic to the desired tuning. All it can say is
+how well the string oscillates in tune with one of the frequencies that belong
+to the scale. Normally the strings are tuned to notes
+<strong>E A D G H E</strong>, with the low <strong>E</strong> being approximately 83 Hz. You need to remember
+those notes, because the tuner doesn't assume you want them. </p>
+
+<h3>Tricks and tips</h3>
+
+<p> Tuner is very sensitive to noise (unfortunately), so a good, clean signal
+is the most important thing.  If tuner doesn't quite seem to work for you out
+of the box, try the following tricks: </p>
+
+<ul>
+<li>
+    Mute all other strings <em>lightly</em> with your fingers. Don't press
+    the strings hard, if you have a floating bridge&mdash;this will
+    have similar effect as pressing tremolo bar down.
+</li>
+<li>
+    Pick the string normally above the pickups. The tuner tends to find the
+    frequency with the most amplitude. If you pick the strings in an unusual
+    way, it may find some high-order harmonics instead (or even worse,
+    oscillate between that and the base frequency).
+</li>
+<li>
+    Try different pickups if tuner has difficulties with particular pickups.
+</li>
+</ul>
+
+<p> You can also use the tuner to fix your guitar's intonation (the length of
+the string). You may need to check intonation whenever you change your string
+make or gauge. First, tune your guitar as perfectly as possible, then pick all
+the strings at the 12th fret.  You should see the tuner report double the
+frequency but the accuracy indicator should stay centered. If the indicator moves right, you need to make the string longer. If it moves left, you
+need to make it shorter.  How you do that depends on the guitar, but most
+often there's some screws to turn which move some string guides back and forth
+across the bridge. Typically the thinnest strings (the 3th and 6th) are the
+shortest, and the thickest strings (1st and 4th) are the longest. </p>
+
 <h1><a name=bugs>Bugs</a></h1>
 
 <ul>
@@ -306,7 +384,7 @@ echo attempts to achieve a large hall echo.
 with memory leaks and with sound initialisation/closing.</li>
 </ul>
 <p>Send bug reports to 
-<a href=mailto:fonin at gnuitar dot com>fonin at gnuitar dot com</a>.
+<a href=mailto:fonin at gnuitar dot com>fonin at gnuitar dot com</a>.</p>
 
 <h1><a name=freesoft>About Free Software Development</a></h1>
 
@@ -316,7 +394,7 @@ successful free software project has an active userbase behind it. This
 means that your comments, ideas and bug reports are extremely
 important. If something doesn't work, or some feature is missing,
 please mail me about it. Thank you in advance! You can send GNUitar
-related mails to me at <a href=mailto:fonin at gnuitar dot com>fonin at gnuitar dot com</a>
+related mails to me at <a href=mailto:fonin at gnuitar dot com>fonin at gnuitar dot com</a>.</p>
 
 <h1><a name=legal>Legal Issues</a></h1>
 
@@ -328,13 +406,14 @@ under the terms of GPL license. You have complete sources and detailed compile
 instructions to build the program yourself, as well as binaries.
 You have full freedom with using and sharing the program,
 according to the GNU software concept.
-
+</p>
 
 <h1><a name=faq>Frequently Asked Questions</a></h1>
-<p>See <a href=faq.html>this</a> page.
+<p>See <a href=faq.html>this</a> page.</p>
 
 <h1><a name=links>Related Links</a></h1>
 
+<p>
 <a href=http://www.gnuitar.com/downloads.php target=top>http://www.gnuitar.com/downloads.php</a> and <br>
 <a href=http://freshmeat.net/projects/gnuitar target=top>http://freshmeat.net/projects/gnuitar</a> and<br>
 <a href=http://sourceforge.net/projects/gnuitar target=top>http://sourceforge.net/projects/gnuitar</a> 
@@ -343,12 +422,24 @@ according to the GNU software concept.
     excellent categorized list of Unix sound software<br>
 <a href=http://home.sprynet.com/~cbagwell/sox.html target=top>http://home.sprynet.com/~cbagwell/sox.html</a> - 
     SoX playback/record/processing software<br>
-<a href=http://home8.swipnet.se/~w-82625 target=top>http://home8.swipnet.se/~w-82625</a> - 
-    BladeEnc, free MP3 encoder<br>
+<a href="http://bladeenc.mp3.no/" target=top>http://bladeenc.mp3.no/</a> - 
+    BladeEnc, free MP3 encoder
+</p>
 
 <h1><a name=author>Authors</a></h1>
 
-Max Rudensky &lt;fonin at gnuitar dot com&gt;<br>
-	     &lt;fonin at yahoo dot com&gt;<br>
-	     <A href=http://www.omnistaronline.com/~fonin>http://www.omnistaronline.com/~fonin</a><br>
-Eugen Bogdan aka /Dexterus &lt;dexterus at hackernetwork dot com&gt;<br>
+<table cellspacing="0" cellpadding="0">
+<tr>
+    <td valign="top"><a href="http://www.omnistaronline.com/~fonin/>http://www.omnistaronline.com/~fonin/">Max Rudensky</a></td>
+    <td valign="top">&lt;fonin at gnuitar dot com&gt;<br>
+                     &lt;fonin at yahoo dot com&gt;</td></tr>
+<tr>
+    <td valign="top">Eugen Bogdan (/Dexterus)&nbsp;</td>
+    <td valign="top">&lt;dexterus at hackernetwork dot com&gt;</td></tr>
+<tr>
+    <td valign="top"><a href="http://www.saunalahti.fi/~s7l/">Antti S. Lankila</a></td>
+    <td valign="top">&lt;alankila at bel dot fi&gt;</td></tr>
+</table>
+
+</body>
+</html>
