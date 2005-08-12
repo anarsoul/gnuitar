@@ -37,6 +37,7 @@ struct backBuf {
 void            backbuff_init(struct backBuf *b, unsigned int maxDelay);
 void            backbuff_done(struct backBuf *b);
 void            backbuff_add(struct backBuf *b, BUF_TYPE d);
-BUF_TYPE        backbuff_get(struct backBuf *b, unsigned int Delay);
+BUF_TYPE        backbuff_get(struct backBuf *b, unsigned int delay);
+BUF_TYPE        backbuff_get_interpolated(struct backBuf *b, double delay);
 
 #endif
