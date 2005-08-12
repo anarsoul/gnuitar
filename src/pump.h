@@ -85,6 +85,13 @@ struct effect_creator {
     void            (*create_f) (struct effect *);
 };
 
+#define SIN_LOOKUP_SIZE         36000
+#define SIN_LOOKUP_AMPLITUDE    32768
+extern int sin_lookup_table[SIN_LOOKUP_SIZE];
+
+/* [0 .. 1] -> sin(0 .. 2pi) */
+#define sin_lookup(scale) ((double) sin_lookup_table[(int) ((scale) * SIN_LOOKUP_SIZE)] / SIN_LOOKUP_AMPLITUDE)
+
 extern unsigned short nchannels;
 extern unsigned int sample_rate;
 extern unsigned short bits;

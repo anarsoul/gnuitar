@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/08/12 17:56:16  alankila
+ * use one global sin lookup table
+ *
  * Revision 1.13  2005/08/10 18:42:49  alankila
  * - use interpolating backbuffer
  * - vastly extend the precision of the sin lookup table
@@ -80,11 +83,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int             sinLookUp[36000];
-short           isSinLookUp = 0;
-
-void
-                chorus_filter(struct effect *p, struct data_block *db);
+void chorus_filter(struct effect *p, struct data_block *db);
 
 void
 update_chorus_speed(GtkAdjustment * adj, struct chorus_params *params)
@@ -364,13 +363,12 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tmp /= 256;
 	switch (cp->mode) {
 	case 0:		/* chorus */
-	    dly = MaxDly * (32768 + sinLookUp[(int) (Ang * 100)]);
+	    dly =      MaxDly * (1 + sin_lookup(Ang / 360.0)     );
 	    break;
 	case 1:		/* flange */
-	    dly = 16 * MaxDly * (32768 + sinLookUp[(int) (Ang * 100)] / 16);
+	    dly = 16 * MaxDly * (1 + sin_lookup(Ang / 360.0) / 16);
 	    break;
 	};
-	dly /= 65536;
 	Ang += AngInc;
 	if (Ang > 360)
 	    Ang -= 360;
@@ -426,24 +424,6 @@ chorus_done(struct effect *p)
     gtk_widget_destroy(p->control);
     free(p);
     p = NULL;
-}
-
-void
-initSinLookUp(void)
-{
-    int             i;
-    float           arg,
-                    val;
-
-    if (isSinLookUp)
-	return;
-    printf("\nInitializing sin lookup table");
-    for (i = 0; i < 36000; i++) {
-	arg = i * M_PI / 180 / 100;
-	val = sin(arg);
-	sinLookUp[i] = (int) (val * 32768);
-    }
-    isSinLookUp = 1;
 }
 
 void

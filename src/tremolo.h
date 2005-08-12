@@ -32,10 +32,8 @@ struct tremolo_params {
     int             tremolo_size,
                     tremolo_amplitude,
                     tremolo_speed,
-                    tremolo_phase_buffer_size,
                     tremolo_phase;
     struct backBuf  *history[MAX_CHANNELS];
-    DSP_SAMPLE      *phase_buffer;
 };
 
 #endif

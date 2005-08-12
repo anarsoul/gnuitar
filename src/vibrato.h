@@ -33,7 +33,6 @@ struct vibrato_params {
     float           vibrato_amplitude,
        		    vibrato_speed,
                     vibrato_phase;
-    DSP_SAMPLE     *phase_buffer;
 };
 
 #endif

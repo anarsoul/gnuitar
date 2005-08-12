@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/08/12 17:56:16  alankila
+ * use one global sin lookup table
+ *
  * Revision 1.23  2005/08/12 11:21:38  alankila
  * - add master volume widget
  * - reimplement bias computation to use true average
@@ -141,6 +144,7 @@
 #include "tuner.h"
 
 struct effect  *effects[MAX_EFFECTS];
+
 int             n = 0;
 unsigned short  audio_lock = 0;	/* 
 				 * when nonzero pause pumping 
@@ -150,9 +154,6 @@ unsigned short  write_track = 0;	/*
 					 * when nonzero we should write
 					 * sample to disk 
 					 */
-extern void     initSinLookUp(void);	/* 
-					 * from chorus.c 
-					 */
 
 unsigned short  nchannels = 1;
 unsigned int    sample_rate = 44100;
@@ -161,6 +162,8 @@ unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
 #ifdef _WIN32
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
+
+int sin_lookup_table[SIN_LOOKUP_SIZE];
 
 double bias_s[MAX_CHANNELS];
 int    bias_n[MAX_CHANNELS];
@@ -317,6 +320,12 @@ struct effect_creator effect_list[] = {
     {NULL, NULL}
 };
 
+void init_sin_lookup_table() {
+    int i = 0;
+    for (i = 0; i < SIN_LOOKUP_SIZE; i += 1)
+        sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE) * SIN_LOOKUP_AMPLITUDE;
+}
+
 void
 pump_start(int argc, char **argv)
 {
@@ -325,8 +334,8 @@ pump_start(int argc, char **argv)
 
     void            (*create_f[10]) (struct effect *);
 
-    initSinLookUp();
-
+    init_sin_lookup_table();
+    
     master_volume = 0.0;
     audio_lock = 1;
     j = 0;

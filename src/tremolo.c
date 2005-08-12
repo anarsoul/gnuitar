@@ -20,9 +20,8 @@
  * $Id$
  *
  * $Log$
- * Revision 1.13  2005/08/12 17:23:59  alankila
- * - amplitude slider works again
- * - uses backbuf and interpolation
+ * Revision 1.14  2005/08/12 17:56:16  alankila
+ * use one global sin lookup table
  *
  * Revision 1.12  2005/08/08 18:34:45  alankila
  * - rename effects:
@@ -230,11 +229,7 @@ tremolo_filter(struct effect *p, struct data_block *db)
 	if (tp->tremolo_phase >= tp->tremolo_speed)
 	    tp->tremolo_phase = 0;
 
-	pos =
-	    tp->tremolo_amplitude * (1 +
-                tp->phase_buffer[(int) ((double) tp->tremolo_phase *
-                                 tp->tremolo_phase_buffer_size /
-                                 tp->tremolo_speed)] / 32768.0);
+	pos = tp->tremolo_amplitude * (1.0 + sin_lookup((double) tp->tremolo_phase / tp->tremolo_speed));
 	*s = backbuff_get_interpolated(tp->history[currchannel], pos);
 
 	if (nchannels > 1)
@@ -253,10 +248,10 @@ tremolo_done(struct effect *p)
 
     tp = (struct tremolo_params *) p->params;
 
-    for (i = 0; i < MAX_CHANNELS; i++)
+    for (i = 0; i < MAX_CHANNELS; i++) {
 	backbuff_done(tp->history[i]);
         free(tp->history[i]);
-    free(tp->phase_buffer);
+    }
 
     free(tp);
     gtk_widget_destroy(p->control);
@@ -310,7 +305,6 @@ tremolo_create(struct effect *p)
 
     ptremolo = (struct tremolo_params *) p->params;
 
-    ptremolo->tremolo_phase_buffer_size = MAX_TREMOLO_BUFSIZE;
     ptremolo->tremolo_size = MAX_TREMOLO_BUFSIZE;
     ptremolo->tremolo_amplitude = 25;
     ptremolo->tremolo_speed = MAX_TREMOLO_BUFSIZE * 0.2 / nchannels;
@@ -319,17 +313,5 @@ tremolo_create(struct effect *p)
         ptremolo->history[i] = calloc(1, sizeof(ptremolo->history[0]));
 	backbuff_init(ptremolo->history[i], ptremolo->tremolo_size);
     }
-    ptremolo->phase_buffer =
-	(DSP_SAMPLE *) calloc(ptremolo->tremolo_phase_buffer_size, sizeof(DSP_SAMPLE));
-
     ptremolo->tremolo_phase = 0;
-
-    for (i = 0; i < ptremolo->tremolo_phase_buffer_size; i++) {
-	ptremolo->phase_buffer[i] = ((double)
-					   32768 *
-					   sin(2 * M_PI * ((double)
-							   i / (double)
-							   ptremolo->
-							   tremolo_phase_buffer_size)));
-    }
 }

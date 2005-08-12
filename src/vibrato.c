@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/08/12 17:56:16  alankila
+ * use one global sin lookup table
+ *
  * Revision 1.16  2005/08/11 17:57:22  alankila
  * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
  *
@@ -212,8 +215,7 @@ vibrato_init(struct effect *p)
 void
 vibrato_filter(struct effect *p, struct data_block *db)
 {
-    DSP_SAMPLE     *s,
-                    ratio;
+    DSP_SAMPLE     *s;
     int             count;
     int		    curr_channel = 0;
     struct vibrato_params *vp;
@@ -224,10 +226,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
     vp = p->params;
 
     while (count) {
-	ratio =
-	    MAX_SAMPLE +
-	    vp->phase_buffer[(int) vp->vibrato_phase] * vp->vibrato_amplitude;
-	*s = *s * ratio / MAX_SAMPLE;
+	*s *= (1 + sin_lookup((double) vp->vibrato_phase / MAX_VIBRATO_BUFSIZE) * vp->vibrato_amplitude) / 2;
 
 	/* move channels synchronously */
 	if (nchannels > 1)
@@ -246,11 +245,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
 void
 vibrato_done(struct effect *p)
 {
-    struct vibrato_params *vp;
-
-    vp = p->params;
-
-    free(vp->phase_buffer);
+    struct vibrato_params *vp = p->params;
     free(vp);
     gtk_widget_destroy(p->control);
     free(p);
@@ -306,12 +301,5 @@ vibrato_create(struct effect *p)
 
     pvibrato->vibrato_amplitude = 0.5; /* 0 .. 1 */
     pvibrato->vibrato_speed = 0.200;   /* seconds */
-
-    pvibrato->phase_buffer = calloc(MAX_VIBRATO_BUFSIZE, sizeof(DSP_SAMPLE));
     pvibrato->vibrato_phase = 0;
-
-    for (i = 0; i < MAX_VIBRATO_BUFSIZE; i++) {
-	pvibrato->phase_buffer[i] = MAX_SAMPLE *
-	   sin(2 * M_PI * i / MAX_VIBRATO_BUFSIZE);
-    }
 }
