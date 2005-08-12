@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/08/12 11:30:30  alankila
+ * - add some const qualifiers
+ *
  * Revision 1.28  2005/08/12 11:21:38  alankila
  * - add master volume widget
  * - reimplement bias computation to use true average
@@ -537,8 +540,8 @@ free_clist_ptr(gpointer data)
 void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
-    char           *fname,
-                   *name;
+    char            *fname;
+    const char	    *name;
 #ifdef _WIN32
     int             str_len,
                     i;
@@ -664,7 +667,7 @@ bank_start_load(GtkWidget * widget, gpointer data)
 void
 start_tracker(GtkWidget * widget, GtkFileSelection * filesel)
 {
-    char           *name;
+    const char		*name;
     name = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
     if (name != NULL)
 	tracker_out(name);
