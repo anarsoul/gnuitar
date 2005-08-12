@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/08/12 22:39:05  alankila
+ * correct -96 to -91 because doing x / log(2) * 3 is not quite same as
+ * x / log(10) * 10
+ *
  * Revision 1.29  2005/08/12 11:30:30  alankila
  * - add some const qualifiers
  *
@@ -754,12 +758,12 @@ timeout_update_vumeter(gpointer vumeter) {
     
     if (vumeter_power != 0.0) {
         /* every doubling in energy is ~ 3 dB more signal */
-        power = log(vumeter_power) / log(2) * 3;
-        /* 16 bits hold 96 dB resolution */
+        power = log(vumeter_power) / log(10) * 10;
+        /* 16 bits hold 91 dB resolution */
         if (power > 0)
             power = 0;
-        if (power < -96)
-            power = -96;
+        if (power < -91)
+            power = -91;
     }
     
     gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
@@ -1233,7 +1237,7 @@ init_gui(void)
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
     vumeter = gtk_progress_bar_new();
     gtk_progress_set_format_string(GTK_PROGRESS(vumeter), "%v dB");
-    gtk_progress_configure(GTK_PROGRESS(vumeter), -96, -96, 0);
+    gtk_progress_configure(GTK_PROGRESS(vumeter), -91, -91, 0);
     gtk_progress_set_show_text(GTK_PROGRESS(vumeter), TRUE);
     adj_master = gtk_adjustment_new(master_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
     master = gtk_hscale_new(GTK_ADJUSTMENT(adj_master));
