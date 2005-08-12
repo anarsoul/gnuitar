@@ -44,15 +44,15 @@ class BiquadFilter(object):
         self.y2 = 0.0
 
     def filter(self, x0):
-        res = self.a0*x0 + self.a1*self.x1 + self.a2*self.x2 - self.b1*self.y1 - self.b2*self.y2
+        y0 = self.a0*x0 + self.a1*self.x1 + self.a2*self.x2 - self.b1*self.y1 - self.b2*self.y2
 
         self.x2 = self.x1
         self.x1 = x0
 
         self.y2 = self.y1
-        self.y1 = res
+        self.y1 = y0
 
-        return res
+        return y0
 
     # mag and phi code comes from
     # http://www.yohng.com/dsp/cfsmp.c
@@ -251,15 +251,15 @@ def main():
     # frequency is actually fairly irrelevant, but you can compare the
     # performance of some of the filters near 20 kHz using 44.1 kHz sampling
     # frequency if you like.
-    RES = 48000.0
+    sampling_rate_hz = 48000.0
 
-    filter = make_filter('PEQ', RES, 10000, 0.5, -10.0)
-    #filter = make_chebyshev_1(RES, 7000.0, 1.0, True)
+    filter = make_filter('PEQ', sampling_rate_hz, 10000, 0.5, -10.0)
+    #filter = make_chebyshev_1(sampling_rate_hz, 7000.0, 1.0, True)
 
-    for freq in range(20, 20000, 20):
-        power = filter.lin2db(filter.mag(RES, freq))
-        phase = filter.phi(RES, freq)
-        print "%5s %6.2f %5.1f" % (freq, power, phase / math.pi * 180)
+    for freq_hz in range(20, 20000, 20):
+        power_db = filter.lin2db(filter.mag(sampling_rate_hz, freq_hz))
+        phase_ang = filter.phi(sampling_rate_hz, freq_hz) / math.pi * 180
+        print "%5.0f %7.3f %5.1f" % (freq_hz, power_db, phase_ang)
 
 if __name__ == '__main__':
     main()
