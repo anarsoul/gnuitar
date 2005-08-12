@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/08/12 11:24:05  alankila
+ * - include math.h for isnan()
+ *
  * Revision 1.14  2005/08/08 12:01:34  fonin
  * Include utils.h for isnan() on Windows
  *
@@ -66,6 +69,7 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 #ifndef _WIN32
 #    include <unistd.h>
 #else
