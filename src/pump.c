@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/08/12 11:21:38  alankila
+ * - add master volume widget
+ * - reimplement bias computation to use true average
+ *
  * Revision 1.22  2005/08/10 17:52:40  alankila
  * - don't test foo < 0 for unsigned
  *
@@ -107,6 +111,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #ifndef _WIN32
 #    include <unistd.h>
 #else
@@ -114,7 +119,7 @@
 #endif
 #include <assert.h>
 #include <fcntl.h>
-#include <sys/types.h>
+//#include <sys/types.h>
 #include <sys/stat.h>
 #include "pump.h"
 #include "gui.h"
@@ -157,7 +162,8 @@ unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
-double bias[MAX_CHANNELS];
+double bias_s[MAX_CHANNELS];
+int    bias_n[MAX_CHANNELS];
 
 void
 bias_elimination(struct data_block *db) {
@@ -165,13 +171,21 @@ bias_elimination(struct data_block *db) {
     int             curr_channel = 0;
     int             size = db->len;
     DSP_SAMPLE      *s = db->data;
-    
+
     for (i = 0; i < size; i += 1) {
-        bias[curr_channel] = (8191 * bias[curr_channel] + s[i]) / 8192;
-        s[i] -= bias[curr_channel];
+        bias_s[curr_channel] += s[i];
+	bias_n[curr_channel] += 1;
+        s[i] -= bias_s[curr_channel] / bias_n[curr_channel];
 
         if (nchannels > 1)
             curr_channel = !curr_channel;
+    }
+    /* keep bias within computable value */
+    for (i = 0; i < MAX_CHANNELS; i += 1) {
+	if (fabs(bias_s[i]) >= 1E12) {
+	    bias_s[i] /= 2;
+	    bias_n[i] /= 2;
+	}
     }
 }
 
@@ -224,7 +238,18 @@ vu_meter(struct data_block *db) {
     peak = (double) max_sample / MAX_SAMPLE;
     set_vumeter_value(peak, power);
 }
-    
+
+void
+adjust_master_volume(struct data_block *db) {
+    int		    i;
+    int		    size   = db->len;
+    DSP_SAMPLE	    *s     = db->data;
+    double	    volume = pow(10, master_volume / 20.0);
+   
+    for (i = 0; i < size; i += 1)
+	s[i] *= volume;
+}
+
 int
 pump_sample(DSP_SAMPLE *s, int size)
 {
@@ -260,6 +285,7 @@ pump_sample(DSP_SAMPLE *s, int size)
 	effects[i]->proc_filter(effects[i], &db);
     }
 
+    adjust_master_volume(&db);
     vu_meter(&db);
     
     /*
@@ -301,6 +327,7 @@ pump_start(int argc, char **argv)
 
     initSinLookUp();
 
+    master_volume = 0.0;
     audio_lock = 1;
     j = 0;
 
@@ -341,8 +368,10 @@ pump_start(int argc, char **argv)
 	n++;
     }
 
-    for (i = 0; i < MAX_CHANNELS; i += 1)
-        bias[i] = 0;
+    for (i = 0; i < MAX_CHANNELS; i += 1) {
+        bias_s[i] = 0;
+        bias_n[i] = 0;
+    }
     
     audio_lock = 0;
 }

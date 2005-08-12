@@ -49,7 +49,7 @@ gint            delete_event(GtkWidget * widget, GdkEvent * event,
 			     gpointer data);
 
 extern GtkWidget *processor;
-
+extern double master_volume;
 extern void set_vumeter_value(double peak, double power);
 
 #ifdef HAVE_GTK

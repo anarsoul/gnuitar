@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/08/12 11:21:38  alankila
+ * - add master volume widget
+ * - reimplement bias computation to use true average
+ *
  * Revision 1.27  2005/08/11 17:57:21  alankila
  * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
  *
@@ -201,6 +205,7 @@ GtkWidget      *add;
 GtkWidget      *tracker;
 GtkWidget      *start;
 GtkTooltips    *tooltips;
+double		master_volume;
 gint            curr_row = -1;	/* 
 				 * current row in processor list 
 				 */
@@ -752,11 +757,14 @@ timeout_update_vumeter(gpointer vumeter) {
             power = 0;
         if (power < -96)
             power = -96;
-        power = (power + 96) / 96;
     }
     
-    gtk_progress_set_percentage(GTK_PROGRESS(vumeter), power);
+    gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
     return TRUE;
+}
+
+void update_master_volume(GtkAdjustment *adj, void *nothing) {
+    master_volume = adj->value;
 }
 
 void
@@ -1073,6 +1081,8 @@ init_gui(void)
 {
     GtkAccelGroup  *accel_group;
     GtkWidget      *vumeter;
+    GtkObject      *adj_master;
+    GtkWidget	   *master;
     int             i;
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
@@ -1093,7 +1103,7 @@ init_gui(void)
     GtkStyle       *style;
 
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_widget_set_usize(mainWnd, 500, 370);
+    gtk_widget_set_usize(mainWnd, 700, 400);
     tbl = gtk_table_new(5, 6, FALSE);
     gtk_signal_connect(GTK_OBJECT(mainWnd), "destroy",
 		       GTK_SIGNAL_FUNC(quit), NULL);
@@ -1218,11 +1228,14 @@ init_gui(void)
     start = gtk_toggle_button_new_with_label("STOP");
     gtk_tooltips_set_tip(tooltips,start,"This button starts/stops the sound processing.",NULL);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
-
     vumeter = gtk_progress_bar_new();
-    /*
-    mastervol = gtk_adjustment_new();
-    */
+    gtk_progress_set_format_string(GTK_PROGRESS(vumeter), "%v dB");
+    gtk_progress_configure(GTK_PROGRESS(vumeter), -96, -96, 0);
+    gtk_progress_set_show_text(GTK_PROGRESS(vumeter), TRUE);
+    adj_master = gtk_adjustment_new(master_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
+    master = gtk_hscale_new(GTK_ADJUSTMENT(adj_master));
+    gtk_scale_set_draw_value(GTK_SCALE(master), FALSE);
+    
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 3, 4,
@@ -1242,7 +1255,8 @@ init_gui(void)
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), tracker, 0, 1, 5, 6,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 2, 2);
-    gtk_table_attach(GTK_TABLE(tbl), vumeter, 1, 3, 5, 6, __GTKATTACHOPTIONS(GTK_FILL), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), vumeter, 1, 3, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), master, 4, 6, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
 
     gtk_signal_connect(GTK_OBJECT(bank_add), "clicked",
 		       GTK_SIGNAL_FUNC(bank_add_pressed), NULL);
@@ -1264,6 +1278,8 @@ init_gui(void)
 		       GTK_SIGNAL_FUNC(selectrow_processor), NULL);
     gtk_signal_connect(GTK_OBJECT(known_effects), "select_row",
 		       GTK_SIGNAL_FUNC(selectrow_effects), NULL);
+    gtk_signal_connect(GTK_OBJECT(adj_master), "value_changed",
+		       GTK_SIGNAL_FUNC(update_master_volume), NULL);
     gtk_widget_show_all(mainWnd);
 
     g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter, vumeter);
