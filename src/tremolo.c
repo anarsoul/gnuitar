@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/08/12 17:23:59  alankila
+ * - amplitude slider works again
+ * - uses backbuf and interpolation
+ *
  * Revision 1.12  2005/08/08 18:34:45  alankila
  * - rename effects:
  *   * vibrato -> tremolo
@@ -61,7 +65,8 @@
  *
  */
 
-#include "tremolo.h"		/* for M_PI */
+#include "tremolo.h"
+#include "backbuf.h"
 #include <math.h>
 #include <stdlib.h>
 #ifndef _WIN32
@@ -139,7 +144,7 @@ tremolo_init(struct effect *p)
 				   (sample_rate * nchannels),
 				   1.0, (MAX_TREMOLO_BUFSIZE * 1000.0 /
 					 (sample_rate * nchannels)), 1.0,
-				   1.0, 1.0);
+				   1.0, 0.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -163,7 +168,7 @@ tremolo_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
     adj_ampl = gtk_adjustment_new(ptremolo->tremolo_amplitude / 20,
-				  1.0, 100.0, 1.0, 1.0, 1.0);
+				  0.0, 100.0, 1.0, 1.0, 0.0);
     ampl_label = gtk_label_new("Amplitude\n%");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -209,42 +214,28 @@ void
 tremolo_filter(struct effect *p, struct data_block *db)
 {
     struct tremolo_params *tp;
-    int             ef_index,
-                    count,
+    double          pos;
+    int             count,
                     currchannel = 0;
     DSP_SAMPLE     *s;
 
     tp = p->params;
-
     s = db->data;
     count = db->len;
 
     while (count) {
-	tp->history[currchannel][tp->index[currchannel]++] = *s;	/* add 
-									 * sample 
-									 * to 
-									 * history 
-									 */
-	if (tp->index[currchannel] == tp->tremolo_size)
-	    tp->index[currchannel] = 0;	/* wrap around */
-
-	ef_index = tp->index[currchannel];
-	if (tp->index[currchannel] < tp->tremolo_index[currchannel])
-	    ef_index += tp->tremolo_size;
+        backbuff_add(tp->history[currchannel], *s);
+	
 	tp->tremolo_phase++;
 	if (tp->tremolo_phase >= tp->tremolo_speed)
 	    tp->tremolo_phase = 0;
 
-	tp->tremolo_index[currchannel] =
-	    ef_index - tp->tremolo_amplitude - tp->tremolo_amplitude -
-	    tp->phase_buffer[tp->tremolo_phase *
-			     tp->tremolo_phase_buffer_size /
-			     tp->tremolo_speed];
-	if (tp->tremolo_index[currchannel] >= tp->tremolo_size)
-	    tp->tremolo_index[currchannel] -= tp->tremolo_size;
-	if (tp->tremolo_index[currchannel] < 0)
-	    tp->tremolo_index[currchannel] = 0;
-	*s = tp->history[currchannel][tp->tremolo_index[currchannel]];
+	pos =
+	    tp->tremolo_amplitude * (1 +
+                tp->phase_buffer[(int) ((double) tp->tremolo_phase *
+                                 tp->tremolo_phase_buffer_size /
+                                 tp->tremolo_speed)] / 32768.0);
+	*s = backbuff_get_interpolated(tp->history[currchannel], pos);
 
 	if (nchannels > 1)
 	    currchannel = !currchannel;
@@ -263,7 +254,8 @@ tremolo_done(struct effect *p)
     tp = (struct tremolo_params *) p->params;
 
     for (i = 0; i < MAX_CHANNELS; i++)
-	free(tp->history[i]);
+	backbuff_done(tp->history[i]);
+        free(tp->history[i]);
     free(tp->phase_buffer);
 
     free(tp);
@@ -324,19 +316,17 @@ tremolo_create(struct effect *p)
     ptremolo->tremolo_speed = MAX_TREMOLO_BUFSIZE * 0.2 / nchannels;
 
     for (i = 0; i < MAX_CHANNELS; i++) {
-	ptremolo->index[i] = 0;
-	ptremolo->tremolo_index[i] = 0;
-	ptremolo->history[i] =
-	    (DSP_SAMPLE *) malloc(ptremolo->tremolo_size * sizeof(DSP_SAMPLE));
+        ptremolo->history[i] = calloc(1, sizeof(ptremolo->history[0]));
+	backbuff_init(ptremolo->history[i], ptremolo->tremolo_size);
     }
     ptremolo->phase_buffer =
-	(DSP_SAMPLE *) malloc(ptremolo->tremolo_phase_buffer_size * sizeof(DSP_SAMPLE));
+	(DSP_SAMPLE *) calloc(ptremolo->tremolo_phase_buffer_size, sizeof(DSP_SAMPLE));
 
     ptremolo->tremolo_phase = 0;
 
     for (i = 0; i < ptremolo->tremolo_phase_buffer_size; i++) {
 	ptremolo->phase_buffer[i] = ((double)
-					   ptremolo->tremolo_amplitude *
+					   32768 *
 					   sin(2 * M_PI * ((double)
 							   i / (double)
 							   ptremolo->

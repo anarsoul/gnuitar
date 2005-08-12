@@ -24,6 +24,7 @@
 #define _TREMOLO_H_ 1
 #define MAX_TREMOLO_BUFSIZE MAX_SAMPLE_RATE*MAX_CHANNELS/2
 #include "pump.h"
+#include "backbuf.h"
 
 extern void     tremolo_create(struct effect *);
 
@@ -32,11 +33,9 @@ struct tremolo_params {
                     tremolo_amplitude,
                     tremolo_speed,
                     tremolo_phase_buffer_size,
-		    tremolo_index[MAX_CHANNELS],
-                    tremolo_phase,
-                    index[MAX_CHANNELS];
-    DSP_SAMPLE     *history[MAX_CHANNELS],
-                   *phase_buffer;
+                    tremolo_phase;
+    struct backBuf  *history[MAX_CHANNELS];
+    DSP_SAMPLE      *phase_buffer;
 };
 
 #endif
