@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/08/13 12:06:08  alankila
+ * - removed bunch of #ifdef HAVE_GTK/HAVE_GTK2 regarding window type
+ *
  * Revision 1.14  2005/08/12 17:56:16  alankila
  * use one global sin lookup table
  *
@@ -128,11 +131,7 @@ tremolo_init(struct effect *p)
     /*
      * GUI Init
      */
-#ifdef HAVE_GTK
-    p->control = gtk_window_new(GTK_WINDOW_DIALOG);
-#elif defined HAVE_GTK2
     p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);

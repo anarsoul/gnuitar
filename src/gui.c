@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2005/08/13 12:06:08  alankila
+ * - removed bunch of #ifdef HAVE_GTK/HAVE_GTK2 regarding window type
+ *
  * Revision 1.31  2005/08/13 11:38:15  alankila
  * - some final warning fixups and removal of MYGTK_TEXT hack
  *
@@ -247,11 +250,7 @@ about_dlg(void)
     GtkWidget      *text;
     GtkWidget      *ok_button;
 
-#ifdef HAVE_GTK
-    about = gtk_window_new(GTK_WINDOW_DIALOG);
-#elif defined HAVE_GTK2
     about = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
 
     about_label = gtk_label_new(COPYRIGHT);
     gtk_window_set_title(GTK_WINDOW(about), "About");
@@ -863,11 +862,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     GtkSpinButton  *dummy1;
     GtkEntry       *dummy2;
 
-#ifdef HAVE_GTK
-    sparams.dialog = gtk_window_new(GTK_WINDOW_DIALOG);
-#elif defined HAVE_GTK2
     sparams.dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
 
     gtk_widget_set_usize(sparams.dialog, 320, 200);
     gtk_container_set_border_width(GTK_CONTAINER(sparams.dialog), 5);

@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.12  2005/08/13 12:06:08  alankila
+ * - removed bunch of #ifdef HAVE_GTK/HAVE_GTK2 regarding window type
+ *
  * Revision 1.11  2005/08/11 17:57:21  alankila
  * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
  *
@@ -151,11 +154,7 @@ eqbank_init(struct effect *p)
 
     peq = (struct eqbank_params *) p->params;
 
-#ifdef HAVE_GTK
-    p->control = gtk_window_new(GTK_WINDOW_DIALOG);
-#elif defined HAVE_GTK2
     p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
