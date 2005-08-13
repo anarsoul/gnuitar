@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/08/13 11:38:15  alankila
+ * - some final warning fixups and removal of MYGTK_TEXT hack
+ *
  * Revision 1.17  2005/08/12 17:56:16  alankila
  * use one global sin lookup table
  *
@@ -284,7 +287,6 @@ vibrato_load(struct effect *p, int fd)
 void
 vibrato_create(struct effect *p)
 {
-    int             i;
     struct vibrato_params *pvibrato;
 
     p->params =

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2005/08/13 11:38:15  alankila
+ * - some final warning fixups and removal of MYGTK_TEXT hack
+ *
  * Revision 1.30  2005/08/12 22:39:05  alankila
  * correct -96 to -91 because doing x / log(2) * 3 is not quite same as
  * x / log(10) * 10
@@ -129,7 +132,7 @@
  * Version 0.1.0 Release 1 beta
  *
  */
-#include <gtk/gtk.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -274,24 +277,24 @@ about_dlg(void)
 			(GTK_SCROLLED_WINDOW(scrolledwin)));
     gtk_container_add(GTK_CONTAINER(scrolledwin), text);
 
-    gtk_text_freeze(MYGTK_TEXT(text));
+    gtk_text_freeze(GTK_TEXT(text));
 
-    gtk_text_insert(MYGTK_TEXT(text), NULL, NULL, NULL, DISCLAIMER, -1);
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL, DISCLAIMER, -1);
 
-    gtk_text_insert(MYGTK_TEXT(text), NULL, NULL, NULL,
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
 		    "This program is distributed in the hope that it will be useful,\n"
 		    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
 		    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 		    "See the GNU General Public License for more details.\n\n",
 		    -1);
 
-    gtk_text_insert(MYGTK_TEXT(text), NULL, NULL, NULL,
+    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
 		    "You should have received a copy of the GNU General Public License\n"
 		    "along with this program; if not, write to the Free Software\n"
 		    "Foundation, Inc., 59 Temple Place - Suite 330, Boston,\n"
 		    "MA 02111-1307, USA.", -1);
 
-    gtk_text_thaw(MYGTK_TEXT(text));
+    gtk_text_thaw(GTK_TEXT(text));
 
     ok_button = gtk_button_new_with_label("OK");
     gtk_box_pack_end(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
@@ -573,7 +576,7 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 #else
     name = basename(fname);
 #endif
-    gtk_clist_append(GTK_CLIST(bank), &name);
+    gtk_clist_append(GTK_CLIST(bank), (gchar **) &name);
     gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5,
 		     1.0);
     gtk_clist_set_row_data_full(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1,
@@ -1096,7 +1099,9 @@ init_gui(void)
     char           *processor_titles[] = { "Current effects", NULL };
     char           *effects_titles[] = { "Known effects", NULL };
     char           *bank_titles[] = { "Processor bank", NULL };
+#ifdef HAVE_GTK
     GdkFont        *new_font;
+#endif
 
 #ifdef _WIN32
     HICON           app_icon,
