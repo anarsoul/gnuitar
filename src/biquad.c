@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.8  2005/08/14 23:31:22  alankila
+ * revert earlier "fix" that does * sizeof(double). It was a brainfart.
+ *
  * Revision 1.7  2005/08/10 11:01:39  alankila
  * - remove separate chebyshev.c, move the code into biquad.c
  * - fix the copy in .h to agree with DoBiquad's implementation
@@ -161,7 +164,7 @@ do_biquad(double x, struct Biquad *f, int channel)
 {
     double          y,
                    *mem;
-    mem = f->mem + (channel * sizeof(double));
+    mem = f->mem + (channel << 2);
     y = x * f->a0 + mem[0] * f->a1 + mem[1] * f->a2 + mem[2] * f->b1 +
 	mem[3] * f->b2;
     if(isnan(y))
