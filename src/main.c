@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/08/14 23:36:13  alankila
+ * - set # of channels directly. What I really need is to control number of
+ *   input and output channels separately, but it seems impossible with OSS.
+ *   It's probably time to switch to ALSA.
+ *
  * Revision 1.25  2005/08/11 17:57:22  alankila
  * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
  *
@@ -728,8 +733,8 @@ init_sound(void)
 	return ERR_WAVESETBIT;
     }
 
-    i = nchannels - 1;
-    if (ioctl(fd, SNDCTL_DSP_STEREO, &i) == -1) {
+    i = nchannels;
+    if (ioctl(fd, SNDCTL_DSP_CHANNELS, &i) == -1) {
 	fprintf(stderr, "\nCannot setup mono audio!");
 	close(fd);
 	state = STATE_EXIT;
