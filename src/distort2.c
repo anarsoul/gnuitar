@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/08/14 23:33:04  alankila
+ * - multichannel-clean version
+ *
  * Revision 1.21  2005/08/13 12:06:08  alankila
  * - removed bunch of #ifdef HAVE_GTK/HAVE_GTK2 regarding window type
  *
@@ -343,7 +346,11 @@ distort2_filter(struct effect *p, struct data_block *db)
     if(s[0]==0 && s[1]==0 && s[16]==0 && s[17]==0 &&
           s[24]==0 && s[25]==0 && s[32]==0 && s[33]==0 &&
 	  s[buffer_size-1]==0) {
-	dp->last[0]=dp->last[1]=dp->lastupsample=0;
+        for (i = 0; i < MAX_CHANNELS; i += 1) {
+            dp->last[i] = 0;
+            dp->lastupsample[i] = 0;
+	    dp->lyf[i] = 0;
+        }
         return;
     }
 
@@ -358,22 +365,22 @@ distort2_filter(struct effect *p, struct data_block *db)
 	
 	/* first we prepare the lineary interpoled upsamples */
 	y = 0;
-	upsample[0] = dp->lastupsample;
+	upsample[0] = dp->lastupsample[curr_channel];
 	y = 1.0 / UPSAMPLE;  /* temporary usage of y */
 	for (i=1; i< UPSAMPLE; i++)
 	{
-	    upsample[i] = dp->lastupsample + ( x - dp->lastupsample) *y;
+	    upsample[i] = dp->lastupsample[curr_channel] + ( x - dp->lastupsample[curr_channel]) *y;
 	    y += 1.0 / UPSAMPLE;
 	}
-	dp->lastupsample = x;
+	dp->lastupsample[curr_channel] = x;
 	/* Now the actual upsampled processing */
 	for (i=0; i<UPSAMPLE; i++)
 	{
 	    x = upsample[i]; /*get one of the upsamples */
 
 	    /* first compute the linear rc filter current output */
-	    y = dp->c0*x + dp->d1 * dp->lyf;
-	    dp->lyf = y;
+	    y = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
+	    dp->lyf[curr_channel] = y;
 	    x1 = (x-y) / RC_R;
 
 	    /* start searching from time previous point , improves speed */
@@ -409,8 +416,8 @@ distort2_filter(struct effect *p, struct data_block *db)
                 y = -3.0;
             
 	    dp->last[curr_channel] = y;
-	    y = do_biquad( y, &dp->cheb, curr_channel);
-	    y = do_biquad( y, &dp->cheb1, curr_channel);
+	    y = do_biquad(y, &dp->cheb,  curr_channel);
+	    y = do_biquad(y, &dp->cheb1, curr_channel);
 	}
 
 	/* scale up from -1..1 range */
@@ -424,12 +431,10 @@ distort2_filter(struct effect *p, struct data_block *db)
 	s++;
 	count--;
 
-	if (nchannels > 1)
-	    curr_channel = !curr_channel;
-
+        curr_channel = (curr_channel + 1) % nchannels;
     }
     if(dp->treble)
-	RC_lowpass(db->data, db->len, &(dp->noise));
+    	RC_lowpass(db->data, db->len, &(dp->noise));
 #undef DRIVE
 }
 
@@ -487,7 +492,7 @@ distort2_create(struct effect *p)
     double	Ts, Ts1;
     double	RC = RC_C * RC_R;
     p->params =
-	(struct distort2_params *) malloc(sizeof(struct distort2_params));
+	(struct distort2_params *) calloc(1, sizeof(struct distort2_params));
     ap = (struct distort2_params *) p->params;
 
     p->proc_init = distort2_init;
@@ -513,14 +518,10 @@ distort2_create(struct effect *p)
      * This is the rc filter tied to ground. */
     ap->c0 = Ts1 / (Ts1 + RC);
     ap->d1 = RC / (Ts1 + RC);
-    ap->lyf = 0;
 
-    for (i=0; i < nchannels; i++)
-	ap->last[i] = 0;
-    ap->lastupsample = 0;
-    ap->cheb.mem  = calloc(nchannels, sizeof (double) * 4);
-    ap->cheb1.mem = calloc(nchannels, sizeof (double) * 4);
-
+    ap->cheb.mem  = calloc(MAX_CHANNELS, sizeof(double) * 4);
+    ap->cheb1.mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
+    
     /* 2 lowpass Chebyshev filters for downsampling */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, 12000, 1, 1, &ap->cheb );
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, 5500,  1, 1, &ap->cheb1);

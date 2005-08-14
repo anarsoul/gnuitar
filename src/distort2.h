@@ -35,9 +35,9 @@ struct distort2_params {
     int		noisegate;
     int		treble;
     struct filter_data noise;
-    double	c0,d1,lyf;
+    double	c0,d1,lyf[MAX_CHANNELS];
     double 	last[MAX_CHANNELS];
-    double	lastupsample;
+    double	lastupsample[MAX_CHANNELS];
     struct Biquad cheb, cheb1;  /* 2 chebyshev filters */
 };
 
