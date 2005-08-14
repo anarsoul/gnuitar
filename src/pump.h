@@ -41,7 +41,7 @@ typedef signed char SAMPLE8;
 
 #define MIN_BUFFER_SIZE 128
 #define MAX_BUFFER_SIZE 65536
-#define MAX_CHANNELS 2
+#define MAX_CHANNELS 4
 #define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
 
