@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2005/08/18 23:54:32  alankila
+ * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
+ *   for GTK2.
+ *
  * Revision 1.32  2005/08/13 12:06:08  alankila
  * - removed bunch of #ifdef HAVE_GTK/HAVE_GTK2 regarding window type
  *
@@ -250,7 +254,7 @@ about_dlg(void)
     GtkWidget      *text;
     GtkWidget      *ok_button;
 
-    about = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    about = gtk_window_new(GTK_WINDOW_DIALOG);
 
     about_label = gtk_label_new(COPYRIGHT);
     gtk_window_set_title(GTK_WINDOW(about), "About");
@@ -862,7 +866,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     GtkSpinButton  *dummy1;
     GtkEntry       *dummy2;
 
-    sparams.dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    sparams.dialog = gtk_window_new(GTK_WINDOW_DIALOG);
 
     gtk_widget_set_usize(sparams.dialog, 320, 200);
     gtk_container_set_border_width(GTK_CONTAINER(sparams.dialog), 5);

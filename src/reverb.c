@@ -155,7 +155,7 @@ reverb_init(struct effect *p)
     /*
      * GUI Init
      */
-    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    p->control = gtk_window_new(GTK_WINDOW_DIALOG);
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);

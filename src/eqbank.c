@@ -20,6 +20,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.13  2005/08/18 23:54:32  alankila
+ * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
+ *   for GTK2.
+ *
  * Revision 1.12  2005/08/13 12:06:08  alankila
  * - removed bunch of #ifdef HAVE_GTK/HAVE_GTK2 regarding window type
  *
@@ -154,7 +158,7 @@ eqbank_init(struct effect *p)
 
     peq = (struct eqbank_params *) p->params;
 
-    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    p->control = gtk_window_new(GTK_WINDOW_DIALOG);
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);

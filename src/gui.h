@@ -26,6 +26,10 @@
 #define GTK_ENABLE_BROKEN /* for gtk_text_new() */
 #include <gtk/gtk.h>
 
+#ifdef HAVE_GTK2
+#define GTK_WINDOW_DIALOG GTK_WINDOW_TOPLEVEL
+#endif
+
 #define MAINGUI_TITLE "GNUitar"
 
 #ifdef __cplusplus

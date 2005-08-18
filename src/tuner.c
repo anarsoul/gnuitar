@@ -57,6 +57,10 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.6  2005/08/18 23:54:32  alankila
+ * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
+ *   for GTK2.
+ *
  * Revision 1.5  2005/08/11 17:57:22  alankila
  * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
  *
@@ -121,7 +125,7 @@ tuner_init(struct effect *p)
     GtkWidget *slider;
     
     params = (struct tuner_params *) p->params;
-    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
                        GTK_SIGNAL_FUNC(delete_event), NULL);
     

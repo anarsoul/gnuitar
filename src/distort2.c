@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/08/18 23:54:32  alankila
+ * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
+ *   for GTK2.
+ *
  * Revision 1.25  2005/08/18 19:06:20  alankila
  * argh, due to amp treble setting I tuned the noisegate up too much
  *
@@ -229,7 +233,7 @@ distort2_init(struct effect *p)
     /*
      * GUI Init
      */
-    p->control = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    p->control = gtk_window_new(GTK_WINDOW_DIALOG);
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
