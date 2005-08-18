@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/08/18 16:52:21  alankila
+ * - make the effect more powerful:
+ *   * use 2 exponentials per diode instead of one
+ *   * need to damp newton now to control oscillations
+ *   * reduce upsampling precision to compensate added cpu drain
+ * - reduce discant filtering considerably
+ * - improve gui a bit during window scaling
+ * - change default values a bit again
+ *
  * Revision 1.22  2005/08/14 23:33:04  alankila
  * - multichannel-clean version
  *
@@ -131,12 +140,13 @@
 #define RC_R          4700.0          /* ohms */
 #define RC_C          (47 * 1e-9)     /* farads */
 
-#define UPSAMPLE	6
-
+#define UPSAMPLE	5
+#define MAX_NEWTON_ITERATIONS   500
+ 
 #define DIST2_DOWNSCALE	(1.0 / MAX_SAMPLE) 	/* Used to reduce the signal to */
 						/* the limits needed by the     */
 						/* simulation                   */
-#define DIST2_UPSCALE	(MAX_SAMPLE / 2.0)	/* And back to the normal range */
+#define DIST2_UPSCALE	(MAX_SAMPLE / 1.0)	/* And back to the normal range */
 /* taken as a funtion of MAX_SAMPLE because that is the reference for 
  * what the 'normal' signal should be */
 
@@ -158,7 +168,7 @@ void
 update_distort2_mUt(GtkAdjustment * adj, struct distort2_params *params)
 {
     /* original parameter was 30e-3 */
-    params->mUt = (10.0 + adj->value / 3) * 1e-3;
+    params->mUt = (20.0 + adj->value / 3) * 1e-3;
 }
 
 void
@@ -226,8 +236,7 @@ distort2_init(struct effect *p)
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_drive), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_drive), pdistort);
@@ -242,15 +251,14 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_mUt = gtk_adjustment_new((pdistort->mUt / 1e-3 - 10.0) * 3,
+    adj_mUt = gtk_adjustment_new((pdistort->mUt / 1e-3 - 20.0) * 3,
 				 0.0, 100.0, 1.0, 5.0, 0);
     mUt_label = gtk_label_new("Clip\n%");
     gtk_label_set_justify(GTK_LABEL(mUt_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), mUt_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_mUt), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_mUt), pdistort);
@@ -271,8 +279,7 @@ distort2_init(struct effect *p)
     gtk_table_attach(GTK_TABLE(parmTable), treble_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_treble), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_treble), pdistort);
@@ -292,10 +299,9 @@ distort2_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(toggle_distort2), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
     if (p->toggle == 1) {
 	p->toggle = 0;
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -308,10 +314,9 @@ distort2_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(toggle_treble), pdistort);
 
     gtk_table_attach(GTK_TABLE(parmTable), treble_switch, 2, 3, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
     gtk_window_set_title(GTK_WINDOW(p->control),
 			 (gchar *) ("Overdrive"));
@@ -329,7 +334,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp;
-    static double	x,y,x1,f,df,dx,e1,e2,mUt;
+    static double	x,y,x1,f,df,dx,e1,e2,e3,e4,mUt;
     static double upsample [UPSAMPLE];
 #define DRIVE (dp->r2)
     dp = (struct distort2_params *) p->params;
@@ -386,22 +391,22 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
             /* limit iterations if the algorithm fails to converge */
-            bailout = 10;
+            bailout = MAX_NEWTON_ITERATIONS;
 	    do {
 		/* f(y) = 0 , y= ? */
-		e1 = exp ( (x-y) / mUt );  e2 = 1.0 / e1;
-    	
+		e1 = exp ( (x-y) / mUt      );  e2 = 1.0 / e1;
+		e3 = exp ( (x-y) / (mUt/2.5));  e4 = 1.0 / e3;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
-		f = x1 + (x-y)/ DRIVE + Is * (e1 - e2);
+		f = x1 + (x-y)/ DRIVE + Is * (e1 - e2 + e3 - e4);
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
-		df = -1.0 / DRIVE - Is / mUt * (e1 + e2);
+		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + e3 + e4);
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
-		dx =f/df;
-		y-=dx;
+		dx = f/df;
+		y -= dx/2; /* damp */
 	    }
 	    while (fabs(dx) > DIST2_DOWNSCALE && --bailout);
 	    /* when dx gets very small, we found a solution. */
@@ -504,8 +509,8 @@ distort2_create(struct effect *p)
     p->proc_done = distort2_done;
 
     ap->r2 = 520;
-    ap->mUt = (10.0 + 50.0 / 3) * 1e-3;
-    ap->noisegate = 7000;
+    ap->mUt = (20.0 + 50.0 / 3) * 1e-3;
+    ap->noisegate = 7500;
     ap->treble = 1;
 
     RC_setup(10, 1, &(ap->noise));
@@ -523,6 +528,6 @@ distort2_create(struct effect *p)
     ap->cheb1.mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
     
     /* 2 lowpass Chebyshev filters for downsampling */
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE, 12000, 1, 1, &ap->cheb );
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE, 5500,  1, 1, &ap->cheb1);
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/3, 0.5, 1, &ap->cheb );
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE, 9000, 0.0, 1, &ap->cheb1);
 }
