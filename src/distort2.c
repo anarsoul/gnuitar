@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/08/18 18:57:39  alankila
+ * - finetune ranges a bit, add missing scale factor to not alter Is
+ *
  * Revision 1.23  2005/08/18 16:52:21  alankila
  * - make the effect more powerful:
  *   * use 2 exponentials per diode instead of one
@@ -146,7 +149,7 @@
 #define DIST2_DOWNSCALE	(1.0 / MAX_SAMPLE) 	/* Used to reduce the signal to */
 						/* the limits needed by the     */
 						/* simulation                   */
-#define DIST2_UPSCALE	(MAX_SAMPLE / 1.0)	/* And back to the normal range */
+#define DIST2_UPSCALE	(MAX_SAMPLE / 1.5)	/* And back to the normal range */
 /* taken as a funtion of MAX_SAMPLE because that is the reference for 
  * what the 'normal' signal should be */
 
@@ -397,11 +400,11 @@ distort2_filter(struct effect *p, struct data_block *db)
 		e1 = exp ( (x-y) / mUt      );  e2 = 1.0 / e1;
 		e3 = exp ( (x-y) / (mUt/2.5));  e4 = 1.0 / e3;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
-		f = x1 + (x-y)/ DRIVE + Is * (e1 - e2 + e3 - e4);
+		f = x1 + (x-y)/ DRIVE + Is * (e1 - e2 + e3 - e4) / 2;
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
-		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + e3 + e4);
+		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + e3 + e4) / 2;
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
