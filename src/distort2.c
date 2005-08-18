@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/08/18 19:06:20  alankila
+ * argh, due to amp treble setting I tuned the noisegate up too much
+ *
  * Revision 1.24  2005/08/18 18:57:39  alankila
  * - finetune ranges a bit, add missing scale factor to not alter Is
  *
@@ -513,7 +516,7 @@ distort2_create(struct effect *p)
 
     ap->r2 = 520;
     ap->mUt = (20.0 + 50.0 / 3) * 1e-3;
-    ap->noisegate = 7500;
+    ap->noisegate = 6500;
     ap->treble = 1;
 
     RC_setup(10, 1, &(ap->noise));
