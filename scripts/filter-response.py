@@ -42,7 +42,7 @@ class BiquadFilter(object):
         self.x2 = 0.0
         self.y1 = 0.0
         self.y2 = 0.0
-
+    
     def filter(self, x0):
         y0 = self.a0*x0 + self.a1*self.x1 + self.a2*self.x2 - self.b1*self.y1 - self.b2*self.y2
 
@@ -136,6 +136,10 @@ class BiquadFilter(object):
     def lin2db(self, lin):
         return 20 * (math.log(lin) / math.log(10))
 
+def make_rc_lopass(sample_rate, res, cap):
+    rc = res * cap
+    ts = 1.0 / sample_rate
+    return BiquadFilter(ts/(ts+rc), 0.0, 0.0, -rc/(ts+rc), 0.0);
 
 # from gnuitar/src/biquad.c
 def make_chebyshev_1(Fs, Fc, ripple, lowpass):
@@ -253,7 +257,8 @@ def main():
     # frequency if you like.
     sampling_rate_hz = 48000.0
 
-    filter = make_filter('PEQ', sampling_rate_hz, 10000, 0.5, -10.0)
+    filter = make_rc_lopass(sampling_rate_hz, 220, 0.22e-6)
+    #filter = make_filter('PEQ', sampling_rate_hz, 10000, 0.5, -10.0)
     #filter = make_chebyshev_1(sampling_rate_hz, 7000.0, 1.0, True)
 
     for freq_hz in range(20, 20000, 20):
