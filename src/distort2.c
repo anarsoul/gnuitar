@@ -20,6 +20,18 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/08/19 11:24:27  alankila
+ * - make the tone knob a lot subtler by dropping the iterations to 1.
+ * - add a default RC filter @ 3000 Hz, take off one chebyshev
+ *   (according to some documentation, a real tubescreamer has filter tuned
+ *    at 723 Hz but this is way too strong for my tastes)
+ * - fix drive knob range (up 50 kohm)
+ * - use the voltage at negative feedback loop's RC for drive
+ *   (reduces distortion for bass)
+ * - maybe should use exp((x2-y) / mUt) instead of exp((x-y) / mUt) but this
+ *   makes only small difference and x-y seems to sound better, go figure
+ * - drop upsampling again
+ *
  * Revision 1.26  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -133,6 +145,32 @@
  *
  */
 
+/* Tubescreamer circuitry:
+ *
+ *                500k log
+ *              +--adj.R--+
+ *              |         |
+ *          51k R         |
+ *              |         |
+ *              +----|<---+
+ *              |         |
+ *              +---->|---+
+ *   4700  47nF |         |
+ *   +-R----||--+ .       |
+ *   |          | |\      |
+ *  Gnd         +-|-\     |
+ *                |  \    |
+ *                |   >---+--Output
+ *                |  /
+ *  Signal--------|+/
+ *                |/
+ *                '
+ * 
+ * The op-amp produces output voltage great enough to cancel the signal
+ * input at + pin.
+ */
+
+ 
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -150,7 +188,7 @@
 #define RC_R          4700.0          /* ohms */
 #define RC_C          (47 * 1e-9)     /* farads */
 
-#define UPSAMPLE	5
+#define UPSAMPLE	4
 #define MAX_NEWTON_ITERATIONS   500
  
 #define DIST2_DOWNSCALE	(1.0 / MAX_SAMPLE) 	/* Used to reduce the signal to */
@@ -170,8 +208,8 @@ void            distort2_filter(struct effect *p, struct data_block *db);
 void
 update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->r2 = (int) adj->value * 5000;
-    params->r2 += 50;
+    params->r2 = adj->value * 5000;
+    params->r2 += 50000;
 }
 
 void
@@ -240,7 +278,7 @@ distort2_init(struct effect *p)
 
     parmTable = gtk_table_new(4, 2, FALSE);
 
-    adj_drive = gtk_adjustment_new((pdistort->r2 + 50) / 100,
+    adj_drive = gtk_adjustment_new(pdistort->r2 / 5000 - 50,
 				   0.0, 100.0, 0, 0, 0);
     drive_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
@@ -344,7 +382,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp;
-    static double	x,y,x1,f,df,dx,e1,e2,e3,e4,mUt;
+    static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4,mUt;
     static double upsample [UPSAMPLE];
 #define DRIVE (dp->r2)
     dp = (struct distort2_params *) p->params;
@@ -394,20 +432,20 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    x = upsample[i]; /*get one of the upsamples */
 
 	    /* first compute the linear rc filter current output */
-	    y = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
-	    dp->lyf[curr_channel] = y;
-	    x1 = (x-y) / RC_R;
-
+	    x2 = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
+	    dp->lyf[curr_channel] = x2;
+	    x1 = (x-x2) / RC_R;
+            
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
             /* limit iterations if the algorithm fails to converge */
             bailout = MAX_NEWTON_ITERATIONS;
 	    do {
 		/* f(y) = 0 , y= ? */
-		e1 = exp ( (x-y) / mUt      );  e2 = 1.0 / e1;
-		e3 = exp ( (x-y) / (mUt/2.5));  e4 = 1.0 / e3;
+		e1 = exp((x-y) / mUt      );  e2 = 1.0 / e1;
+		e3 = exp((x-y) / (mUt/2.5));  e4 = 1.0 / e3;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
-		f = x1 + (x-y)/ DRIVE + Is * (e1 - e2 + e3 - e4) / 2;
+		f = x1 + (x2 - y) / DRIVE + Is * (e1 - e2 + e3 - e4) / 2;
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
@@ -432,7 +470,6 @@ distort2_filter(struct effect *p, struct data_block *db)
             
 	    dp->last[curr_channel] = y;
 	    y = do_biquad(y, &dp->cheb,  curr_channel);
-	    y = do_biquad(y, &dp->cheb1, curr_channel);
 	}
 
 	/* scale up from -1..1 range */
@@ -448,6 +485,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 
         curr_channel = (curr_channel + 1) % nchannels;
     }
+    RC_lowpass(db->data, db->len, &(dp->rolloff));
     if(dp->treble)
     	RC_lowpass(db->data, db->len, &(dp->noise));
 #undef DRIVE
@@ -460,7 +498,6 @@ distort2_done(struct effect *p)
 
     ap = (struct distort2_params *) p->params;
     free(ap->cheb.mem);
-    free(ap->cheb1.mem);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -518,12 +555,15 @@ distort2_create(struct effect *p)
     p->id = DISTORT2;
     p->proc_done = distort2_done;
 
-    ap->r2 = 520;
+    ap->r2 = 50000;
     ap->mUt = (20.0 + 50.0 / 3) * 1e-3;
-    ap->noisegate = 6500;
+    ap->noisegate = 5000;
     ap->treble = 1;
 
-    RC_setup(10, 1, &(ap->noise));
+    RC_setup(1, 1, &(ap->rolloff));
+    RC_set_freq(3000.0, &(ap->rolloff));
+
+    RC_setup(1, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
     /* RC Filter tied to ground setup */
     Ts = 1.0/sample_rate;
@@ -535,9 +575,7 @@ distort2_create(struct effect *p)
     ap->d1 = RC / (Ts1 + RC);
 
     ap->cheb.mem  = calloc(MAX_CHANNELS, sizeof(double) * 4);
-    ap->cheb1.mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
     
-    /* 2 lowpass Chebyshev filters for downsampling */
+    /* a lowpass Chebyshev filter for downsampling */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/3, 0.5, 1, &ap->cheb );
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE, 9000, 0.0, 1, &ap->cheb1);
 }
