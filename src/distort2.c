@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/08/20 00:15:22  alankila
+ * - update derivation expression to get rid of the damp factor
+ *
  * Revision 1.27  2005/08/19 11:24:27  alankila
  * - make the tone knob a lot subtler by dropping the iterations to 1.
  * - add a default RC filter @ 3000 Hz, take off one chebyshev
@@ -168,8 +171,32 @@
  * 
  * The op-amp produces output voltage great enough to cancel the signal
  * input at + pin.
+ *
+ * There is a 51 pF capacitor in parallel with the diodes but I doubt
+ * modelling it makes any sense, as the simulated diodes don't provide
+ * enough good distortion to begin with, so best not lose any
+ * bit of what little we got.
+ *
+ * An authentic tubescreamer circuitry also has the following output filtering:
+ *
+ * - 720 Hz lowpass (6 dB/oct)
+ * - 3200 Hz lowpass / 3200 Hz highboost (both 6 dB/oct)
+ * 
+ * The 720 Hz lowpass is static, but the user can choose how much current
+ * passes through the lowpass and highboost filters. I think emulating this
+ * part makes the sound awfully dark, as there's 13 dB of attenuation
+ * before the curve levels out---and that's with treble at max!
+ * I can only assume that the real circuits are struggling with the opposite
+ * problem: too much distortion!
+ *
+ * The current implementation uses the following filtering:
+ *
+ * - lowpass at 3000 Hz (6 dB/oct)
+ * - lowpass at user freq, default 6000 Hz (6 dB/oct)
+ * 
+ * My goal is a sound like this:
+ * http://www.mindspring.com/~j.blackstone/LoGn_Dynamics.mp3
  */
-
  
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -442,19 +469,19 @@ distort2_filter(struct effect *p, struct data_block *db)
             bailout = MAX_NEWTON_ITERATIONS;
 	    do {
 		/* f(y) = 0 , y= ? */
-		e1 = exp((x-y) / mUt      );  e2 = 1.0 / e1;
-		e3 = exp((x-y) / (mUt/2.5));  e4 = 1.0 / e3;
+		e1 = exp(  (x-y) / mUt); e2 = 1.0 / e1;
+		e3 = exp(3*(x-y) / mUt); e4 = 1.0 / e3;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
 		f = x1 + (x2 - y) / DRIVE + Is * (e1 - e2 + e3 - e4) / 2;
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
-		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + e3 + e4) / 2;
+		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + 3*(e3 + e4)) / 2;
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
 		dx = f/df;
-		y -= dx/2; /* damp */
+		y -= dx;
 	    }
 	    while (fabs(dx) > DIST2_DOWNSCALE && --bailout);
 	    /* when dx gets very small, we found a solution. */
@@ -487,7 +514,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     }
     RC_lowpass(db->data, db->len, &(dp->rolloff));
     if(dp->treble)
-    	RC_lowpass(db->data, db->len, &(dp->noise));
+      RC_lowpass(db->data, db->len, &(dp->noise));
 #undef DRIVE
 }
 
@@ -557,12 +584,12 @@ distort2_create(struct effect *p)
 
     ap->r2 = 50000;
     ap->mUt = (20.0 + 50.0 / 3) * 1e-3;
-    ap->noisegate = 5000;
+    ap->noisegate = 6000;
     ap->treble = 1;
 
     RC_setup(1, 1, &(ap->rolloff));
     RC_set_freq(3000.0, &(ap->rolloff));
-
+    
     RC_setup(1, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
     /* RC Filter tied to ground setup */
