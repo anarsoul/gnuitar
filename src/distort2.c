@@ -20,6 +20,17 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/08/20 22:17:55  alankila
+ * This version sounds fairly closely to Boss's OD-3 pedal. In fact, now I
+ * can duplicate its sound fairly well, and this is only the beginning...
+ *
+ * - downscale other diode pair current by factor of 20 to get wider
+ *   harmonics
+ * - make Is depend on mUt, update mUt range, again upsample more due to
+ *   derivation difficulties with small mUt values and high pitches
+ * - finetune filtering, now disable treble filter by default to not eat
+ *   the bright upper harmonics
+ *
  * Revision 1.28  2005/08/20 00:15:22  alankila
  * - update derivation expression to get rid of the damp factor
  *
@@ -148,7 +159,7 @@
  *
  */
 
-/* Tubescreamer circuitry:
+/* Simplified tubescreamer circuitry:
  *
  *                500k log
  *              +--adj.R--+
@@ -191,8 +202,8 @@
  *
  * The current implementation uses the following filtering:
  *
- * - lowpass at 3000 Hz (6 dB/oct)
- * - lowpass at user freq, default 6000 Hz (6 dB/oct)
+ * - lowpass at 2700 Hz (6 dB/oct)
+ * - lowpass at user freq, default 6000 Hz (6 dB/oct) but disabled
  * 
  * My goal is a sound like this:
  * http://www.mindspring.com/~j.blackstone/LoGn_Dynamics.mp3
@@ -215,13 +226,13 @@
 #define RC_R          4700.0          /* ohms */
 #define RC_C          (47 * 1e-9)     /* farads */
 
-#define UPSAMPLE	4
-#define MAX_NEWTON_ITERATIONS   500
+#define UPSAMPLE	6
+#define MAX_NEWTON_ITERATIONS   50
  
 #define DIST2_DOWNSCALE	(1.0 / MAX_SAMPLE) 	/* Used to reduce the signal to */
 						/* the limits needed by the     */
 						/* simulation                   */
-#define DIST2_UPSCALE	(MAX_SAMPLE / 1.5)	/* And back to the normal range */
+#define DIST2_UPSCALE	(MAX_SAMPLE / 1.0)	/* And back to the normal range */
 /* taken as a funtion of MAX_SAMPLE because that is the reference for 
  * what the 'normal' signal should be */
 
@@ -242,8 +253,7 @@ update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 void
 update_distort2_mUt(GtkAdjustment * adj, struct distort2_params *params)
 {
-    /* original parameter was 30e-3 */
-    params->mUt = (20.0 + adj->value / 3) * 1e-3;
+    params->mUt = (20.0 + adj->value) * 1e-3;
 }
 
 void
@@ -326,7 +336,7 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_mUt = gtk_adjustment_new((pdistort->mUt / 1e-3 - 20.0) * 3,
+    adj_mUt = gtk_adjustment_new((pdistort->mUt / 1e-3 - 20.0),
 				 0.0, 100.0, 1.0, 5.0, 0);
     mUt_label = gtk_label_new("Clip\n%");
     gtk_label_set_justify(GTK_LABEL(mUt_label), GTK_JUSTIFY_CENTER);
@@ -403,17 +413,20 @@ distort2_init(struct effect *p)
 void
 distort2_filter(struct effect *p, struct data_block *db)
 {
-#define Is				 (10*1e-12)
 
     int			i,count,bailout;
     int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp;
-    static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4,mUt;
+    static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4,mUt,Is;
     static double upsample [UPSAMPLE];
 #define DRIVE (dp->r2)
     dp = (struct distort2_params *) p->params;
     mUt = dp->mUt;
+    /* correct Is with mUt to approximately keep drive the
+     * same. Original parameters said Is is 10e-12 and mUt 30e-3.
+     * If mUt grows, Is must shrink. 0.40 is experimental */
+    Is = 10e-12 * exp(0.40/30e-3 - 0.40/mUt);
     count = db->len;
     s = db->data;
 
@@ -469,14 +482,15 @@ distort2_filter(struct effect *p, struct data_block *db)
             bailout = MAX_NEWTON_ITERATIONS;
 	    do {
 		/* f(y) = 0 , y= ? */
+                /* e^3 ~ 20 */
 		e1 = exp(  (x-y) / mUt); e2 = 1.0 / e1;
 		e3 = exp(3*(x-y) / mUt); e4 = 1.0 / e3;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
-		f = x1 + (x2 - y) / DRIVE + Is * (e1 - e2 + e3 - e4) / 2;
+		f = x1 + (x2 - y) / DRIVE + Is * (e1 - e2 + (e3 - e4)/20);
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
-		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + 3*(e3 + e4)) / 2;
+		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + 3*(e3 + e4)/20);
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
@@ -583,12 +597,12 @@ distort2_create(struct effect *p)
     p->proc_done = distort2_done;
 
     ap->r2 = 50000;
-    ap->mUt = (20.0 + 50.0 / 3) * 1e-3;
+    ap->mUt = (20.0 + 50.0) * 1e-3;
     ap->noisegate = 6000;
-    ap->treble = 1;
+    ap->treble = 0;
 
     RC_setup(1, 1, &(ap->rolloff));
-    RC_set_freq(3000.0, &(ap->rolloff));
+    RC_set_freq(2700.0, &(ap->rolloff));
     
     RC_setup(1, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
