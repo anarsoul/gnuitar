@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2005/08/21 23:57:04  alankila
+ * get rid of the effects of the "clicked" ghost event.
+ *
  * Revision 1.34  2005/08/21 23:44:13  alankila
  * - use libsndfile on Linux to write audio as .wav
  * - move clipping tests into pump.c to save writing it in tracker and 3 times
@@ -708,7 +711,7 @@ tracker_pressed(GtkWidget * widget, gpointer data)
     time_t          t;
     char            defaultname[80];
     
-    if (!write_track) {
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
         time(&t);
         strftime(defaultname, 80, "%F-%T.wav", localtime(&t));
 	filesel = gtk_file_selection_new("Enter track name");
