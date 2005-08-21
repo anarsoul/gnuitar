@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2005/08/21 23:44:13  alankila
+ * - use libsndfile on Linux to write audio as .wav
+ * - move clipping tests into pump.c to save writing it in tracker and 3 times
+ *   in main.c
+ * - give default name to .wav from current date and time (in ISO format)
+ * - there's a weird bug if you cancel the file dialog, it pops up again!
+ *   I have to look into what's going on.
+ *
  * Revision 1.33  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -679,8 +687,10 @@ start_tracker(GtkWidget * widget, GtkFileSelection * filesel)
 {
     const char		*name;
     name = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
-    if (name != NULL)
+    if (name != NULL) {
 	tracker_out(name);
+	write_track = 1;
+    }
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
@@ -695,16 +705,15 @@ void
 tracker_pressed(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
-
+    time_t          t;
+    char            defaultname[80];
+    
     if (!write_track) {
-	write_track = 1;
+        time(&t);
+        strftime(defaultname, 80, "%F-%T.wav", localtime(&t));
 	filesel = gtk_file_selection_new("Enter track name");
 	gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel),
-#ifndef _WIN32
-					"*.raw");
-#else
-					"*.wav");
-#endif
+                                        defaultname);
 	gtk_signal_connect(GTK_OBJECT
 			   (GTK_FILE_SELECTION(filesel)->ok_button),
 			   "clicked", GTK_SIGNAL_FUNC(start_tracker),
@@ -748,7 +757,7 @@ timeout_update_vumeter(gpointer vumeter) {
     double power = 0.0;
    
     rc_style = gtk_rc_style_new();
-    if (vumeter_peak > 1.0) {
+    if (vumeter_peak >= 1.0) {
 
         /* indicate distortion due to clipping */
 	color.pixel = 0; /* unused */

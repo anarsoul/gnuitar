@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2005/08/21 23:44:13  alankila
+ * - use libsndfile on Linux to write audio as .wav
+ * - move clipping tests into pump.c to save writing it in tracker and 3 times
+ *   in main.c
+ * - give default name to .wav from current date and time (in ISO format)
+ * - there's a weird bug if you cancel the file dialog, it pops up again!
+ *   I have to look into what's going on.
+ *
  * Revision 1.10  2005/07/25 12:05:29  fonin
  * Workaround for crappy sound in .raw files - thanks Antti S. Lankila <alankila@bel.fi>
  *
@@ -57,6 +65,7 @@
 #ifndef _WIN32
 #     include <unistd.h>
 #     include <sys/ioctl.h>
+#     include <sndfile.h>
 #else
 #     include <io.h>
 #     include <string.h>
@@ -67,7 +76,7 @@
 #include <sys/types.h>
 
 #ifndef _WIN32
-static int      fout = -1;
+SNDFILE  *fout = NULL;
 #else
 static HMMIO    fout = NULL;
 static MMCKINFO data,
@@ -78,9 +87,18 @@ void
 tracker_out(const char *outfile)
 {
 #ifndef _WIN32
-    fout = open(outfile, O_NONBLOCK | O_WRONLY | O_CREAT, 0644);
-    if (ioctl(fout, O_NONBLOCK, 0) == -1)
-	perror("ioctl");
+    SF_INFO             sfinfo;
+
+    memset(&sfinfo, 0, sizeof(sfinfo));
+    sfinfo.samplerate = sample_rate;
+    sfinfo.frames     = 0;
+    sfinfo.channels   = nchannels;
+    sfinfo.format     = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+    
+    fout = sf_open(outfile, SFM_WRITE, &sfinfo);
+    if (! fout)
+        fprintf(stderr, "Error: unable to open output file: %s",
+                        sf_strerror(fout));
 #else
     MMCKINFO        fmt;
     WAVEFORMATEX    format;
@@ -127,8 +145,7 @@ void
 tracker_done()
 {
 #ifndef _WIN32
-    if (fout > 0)
-	close(fout);
+    sf_close(fout);
 #else
     if (fout != NULL) {
 	mmioAscend(fout, &data, 0);
@@ -143,22 +160,17 @@ void
 track_write(DSP_SAMPLE *s, int count)
 {
     SAMPLE          tmp[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
-
     int             i;
 
     /*
      * Convert to 16bit raw data
      */
-    for (i = 0; i < count; i++) {
-       int W = s[i];
-       if (W < -MAX_SAMPLE)
-           W = -MAX_SAMPLE;
-       if (W > MAX_SAMPLE)
-           W = MAX_SAMPLE;
-       tmp[i] = W;
-    }
+    for (i = 0; i < count; i++)
+       tmp[i] = s[i];
+
 #ifndef _WIN32
-    write(fout, tmp, sizeof(SAMPLE) * count);
+    if (sf_write_short(fout, tmp, count) != count)
+        fprintf(stderr, "Error writing samples: %s\n", sf_strerror(fout));
 #else
     if (fout != NULL)
 	mmioWrite(fout, tmp, sizeof(SAMPLE) * count);

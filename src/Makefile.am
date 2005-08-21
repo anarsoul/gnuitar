@@ -18,4 +18,4 @@ INCLUDES = \
 	-I$(includedir)
 
 gnuitar_LDADD = \
-	$(GTK_LIBS) \
+	$(GTK_LIBS) -lsndfile \

@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/08/21 23:44:13  alankila
+ * - use libsndfile on Linux to write audio as .wav
+ * - move clipping tests into pump.c to save writing it in tracker and 3 times
+ *   in main.c
+ * - give default name to .wav from current date and time (in ISO format)
+ * - there's a weird bug if you cancel the file dialog, it pops up again!
+ *   I have to look into what's going on.
+ *
  * Revision 1.26  2005/08/14 23:36:13  alankila
  * - set # of channels directly. What I really need is to control number of
  *   input and output channels separately, but it seems impossible with OSS.
@@ -232,14 +240,8 @@ audio_thread_start(void *V)
 	    procbuf[i] = rdbuf[i];
 	pump_sample(procbuf, count);
 
-	for (i = 0; i < count; i++) {
-	    int             W = procbuf[i];
-	    if (W < -MAX_SAMPLE)
-		W = -MAX_SAMPLE;
-	    if (W > MAX_SAMPLE)
-		W = MAX_SAMPLE;
-	    rdbuf[i] = W;
-	}
+	for (i = 0; i < count; i++)
+	    rdbuf[i] = procbuf[i];
 
 	count = write(fd, rdbuf, buffer_size);
 	if (count != buffer_size) {
@@ -401,10 +403,6 @@ audio_thread_start(void *V)
 			    for (i = 0, j = 0, k = 0; i < count; i++) {
 				DSP_SAMPLE      W = procbuf[i];
 				SAMPLE         *curpos;
-				if (W < -MAX_SAMPLE)
-				    W = -MAX_SAMPLE;
-				if (W > MAX_SAMPLE)
-				    W = MAX_SAMPLE;
 
 				if (j * sizeof(SAMPLE) >= len1
 				    && pos2 != NULL
@@ -494,10 +492,6 @@ audio_thread_start(void *V)
 			else {
 			    for (i = 0; i < count; i++) {
 				DSP_SAMPLE       W = procbuf[i];
-				if (W < -MAX_SAMPLE)
-				    W = -MAX_SAMPLE;
-				if (W > MAX_SAMPLE)
-				    W = MAX_SAMPLE;
 				((SAMPLE *) (write_header[hdr_avail].
 					     lpData))[i] = W;
 			    }

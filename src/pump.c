@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/08/21 23:44:13  alankila
+ * - use libsndfile on Linux to write audio as .wav
+ * - move clipping tests into pump.c to save writing it in tracker and 3 times
+ *   in main.c
+ * - give default name to .wav from current date and time (in ISO format)
+ * - there's a weird bug if you cancel the file dialog, it pops up again!
+ *   I have to look into what's going on.
+ *
  * Revision 1.24  2005/08/12 17:56:16  alankila
  * use one global sin lookup table
  *
@@ -249,8 +257,14 @@ adjust_master_volume(struct data_block *db) {
     DSP_SAMPLE	    *s     = db->data;
     double	    volume = pow(10, master_volume / 20.0);
    
-    for (i = 0; i < size; i += 1)
-	s[i] *= volume;
+    for (i = 0; i < size; i += 1) {
+        DSP_SAMPLE val = s[i] * volume;
+        if (val < -MAX_SAMPLE)
+            val = -MAX_SAMPLE;
+        if (val > MAX_SAMPLE)
+            val = MAX_SAMPLE;
+        s[i] = val;
+    }
 }
 
 int

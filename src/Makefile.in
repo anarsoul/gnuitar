@@ -57,6 +57,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+host_alias = @host_alias@
+host_triplet = @host@
 AWK = @AWK@
 CC = @CC@
 GLIB_CFLAGS = @GLIB_CFLAGS@
@@ -68,7 +70,10 @@ GOBJECT_QUERY = @GOBJECT_QUERY@
 GTK_CFLAGS = @GTK_CFLAGS@
 GTK_CONFIG = @GTK_CONFIG@
 GTK_LIBS = @GTK_LIBS@
+HAVE_LIB = @HAVE_LIB@
+LIB = @LIB@
 LN_S = @LN_S@
+LTLIB = @LTLIB@
 MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 PKG_CONFIG = @PKG_CONFIG@
@@ -85,7 +90,7 @@ EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 INCLUDES =  	-DG_LOG_DOMAIN=\"gnuitar\" 	$(GTK_CFLAGS) $(CONFIG_DEFS) 	-I$(includedir)
 
 
-gnuitar_LDADD =  	$(GTK_LIBS) 
+gnuitar_LDADD =  	$(GTK_LIBS) -lsndfile 
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
