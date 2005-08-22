@@ -42,11 +42,11 @@ struct filter_data {
     double          di[MAX_FILTERS][2][MAX_CHANNELS];
 };
 
-extern void     LC_filter(DSP_SAMPLE *, int, int, double, struct filter_data *);
+extern void     LC_filter(struct data_block *db, int, double, struct filter_data *);
 extern void     RC_setup(int, double, struct filter_data *);
 extern void     RC_set_freq(double, struct filter_data *);
-extern void     RC_bandpass(DSP_SAMPLE *, int, struct filter_data *);
-extern void     RC_highpass(DSP_SAMPLE *, int, struct filter_data *);
-extern void     RC_lowpass(DSP_SAMPLE *, int, struct filter_data *);
+extern void     RC_bandpass(struct data_block *db, struct filter_data *);
+extern void     RC_highpass(struct data_block *db, struct filter_data *);
+extern void     RC_lowpass(struct data_block *db, struct filter_data *);
 
 #endif

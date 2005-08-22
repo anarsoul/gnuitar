@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/08/22 22:11:59  alankila
+ * - change RC filters to accept data_block
+ * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
+ *   just filter_no.
+ * - remove unused SAMPLE8 typedef
+ *
  * Revision 1.14  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -269,10 +275,10 @@ phasor_filter(struct effect *p, struct data_block *db)
 
     pp = (struct phasor_params *) p->params;
 
-    LC_filter(db->data, db->len, HIGHPASS, pp->f, &(pp->fd));
+    LC_filter(db, 0, pp->f, &(pp->fd));
 
     if (pp->bandpass)
-	RC_bandpass(db->data, db->len, &(pp->fd));
+	RC_bandpass(db, &(pp->fd));
 
     pp->f += pp->df;
     if (pp->f >= pp->freq_high || pp->f <= pp->freq_low)

@@ -36,7 +36,6 @@ typedef short SAMPLE;
 #ifdef _WIN32
 #define MAX_BUFFERS	1024	/* number of input/output sound buffers */
 #endif
-typedef signed char SAMPLE8;
 #define MAX_SAMPLE 32767
 
 #define MIN_BUFFER_SIZE 128

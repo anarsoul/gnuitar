@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2005/08/22 22:11:59  alankila
+ * - change RC filters to accept data_block
+ * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
+ *   just filter_no.
+ * - remove unused SAMPLE8 typedef
+ *
  * Revision 1.32  2005/08/22 18:23:38  alankila
  * more self-documenting
  *
@@ -546,10 +552,10 @@ distort2_filter(struct effect *p, struct data_block *db)
 
         curr_channel = (curr_channel + 1) % nchannels;
     }
-    RC_lowpass(db->data, db->len, &(dp->drivesmooth));
-    RC_lowpass(db->data, db->len, &(dp->rolloff));
+    RC_lowpass(db, &(dp->drivesmooth));
+    RC_lowpass(db, &(dp->rolloff));
     if (dp->treble)
-        RC_lowpass(db->data, db->len, &(dp->noise));
+        RC_lowpass(db, &(dp->noise));
 #undef DRIVE
 }
 

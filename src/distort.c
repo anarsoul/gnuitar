@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/08/22 22:11:59  alankila
+ * - change RC filters to accept data_block
+ * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
+ *   just filter_no.
+ * - remove unused SAMPLE8 typedef
+ *
  * Revision 1.17  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -285,7 +291,7 @@ distort_filter(struct effect *p, struct data_block *db)
     count = db->len;
     s = db->data;
 
-    RC_highpass(db->data, db->len, &(dp->fd));
+    RC_highpass(db, &(dp->fd));
 
     while (count) {
 	/*
@@ -323,7 +329,7 @@ distort_filter(struct effect *p, struct data_block *db)
 	count--;
     }
 
-    LC_filter(db->data, db->len, LOWPASS, dp->lowpass, &(dp->noise));
+    LC_filter(db, 0, dp->lowpass, &(dp->noise));
 }
 
 void

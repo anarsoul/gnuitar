@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2005/08/22 22:11:59  alankila
+ * - change RC filters to accept data_block
+ * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
+ *   just filter_no.
+ * - remove unused SAMPLE8 typedef
+ *
  * Revision 1.8  2005/07/31 10:22:54  fonin
  * Check for NaN values on input and output
  *
@@ -55,7 +61,7 @@
 #endif
 
 void
-LC_filter(DSP_SAMPLE *sound, int count, int filter_no, double freq,
+LC_filter(struct data_block *db, int filter_no, double freq,
 	  struct filter_data *pp)
 {
     double          R,
@@ -67,6 +73,7 @@ LC_filter(DSP_SAMPLE *sound, int count, int filter_no, double freq,
                     d2i;
     int             t,
                     currchannel = 0;
+    DSP_SAMPLE     *sound = db->data;
 
     freq *= nchannels;
     L = 50e-3;			/* 
@@ -78,7 +85,7 @@ LC_filter(DSP_SAMPLE *sound, int count, int filter_no, double freq,
     dt_div_C = 1.0 / (C * sample_rate * nchannels);
     dt_div_L = 1.0 / (L * sample_rate * nchannels);
 
-    for (t = 0; t < count; t++) {
+    for (t = 0; t < db->len; t++) {
 	if(isnan(*sound))
 	    *sound=0;
 	du = (double) *sound - pp->last_sample[filter_no][0][currchannel];
@@ -91,9 +98,6 @@ LC_filter(DSP_SAMPLE *sound, int count, int filter_no, double freq,
 	pp->i[filter_no][0][currchannel] +=
 	    pp->di[filter_no][0][currchannel];
 
-/*
-	*sound=(int)(pp->i[filter_no][0][currchannel][currchannel]*pp->amplify); 
-*/
 	*sound = (int) (pp->i[filter_no][0][currchannel] * 500.0);
 	if(isnan(*sound))
 	    *sound=0;
@@ -131,15 +135,16 @@ RC_set_freq(double f, struct filter_data *pp)
 }
 
 void
-RC_filter(DSP_SAMPLE *sound, int count, int mode, int filter_no,
+RC_filter(struct data_block *db, int mode, int filter_no,
 	  struct filter_data *pp)
 {
     double          du,
                     di;
     int             t,
                     currchannel = 0;
-
-    for (t = 0; t < count; t++) {
+    DSP_SAMPLE     *sound = db->data;
+    
+    for (t = 0; t < db->len; t++) {
 	if(isnan(*sound))
 	    *sound=0;
 	du = (double) *sound -
@@ -170,30 +175,30 @@ RC_filter(DSP_SAMPLE *sound, int count, int mode, int filter_no,
 }
 
 void
-RC_bandpass(DSP_SAMPLE *sound, int count, struct filter_data *pp)
+RC_bandpass(struct data_block *db, struct filter_data *pp)
 {
     int             a;
 
     for (a = 0; a < pp->max; a++) {
-	RC_filter(sound, count, HIGHPASS, a, pp);
-	RC_filter(sound, count, LOWPASS, a, pp);
+	RC_filter(db, HIGHPASS, a, pp);
+	RC_filter(db, LOWPASS, a, pp);
     }
 }
 
 void
-RC_highpass(DSP_SAMPLE *sound, int count, struct filter_data *pp)
+RC_highpass(struct data_block *db, struct filter_data *pp)
 {
     int             a;
 
     for (a = 0; a < pp->max; a++)
-	RC_filter(sound, count, HIGHPASS, a, pp);
+	RC_filter(db, HIGHPASS, a, pp);
 }
 
 void
-RC_lowpass(DSP_SAMPLE *sound, int count, struct filter_data *pp)
+RC_lowpass(struct data_block *db, struct filter_data *pp)
 {
     int             a;
 
     for (a = 0; a < pp->max; a++)
-	RC_filter(sound, count, LOWPASS, a, pp);
+	RC_filter(db, LOWPASS, a, pp);
 }

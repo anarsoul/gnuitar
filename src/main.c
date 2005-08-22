@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/08/22 22:11:59  alankila
+ * - change RC filters to accept data_block
+ * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
+ *   just filter_no.
+ * - remove unused SAMPLE8 typedef
+ *
  * Revision 1.28  2005/08/22 11:07:27  alankila
  * - move last bits of tracker support off main.c to pump.c
  * - add settings loader/saver for GTK2, now needs GTK+ 2.6 in minimum
@@ -242,6 +248,7 @@ audio_thread_start(void *V)
 
 	for (i = 0; i < count; i++)
 	    procbuf[i] = rdbuf[i];
+
 	pump_sample(procbuf, count);
 
 	for (i = 0; i < count; i++)

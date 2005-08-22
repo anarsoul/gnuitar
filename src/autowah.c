@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/08/22 22:11:59  alankila
+ * - change RC filters to accept data_block
+ * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
+ *   just filter_no.
+ * - remove unused SAMPLE8 typedef
+ *
  * Revision 1.14  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -313,7 +319,7 @@ autowah_filter(struct effect *p, struct data_block *db)
     }
 
     if (ap->df != 0)
-	RC_bandpass(db->data, db->len, ap->fd);
+	RC_bandpass(db, ap->fd);
 
     ap->f += ap->df;
     if (ap->f >= ap->freq_high || ap->f <= ap->freq_low) {
