@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2005/08/22 22:27:34  alankila
+ * - erase the nchannel parts from constant computations. These can't be
+ *   correct, because all state variables are per channel. In case of RC_filter
+ *   the nchannels got cancelled out, but not so lucky with LC_filter. This
+ *   will change the sound for some effects on 2 channels and more.
+ *
  * Revision 1.9  2005/08/22 22:11:59  alankila
  * - change RC filters to accept data_block
  * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
@@ -75,15 +81,14 @@ LC_filter(struct data_block *db, int filter_no, double freq,
                     currchannel = 0;
     DSP_SAMPLE     *sound = db->data;
 
-    freq *= nchannels;
     L = 50e-3;			/* 
 				 * like original crybaby wahwah, hehehe 
 				 */
     C = 1.0 / (4.0 * pow(M_PI * freq, 2.0) * L);
     R = 300.0;
 
-    dt_div_C = 1.0 / (C * sample_rate * nchannels);
-    dt_div_L = 1.0 / (L * sample_rate * nchannels);
+    dt_div_C = 1.0 / (C * sample_rate);
+    dt_div_L = 1.0 / (L * sample_rate);
 
     for (t = 0; t < db->len; t++) {
 	if(isnan(*sound))
@@ -129,9 +134,9 @@ void
 RC_set_freq(double f, struct filter_data *pp)
 {
     pp->R = 1000.0;
-    pp->C = other(f * nchannels, pp->R);
+    pp->C = other(f, pp->R);
     pp->invR = 1.0 / pp->R;
-    pp->dt_div_C = (1.0 / (sample_rate * nchannels)) / pp->C;
+    pp->dt_div_C = 1.0 / (sample_rate * pp->C);
 }
 
 void
