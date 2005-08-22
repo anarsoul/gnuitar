@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2005/08/22 18:23:38  alankila
+ * more self-documenting
+ *
  * Revision 1.31  2005/08/22 18:11:49  alankila
  * - add a rough approximation of the gain-cutting 51 pF capacitor, update
  *   circuit diagram
@@ -176,14 +179,14 @@
  *              +---||---+
  *              |        |
  *              +---|<---+
- *              |        |
+ *              | "CLIP" |
  *              +--->|---+
  *    4.7k  47n |        |
  *  +--R----||--+ .      |
  *  |           | |\     |
  *  BIAS        +-|-\    |
  *                |  \   |
- *                |   >--+--Output
+ *                |   >--+--Output ("TREBLE" filter is RC filter here)
  *                |  /
  *  Signal--R--+--|+/
  *             |  |/
@@ -326,7 +329,7 @@ distort2_init(struct effect *p)
 
     parmTable = gtk_table_new(4, 2, FALSE);
 
-    adj_drive = gtk_adjustment_new(pdistort->r2 / 5000 - 50,
+    adj_drive = gtk_adjustment_new((pdistort->r2 - DRIVE_STATIC) / 5000,
 				   0.0, 100.0, 0, 0, 0);
     drive_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
