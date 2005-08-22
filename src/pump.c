@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/08/22 11:09:13  alankila
+ * - close fd at end
+ *
  * Revision 1.26  2005/08/22 11:07:27  alankila
  * - move last bits of tracker support off main.c to pump.c
  * - add settings loader/saver for GTK2, now needs GTK+ 2.6 in minimum
@@ -425,14 +428,15 @@ void save_settings() {
 #endif
     key_file_as_str = g_key_file_to_data(file, &length, NULL);
     
-    /* in GTK 2.8 there's gtk_set_file_contents() */
+    /* there's g_set_file_contents() in glib 2.8 */
     fd = g_open(settingspath, O_WRONLY | O_TRUNC | O_CREAT, 0777);
     if (fd == -1)
         goto SAVE_SETTINGS_CLEANUP1;
     w_length = write(fd, key_file_as_str, length);
     if (w_length != length)
-        fprintf(stderr, "Failed to write settings file completely\n");
-
+        perror("Failed to write settings file completely: ");
+    close(fd);
+    
   SAVE_SETTINGS_CLEANUP1:
     g_key_file_free(file);
     free((void *) settingspath);
