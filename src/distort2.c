@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/08/22 15:51:38  alankila
+ * - after long consideration, x2-y sounds better
+ *
  * Revision 1.29  2005/08/20 22:17:55  alankila
  * This version sounds fairly closely to Boss's OD-3 pedal. In fact, now I
  * can duplicate its sound fairly well, and this is only the beginning...
@@ -483,8 +486,8 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    do {
 		/* f(y) = 0 , y= ? */
                 /* e^3 ~ 20 */
-		e1 = exp(  (x-y) / mUt); e2 = 1.0 / e1;
-		e3 = exp(3*(x-y) / mUt); e4 = 1.0 / e3;
+		e1 = exp(  (x2 - y) / mUt); e2 = 1.0 / e1;
+		e3 = exp(3*(x2 - y) / mUt); e4 = 1.0 / e3;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
 		f = x1 + (x2 - y) / DRIVE + Is * (e1 - e2 + (e3 - e4)/20);
 	
@@ -527,8 +530,8 @@ distort2_filter(struct effect *p, struct data_block *db)
         curr_channel = (curr_channel + 1) % nchannels;
     }
     RC_lowpass(db->data, db->len, &(dp->rolloff));
-    if(dp->treble)
-      RC_lowpass(db->data, db->len, &(dp->noise));
+    if (dp->treble)
+        RC_lowpass(db->data, db->len, &(dp->noise));
 #undef DRIVE
 }
 
