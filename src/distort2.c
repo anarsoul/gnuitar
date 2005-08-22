@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2005/08/22 18:11:49  alankila
+ * - add a rough approximation of the gain-cutting 51 pF capacitor, update
+ *   circuit diagram
+ *
  * Revision 1.30  2005/08/22 15:51:38  alankila
  * - after long consideration, x2-y sounds better
  *
@@ -164,32 +168,34 @@
 
 /* Simplified tubescreamer circuitry:
  *
- *                500k log
- *              +--adj.R--+
- *              |         |
- *          51k R         |
- *              |         |
- *              +----|<---+
- *              |         |
- *              +---->|---+
- *   4700  47nF |         |
- *   +-R----||--+ .       |
- *   |          | |\      |
- *  Gnd         +-|-\     |
- *                |  \    |
- *                |   >---+--Output
+ *                 500k 
+ *              +-adj. R-+ "DRIVE"
+ *              |        |
+ *          51k R        |
+ *              |   51p  |
+ *              +---||---+
+ *              |        |
+ *              +---|<---+
+ *              |        |
+ *              +--->|---+
+ *    4.7k  47n |        |
+ *  +--R----||--+ .      |
+ *  |           | |\     |
+ *  BIAS        +-|-\    |
+ *                |  \   |
+ *                |   >--+--Output
  *                |  /
- *  Signal--------|+/
- *                |/
- *                '
+ *  Signal--R--+--|+/
+ *             |  |/
+ *          BIAS  '
  * 
  * The op-amp produces output voltage great enough to cancel the signal
  * input at + pin.
  *
- * There is a 51 pF capacitor in parallel with the diodes but I doubt
- * modelling it makes any sense, as the simulated diodes don't provide
- * enough good distortion to begin with, so best not lose any
- * bit of what little we got.
+ * There is a 51 pF capacitor in parallel with the diodes. It eats away
+ * the circuit's gain somewhat. I model it simply as a RC filter at DRIVE-
+ * dependant cutoff frequency. This component probably could be better
+ * modelled.
  *
  * An authentic tubescreamer circuitry also has the following output filtering:
  *
@@ -226,9 +232,11 @@
 #include "utils.h"
 #include <math.h>
 
-#define RC_R          4700.0          /* ohms */
-#define RC_C          (47 * 1e-9)     /* farads */
-
+#define RC_FEEDBACK_R          4.7e3    /* ohms */
+#define RC_FEEDBACK_C          47e-9    /* farads */
+#define RC_DRIVE_C             51e-12   /* farads */
+#define DRIVE_STATIC           50e3     /* ohms */
+ 
 #define UPSAMPLE	6
 #define MAX_NEWTON_ITERATIONS   50
  
@@ -250,7 +258,7 @@ void
 update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 {
     params->r2 = adj->value * 5000;
-    params->r2 += 50000;
+    params->r2 += DRIVE_STATIC;
 }
 
 void
@@ -423,7 +431,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     struct distort2_params *dp;
     static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4,mUt,Is;
     static double upsample [UPSAMPLE];
-#define DRIVE (dp->r2)
+#define DRIVE dp->r2
     dp = (struct distort2_params *) p->params;
     mUt = dp->mUt;
     /* correct Is with mUt to approximately keep drive the
@@ -450,6 +458,12 @@ distort2_filter(struct effect *p, struct data_block *db)
         return;
     }
 
+    /* temporary usage of f */
+    f =  1.0 / (2 * M_PI * RC_DRIVE_C * DRIVE);
+    /* if f gets too large it's going to overflow with NaNs */
+    if (f >= sample_rate / 4)
+        f = sample_rate / 4;
+    RC_set_freq(f, &(dp->drivesmooth));
     /*
      * process signal; x - input, in the range -1, 1
      */
@@ -477,7 +491,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    /* first compute the linear rc filter current output */
 	    x2 = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
 	    dp->lyf[curr_channel] = x2;
-	    x1 = (x-x2) / RC_R;
+	    x1 = (x-x2) / RC_FEEDBACK_R;
             
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
@@ -529,6 +543,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 
         curr_channel = (curr_channel + 1) % nchannels;
     }
+    RC_lowpass(db->data, db->len, &(dp->drivesmooth));
     RC_lowpass(db->data, db->len, &(dp->rolloff));
     if (dp->treble)
         RC_lowpass(db->data, db->len, &(dp->noise));
@@ -586,7 +601,7 @@ distort2_create(struct effect *p)
     struct distort2_params *ap;
     int         i;
     double	Ts, Ts1;
-    double	RC = RC_C * RC_R;
+    double	RC = RC_FEEDBACK_C * RC_FEEDBACK_R;
     p->params =
 	(struct distort2_params *) calloc(1, sizeof(struct distort2_params));
     ap = (struct distort2_params *) p->params;
@@ -599,14 +614,17 @@ distort2_create(struct effect *p)
     p->id = DISTORT2;
     p->proc_done = distort2_done;
 
-    ap->r2 = 50000;
+    ap->r2 = DRIVE_STATIC;
     ap->mUt = (20.0 + 50.0) * 1e-3;
     ap->noisegate = 6000;
     ap->treble = 0;
 
+    RC_setup(1, 1, &(ap->drivesmooth));
+    /* RC_set_freq done at filter() */
+    
     RC_setup(1, 1, &(ap->rolloff));
     RC_set_freq(2700.0, &(ap->rolloff));
-    
+
     RC_setup(1, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
     /* RC Filter tied to ground setup */

@@ -34,7 +34,7 @@ struct distort2_params {
     double      mUt;
     int		noisegate;
     int		treble;
-    struct filter_data noise, rolloff;
+    struct filter_data noise, rolloff, drivesmooth;
     double	c0,d1,lyf[MAX_CHANNELS];
     double 	last[MAX_CHANNELS];
     double	lastupsample[MAX_CHANNELS];
