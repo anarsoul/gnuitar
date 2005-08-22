@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/08/22 11:07:27  alankila
+ * - move last bits of tracker support off main.c to pump.c
+ * - add settings loader/saver for GTK2, now needs GTK+ 2.6 in minimum
+ *
  * Revision 1.27  2005/08/21 23:44:13  alankila
  * - use libsndfile on Linux to write audio as .wav
  * - move clipping tests into pump.c to save writing it in tracker and 3 times
@@ -982,6 +986,7 @@ main(int argc, char **argv)
     int             max_priority;
     struct sched_param p;
 
+    load_settings();
 
     if ((error = init_sound()) != ERR_NOERROR)
 	return error;
@@ -1099,8 +1104,9 @@ main(int argc, char **argv)
 
     state = STATE_EXIT;
     pump_stop();
-    tracker_done();
     close_sound();
 
+    save_settings();
+    
     return ERR_NOERROR;
 }

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/08/22 11:07:27  alankila
+ * - move last bits of tracker support off main.c to pump.c
+ * - add settings loader/saver for GTK2, now needs GTK+ 2.6 in minimum
+ *
  * Revision 1.25  2005/08/21 23:44:13  alankila
  * - use libsndfile on Linux to write audio as .wav
  * - move clipping tests into pump.c to save writing it in tracker and 3 times
@@ -134,7 +138,8 @@
 #include <sys/stat.h>
 #include "pump.h"
 #include "gui.h"
-
+#include <glib.h>
+ 
 #include "autowah.h"
 #include "phasor.h"
 #include "chorus.h"
@@ -258,7 +263,7 @@ adjust_master_volume(struct data_block *db) {
     double	    volume = pow(10, master_volume / 20.0);
    
     for (i = 0; i < size; i += 1) {
-        DSP_SAMPLE val = s[i] * volume;
+	DSP_SAMPLE val = s[i] * volume;
         if (val < -MAX_SAMPLE)
             val = -MAX_SAMPLE;
         if (val > MAX_SAMPLE)
@@ -340,6 +345,112 @@ void init_sin_lookup_table() {
         sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE) * SIN_LOOKUP_AMPLITUDE;
 }
 
+/* the keyfile is a GTK+ 2.6 feature */
+#ifdef HAVE_GTK2
+const gchar *
+discover_settings_path() {
+    const gchar *path;
+    /* XXX what is the path for windows? */
+    path = g_build_filename(g_get_home_dir(), ".gnuitarrc", NULL);
+    return path;
+}
+
+void
+load_settings() {
+    const gchar    *settingspath;
+    GKeyFile       *file;
+    GError         *error;
+    gint            tmp;
+    
+    settingspath = discover_settings_path();
+    if (! g_file_test(settingspath, G_FILE_TEST_EXISTS))
+        goto LOAD_SETTINGS_CLEANUP1;
+    
+    file = g_key_file_new();
+    
+    /* Thanks, glib! */
+    g_key_file_load_from_file(file, settingspath, G_KEY_FILE_NONE, NULL);
+    
+    /* this seems a bit clumsy, maybe I should do
+     * { "bits", &bits, INTEGER } etc. structure */
+    error = NULL;
+    tmp = g_key_file_get_integer(file, "global", "bits", &error);
+    if (error == NULL)
+        bits = tmp;
+    
+    error = NULL;
+    tmp = g_key_file_get_integer(file, "global", "n_output_channels", &error);
+    if (error == NULL)
+        nchannels = tmp;
+
+    error = NULL;
+    tmp = g_key_file_get_integer(file, "global", "sample_rate", &error);
+    if (error == NULL)
+        sample_rate = tmp;
+    
+    error = NULL;
+    tmp = g_key_file_get_integer(file, "global", "buffer_size", &error);
+    if (error == NULL)
+        buffer_size = tmp;
+
+#ifdef _WIN32
+    error = NULL;
+    tmp = g_key_file_get_integer(file, "global", "n_output_buffers", &error);
+    if (error == NULL)
+        nbuffers = tmp;
+#endif
+    g_key_file_free(file);
+  LOAD_SETTINGS_CLEANUP1:
+    free((void *) settingspath);
+    return;
+}
+
+void save_settings() {
+    const gchar    *settingspath;
+    GKeyFile       *file;
+    gchar          *key_file_as_str;
+    gsize           length;
+    int             w_length;
+    int             fd;
+    
+    settingspath = discover_settings_path();
+    file = g_key_file_new();
+
+    g_key_file_set_integer(file, "global", "bits", bits);
+    g_key_file_set_integer(file, "global", "n_output_channels", nchannels);
+    g_key_file_set_integer(file, "global", "sample_rate", sample_rate);
+    g_key_file_set_integer(file, "global", "buffer_size", buffer_size);
+#ifdef _WIN32
+    g_key_file_set_integer(file, "global", "n_output_buffers", nbuffers);
+#endif
+    key_file_as_str = g_key_file_to_data(file, &length, NULL);
+    
+    /* in GTK 2.8 there's gtk_set_file_contents() */
+    fd = g_open(settingspath, O_WRONLY | O_TRUNC | O_CREAT, 0777);
+    if (fd == -1)
+        goto SAVE_SETTINGS_CLEANUP1;
+    w_length = write(fd, key_file_as_str, length);
+    if (w_length != length)
+        fprintf(stderr, "Failed to write settings file completely\n");
+
+  SAVE_SETTINGS_CLEANUP1:
+    g_key_file_free(file);
+    free((void *) settingspath);
+    free((void *) key_file_as_str);
+    return;
+}
+#else
+/* GTK 1.2 hacks for same effect? */
+void
+load_settings() {
+    return;
+}
+void
+save_settings() {
+    return;
+}
+#endif /* HAVE_GTK2 */
+
 void
 pump_start(int argc, char **argv)
 {
@@ -404,6 +515,10 @@ pump_stop(void)
 {
     int             i;
 
+    if (write_track) {
+        write_track = 0;
+        tracker_done();
+    }
     audio_lock = 1;
     for (i = 0; i < n; i++) {
 	effects[i]->proc_done(effects[i]);
