@@ -87,10 +87,10 @@ gnuitar_SOURCES = main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c 	vib
 
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 
-INCLUDES =  	-DG_LOG_DOMAIN=\"gnuitar\" 	$(GTK_CFLAGS) $(CONFIG_DEFS) 	-I$(includedir)
+INCLUDES =  	-DG_LOG_DOMAIN=\"gnuitar\" 	$(GTK_CFLAGS) $(GLIB_CFLAGS) $(CONFIG_DEFS) 	-I$(includedir) -Wall
 
 
-gnuitar_LDADD =  	$(GTK_LIBS) -lsndfile 
+gnuitar_LDADD =  	$(GTK_LIBS) $(GLIB_LIBS) -lsndfile 
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)

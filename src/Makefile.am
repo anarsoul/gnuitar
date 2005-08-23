@@ -14,8 +14,8 @@ EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 
 INCLUDES = \
 	-DG_LOG_DOMAIN=\"gnuitar\" \
-	$(GTK_CFLAGS) $(CONFIG_DEFS) \
-	-I$(includedir)
+	$(GTK_CFLAGS) $(GLIB_CFLAGS) $(CONFIG_DEFS) \
+	-I$(includedir) -Wall
 
 gnuitar_LDADD = \
-	$(GTK_LIBS) -lsndfile \
+	$(GTK_LIBS) $(GLIB_LIBS) -lsndfile \

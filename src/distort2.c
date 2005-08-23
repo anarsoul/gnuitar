@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2005/08/23 22:01:34  alankila
+ * - add -Wall to ease developing
+ * - fix warnings
+ *
  * Revision 1.33  2005/08/22 22:11:59  alankila
  * - change RC filters to accept data_block
  * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
@@ -608,7 +612,6 @@ void
 distort2_create(struct effect *p)
 {
     struct distort2_params *ap;
-    int         i;
     double	Ts, Ts1;
     double	RC = RC_FEEDBACK_C * RC_FEEDBACK_R;
     p->params =

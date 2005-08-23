@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/08/23 22:01:34  alankila
+ * - add -Wall to ease developing
+ * - fix warnings
+ *
  * Revision 1.27  2005/08/22 11:09:13  alankila
  * - close fd at end
  *
@@ -142,6 +146,9 @@
 #include "pump.h"
 #include "gui.h"
 #include <glib.h>
+#ifdef HAVE_GTK2
+#include <glib/gstdio.h>
+#endif
  
 #include "autowah.h"
 #include "phasor.h"

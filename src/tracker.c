@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/08/23 22:01:34  alankila
+ * - add -Wall to ease developing
+ * - fix warnings
+ *
  * Revision 1.11  2005/08/21 23:44:13  alankila
  * - use libsndfile on Linux to write audio as .wav
  * - move clipping tests into pump.c to save writing it in tracker and 3 times
@@ -62,6 +66,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <string.h>
 #ifndef _WIN32
 #     include <unistd.h>
 #     include <sys/ioctl.h>
