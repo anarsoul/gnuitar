@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2005/08/24 10:51:55  fonin
+ * Wrapped sndfile code into #ifdef HAVE_SNDFILE
+ *
  * Revision 1.35  2005/08/21 23:57:04  alankila
  * get rid of the effects of the "clicked" ghost event.
  *
@@ -562,7 +565,7 @@ void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
     char            *fname;
-    const char	    *name;
+    char	    *name;
 #ifdef _WIN32
     int             str_len,
                     i;
@@ -713,7 +716,14 @@ tracker_pressed(GtkWidget * widget, gpointer data)
     
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
         time(&t);
-        strftime(defaultname, 80, "%F-%T.wav", localtime(&t));
+        strftime(defaultname, 80, "%F-%T."
+#if defined(HAVE_SNDFILE) || defined(_WIN32)
+	    "wav"
+#else
+	    "raw"
+#endif
+	    , localtime(&t));
+
 	filesel = gtk_file_selection_new("Enter track name");
 	gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel),
                                         defaultname);

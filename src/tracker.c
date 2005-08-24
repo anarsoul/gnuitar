@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/08/24 10:51:55  fonin
+ * Wrapped sndfile code into #ifdef HAVE_SNDFILE
+ *
  * Revision 1.12  2005/08/23 22:01:34  alankila
  * - add -Wall to ease developing
  * - fix warnings
@@ -70,7 +73,9 @@
 #ifndef _WIN32
 #     include <unistd.h>
 #     include <sys/ioctl.h>
+#ifdef HAVE_SNDFILE
 #     include <sndfile.h>
+#endif
 #else
 #     include <io.h>
 #     include <string.h>
@@ -81,17 +86,22 @@
 #include <sys/types.h>
 
 #ifndef _WIN32
+#ifdef HAVE_SNDFILE
 SNDFILE  *fout = NULL;
+#else
+static int      fout = -1;
+#endif // SNDFILE
 #else
 static HMMIO    fout = NULL;
 static MMCKINFO data,
                 riff;
-#endif
+#endif // _WIN32
 
 void
 tracker_out(const char *outfile)
 {
 #ifndef _WIN32
+#ifdef HAVE_SNDFILE
     SF_INFO             sfinfo;
 
     memset(&sfinfo, 0, sizeof(sfinfo));
@@ -104,6 +114,12 @@ tracker_out(const char *outfile)
     if (! fout)
         fprintf(stderr, "Error: unable to open output file: %s",
                         sf_strerror(fout));
+#else
+    fout = open(outfile, O_NONBLOCK | O_WRONLY | O_CREAT, 0644);
+    if (ioctl(fout, O_NONBLOCK, 0) == -1)
+	perror("ioctl");
+#endif // SNDFILE
+
 #else
     MMCKINFO        fmt;
     WAVEFORMATEX    format;
@@ -150,7 +166,12 @@ void
 tracker_done()
 {
 #ifndef _WIN32
+#ifdef HAVE_SNDFILE
     sf_close(fout);
+#else
+    if (fout > 0)
+	close(fout);
+#endif
 #else
     if (fout != NULL) {
 	mmioAscend(fout, &data, 0);
@@ -174,8 +195,12 @@ track_write(DSP_SAMPLE *s, int count)
        tmp[i] = s[i];
 
 #ifndef _WIN32
+#ifdef HAVE_SNDFILE
     if (sf_write_short(fout, tmp, count) != count)
         fprintf(stderr, "Error writing samples: %s\n", sf_strerror(fout));
+#else
+    write(fout, tmp, sizeof(SAMPLE) * count);
+#endif
 #else
     if (fout != NULL)
 	mmioWrite(fout, tmp, sizeof(SAMPLE) * count);
