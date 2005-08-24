@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.14  2005/08/24 10:49:47  fonin
+ * Minor change to compile on windows (#include utils.h for isnan)
+ *
  * Revision 1.13  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -98,6 +101,7 @@ const int fb_bw[FB_NB] =
 #    include <unistd.h>
 #else
 #    include <io.h>
+#    include "utils.h"
 #endif
 
 #include "eqbank.h"

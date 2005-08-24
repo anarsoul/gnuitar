@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2005/08/24 10:49:47  fonin
+ * Minor change to compile on windows (#include utils.h for isnan)
+ *
  * Revision 1.34  2005/08/23 22:01:34  alankila
  * - add -Wall to ease developing
  * - fix warnings
@@ -238,11 +241,10 @@
 #    include <unistd.h>
 #else
 #    include <io.h>
-#    include <float.h>
+#    include "utils.h"
 #endif
 #include "distort2.h"
 #include "gui.h"
-#include "utils.h"
 #include <math.h>
 
 #define RC_FEEDBACK_R          4.7e3    /* ohms */
