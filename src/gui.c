@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2005/08/24 13:13:38  alankila
+ * - battle about whether *name is const or not continues
+ *
  * Revision 1.36  2005/08/24 10:51:55  fonin
  * Wrapped sndfile code into #ifdef HAVE_SNDFILE
  *
@@ -565,8 +568,10 @@ void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
     char            *fname;
+#ifndef _WIN32
+    const char	    *name;
+#else
     char	    *name;
-#ifdef _WIN32
     int             str_len,
                     i;
     char            drive[_MAX_DRIVE],
