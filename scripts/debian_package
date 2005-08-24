@@ -1,0 +1,22 @@
+#! /bin/sh
+
+version=0.3.3
+arch=i386
+docdir=debian/usr/share/doc/gnuitar/
+
+cwd=`pwd`
+install -d debian
+./configure --with-sndfile --with-gtk2 --disable-debug
+make clean
+make
+make install prefix=$cwd/debian/usr
+install -d debian/DEBIAN
+cp debian.control debian/DEBIAN/control
+mv $docdir/AUTHORS $docdir/copyright
+gzip -9 $docdir/copyright
+mv $docdir/ChangeLog $docdir/changelog
+gzip -9 $docdir/changelog
+chmod 4755 debian/usr/bin/gnuitar
+strip debian/usr/bin/gnuitar
+fakeroot dpkg --build debian gnuitar-${version}_${arch}.deb
+rm -rf debian
