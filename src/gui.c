@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2005/08/24 21:55:05  alankila
+ * slight bit likelier to compile
+ *
  * Revision 1.38  2005/08/24 21:44:44  alankila
  * - split sound drivers off main.c
  * - add support for alsa
@@ -188,6 +191,10 @@
 #include "tracker.h"
 #include "utils.h"
 
+#ifdef _WIN32
+extern short dsound;
+#endif
+ 
 #define VU_UPDATE_INTERVAL 20.0    /* ms */
  
 void            bank_start_save(GtkWidget * widget, gpointer data);

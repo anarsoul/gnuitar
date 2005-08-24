@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2005/08/24 21:55:05  alankila
+ * slight bit likelier to compile
+ *
  * Revision 1.1  2005/08/24 21:44:44  alankila
  * - split sound drivers off main.c
  * - add support for alsa
@@ -155,15 +158,10 @@
 #endif
 
 #include "pump.h"
+#include "main.h"
 #include "tracker.h"
 #include "gui.h"
 #include "utils.h"
-
-static int      state = STATE_PROCESS;	/* 
-					 * State of the program 
-					 * (see utils.h for possible values)
-					 */
-char            version[13] = "GNUitar "VERSION;
 
 HANDLE          input_bufs_done,
                 output_bufs_done;
