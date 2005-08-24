@@ -23,17 +23,6 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_ 1
 
-/*
- * Program states:
- */
-#define STATE_PROCESS		0	/* 0 - recording/playback is on */
-#define STATE_PAUSE		1	/* 1 - playback is paused */
-#define STATE_EXIT		2	/* 2 - exit thread */
-#define STATE_START		3	/* 3 - the thread is just started
-					 * (first loop), playback is on */
-#define STATE_START_PAUSE	4	/* 4 - application is starting,
-					 * playback is paused */
-
 #include "pump.h"
 #ifdef _WIN32
 #    define M_PI 3.1415926535897932384626433832795
