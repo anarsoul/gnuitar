@@ -1,0 +1,22 @@
+Package: gnuitar
+Version: 0.3.3
+Essential: no
+Priority: optional
+Architecture: i386
+Maintainer: Max Rudensky <fonin@gnuitar.com>
+Section: sound
+Source: gnuitar-0.3.3.tar.gz
+Depends: libsndfile1, libgtk2.0-0 (>=2.6), libglib2.0-0 (>=2.0)
+Description: a GTK+ based real-time guitar processor.
+ This is a guitar effects software that allows you to 
+ use your computer as powerful guitar processor.
+ Includes effects:
+    o wah-wah
+    o sustain
+    o two flavours of distortion
+    o reverberator, echo, delay
+    o tremolo
+    o vibrato
+    o chorus/flanger
+    o phasor
+    o noise gate
