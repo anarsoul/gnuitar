@@ -107,6 +107,7 @@ work great here.
 - Another feature which might be useful, would be a .gnuitar folder within the 
 home area?? which remembers the options settings eg latency, and reloads 
 these settings next time Gnuitar is run.
+- Debian package
 
 0.4.0
 - allow to read help only with sound off, or auto-stop the sound
