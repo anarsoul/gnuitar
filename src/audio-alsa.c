@@ -1,0 +1,327 @@
+/*
+ * GNUitar
+ * Alsa bits
+ * Copyright (C) 2005 Antti Lankila  <alankila@bel.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * $Id$
+ *
+ * $Log$
+ * Revision 1.1  2005/08/24 21:44:44  alankila
+ * - split sound drivers off main.c
+ * - add support for alsa
+ * - rework thread locking
+ * - in this version, sound drivers are chosen at compile time
+ * - windows driver is probably broken
+ *
+ *
+ */
+
+#ifdef HAVE_ALSA
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <alsa/asoundlib.h>
+#include <assert.h>
+
+#include "pump.h"
+#include "main.h"
+
+short           restarting;
+const char     *snd_device_in  = "plughw:0,0";
+const char     *snd_device_out = "plughw:0,0";
+snd_pcm_t      *playback_handle;
+snd_pcm_t      *capture_handle;
+
+/* temporary defines until rest of the code is multichannel-ready */
+#define n_input_channels nchannels
+#define n_output_channels nchannels
+
+void           *
+alsa_audio_thread(void *V)
+{
+    int             i, frames, inframes, outframes;
+    struct data_block db; 
+    
+    /* frame counts are always the same to both read and write */
+    while (state != STATE_EXIT) {
+        while (state == STATE_PAUSE) {
+            usleep(10000);
+        }
+        /* catch transition PAUSE -> EXIT */
+        if (state == STATE_EXIT)
+            break;
+        pthread_mutex_lock(&snd_open);
+        
+        frames = snd_pcm_bytes_to_frames(capture_handle, buffer_size);
+        /* ensure output buffer has data in it,
+         * this fixes the rattly scratching I used to be getting
+         * after a restart. This is probably a bit too paranoid, but
+         * damn it, it works. */
+        if (restarting) {
+            restarting = 0;
+            
+            /* drop any output we might got and stop */
+            snd_pcm_drop(capture_handle);
+            snd_pcm_drop(playback_handle);
+            /* prepare for use */
+            snd_pcm_prepare(capture_handle);
+            snd_pcm_prepare(playback_handle);
+            
+            /* fill 2 playback buffer fragments. Normally this is the
+             * maximum amount of fragments, and it ensures there's something
+             * to play while we come up with more data to play. */
+            for (i = 0; i < frames * n_output_channels; i += 1)
+                rdbuf[i] = 0;
+            for (i = 0; i < fragments; i += 1)
+                snd_pcm_writei(playback_handle, rdbuf, frames);
+        }
+
+        while ((inframes = snd_pcm_readi(capture_handle, rdbuf, frames)) < 0) {
+            if (inframes == -EAGAIN)
+                continue;
+            fprintf(stderr, "Input buffer overrun\n");
+            restarting = 1;
+            snd_pcm_prepare(capture_handle);
+        }
+        if (inframes != frames)
+            fprintf(stderr, "Short read from capture device: %d, expecting %d\n", inframes, frames);
+        db.len = inframes * n_input_channels;
+        db.data = procbuf;
+        db.channels = n_input_channels;
+        for (i = 0; i < db.len; i++)
+	    db.data[i] = rdbuf[i];
+	pump_sample(&db);
+        for (i = 0; i < db.len; i++)
+	    rdbuf[i] = db.data[i];
+
+        /* adapting must have worked, and effects must not have changed
+         * frame counts somehow */
+        assert(db.channels == n_output_channels);
+        assert(db.len / n_output_channels == inframes);
+        
+        while ((outframes = snd_pcm_writei(playback_handle, rdbuf, inframes)) < 0) {
+            if (outframes == -EAGAIN)
+                continue;
+            fprintf(stderr, "Output buffer underrun\n");
+            restarting = 1;
+            snd_pcm_prepare(playback_handle);
+        }
+        if (outframes != frames)
+            fprintf(stderr, "Short write to playback device: %d, expecting %d\n", outframes, frames);
+        
+        pthread_mutex_unlock(&snd_open);
+    }
+    return NULL;
+}
+
+/*
+ * sound shutdown 
+ */
+void
+alsa_finish_sound(void)
+{
+    state = STATE_PAUSE;
+    pthread_mutex_lock(&snd_open);
+    snd_pcm_drop(playback_handle);
+    snd_pcm_close(playback_handle);
+    snd_pcm_drop(capture_handle);
+    snd_pcm_close(capture_handle);
+}
+
+/* The adapting flag allows the first invocation to change sampling parameters.
+ * On the second call, adapting is disabled. This is done to force identical
+ * parameters on the two devices, which may not even be same physical
+ * hardware. */
+int
+alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *frames, int channels, int adapting)
+{
+    snd_pcm_hw_params_t *hw_params;
+    int                 err;
+    int                 tmp;
+    snd_pcm_uframes_t   frame_info;
+    int                 frame_size = channels * (bits / 8);
+    
+    if ((err = snd_pcm_hw_params_malloc(&hw_params)) < 0) {
+        fprintf (stderr, "can't allocate parameter structure: %s\n",
+                 snd_strerror(err));
+	return 1;
+    }
+    
+    if ((err = snd_pcm_hw_params_any(device, hw_params)) < 0) {
+        fprintf (stderr, "can't initialize parameter structure: %s\n",
+                 snd_strerror(err));
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+
+    if ((err = snd_pcm_hw_params_set_access(device, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
+        fprintf (stderr, "can't set access type: %s\n",
+                 snd_strerror(err));
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+
+    /* 8 bit audio hasn't worked for a long time, I suppose */
+    if ((err = snd_pcm_hw_params_set_format(device, hw_params, SND_PCM_FORMAT_S16_LE)) < 0) {
+        fprintf (stderr, "can't set sample format: %s\n",
+                 snd_strerror(err));
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+
+    tmp = sample_rate;    
+    if ((err = adapting
+            ? snd_pcm_hw_params_set_rate_near(device, hw_params, &tmp, 0)
+            : snd_pcm_hw_params_set_rate(device, hw_params, tmp, 0)) < 0) {
+        fprintf (stderr, "can't set sample rate: %s\n",
+                 snd_strerror(err));
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+    if (tmp != sample_rate) {
+        fprintf(stderr, "can't set requested sample rate, asked for %d got %d\n", sample_rate, tmp);
+        sample_rate = tmp;
+    }
+
+    if ((err = snd_pcm_hw_params_set_channels(device, hw_params, channels)) < 0) {
+        fprintf (stderr, "can't set channel count: %s\n",
+                 snd_strerror(err));
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+
+    /* set_periods_near fails on at least one hardware, bah. */ 
+    if ((err = snd_pcm_hw_params_set_periods(device, hw_params, fragments, 0)) < 0) {
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+    //fprintf(stderr, "trying with %d fragments\n", fragments);
+    
+    /* workaround difficulties with SB Live!, if I ask a frame smaller than
+     * the minimum buffer it starts to read/write in that frame size while
+     * expecting larger frames nevertheless */
+    if ((err = snd_pcm_hw_params_get_buffer_size_min(hw_params, &frame_info)) < 0) {
+        fprintf(stderr, "can't query min buffer_size: %s\n",
+                snd_strerror(err));
+        frame_info = MIN_BUFFER_SIZE / frame_size;
+    }
+    //fprintf(stderr, "device claims min frame size = %d\n", (int) frame_info);
+    if (adapting && *frames < frame_info) {
+        fprintf(stderr, "warning: buffer_size %d is too small, using %d\n", (int) *frames, (int) frame_info);
+        *frames = frame_info;
+    }
+    if ((err = snd_pcm_hw_params_get_buffer_size_max(hw_params, &frame_info)) < 0) {
+        fprintf(stderr, "can't query max buffer_size: %s\n",
+                snd_strerror(err));
+        frame_info = MAX_BUFFER_SIZE / frame_size;
+    }
+    //fprintf(stderr, "device claims max frame size = %d\n", (int) frame_info);
+    if (frame_info > MAX_BUFFER_SIZE / frame_size)
+	frame_info = MAX_BUFFER_SIZE / frame_size;
+
+    /* I don't trust set_buffer_size_near, ALSA docs are too vague */
+    while (adapting && *frames < frame_info) {
+        if ((err = snd_pcm_hw_params_set_buffer_size(device, hw_params, *frames)) < 0) {
+	    *frames += fragments;
+	} else {
+	    break;
+	}
+    }
+    
+    if ((err = snd_pcm_hw_params_set_buffer_size(device, hw_params, *frames)) < 0) {
+        fprintf(stderr, "can't set buffer_size to %d frames: %s\n",
+		(int) *frames, snd_strerror(err));
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+
+    if ((err = snd_pcm_hw_params(device, hw_params)) < 0) {
+        fprintf(stderr, "Error setting HW params: %s\n",
+                snd_strerror(err));
+        snd_pcm_hw_params_free(hw_params);
+	return 1;
+    }
+    snd_pcm_hw_params_free(hw_params);
+    //printf("pass!\n");
+    
+    return 0;
+}
+
+/*
+ * sound initialization
+ */
+int
+alsa_init_sound(void)
+{
+    int             err;
+    unsigned int    frames;
+
+    if ((err = snd_pcm_open(&playback_handle, snd_device_out, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+	fprintf(stderr, "can't open output audio device %s: %s\n", snd_device_out, snd_strerror(err));
+	state = STATE_EXIT;
+	return ERR_WAVEOUTOPEN;
+    }
+    if ((err = snd_pcm_open(&capture_handle, snd_device_in, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+	fprintf(stderr, "can't open input audio device %s: %s\n", snd_device_in, snd_strerror(err));
+        snd_pcm_close(playback_handle);
+	state = STATE_EXIT;
+	return ERR_WAVEINOPEN;
+    }
+
+#define MAX_FRAGMENTS 8
+    fragments = 2;
+    /* buffer size really defines the input buffer's size. We convert it to
+     * frames and ask same count of frames in both directions */
+    frames = buffer_size / n_input_channels / (bits / 8) * fragments;
+    while (fragments < MAX_FRAGMENTS) {
+        frames = buffer_size / n_input_channels / (bits / 8) * fragments;
+        /* since the parameters can take a different form depending on which is
+         * configured first, try configuring both ways before incrementing
+         * fragments */ 
+	if (
+(alsa_configure_audio(playback_handle, fragments, &frames, n_output_channels, 1)
+|| alsa_configure_audio(capture_handle, fragments, &frames, n_input_channels, 0))
+        ) {
+            frames = buffer_size / n_input_channels / (bits / 8) * fragments;
+            if (
+(alsa_configure_audio(capture_handle, fragments, &frames, n_input_channels, 1)
+|| alsa_configure_audio(playback_handle, fragments, &frames, n_output_channels, 0))
+            ) {
+                fragments += 1;
+            } else {
+                break;
+            }
+	} else {
+            break;
+        }
+    }
+    /* if reached max we failed to find anything workable */
+    if (fragments == MAX_FRAGMENTS) {
+        snd_pcm_close(playback_handle);
+        snd_pcm_close(capture_handle);
+	return ERR_WAVEFRAGMENT;
+    }
+    buffer_size = frames * n_input_channels * (bits / 8) / fragments;
+    restarting = 1;
+    
+    state = STATE_PROCESS;
+    pthread_mutex_unlock(&snd_open);
+    return ERR_NOERROR;
+}
+
+#endif /* HAVE_ALSA */

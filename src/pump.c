@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/08/24 21:44:44  alankila
+ * - split sound drivers off main.c
+ * - add support for alsa
+ * - rework thread locking
+ * - in this version, sound drivers are chosen at compile time
+ * - windows driver is probably broken
+ *
  * Revision 1.28  2005/08/23 22:01:34  alankila
  * - add -Wall to ease developing
  * - fix warnings
@@ -178,11 +185,14 @@ unsigned short  write_track = 0;	/*
 					 * sample to disk 
 					 */
 
+/* default settings */
 unsigned short  nchannels = 1;
 unsigned int    sample_rate = 44100;
 unsigned short  bits = 16;
 unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
-#ifdef _WIN32
+#ifndef _WIN32
+unsigned int    fragments = 2;
+#else
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
@@ -195,16 +205,12 @@ void
 bias_elimination(struct data_block *db) {
     int             i;
     int             curr_channel = 0;
-    int             size = db->len;
-    DSP_SAMPLE      *s = db->data;
 
-    for (i = 0; i < size; i += 1) {
-        bias_s[curr_channel] += s[i];
+    for (i = 0; i < db->len; i += 1) {
+        bias_s[curr_channel] += db->data[i];
 	bias_n[curr_channel] += 1;
-        s[i] -= bias_s[curr_channel] / bias_n[curr_channel];
-
-        if (nchannels > 1)
-            curr_channel = !curr_channel;
+        db->data[i] -= bias_s[curr_channel] / bias_n[curr_channel];
+        curr_channel = (curr_channel + 1) % db->channels;
     }
     /* keep bias within computable value */
     for (i = 0; i < MAX_CHANNELS; i += 1) {
@@ -224,22 +230,19 @@ void
 noise_reduction(struct data_block *db) {
     int             i, j;
     int             curr_channel = 0;
-    int             size = db->len;
-    DSP_SAMPLE      *s = db->data;
-    double          tmp;
-
-    for (i = 0; i < size; i += 1) {
-        for (j = NR_SIZE; j > 0; j -= 1)
+    DSP_SAMPLE      tmp;
+    
+    for (i = 0; i < db->len; i += 1) {
+        for (j = NR_SIZE; j > 1; j -= 1)
             nr_last[curr_channel][j-1] = nr_last[curr_channel][j-2];
-        nr_last[curr_channel][0] = s[i];
+        nr_last[curr_channel][0] = db->data[i];
 
         tmp = 0;
         for (j = 0; j < NR_SIZE; j += 1)
             tmp += nr_last[curr_channel][j];
-        s[i] = tmp / NR_SIZE;
+        db->data[i] = tmp / NR_SIZE;
         
-        if (nchannels > 1)
-            curr_channel = !curr_channel;
+        curr_channel = (curr_channel + 1) % db->channels;
     }
 }
 
@@ -248,11 +251,9 @@ vu_meter(struct data_block *db) {
     int             i;
     DSP_SAMPLE      sample, max_sample = 0;
     double          peak, power = 0;
-    int             size = db->len;
-    DSP_SAMPLE      *s = db->data;
     
-    for (i = 0; i < size; i += 1) {
-        sample = s[i];
+    for (i = 0; i < db->len; i += 1) {
+        sample = db->data[i];
         power += sample * sample;
         if (sample < 0)
             sample = -sample;
@@ -260,7 +261,7 @@ vu_meter(struct data_block *db) {
             max_sample = sample;
     }
     /* energy per sample scaled down to 0.0 - 1.0 */
-    power = power / size / MAX_SAMPLE / MAX_SAMPLE;
+    power = power / db->len / MAX_SAMPLE / MAX_SAMPLE;
     peak = (double) max_sample / MAX_SAMPLE;
     set_vumeter_value(peak, power);
 }
@@ -268,64 +269,97 @@ vu_meter(struct data_block *db) {
 void
 adjust_master_volume(struct data_block *db) {
     int		    i;
-    int		    size   = db->len;
-    DSP_SAMPLE	    *s     = db->data;
     double	    volume = pow(10, master_volume / 20.0);
    
-    for (i = 0; i < size; i += 1) {
-	DSP_SAMPLE val = s[i] * volume;
+    for (i = 0; i < db->len; i += 1) {
+	DSP_SAMPLE val = db->data[i] * volume;
         if (val < -MAX_SAMPLE)
             val = -MAX_SAMPLE;
         if (val > MAX_SAMPLE)
             val = MAX_SAMPLE;
-        s[i] = val;
+        db->data[i] = val;
     }
 }
 
-int
-pump_sample(DSP_SAMPLE *s, int size)
+void
+adapt_to_output(struct data_block *db)
 {
-    struct data_block db;
+    int             i;
+    int             size = db->len;
+    DSP_SAMPLE     *s = db->data;
+
+    /* temporarily here to make this compile */
+    int n_output_channels;
+    return;
+    
+    assert(db->channels <= n_output_channels);
+    
+    /* nothing to do */
+    if (db->channels == n_output_channels)
+        return;
+    /* clone 1 to 2 */
+    if (db->channels == 1 && n_output_channels == 2) {
+        for (i = size - 1; i > 0; i -= 1) {
+            s[i*2+1] = s[i];
+            s[i*2  ] = s[i];
+        }
+        db->channels = 2;
+        db->len *= 2;
+        return;
+    }
+    /* clone 1 to 4, mute channels 2 & 3 (the rear channels) */
+    if (db->channels == 1 && n_output_channels == 4) {
+        for (i = size - 1; i > 0; i -= 1) {
+            s[i*4+3] = 0;
+            s[i*4+2] = 0;
+            s[i*4+1] = s[i];
+            s[i*4  ] = s[i];
+        }
+        db->channels = 4;
+        db->len *= 4;
+        return;
+    }
+    /* clone 2 to 4, mute channels 2 & 3 */
+    if (db->channels == 2 && n_output_channels == 4) {
+        for (i = size/2-1; i > 0; i -= 1) {
+            s[i*4+3] = 0;
+            s[i*4+2] = 0;
+            s[i*4+1] = s[i*2+1];
+            s[i*4+0] = s[i*2+0];
+        }
+        db->channels = 4;
+        db->len *= 2;
+        return;
+    }
+    /* we shouldn't have more than 2 channels coming in, and we don't support
+     * generating to 5 channels, so error out */
+
+    fprintf(stderr, "unknown channel combination: %d in and %d out",
+            db->channels, n_output_channels);
+}
+
+int
+pump_sample(struct data_block *db)
+{
     int             i;
     
     if (audio_lock)
 	return 0;
 
-    db.data = s;
-    db.len = size;
-
     /* NR is enabled only experimentally until 
      * the noise filter will have been implemented */
-    noise_reduction(&db);
-    bias_elimination(&db);
+    noise_reduction(db);
+    bias_elimination(db);
  
-    /* no input, no output :-) to avoid extra calc. Optimized for noise gate,
-     * when all input is zero.
-     * This is the heuristics - since there is no the standard function
-     * in the ANSI C library that reliably compares the memory region
-     * with the given byte, we compare just a few excerpts from an array.
-     * If everything is zero, we have a large chances that all array is zero. */
-    if(s[0]==0 && s[1]==0 && s[16]==0 && s[17]==0 &&
-          s[24]==0 && s[25]==0 && s[32]==0 && s[33]==0 &&
-	  s[buffer_size-1]==0) {
-	/* nothing */
-    }
-    /*
-     * Pumping
-     */
-    else for (i = 0; i < n; i++) {
-	effects[i]->proc_filter(effects[i], &db);
-    }
+    for (i = 0; i < n; i++)
+	effects[i]->proc_filter(effects[i], db);
 
-    adjust_master_volume(&db);
-    vu_meter(&db);
-    
-    /*
-     * Writing track
-     */
-    if (write_track) {
-	track_write(s, size);
-    }
+    adapt_to_output(db);
+    adjust_master_volume(db);
+    vu_meter(db);
+ 
+    if (write_track)
+	track_write(db->data, db->len);
 
     return 0;
 }
@@ -382,7 +416,7 @@ load_settings() {
     g_key_file_load_from_file(file, settingspath, G_KEY_FILE_NONE, NULL);
     
     /* this seems a bit clumsy, maybe I should do
-     * { "bits", &bits, INTEGER } etc. structure */
+     * { "bits", &bits, INTEGER } structure */
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "bits", &error);
     if (error == NULL)
@@ -392,6 +426,13 @@ load_settings() {
     tmp = g_key_file_get_integer(file, "global", "n_output_channels", &error);
     if (error == NULL)
         nchannels = tmp;
+
+    /*
+    error = NULL;
+    tmp = g_key_file_get_integer(file, "global", "n_input_channels", &error);
+    if (error == NULL)
+        n_input_channels = tmp;
+    */
 
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "sample_rate", &error);
@@ -405,7 +446,7 @@ load_settings() {
 
 #ifdef _WIN32
     error = NULL;
-    tmp = g_key_file_get_integer(file, "global", "n_output_buffers", &error);
+    tmp = g_key_file_get_integer(file, "global", "n_inout_buffers", &error);
     if (error == NULL)
         nbuffers = tmp;
 #endif
@@ -428,10 +469,11 @@ void save_settings() {
 
     g_key_file_set_integer(file, "global", "bits", bits);
     g_key_file_set_integer(file, "global", "n_output_channels", nchannels);
+    //g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
     g_key_file_set_integer(file, "global", "sample_rate", sample_rate);
     g_key_file_set_integer(file, "global", "buffer_size", buffer_size);
 #ifdef _WIN32
-    g_key_file_set_integer(file, "global", "n_output_buffers", nbuffers);
+    g_key_file_set_integer(file, "global", "n_inout_buffers", nbuffers);
 #endif
     key_file_as_str = g_key_file_to_data(file, &length, NULL);
     
@@ -513,10 +555,9 @@ pump_start(int argc, char **argv)
 	n++;
     }
 
-    for (i = 0; i < MAX_CHANNELS; i += 1) {
-        bias_s[i] = 0;
-        bias_n[i] = 0;
-    }
+    memset(bias_s, 0, sizeof(bias_s));
+    memset(bias_n, 0, sizeof(bias_n));
+    memset(nr_last, 0, sizeof(nr_last));
     
     audio_lock = 0;
 }

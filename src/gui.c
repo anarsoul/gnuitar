@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2005/08/24 21:44:44  alankila
+ * - split sound drivers off main.c
+ * - add support for alsa
+ * - rework thread locking
+ * - in this version, sound drivers are chosen at compile time
+ * - windows driver is probably broken
+ *
  * Revision 1.37  2005/08/24 13:13:38  alankila
  * - battle about whether *name is const or not continues
  *
@@ -177,6 +184,7 @@
 
 #include "gui.h"
 #include "pump.h"
+#include "main.h"
 #include "tracker.h"
 #include "utils.h"
 
@@ -190,19 +198,6 @@ void            update_sampling_params(GtkWidget * widget,
 void            quit(GtkWidget * widget, gpointer data);
 void            about_dlg(void);
 void            help_contents(void);
-/*
- * These externs are from main.c 
- */
-extern int      init_sound();
-extern void     close_sound();
-#ifndef _WIN32
-extern pthread_mutex_t mutex;
-extern pthread_cond_t suspend;
-#else
-extern HANDLE   audio_thread;
-extern short    dsound;
-extern unsigned short overrun_threshold;
-#endif
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -731,7 +726,7 @@ tracker_pressed(GtkWidget * widget, gpointer data)
 
 	filesel = gtk_file_selection_new("Enter track name");
 	gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel),
-                                        defaultname);
+					defaultname);
 	gtk_signal_connect(GTK_OBJECT
 			   (GTK_FILE_SELECTION(filesel)->ok_button),
 			   "clicked", GTK_SIGNAL_FUNC(start_tracker),
@@ -739,7 +734,7 @@ tracker_pressed(GtkWidget * widget, gpointer data)
 	gtk_signal_connect(GTK_OBJECT
 			   (GTK_FILE_SELECTION(filesel)->cancel_button),
 			   "clicked", GTK_SIGNAL_FUNC(cancel_tracker),
-			   GTK_WIDGET(filesel));
+			   filesel);
 	gtk_widget_show(filesel);
     } else {
 	write_track = 0;
@@ -790,9 +785,8 @@ timeout_update_vumeter(gpointer vumeter) {
     gtk_rc_style_unref(rc_style);
     
     if (vumeter_power != 0.0) {
-        /* every doubling in energy is ~ 3 dB more signal */
         power = log(vumeter_power) / log(10) * 10;
-        /* 16 bits hold 91 dB resolution */
+        /* 16 bits hold ~91 dB resolution */
         if (power > 0)
             power = 0;
         if (power < -91)
@@ -1076,22 +1070,14 @@ start_stop(GtkWidget * widget, gpointer data)
 {
     int             error;
     if (GTK_TOGGLE_BUTTON(widget)->active) {
-#ifndef _WIN32
-	pthread_mutex_lock(&mutex);
-#endif
-	if ((error = init_sound()) != ERR_NOERROR) {
-#ifndef _WIN32
-	    pthread_cond_signal(&suspend);
-	    pthread_mutex_unlock(&mutex);
-#endif
-	    exit(error);
-	}
-	audio_lock = 0;
-#ifndef _WIN32
-	pthread_cond_signal(&suspend);
-	pthread_mutex_unlock(&mutex);
-#else
+	if ((error = AUDIO_INIT()) != ERR_NOERROR) {
+            fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
+            gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "ERROR");
+            return;
+        }
+#ifdef _WIN32
 	ResumeThread(audio_thread);
+        state = STATE_PROCESS;
 #endif
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
@@ -1099,11 +1085,11 @@ start_stop(GtkWidget * widget, gpointer data)
 				 FALSE);
 	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "STOP");
     } else {
-	audio_lock = 1;
-	close_sound();
 #ifdef _WIN32
+        state = STATE_PAUSE;
 	SuspendThread(audio_thread);
 #endif
+	AUDIO_FINISH();
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),

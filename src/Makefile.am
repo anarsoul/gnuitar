@@ -8,7 +8,7 @@ gnuitar_SOURCES =  main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	vibrato.h autowah.h phasor.h rcfilter.h \
 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h \
-	tuner.c tuner.h
+	tuner.c tuner.h audio-alsa.c audio-alsa.h audio-oss.c audio-oss.h
 
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 
@@ -18,4 +18,4 @@ INCLUDES = \
 	-I$(includedir) -Wall
 
 gnuitar_LDADD = \
-	$(GTK_LIBS) $(GLIB_LIBS) -lsndfile \
+	$(GTK_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(SNDFILE_LIBS)

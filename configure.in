@@ -20,7 +20,7 @@ dnl Specify a header configuration file
 dnl AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs.
-AC_ARG_PROGRAM
+#AC_ARG_PROGRAM
 AC_PROG_AWK
 AC_PROG_LN_S
 AC_PROG_CC
@@ -30,7 +30,7 @@ AC_ARG_WITH(gtk2,
     [  --with-gtk2	          Use GTK2 instead GTK (disabled by default)],
     [
 	if test "$withval" != "no"; then
-	    AM_PATH_GLIB_2_0(2.2.0,
+	    AM_PATH_GLIB_2_0(2.6.0,
 		[
 		    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GLIB2"
 		],
@@ -62,7 +62,7 @@ dnl By default, prefer GTK1 over GTK2, GLIB1 over GLIB2
 		CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GLIB"
 	    ],
 	    [
-		AM_PATH_GLIB_2_0(2.2.0,
+		AM_PATH_GLIB_2_0(2.6.0,
 		    [
 			CONFIG_DEFS="$CONFIG_DEFS -DHAVE_GLIB2"
 		    ],
@@ -115,11 +115,13 @@ dnl Replace `main' with a function in -lpthread:
 AC_CHECK_LIB(pthread, main)
 AC_CHECK_LIB(sndfile, main,
     [ SNDFILE=1 ])
+SNDFILE_LIBS=""
 AC_ARG_WITH(sndfile,
     [  --with-sndfile	          Use libsndfile to write tracks to .wav ],
     [
     	if test "$withval" != "no" && test "$SNDFILE" = '1'; then
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_SNDFILE"
+            SNDFILE_LIBS="-lsndfile"
 	else
 	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_SNDFILE"
 	fi
@@ -127,37 +129,44 @@ AC_ARG_WITH(sndfile,
     [
 	if test "$SNDFILE" = '1'; then
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_SNDFILE"
+            SNDFILE_LIBS="-lsndfile"
 	else
 	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_SNDFILE"
 	fi
     ]
 )
+AC_SUBST(SNDFILE_LIBS)
 
-#AM_PATH_ALSA()
-ALSA=1	# FIXME: Add some check to make sure ALSA is present on the system
+# XXX switch to use AM_PATH_ALSA later
+AC_CHECK_LIB(asound, main,
+    [ ALSA=1 ])
 
+ALSA_LIBS=""
 AC_ARG_WITH(alsa,
     [  --with-alsa	          Use ALSA for sound processing (disabled by default) ],
     [
     	if test "$withval" != "no" && test "$ALSA" = '1'; then
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_ALSA -UHAVE_OSS"
+            ALSA_LIBS="-lasound"
 	else
 	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_ALSA -DHAVE_OSS"
 	fi
     ],
     [
 	if test "$ALSA" = '1'; then
-	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_ALSA -DHAVE_OSS"
-	else
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_ALSA -UHAVE_OSS"
+            ALSA_LIBS="-lasound"
+	else
+	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_ALSA -DHAVE_OSS"
 	fi
     ]
 )
+AC_SUBST(ALSA_LIBS)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h sys/stat.h float.h sndfile.h)
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h sys/stat.h float.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

@@ -1,6 +1,6 @@
 /*
  * GNUitar
- * Utility functions
+ * Main module
  * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,41 +18,23 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Id$
+ *
+ * $Log$
+ * Revision 1.1  2005/08/24 21:44:44  alankila
+ * - split sound drivers off main.c
+ * - add support for alsa
+ * - rework thread locking
+ * - in this version, sound drivers are chosen at compile time
+ * - windows driver is probably broken
+ *
+ *
  */
 
-#ifndef _UTILS_H_
-#define _UTILS_H_ 1
+#ifndef _AUDIO_WINDOWS_H_
+#define _AUDIO_WINDOWS_H_ 1
 
-/*
- * Program states:
- */
-#define STATE_PROCESS		0	/* 0 - recording/playback is on */
-#define STATE_PAUSE		1	/* 1 - playback is paused */
-#define STATE_EXIT		2	/* 2 - exit thread */
-#define STATE_START		3	/* 3 - the thread is just started
-					 * (first loop), playback is on */
-#define STATE_START_PAUSE	4	/* 4 - application is starting,
-					 * playback is paused */
-
-#include "pump.h"
-#ifdef _WIN32
-#    define M_PI 3.1415926535897932384626433832795
-#    ifndef  R_OK
-#        define  R_OK 04
-#    endif
-#    ifndef  X_OK
-#        define  X_OK 01
-#    endif
-#    ifndef  F_OK
-#        define  F_OK 00
-#    endif
-#    define FILESEP "\\"
-#    define isnan _isnan
-#else
-#    define FILESEP "/"
-#endif
-
-extern short    my_log2(int);
-extern char    *my_itoa(int i);
+DWORD WINAPI windows_audio_thread(void *V);
+void windows_finish_sound(void);
+int windows_init_sound(void);
 
 #endif

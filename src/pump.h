@@ -65,6 +65,7 @@ enum effects {
 struct data_block {
     DSP_SAMPLE     *data;
     unsigned int    len;
+    unsigned int    channels;
 };
 
 struct effect {
@@ -95,7 +96,9 @@ extern unsigned short nchannels;
 extern unsigned int sample_rate;
 extern unsigned short bits;
 extern unsigned int buffer_size;
-#ifdef _WIN32
+#ifndef _WIN32
+extern unsigned int fragments;
+#else
 extern unsigned int nbuffers;
 #endif
 
@@ -104,7 +107,7 @@ extern int      n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];
 
-extern int      pump_sample(DSP_SAMPLE *s, int size);
+extern int      pump_sample(struct data_block *db);
 extern void     pump_start(int argc, char **argv);
 extern void     pump_stop(void);
 extern void     save_pump(const char *fname);
