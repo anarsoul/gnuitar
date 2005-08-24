@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/08/24 18:41:36  fonin
+ * Bugfix: when the # of samples read != buffer size, program exited. This condition sometimes happen when press on STOP button.
+ *
  * Revision 1.29  2005/08/22 22:11:59  alankila
  * - change RC filters to accept data_block
  * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
@@ -225,6 +228,7 @@ audio_thread_start(void *V)
     
     while (state != STATE_EXIT) {
 	if (state == STATE_PAUSE) {
+SUSPEND:
 	    pthread_cond_wait(&suspend, &mutex);
 	}
 
@@ -238,9 +242,12 @@ audio_thread_start(void *V)
         do {
 	    count = read(fd, rdbuf, buffer_size);
 	    if (count != buffer_size) {
+		if( state != STATE_PAUSE) {
 		    fprintf(stderr, "Cannot read samples!\n");
 		    close(fd);
 		    exit(ERR_WAVEINRECORD);
+		}
+		else goto SUSPEND;
 	    }
 	} while (select(fd+1, &read_fds, NULL, NULL, &read_timeout) != 0);
 	
@@ -259,6 +266,7 @@ audio_thread_start(void *V)
 	    fprintf(stderr, "Cannot write samples!\n");
 	}
     }
+
     return NULL;
 #else
     MSG             msg;
