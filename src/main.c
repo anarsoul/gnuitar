@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2005/08/24 22:33:02  alankila
+ * - avoid reopening sound device at exit in order to cleanly shut it down the
+ *   next moment
+ *
  * Revision 1.32  2005/08/24 21:59:00  alankila
  * some minor cleanup yet
  *
@@ -272,15 +276,18 @@ main(int argc, char **argv)
 #ifndef _WIN32
     /* wait for audio thread to finish */
     if (state == STATE_PAUSE) {
-        /* initialize so that it's safe to give up */
-        AUDIO_INIT();
+        state = STATE_EXIT;
+        pthread_mutex_unlock(&snd_open);
+        pthread_join(audio_thread, NULL);
+    } else {
+        state = STATE_EXIT;
+        pthread_join(audio_thread, NULL);
+        AUDIO_FINISH();
     }
-    state = STATE_EXIT;
-    pthread_join(audio_thread, NULL);
 #else
     state = STATE_EXIT;
-#endif
     AUDIO_FINISH();
+#endif
     pump_stop();
     save_settings();
     

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2005/08/24 22:33:02  alankila
+ * - avoid reopening sound device at exit in order to cleanly shut it down the
+ *   next moment
+ *
  * Revision 1.1  2005/08/24 21:44:44  alankila
  * - split sound drivers off main.c
  * - add support for alsa
@@ -61,11 +65,13 @@ oss_audio_thread(void *V)
 	if (state == STATE_PAUSE) {
 	    usleep(10000);
 	}
-        /* catch transition PAUSE -> EXIT */
-        if (state == STATE_EXIT)
-            break;
-
         pthread_mutex_lock(&snd_open);
+        /* catch transition PAUSE -> EXIT with mutex being waited already */
+        if (state == STATE_EXIT) {
+            pthread_mutex_unlock(&snd_open);
+            break;
+        }
+
 	/* keep on reading and discard if select says we can read.
          * this will allow us to catch up if we fall behind */
         FD_ZERO(&read_fds);
