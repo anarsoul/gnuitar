@@ -113,7 +113,46 @@ dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
 dnl Replace `main' with a function in -lpthread:
 AC_CHECK_LIB(pthread, main)
-AC_CHECK_LIB(sndfile, main)
+AC_CHECK_LIB(sndfile, main,
+    [ SNDFILE=1 ])
+AC_ARG_WITH(sndfile,
+    [  --with-sndfile	          Use libsndfile to write tracks to .wav ],
+    [
+    	if test "$withval" != "no" && test "$SNDFILE" = '1'; then
+	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_SNDFILE"
+	else
+	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_SNDFILE"
+	fi
+    ],
+    [
+	if test "$SNDFILE" = '1'; then
+	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_SNDFILE"
+	else
+	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_SNDFILE"
+	fi
+    ]
+)
+
+#AM_PATH_ALSA()
+ALSA=1	# FIXME: Add some check to make sure ALSA is present on the system
+
+AC_ARG_WITH(alsa,
+    [  --with-alsa	          Use ALSA for sound processing (disabled by default) ],
+    [
+    	if test "$withval" != "no" && test "$ALSA" = '1'; then
+	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_ALSA -UHAVE_OSS"
+	else
+	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_ALSA -DHAVE_OSS"
+	fi
+    ],
+    [
+	if test "$ALSA" = '1'; then
+	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_ALSA -DHAVE_OSS"
+	else
+	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_ALSA -UHAVE_OSS"
+	fi
+    ]
+)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT

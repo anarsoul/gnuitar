@@ -57,6 +57,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+host_alias = @host_alias@
+host_triplet = @host@
 AWK = @AWK@
 CC = @CC@
 CONFIG_DEFS = @CONFIG_DEFS@
@@ -69,7 +71,10 @@ GOBJECT_QUERY = @GOBJECT_QUERY@
 GTK_CFLAGS = @GTK_CFLAGS@
 GTK_CONFIG = @GTK_CONFIG@
 GTK_LIBS = @GTK_LIBS@
+HAVE_LIB = @HAVE_LIB@
+LIB = @LIB@
 LN_S = @LN_S@
+LTLIB = @LTLIB@
 MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 PKG_CONFIG = @PKG_CONFIG@
@@ -80,12 +85,10 @@ a1dir = $(datadir)/doc/gnuitar/docs
 a1_DATA = docs
 docdir = $(datadir)/doc/gnuitar
 doc_DATA = docs/*.html NEWS ChangeLog FAQ AUTHORS COPYING INSTALL README TODO
-win32 = gnuitar.ico gnuitar.dsp gnuitar.mak gnuitar_small.ico gnuitar.vcproj \
-	gnuitar.sln
+win32 = gnuitar.ico gnuitar.dsp gnuitar.mak gnuitar_small.ico gnuitar.vcproj 	gnuitar.sln
 
 
-EXTRA_DIST = gnuitar.spec docs/*.html docs/Makefile docs/toc.sh \
-	FAQ $(win32) 
+EXTRA_DIST = gnuitar.spec docs/*.html docs/Makefile docs/toc.sh 	FAQ $(win32) 
 
 
 BZIP2_ENV = -9
@@ -95,13 +98,13 @@ CONFIG_CLEAN_FILES =
 DATA =  $(a1_DATA) $(doc_DATA)
 
 DIST_COMMON =  README AUTHORS COPYING ChangeLog INSTALL Makefile.am \
-Makefile.in NEWS TODO aclocal.m4 configure configure.in install-sh \
-missing mkinstalldirs
+Makefile.in NEWS TODO aclocal.m4 config.guess config.sub configure \
+configure.in install-sh missing mkinstalldirs
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = gtar
+TAR = tar
 GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:
@@ -236,7 +239,7 @@ TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
 	  awk '    { files[$$0] = 1; } \
 	       END { for (i in files) print i; }'`; \
 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
+	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
 
 mostlyclean-tags:
 
