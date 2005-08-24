@@ -39,6 +39,9 @@
 #    endif
 #else
 #    include "audio-windows.h"
+#    define AUDIO_THREAD windows_audio_thread
+#    define AUDIO_INIT windows_init_sound
+#    define AUDIO_FINISH windows_finish_sound
 #endif
 
 enum GnuitarErr {
@@ -80,11 +83,11 @@ extern DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
 /*
  * Program states:
  */
-#define STATE_PROCESS		0	/* 0 - recording/playback is on */
-#define STATE_PAUSE		1	/* 1 - playback is paused */
-#define STATE_EXIT		2	/* 2 - exit thread */
-#define STATE_START		3	/* 3 - the thread is just started
-					 * (first loop), playback is on */
-#define STATE_START_PAUSE	4	/* 4 - application is starting,
-					 * playback is paused */
+enum STATES {
+    STATE_PROCESS = 0,      /* record/playback is on */
+    STATE_PAUSE,            /* plauyback is paused */
+    STATE_EXIT,             /* exit thread */
+    STATE_START,            /* the thread's first iteration, playback on */
+    STATE_START_PAUSE,      /* application is initializing, playback paused */
+};
 #endif

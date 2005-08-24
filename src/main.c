@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2005/08/24 21:59:00  alankila
+ * some minor cleanup yet
+ *
  * Revision 1.31  2005/08/24 21:44:44  alankila
  * - split sound drivers off main.c
  * - add support for alsa
@@ -234,7 +237,7 @@ main(int argc, char **argv)
      * create audio thread 
      */
     audio_thread =
-	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) windows_audio_thread, 0,
+	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) AUDIO_THREAD, 0,
 		     0, &thread_id);
     if (!audio_thread) {
 	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
