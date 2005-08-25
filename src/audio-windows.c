@@ -1,6 +1,6 @@
 /*
  * GNUitar
- * Main module
+ * Windows sound driver
  * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2005/08/25 19:51:45  fonin
+ * Fixed windows audio driver
+ *
  * Revision 1.2  2005/08/24 21:55:05  alankila
  * slight bit likelier to compile
  *
@@ -29,110 +32,6 @@
  * - rework thread locking
  * - in this version, sound drivers are chosen at compile time
  * - windows driver is probably broken
- *
- * Revision 1.29  2005/08/22 22:11:59  alankila
- * - change RC filters to accept data_block
- * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
- *   just filter_no.
- * - remove unused SAMPLE8 typedef
- *
- * Revision 1.28  2005/08/22 11:07:27  alankila
- * - move last bits of tracker support off main.c to pump.c
- * - add settings loader/saver for GTK2, now needs GTK+ 2.6 in minimum
- *
- * Revision 1.27  2005/08/21 23:44:13  alankila
- * - use libsndfile on Linux to write audio as .wav
- * - move clipping tests into pump.c to save writing it in tracker and 3 times
- *   in main.c
- * - give default name to .wav from current date and time (in ISO format)
- * - there's a weird bug if you cancel the file dialog, it pops up again!
- *   I have to look into what's going on.
- *
- * Revision 1.26  2005/08/14 23:36:13  alankila
- * - set # of channels directly. What I really need is to control number of
- *   input and output channels separately, but it seems impossible with OSS.
- *   It's probably time to switch to ALSA.
- *
- * Revision 1.25  2005/08/11 17:57:22  alankila
- * - add some missing headers & fix all compiler warnings on gcc 4.0.1+ -Wall
- *
- * Revision 1.24  2005/08/08 12:03:26  fonin
- * Fixed include sys/select.h which did not work on windows.
- *
- * Revision 1.23  2005/08/07 13:13:14  alankila
- * oops: reinstate the MAX_BUFFER_SIZE / sizeof(SAMPLE) in the rdbuf & procbuf.
- * Removing that was a mistake. Keep the rest, though.
- *
- * Revision 1.22  2005/08/07 13:03:57  alankila
- * - add select() around the read() part to read and discard buffers if
- *   we begin to fall behind in audio processing
- *
- * Revision 1.21  2005/04/15 14:37:41  fonin
- * Fixed version variable
- *
- * Revision 1.20  2005/04/06 19:34:58  fonin
- * Fixed the accidental typo with "count=bits >> 8" that caused the floating exception
- *
- * Revision 1.19  2004/10/21 11:19:18  dexterus
- * Bug in the win 32 section related to sample type (SAMPLE insted of
- * DSP_SAMPLE ) fixed -- win32 working
- *
- * Revision 1.18  2004/08/10 15:07:31  fonin
- * Support processing in float/int - type DSP_SAMPLE
- *
- * Revision 1.17  2003/05/30 12:49:23  fonin
- * log2() renamed to my_log2() since log2 is a reserved word on MacOS X.
- *
- * Revision 1.16  2003/03/25 14:03:01  fonin
- * Work around buffer overruns with DirectSound playback.
- *
- * Revision 1.15  2003/03/23 20:05:42  fonin
- * New playback method via DirectSound.
- *
- * Revision 1.14  2003/03/15 20:07:01  fonin
- * Moved function expired(), fixed compilation error.
- *
- * Revision 1.13  2003/03/09 21:05:57  fonin
- * Internal redesign for new "change sampling params" feature.
- * New functions init_sound() and close_sound().
- *
- * Revision 1.12  2003/02/11 21:45:03  fonin
- * URL fixes.
- *
- * Revision 1.11  2003/02/05 21:10:10  fonin
- * Cleanup before release.
- *
- * Revision 1.10  2003/02/03 17:24:04  fonin
- * Disclaimer and legal notice text moved to a string constants to gui.h
- *
- * Revision 1.9  2003/02/03 11:39:25  fonin
- * Copyright year changed.
- *
- * Revision 1.8  2003/01/31 15:18:04  fonin
- * Few cleanups, more comments; start recording AFTER all input buffers are
- * queued.
- *
- * Revision 1.7  2003/01/30 21:33:31  fonin
- * - Added demo version code for Win32;
- * - NCHANNELS now is used in UNIX build.
- *
- * Revision 1.6  2003/01/29 19:34:00  fonin
- * Win32 port.
- *
- * Revision 1.5  2001/06/02 14:05:59  fonin
- * Added GNU disclaimer.
- *
- * Revision 1.4  2001/04/27 14:29:14  fonin
- * <sys/soundcard.h> for better compatibility with FreeBSD.
- *
- * Revision 1.3  2001/03/25 17:42:55  fonin
- * Switching back to real user identifier immediately after setting realtime priority.
- *
- * Revision 1.2  2001/03/25 12:10:06  fonin
- * Text messages begin from newline rather than end with it.
- *
- * Revision 1.1.1.1  2001/01/11 13:21:53  fonin
- * Version 0.1.0 Release 1 beta
  *
  */
 
@@ -147,16 +46,6 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#ifdef DEMO
-#define DEMO_MSG "\n\nThis is the demo version of the GNUitar program." \
-    "\nYou may download the full version as a source distribution" \
-    "\nfrom http://freshmeat.net/projects/gnuitar" \
-    "\nor purchase binary package from http://www.omnistaronline.com/~fonin/order.php\n"
-#    ifdef _WIN32
-#        define DEMO_TIMER 1
-#    endif
-#endif
-
 #include "pump.h"
 #include "main.h"
 #include "tracker.h"
@@ -170,7 +59,7 @@ DWORD           thread_id;
 LPDIRECTSOUND   snd = NULL;	/* DirectSound object */
 LPDIRECTSOUNDBUFFER dbuffer = NULL;	/* DS buffer */
 short           dsound = 0;	/* flag - do we use DirectSound for output ? */
-unsigned short	overrun_threshold=4;	/* after this number of fragments 
+unsigned short	overrun_threshold=4;	/* after this number of fragments
 					 * overran buffer will be recovered  */
 HWAVEIN         in;		/* input sound handle */
 HWAVEOUT        out;		/* output sound handle */
@@ -181,7 +70,7 @@ MMRESULT        err;
 			 */
 WAVEHDR         wave_header[MAX_BUFFERS];	/* input header */
 WAVEHDR         write_header[MAX_BUFFERS];	/* output headers */
-char            cur_wr_hdr[MAX_BUFFERS];	/* available write headers 
+char            cur_wr_hdr[MAX_BUFFERS];	/* available write headers
 						 * array */
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* write buffers */
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* receive buffer */
@@ -202,16 +91,17 @@ windows_audio_thread(void *V)
                     len1 = 0,
                     len2 = 0;
     /*
-     * read/write cursors and lengths for DS calls 
+     * read/write cursors and lengths for DS calls
      */
     SAMPLE         *pos1 = NULL,
                    *pos2 = NULL;	/* pointers for DirectSound lock
 					 * call */
     static unsigned int bufpos = 0;	/* current write position in the
 					 * buffer (DirectSound) */
+    struct data_block db;
 
     /*
-     * Wait for a message sent to me by the audio driver 
+     * Wait for a message sent to me by the audio driver
      */
     while (state != STATE_EXIT) {
 	if (!GetMessage(&msg, 0, 0, 0)) {
@@ -219,14 +109,14 @@ windows_audio_thread(void *V)
 	}
 
 	/*
-	 * Figure out which message was sent 
+	 * Figure out which message was sent
 	 */
 	switch (msg.message) {
 	case WM_QUIT:{
 		return 0;
 	    }
 	    /*
-	     * A buffer has been filled by the driver 
+	     * A buffer has been filled by the driver
 	     */
 	case MM_WIM_DATA:{
 		int             hdr_avail = -1;	/* available write header
@@ -250,7 +140,7 @@ windows_audio_thread(void *V)
 
 
 		    /*
-		     * find unused output buffer and queue it to output 
+		     * find unused output buffer and queue it to output
 		     */
 		    for (i = 0; !dsound && i < nbuffers; i++)
 			if (cur_wr_hdr[i] == 1) {
@@ -260,7 +150,10 @@ windows_audio_thread(void *V)
 			}
 
 		    if (dsound || hdr_avail != -1) {
-			pump_sample(procbuf, count);
+                        db.data = procbuf;
+                        db.len = count;
+                        db.channels = nchannels;
+			pump_sample(&db);
 
 			/*
 			 * DirectSound output:
@@ -300,7 +193,7 @@ windows_audio_thread(void *V)
 				else bufpos += buffer_size;
 			    }
 			    /*
-			     * handle wrap around 
+			     * handle wrap around
 			     */
 			    if (bufpos >= MIN_BUFFER_SIZE * MAX_BUFFERS)
 				bufpos = 0;
@@ -392,7 +285,7 @@ windows_audio_thread(void *V)
 			    }
 			    /*
 			     * Start DirectSound playback, if this is a first
-			     * recorded buffer 
+			     * recorded buffer
 			     */
 			    if (state == STATE_START) {
 				res =
@@ -430,7 +323,7 @@ windows_audio_thread(void *V)
 			}
 
 			/*
-			 * start playback - MME output 
+			 * start playback - MME output
 			 */
 			else {
 			    for (i = 0; i < count; i++) {
@@ -450,13 +343,13 @@ windows_audio_thread(void *V)
 		    } else
 			printf("\nbuffer overrun.");
 		} else {
-		    // printf("\nbuffer underrun."); 
+		    // printf("\nbuffer underrun.");
 		}
 		/*
 		 * Now we need to requeue this buffer so the driver can
 		 * use it for another block of audio data. NOTE: We
 		 * shouldn't need to waveInPrepareHeader() a WAVEHDR that
-		 * has already been prepared once 
+		 * has already been prepared once
 		 */
 		waveInAddBuffer(in, (WAVEHDR *) msg.lParam,
 				sizeof(WAVEHDR));
@@ -466,28 +359,28 @@ windows_audio_thread(void *V)
 		continue;
 	    }
 	    /*
-	     * Our main thread is opening the WAVE device 
+	     * Our main thread is opening the WAVE device
 	     */
 	case MM_WIM_OPEN:{
 		continue;
 	    }
 	    /*
-	     * Our main thread is closing the WAVE device 
+	     * Our main thread is closing the WAVE device
 	     */
 	case MM_WIM_CLOSE:{
 		/*
-		 * Terminate this thread (by return'ing) 
+		 * Terminate this thread (by return'ing)
 		 */
 		break;
 	    }
 	    /*
-	     * Audio driver is ready to playback next block 
+	     * Audio driver is ready to playback next block
 	     */
 	case MM_WOM_DONE:{
 		/*
-		 * Clear the WHDR_DONE bit (which the driver set last time 
+		 * Clear the WHDR_DONE bit (which the driver set last time
 		 * that this WAVEHDR was sent via waveOutWrite and was
-		 * played). Some drivers need this to be cleared 
+		 * played). Some drivers need this to be cleared
 		 */
 		if (dsound)
 		    break;
@@ -506,7 +399,7 @@ windows_audio_thread(void *V)
 	    ;
 	}
     }
-    CloseHandle(audio_thread);
+    CloseHandle(AUDIO_THREAD);
     return 0;
 }
 
@@ -529,17 +422,17 @@ serror(DWORD err, TCHAR * str)
 }
 
 /*
- * sound shutdown 
+ * sound shutdown
  */
 void
 windows_finish_sound(void)
 {
     int             i;
-    
+
     state = STATE_PAUSE;
-    
+
     /*
-     * Stop Windows queuing of buffers 
+     * Stop Windows queuing of buffers
      */
     if (!dsound)
 	waveOutReset(out);
@@ -555,7 +448,7 @@ windows_finish_sound(void)
     WaitForSingleObject(input_bufs_done, INFINITE);
 
     /*
-     * Unprepare WAVE buffers 
+     * Unprepare WAVE buffers
      */
     for (i = 0; i < nbuffers; i++) {
 	if (!dsound)
@@ -595,7 +488,7 @@ windows_init_sound(void)
     WAVEFORMATEX    format;	/* wave format */
 
     /*
-     * set audio parameters - sampling rate, number of channels etc. 
+     * set audio parameters - sampling rate, number of channels etc.
      */
     format.wFormatTag = WAVE_FORMAT_PCM;
     format.nChannels = nchannels;
@@ -612,7 +505,7 @@ windows_init_sound(void)
     if (nbuffers > MAX_BUFFERS)
 	nbuffers = MAX_BUFFERS;
     /*
-     * Open Digital Audio In device 
+     * Open Digital Audio In device
      */
     err =
 	waveInOpen(&in, WAVE_MAPPER, &format, (DWORD) thread_id, 0,
@@ -621,7 +514,7 @@ windows_init_sound(void)
 	serror(err,
 	       "There was an error opening the Digital Audio In device\r\n");
 	state = STATE_EXIT;
-	TerminateThread(audio_thread, ERR_WAVEINOPEN);
+	TerminateThread(AUDIO_THREAD, ERR_WAVEINOPEN);
 	return ERR_WAVEINOPEN;
     }
 
@@ -636,7 +529,7 @@ windows_init_sound(void)
 		   "There was an error opening the Digital Audio Out device!\r\n");
 	    state = STATE_EXIT;
 	    waveInClose(in);
-	    TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
+	    TerminateThread(AUDIO_THREAD, ERR_WAVEOUTOPEN);
 	    return ERR_WAVEOUTOPEN;
 	}
 	for (i = 0; i < nbuffers; i++) {
@@ -648,7 +541,7 @@ windows_init_sound(void)
 	    write_header[i].dwBufferLength = buffer_size;
 
 	    /*
-	     * Prepare the N WAVEHDR's 
+	     * Prepare the N WAVEHDR's
 	     */
 	    if ((err =
 		 waveOutPrepareHeader(out, &write_header[i],
@@ -656,8 +549,8 @@ windows_init_sound(void)
 		fprintf(stderr, "ERROR: preparing WAVEHDR %d! -- %08X\n",
 			i, err);
 		state = STATE_EXIT;
-		close_sound();
-		TerminateThread(audio_thread, ERR_WAVEOUTHDR);
+		windows_finish_sound();
+		TerminateThread(AUDIO_THREAD, ERR_WAVEOUTHDR);
 		return ERR_WAVEOUTHDR;
 	    }
 	    cur_wr_hdr[i] = 1;
@@ -665,7 +558,7 @@ windows_init_sound(void)
 	}
     }
     /*
-     * DirectSound init 
+     * DirectSound init
      */
     else {
 	DWORD           bufsize = MIN_BUFFER_SIZE * MAX_BUFFERS;
@@ -680,26 +573,26 @@ windows_init_sound(void)
 	buffer_desc.lpwfxFormat = &format;
 
 	/*
-	 * open the DirectSound interface 
+	 * open the DirectSound interface
 	 */
 	if (DirectSoundCreate(NULL, &snd, NULL) != DS_OK) {
 	    state = STATE_EXIT;
 	    fprintf(stderr, "\nError creating DirectSound object !");
 	    waveInClose(in);
-	    TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
+	    TerminateThread(AUDIO_THREAD, ERR_WAVEOUTOPEN);
 	    return ERR_DSOUNDOPEN;
 	}
 
 	if (IDirectSound_CreateSoundBuffer(snd, &buffer_desc, &dbuffer, NULL) !=
 	    DS_OK) {
 	    state = STATE_EXIT;
-	    close_sound();
+	    windows_finish_sound();
 	    fprintf(stderr, "\nError creating DirectSound buffer !");
-	    TerminateThread(audio_thread, ERR_WAVEOUTHDR);
+	    TerminateThread(AUDIO_THREAD, ERR_WAVEOUTHDR);
 	    return ERR_DSOUNDBUFFER;
 	}
 	/*
-	 * Try to set primary mixing privileges 
+	 * Try to set primary mixing privileges
 	 */
 	window = GetActiveWindow();
 	if (window != NULL) {
@@ -707,7 +600,7 @@ windows_init_sound(void)
 						   DSSCL_PRIORITY);
 	    if (res != DS_OK) {
 		state = STATE_EXIT;
-		close_sound();
+		windows_finish_sound();
 		fprintf(stderr,
 			"\nError setting up the cooperative level: ");
 		switch (res) {
@@ -728,7 +621,7 @@ windows_init_sound(void)
 		    }
 		    break;
 		}
-		TerminateThread(audio_thread, ERR_DSCOOPLEVEL);
+		TerminateThread(AUDIO_THREAD, ERR_DSCOOPLEVEL);
 		return ERR_DSCOOPLEVEL;
 	    }
 	}
@@ -739,32 +632,32 @@ windows_init_sound(void)
 	wave_header[i].lpData = rdbuf + i * buffer_size;
 	/*
 	 * Fill in WAVEHDR fields for buffer starting address. We've
-	 * already filled in the size fields above 
+	 * already filled in the size fields above
 	 */
 	wave_header[i].dwFlags = 0;
 	/*
-	 * Leave other WAVEHDR fields at 0 
+	 * Leave other WAVEHDR fields at 0
 	 */
 
 	/*
-	 * Prepare the WAVEHDR's 
+	 * Prepare the WAVEHDR's
 	 */
 	if ((err =
 	     waveInPrepareHeader(in, &wave_header[i], sizeof(WAVEHDR)))) {
 	    serror(err, "Error preparing WAVEHDR!\n");
 	    state = STATE_EXIT;
-	    close_sound();
-	    TerminateThread(audio_thread, ERR_WAVEINHDR);
+	    windows_finish_sound();
+	    TerminateThread(AUDIO_THREAD, ERR_WAVEINHDR);
 	    return ERR_WAVEINHDR;
 	}
 	/*
-	 * Queue WAVEHDR (recording hasn't started yet) 
+	 * Queue WAVEHDR (recording hasn't started yet)
 	 */
 	if ((err = waveInAddBuffer(in, &wave_header[i], sizeof(WAVEHDR)))) {
 	    serror(err, "Error queueing WAVEHDR!\n");
 	    state = STATE_EXIT;
-	    close_sound();
-	    TerminateThread(audio_thread, ERR_WAVEINQUEUE);
+	    windows_finish_sound();
+	    TerminateThread(AUDIO_THREAD, ERR_WAVEINQUEUE);
 	    return ERR_WAVEINQUEUE;
 	}
 	active_in_buffers++;
@@ -776,12 +669,12 @@ windows_init_sound(void)
     if ((err = waveInStart(in))) {
 	serror(err, "Error starting record!\n");
 	state = STATE_EXIT;
-	close_sound();
-	TerminateThread(audio_thread, ERR_WAVEINRECORD);
+	windows_finish_sound();
+	TerminateThread(AUDIO_THREAD, ERR_WAVEINRECORD);
 	return ERR_WAVEINRECORD;
     }
     /*
-     * start DirectSound playback 
+     * start DirectSound playback
      */
     if (dsound && state != STATE_START_PAUSE) {
 /*
@@ -789,9 +682,9 @@ windows_init_sound(void)
 	res=IDirectSoundBuffer_Play(dbuffer,0,0,DSBPLAY_LOOPING);
 	if(res!=DS_OK) {
 	    state = STATE_EXIT;
-	    close_sound();
+	    windows_finish_sound();
 	    fprintf(stderr,"\nCannot start playback via DirectSound !");
-	    TerminateThread(audio_thread, ERR_WAVEINRECORD);
+	    TerminateThread(AUDIO_THREAD, ERR_WAVEINRECORD);
 	    return ERR_DSOUNDPLAYBACK;
 	}
 */
@@ -804,3 +697,4 @@ windows_init_sound(void)
 
     return ERR_NOERROR;
 }
+

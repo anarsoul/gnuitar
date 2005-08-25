@@ -1,6 +1,6 @@
 /*
  * GNUitar
- * Main module
+ * Windows sound driver
  * Copyright (C) 2000,2001,2003 Max Rudensky         <fonin@ziet.zhitomir.ua>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2005/08/25 19:51:45  fonin
+ * Fixed windows audio driver
+ *
  * Revision 1.1  2005/08/24 21:44:44  alankila
  * - split sound drivers off main.c
  * - add support for alsa
@@ -33,8 +36,11 @@
 #ifndef _AUDIO_WINDOWS_H_
 #define _AUDIO_WINDOWS_H_ 1
 
+#include <windows.h>
+
 DWORD WINAPI windows_audio_thread(void *V);
 void windows_finish_sound(void);
 int windows_init_sound(void);
 
 #endif
+

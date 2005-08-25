@@ -47,7 +47,6 @@
 enum GnuitarErr {
     ERR_NOERROR = 0,
     ERR_THREAD, 		/* cannot create audio thread */
-    ERR_DEMOEXPIRED,		/* demo version is expired */
     ERR_WAVEINOPEN,		/* cannot open wave in device */
     ERR_WAVEOUTOPEN,		/* cannot open wave out device */
     ERR_WAVEFRAGMENT,   	/* cannot set fragments */
@@ -78,6 +77,8 @@ extern DSP_SAMPLE   procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
 extern char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 extern char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 extern DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
+extern unsigned short  overrun_threshold;
+extern DWORD           thread_id;
 #endif
 
 /*
