@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2005/08/25 19:52:11  fonin
+ * Removed code for demo version
+ *
  * Revision 1.33  2005/08/24 22:33:02  alankila
  * - avoid reopening sound device at exit in order to cleanly shut it down the
  *   next moment
@@ -151,16 +154,6 @@
 #include <pthread.h>
 #endif
  
-#ifdef DEMO
-#define DEMO_MSG "\n\nThis is the demo version of the GNUitar program." \
-    "\nYou may download the full version as a source distribution" \
-    "\nfrom http://freshmeat.net/projects/gnuitar" \
-    "\nor purchase binary package from http://www.omnistaronline.com/~fonin/order.php\n"
-#    ifdef _WIN32
-#        define DEMO_TIMER 1
-#    endif
-#endif
-
 #include "pump.h"
 #include "main.h"
 #include "tracker.h"
@@ -181,18 +174,6 @@ HANDLE          audio_thread;
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
-#endif
-
-#ifdef DEMO
-#ifdef _WIN32
-VOID            CALLBACK
-expired(HWND hwnd, UINT msg, UINT timer_id, DWORD time)
-{
-    gtk_main_quit();
-    printf("%s", DEMO_MSG);
-    exit(ERR_DEMOEXPIRED);
-}
-#endif
 #endif
 
 int
@@ -225,17 +206,6 @@ main(int argc, char **argv)
     setuid(getuid());
 #else
     state = STATE_START_PAUSE;
-
-#ifdef DEMO
-    /*
-     * For demo version, we exit after a random time, 10 up to 15 minutes
-     */
-    srand(time(NULL));
-    SetTimer(GetActiveWindow(), DEMO_TIMER,
-	     (unsigned int) (1000 * 60 * 10 +
-			     1000 * 60 * 5 * rand() / (RAND_MAX + 1.0)),
-	     expired);
-#endif
 
     /*
      * create audio thread 
