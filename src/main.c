@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2005/08/26 15:59:56  fonin
+ * Audio driver now can be chosen by user
+ *
  * Revision 1.34  2005/08/25 19:52:11  fonin
  * Removed code for demo version
  *
@@ -168,13 +171,17 @@ pthread_mutex_t snd_open = PTHREAD_MUTEX_INITIALIZER;
 
 SAMPLE          rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
+void*           (*audio_proc) (void *V); /* pointer to audio thread routine */
 #else
 HANDLE          audio_thread;
 
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
+DWORD WINAPI    (*audio_proc) (void *V); /* pointer to audio thread routine */
 #endif
+int		(*audio_init) (void);	/* init sound routine   */
+void		(*audio_finish) (void);	/* finish sound routine */
 
 int
 main(int argc, char **argv)
@@ -183,6 +190,15 @@ main(int argc, char **argv)
 #ifndef _WIN32
     int             max_priority;
     struct sched_param p;
+
+// FIXME - autodetect available sound drivers and set appropriate audio routines
+    audio_init=oss_init_sound;
+    audio_finish=oss_finish_sound;
+    audio_proc=oss_audio_thread;
+/*    audio_init=alsa_init_sound;
+    audio_finish=alsa_finish_sound;
+    audio_proc=alsa_audio_thread;
+*/
 
     /* prepare state & mutex for audio thread init_sound() */
     state = STATE_PAUSE;
@@ -195,7 +211,7 @@ main(int argc, char **argv)
 	fprintf(stderr, "warning: unable to set realtime priority (needs root privileges)\n");
     }
 
-    if (pthread_create(&audio_thread, NULL, AUDIO_THREAD, NULL)) {
+    if (pthread_create(&audio_thread, NULL, audio_proc, NULL)) {
 	fprintf(stderr, "Audio thread creation failed!\n");
 	return ERR_THREAD;
     }
@@ -206,12 +222,15 @@ main(int argc, char **argv)
     setuid(getuid());
 #else
     state = STATE_START_PAUSE;
+    audio_proc=windows_audio_thread;
+    audio_init=windows_init_sound;
+    audio_finish=windows_finish_sound;
 
     /*
      * create audio thread 
      */
     audio_thread =
-	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) AUDIO_THREAD, 0,
+	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_proc, 0,
 		     0, &thread_id);
     if (!audio_thread) {
 	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
@@ -238,25 +257,26 @@ main(int argc, char **argv)
     init_gui();
     
     pump_start(argc, argv);
-    if ((error = AUDIO_INIT()) != ERR_NOERROR) {
+    if ((error = (*audio_init)()) != ERR_NOERROR) {
 	fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
     }
+
     gtk_main();
 
 #ifndef _WIN32
     /* wait for audio thread to finish */
-    if (state == STATE_PAUSE) {
+    if (state == STATE_PAUSE || state == STATE_ATHREAD_RESTART) {
         state = STATE_EXIT;
         pthread_mutex_unlock(&snd_open);
         pthread_join(audio_thread, NULL);
     } else {
         state = STATE_EXIT;
         pthread_join(audio_thread, NULL);
-        AUDIO_FINISH();
+        (*audio_finish)();
     }
 #else
     state = STATE_EXIT;
-    AUDIO_FINISH();
+    (*audio_finish)();
 #endif
     pump_stop();
     save_settings();

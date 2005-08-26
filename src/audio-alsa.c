@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2005/08/26 15:59:56  fonin
+ * Audio driver now can be chosen by user
+ *
  * Revision 1.2  2005/08/24 22:33:02  alankila
  * - avoid reopening sound device at exit in order to cleanly shut it down the
  *   next moment
@@ -62,13 +65,13 @@ alsa_audio_thread(void *V)
     struct data_block db; 
     
     /* frame counts are always the same to both read and write */
-    while (state != STATE_EXIT) {
+    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
         while (state == STATE_PAUSE) {
             usleep(10000);
         }
         pthread_mutex_lock(&snd_open);
         /* catch transition PAUSE -> EXIT with mutex being waited already */
-        if (state == STATE_EXIT) {
+        if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
             pthread_mutex_unlock(&snd_open);
             break;
         }

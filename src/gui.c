@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.40  2005/08/26 15:59:56  fonin
+ * Audio driver now can be chosen by user
+ *
  * Revision 1.39  2005/08/24 21:55:05  alankila
  * slight bit likelier to compile
  *
@@ -756,6 +759,7 @@ typedef struct SAMPLE_PARAMS {
     GtkWidget      *latency;
     GtkWidget      *dialog;
     GtkWidget      *latency_label;
+    GtkWidget      *driver;
 } sample_params;
 
 double vumeter_peak = 0;
@@ -815,18 +819,23 @@ update_latency_label(GtkWidget * widget, gpointer sparams)
     int             bufsize,
                     n,
                     sr;
-#ifndef _WIN32
+#ifdef HAVE_OSS
     static int      old_bufsize = 0;
 #endif
 
     sample_params  *sp = (sample_params *) sparams;
     bufsize =
 	gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
-#ifndef _WIN32
+
+#ifdef HAVE_OSS
     /*
      * OSS cannot accept buffer size that is not a level of 2 
      */
-    while (my_log2(bufsize) == 0) {
+    while (audio_proc==oss_audio_thread && my_log2(bufsize) == 0) {
+	if (bufsize % 128) {
+	    bufsize=128;
+	    old_bufsize=0;
+	}
 	if (bufsize > old_bufsize) {
 	    bufsize += MIN_BUFFER_SIZE;
 	} else {
@@ -836,11 +845,45 @@ update_latency_label(GtkWidget * widget, gpointer sparams)
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(sp->latency), bufsize);
     old_bufsize = bufsize;
 #endif
+
     n = atoi(gtk_entry_get_text
 	     (GTK_ENTRY(GTK_COMBO(sp->channels)->entry)));
     sr = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
     sprintf(tmp, "latency = %.2fms", bufsize * 1000.0 / (sr * n));
     gtk_label_set_text(GTK_LABEL(sp->latency_label), tmp);
+}
+
+void
+update_driver(GtkWidget * widget, gpointer sparams)
+{
+    char* tmp=NULL;
+
+    sample_params  *sp = (sample_params *) sparams;
+    tmp=gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->driver)->entry));
+    if(tmp==NULL)
+	return;
+#ifdef HAVE_ALSA
+    if(strcmp(tmp,"ALSA")==0) {
+	audio_proc=alsa_audio_thread;
+	audio_init=alsa_init_sound;
+	audio_finish=alsa_finish_sound;
+    }
+#endif
+#ifdef HAVE_OSS
+    if(strcmp(tmp,"OSS")==0) {
+	audio_proc=oss_audio_thread;
+	audio_init=oss_init_sound;
+	audio_finish=oss_finish_sound;
+    }
+#endif
+#ifdef _WIN32
+    if(strcmp(tmp,"MMSystem")==0) {
+	audio_proc=windows_audio_thread;
+	audio_init=windows_init_sound;
+	audio_finish=windows_finish_sound;
+    }
+#endif
+    state=STATE_ATHREAD_RESTART;
 }
 
 #ifdef _WIN32
@@ -881,6 +924,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     GtkWidget      *bits_label;
     GtkWidget      *channels_label;
     GtkWidget      *latency_label;
+    GtkWidget	   *driver_label;
     GtkWidget      *ok;
     GtkWidget      *cancel;
     GtkWidget      *group;
@@ -889,6 +933,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     GList          *sample_rates = NULL;
     GList          *bits_list = NULL;
     GList          *channels_list = NULL;
+    GList          *drivers_list = NULL;
     GtkObject      *latency_adj;
     char            tmp[256];
     GtkSpinButton  *dummy1;
@@ -979,6 +1024,40 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_entry_set_editable(dummy2, FALSE);
     gtk_widget_set_usize(sparams.latency, 70, 0);
     gtk_box_pack_start(GTK_BOX(hpack2), sparams.latency, FALSE, FALSE, 1);
+
+    driver_label = gtk_label_new("Audio Driver:");
+    gtk_box_pack_start(GTK_BOX(hpack3), driver_label, TRUE, FALSE, 1);
+    sparams.driver = gtk_combo_new();
+#ifdef HAVE_OSS
+    drivers_list = g_list_append(drivers_list, "OSS");
+#endif
+#ifdef HAVE_ALSA
+    drivers_list = g_list_append(drivers_list, "ALSA");
+#endif
+#ifdef _WIN32
+    drivers_list = g_list_append(drivers_list, "MMSystem");
+#endif
+
+    gtk_combo_set_popdown_strings(GTK_COMBO(sparams.driver), drivers_list);
+#ifdef HAVE_OSS
+    if(audio_proc==oss_audio_thread)
+	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"OSS");
+#endif
+#ifdef HAVE_ALSA
+    if(audio_proc==alsa_audio_thread)
+	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"ALSA");
+#endif
+#ifdef _WIN32
+    if(audio_proc==windows_audio_thread)
+	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"MMSystem");
+#endif
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
+			   FALSE);
+    gtk_widget_set_usize(sparams.driver, 70, 0);
+    gtk_box_pack_start(GTK_BOX(hpack3), sparams.driver, TRUE, FALSE, 0);
+    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.driver)->entry,
+	"Sound driver is an API that you use to capture/playback sound.",NULL);
+
     sprintf(tmp, "latency = %.2fms",
 	    buffer_size * 1000.0 / (sample_rate * nchannels));
     sparams.latency_label = gtk_label_new(tmp);
@@ -1044,6 +1123,9 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.rate)->entry),
 		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
 		       &sparams);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.driver)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_driver),
+		       &sparams);
 
     cancel = gtk_button_new_with_label("Cancel");
     gtk_box_pack_start(GTK_BOX(buttons_pack), cancel, TRUE, FALSE, 0);
@@ -1077,15 +1159,42 @@ start_stop(GtkWidget * widget, gpointer data)
 {
     int             error;
     if (GTK_TOGGLE_BUTTON(widget)->active) {
-	if ((error = AUDIO_INIT()) != ERR_NOERROR) {
+#ifdef _WIN32
+	ResumeThread(audio_thread);
+	if(state != STATE_ATHREAD_RESTART)
+	    state = STATE_PROCESS;
+#endif
+	if(state == STATE_ATHREAD_RESTART) {
+#ifndef _WIN32
+	    pthread_mutex_unlock(&snd_open);
+	    pthread_join(audio_thread, NULL);
+	    state = STATE_PAUSE;
+	    if (pthread_create(&audio_thread, NULL, audio_proc, NULL)) {
+		fprintf(stderr, "Audio thread restart failed!\n");
+		state = STATE_EXIT;
+	    }
+#else
+// FIXME - what is the windows analog of pthread_join ???
+	    state = STATE_PAUSE;
+	    audio_thread =
+		CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_proc, 0,
+		     0, &thread_id);
+            /*
+	     * set realtime priority to the thread 
+    	     */
+	    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
+		fprintf(stderr,
+		    "\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
+			GetLastError());
+#endif
+	}
+
+	if ((error = (*audio_init)()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
             gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "ERROR");
             return;
         }
-#ifdef _WIN32
-	ResumeThread(audio_thread);
-        state = STATE_PROCESS;
-#endif
+
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),
@@ -1094,9 +1203,10 @@ start_stop(GtkWidget * widget, gpointer data)
     } else {
 #ifdef _WIN32
         state = STATE_PAUSE;
+// FIXME: need to make sure that we left the pump_sample().
 	SuspendThread(audio_thread);
 #endif
-	AUDIO_FINISH();
+	audio_finish();
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),
