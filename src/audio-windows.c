@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2005/08/26 16:00:36  fonin
+ * Fixed error with wrong uppercase audio_thread identifier
+ *
  * Revision 1.3  2005/08/25 19:51:45  fonin
  * Fixed windows audio driver
  *
@@ -103,7 +106,7 @@ windows_audio_thread(void *V)
     /*
      * Wait for a message sent to me by the audio driver
      */
-    while (state != STATE_EXIT) {
+    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
 	if (!GetMessage(&msg, 0, 0, 0)) {
 	    return 0;
 	}
@@ -399,7 +402,7 @@ windows_audio_thread(void *V)
 	    ;
 	}
     }
-    CloseHandle(AUDIO_THREAD);
+    CloseHandle(audio_thread);
     return 0;
 }
 
@@ -514,7 +517,7 @@ windows_init_sound(void)
 	serror(err,
 	       "There was an error opening the Digital Audio In device\r\n");
 	state = STATE_EXIT;
-	TerminateThread(AUDIO_THREAD, ERR_WAVEINOPEN);
+	TerminateThread(audio_thread, ERR_WAVEINOPEN);
 	return ERR_WAVEINOPEN;
     }
 
@@ -529,7 +532,7 @@ windows_init_sound(void)
 		   "There was an error opening the Digital Audio Out device!\r\n");
 	    state = STATE_EXIT;
 	    waveInClose(in);
-	    TerminateThread(AUDIO_THREAD, ERR_WAVEOUTOPEN);
+	    TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
 	    return ERR_WAVEOUTOPEN;
 	}
 	for (i = 0; i < nbuffers; i++) {
@@ -550,7 +553,7 @@ windows_init_sound(void)
 			i, err);
 		state = STATE_EXIT;
 		windows_finish_sound();
-		TerminateThread(AUDIO_THREAD, ERR_WAVEOUTHDR);
+		TerminateThread(audio_thread, ERR_WAVEOUTHDR);
 		return ERR_WAVEOUTHDR;
 	    }
 	    cur_wr_hdr[i] = 1;
@@ -579,7 +582,7 @@ windows_init_sound(void)
 	    state = STATE_EXIT;
 	    fprintf(stderr, "\nError creating DirectSound object !");
 	    waveInClose(in);
-	    TerminateThread(AUDIO_THREAD, ERR_WAVEOUTOPEN);
+	    TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
 	    return ERR_DSOUNDOPEN;
 	}
 
@@ -588,7 +591,7 @@ windows_init_sound(void)
 	    state = STATE_EXIT;
 	    windows_finish_sound();
 	    fprintf(stderr, "\nError creating DirectSound buffer !");
-	    TerminateThread(AUDIO_THREAD, ERR_WAVEOUTHDR);
+	    TerminateThread(audio_thread, ERR_WAVEOUTHDR);
 	    return ERR_DSOUNDBUFFER;
 	}
 	/*
@@ -621,7 +624,7 @@ windows_init_sound(void)
 		    }
 		    break;
 		}
-		TerminateThread(AUDIO_THREAD, ERR_DSCOOPLEVEL);
+		TerminateThread(audio_thread, ERR_DSCOOPLEVEL);
 		return ERR_DSCOOPLEVEL;
 	    }
 	}
@@ -647,7 +650,7 @@ windows_init_sound(void)
 	    serror(err, "Error preparing WAVEHDR!\n");
 	    state = STATE_EXIT;
 	    windows_finish_sound();
-	    TerminateThread(AUDIO_THREAD, ERR_WAVEINHDR);
+	    TerminateThread(audio_thread, ERR_WAVEINHDR);
 	    return ERR_WAVEINHDR;
 	}
 	/*
@@ -657,7 +660,7 @@ windows_init_sound(void)
 	    serror(err, "Error queueing WAVEHDR!\n");
 	    state = STATE_EXIT;
 	    windows_finish_sound();
-	    TerminateThread(AUDIO_THREAD, ERR_WAVEINQUEUE);
+	    TerminateThread(audio_thread, ERR_WAVEINQUEUE);
 	    return ERR_WAVEINQUEUE;
 	}
 	active_in_buffers++;
@@ -670,7 +673,7 @@ windows_init_sound(void)
 	serror(err, "Error starting record!\n");
 	state = STATE_EXIT;
 	windows_finish_sound();
-	TerminateThread(AUDIO_THREAD, ERR_WAVEINRECORD);
+	TerminateThread(audio_thread, ERR_WAVEINRECORD);
 	return ERR_WAVEINRECORD;
     }
     /*
@@ -684,7 +687,7 @@ windows_init_sound(void)
 	    state = STATE_EXIT;
 	    windows_finish_sound();
 	    fprintf(stderr,"\nCannot start playback via DirectSound !");
-	    TerminateThread(AUDIO_THREAD, ERR_WAVEINRECORD);
+	    TerminateThread(audio_thread, ERR_WAVEINRECORD);
 	    return ERR_DSOUNDPLAYBACK;
 	}
 */
