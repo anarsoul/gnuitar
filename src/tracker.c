@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.13  2005/08/24 10:51:55  fonin
  * Wrapped sndfile code into #ifdef HAVE_SNDFILE
  *
@@ -192,7 +197,7 @@ track_write(DSP_SAMPLE *s, int count)
      * Convert to 16bit raw data
      */
     for (i = 0; i < count; i++)
-       tmp[i] = s[i];
+       tmp[i] = s[i] >> 8;
 
 #ifndef _WIN32
 #ifdef HAVE_SNDFILE

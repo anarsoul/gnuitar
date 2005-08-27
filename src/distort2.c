@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.35  2005/08/24 10:49:47  fonin
  * Minor change to compile on windows (#include utils.h for isnan)
  *
@@ -255,12 +260,11 @@
 #define UPSAMPLE	6
 #define MAX_NEWTON_ITERATIONS   50
  
-#define DIST2_DOWNSCALE	(1.0 / MAX_SAMPLE) 	/* Used to reduce the signal to */
-						/* the limits needed by the     */
-						/* simulation                   */
-#define DIST2_UPSCALE	(MAX_SAMPLE / 1.0)	/* And back to the normal range */
-/* taken as a funtion of MAX_SAMPLE because that is the reference for 
- * what the 'normal' signal should be */
+/* the effect is defined in -1.0 .. 1.0 range */
+#define DIST2_DOWNSCALE		(1.0 / MAX_SAMPLE)
+#define DIST2_UPSCALE		(MAX_SAMPLE / 1.0)
+/* when we have converged within one 16-bit sample, accept value */
+#define EFFECT_PRECISION	(1.0 / 32768)
 
 /* Check if the compiler is Visual C or GCC */
 #if defined(_MSC_VER)
@@ -529,7 +533,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 		dx = f/df;
 		y -= dx;
 	    }
-	    while (fabs(dx) > DIST2_DOWNSCALE && --bailout);
+	    while (fabs(dx) > EFFECT_PRECISION && --bailout);
 	    /* when dx gets very small, we found a solution. */
 
 	    /* we can get NaN after all, let's check for this */

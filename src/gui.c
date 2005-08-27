@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.40  2005/08/26 15:59:56  fonin
  * Audio driver now can be chosen by user
  *
@@ -1001,7 +1006,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(hpack2), bits_label, TRUE, FALSE, 1);
     sparams.bits = gtk_combo_new();
     bits_list = g_list_append(bits_list, "16");
-    bits_list = g_list_append(bits_list, "8");
+    bits_list = g_list_append(bits_list, "32");
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.bits), bits_list);
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
 		       my_itoa(bits));

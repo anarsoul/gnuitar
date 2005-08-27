@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.29  2005/08/24 21:44:44  alankila
  * - split sound drivers off main.c
  * - add support for alsa
@@ -254,7 +259,7 @@ vu_meter(struct data_block *db) {
     
     for (i = 0; i < db->len; i += 1) {
         sample = db->data[i];
-        power += sample * sample;
+        power += pow(sample, 2);
         if (sample < 0)
             sample = -sample;
         if (sample > max_sample)
@@ -272,7 +277,7 @@ adjust_master_volume(struct data_block *db) {
     double	    volume = pow(10, master_volume / 20.0);
    
     for (i = 0; i < db->len; i += 1) {
-	DSP_SAMPLE val = db->data[i] * volume;
+	double val = db->data[i] * volume;
         if (val < -MAX_SAMPLE)
             val = -MAX_SAMPLE;
         if (val > MAX_SAMPLE)

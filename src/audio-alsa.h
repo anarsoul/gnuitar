@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.1  2005/08/24 21:44:44  alankila
  * - split sound drivers off main.c
  * - add support for alsa
@@ -36,5 +41,6 @@
 void *alsa_audio_thread(void *V);
 void  alsa_finish_sound(void);
 int   alsa_init_sound(void);
+int   alsa_available(void);
 
 #endif

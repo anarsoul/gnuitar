@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.35  2005/08/26 15:59:56  fonin
  * Audio driver now can be chosen by user
  *
@@ -191,15 +196,32 @@ main(int argc, char **argv)
     int             max_priority;
     struct sched_param p;
 
-// FIXME - autodetect available sound drivers and set appropriate audio routines
-    audio_init=oss_init_sound;
-    audio_finish=oss_finish_sound;
-    audio_proc=oss_audio_thread;
-/*    audio_init=alsa_init_sound;
-    audio_finish=alsa_finish_sound;
-    audio_proc=alsa_audio_thread;
-*/
-
+#ifdef HAVE_JACK
+    if (jack_available()) {
+	audio_init = jack_init_sound;
+	audio_finish = jack_finish_sound;
+	audio_proc = jack_audio_thread;
+    } else
+#endif
+#ifdef HAVE_ALSA
+    if (alsa_available()) {
+	audio_init = alsa_init_sound;
+	audio_finish = alsa_finish_sound;
+	audio_proc = alsa_audio_thread;
+    } else
+#endif
+#ifdef HAVE_OSS
+    if (oss_available()) {
+	audio_init=alsa_init_sound;
+	audio_finish=alsa_finish_sound;
+	audio_proc=alsa_audio_thread;
+    } else
+#endif
+    {
+	printf("No usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
+	return ERR_NOAUDIOAVAILABLE;
+    }
+    
     /* prepare state & mutex for audio thread init_sound() */
     state = STATE_PAUSE;
     pthread_mutex_lock(&snd_open);

@@ -57,6 +57,11 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.7  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.6  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -243,12 +248,12 @@ tuner_filter(struct effect *p, struct data_block *db)
     while (i > 0) {
 	if (nchannels > 1) {
 	    /* mix stereo signal */
-	    newval  = *s++;
-	    newval += *s++;
+	    newval  = *s++ >> 8;
+	    newval += *s++ >> 8;
 	    newval /= 2.0;
 	    i -= 2;
 	} else {
-	    newval = *s++;
+	    newval = *s++ >> 8;
 	    i -= 1;
 	}
 

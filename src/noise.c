@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.8  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -306,13 +311,13 @@ noise_filter(struct effect *p, struct data_block *db)
 
     while (count) {
 	/* signal is below the threshold, we're not already fading out */
-	if ((((*s >= 0 && *s < dn->threshold)
-	      || (*s <= 0 && *s > -dn->threshold)) && !fadeout)
+	if ((((*s >= 0 && *s < (dn->threshold << 8))
+	      || (*s <= 0 && *s > -(dn->threshold << 8))) && !fadeout)
 	    ||
 	    /* or signal is below the hysteresis (stop threshold),
 	     * and we're already fading out */
-	    (((*s >= 0 && *s < dn->hysteresis)
-	      || (*s <= 0 && *s > -dn->hysteresis)) && fadeout)) {
+	    (((*s >= 0 && *s < (dn->hysteresis << 8))
+	      || (*s <= 0 && *s > -(dn->hysteresis << 8))) && fadeout)) {
 
 	    /* When the signal is near the zero for the hold time long,
 	     * we do the fadeout  */
@@ -321,8 +326,8 @@ noise_filter(struct effect *p, struct data_block *db)
 		/* we're within the hysteresis - init the fadein attack vars,
 		 * also we'll now react on threshold instead of hysteresis
 		 * (fadeout = 0) */
-		if ((*s >= 0 && *s < dn->hysteresis)
-		    || (*s <= 0 && *s > -dn->hysteresis)) {
+		if ((*s >= 0 && *s < (dn->hysteresis << 8))
+		    || (*s <= 0 && *s > -(dn->hysteresis << 8))) {
 		    attack_counter = 0;
 		    attack_amp = 1;
 		    fadeout = 0;

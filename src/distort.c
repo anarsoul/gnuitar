@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.18  2005/08/22 22:11:59  alankila
  * - change RC filters to accept data_block
  * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
@@ -304,10 +309,10 @@ distort_filter(struct effect *p, struct data_block *db)
 	/*
 	 * apply sat 
 	 */
-	if ((t - dp->lastval[currchannel]) > dp->sat)
-	    t = dp->lastval[currchannel] + dp->sat;
-	else if ((dp->lastval[currchannel] - t) > dp->sat)
-	    t = dp->lastval[currchannel] - dp->sat;
+	if ((t - dp->lastval[currchannel]) > (dp->sat << 8))
+	    t = dp->lastval[currchannel] + (dp->sat << 8);
+	else if ((dp->lastval[currchannel] - t) > (dp->sat << 8))
+	    t = dp->lastval[currchannel] - (dp->sat << 8);
 
 	dp->lastval[currchannel] = t;
 	if (nchannels > 1)

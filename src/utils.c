@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.4  2003/05/30 12:49:23  fonin
  * log2() renamed to my_log2() since log2 is a reserved word on MacOS X.
  *
@@ -73,10 +78,14 @@ my_itoa(int i)
 	return "8";
     case 16:
 	return "16";
+    case 32:
+	return "32";
     case 1:
 	return "1";
     case 2:
 	return "2";
+    case 4:
+	return "4";
     }
     return "";
 }

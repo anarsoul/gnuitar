@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.3  2005/08/26 15:59:56  fonin
  * Audio driver now can be chosen by user
  *
@@ -97,11 +102,12 @@ oss_audio_thread(void *V)
         db.len = count;
         db.channels = nchannels;
 
+	/* 16 bits is the only possible for OSS */
 	for (i = 0; i < count; i++)
-	    db.data[i] = rdbuf[i];
+	    db.data[i] = rdbuf[i] << 8;
 	pump_sample(&db);
 	for (i = 0; i < count; i++)
-	    rdbuf[i] = db.data[i];
+	    rdbuf[i] = db.data[i] >> 8;
 
 	count = write(fd, rdbuf, buffer_size);
 	if (count != buffer_size)
@@ -167,16 +173,9 @@ oss_init_sound(void)
 	return ERR_WAVEDUPLEX;
     }
 
-    switch (bits) {
-    case 16:{
-	    i = AFMT_S16_LE;
-	    break;
-	}
-    case 8:{
-	    i = AFMT_S8;
-	    break;
-	}
-    }
+    /* 16-bit recording is the best available with OSS */
+    i = AFMT_S16_LE;
+    bits = 16;
     if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
 	fprintf(stderr, "Cannot setup %d bit audio!\n", bits);
 	close(fd);
@@ -200,6 +199,16 @@ oss_init_sound(void)
     state = STATE_PROCESS;
     pthread_mutex_unlock(&snd_open);
     return ERR_NOERROR;
+}
+
+/* try to momentarily open /dev/dsp.
+ * Is there a better test to know? */
+int
+oss_available() {
+    if ((fd = open("/dev/dsp", O_RDWR | O_NONBLOCK)) == -1)
+	return 0;
+    close(fd);
+    return 1;
 }
 
 #endif /* HAVE_OSS */

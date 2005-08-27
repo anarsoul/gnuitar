@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.3  2005/08/26 15:59:56  fonin
  * Audio driver now can be chosen by user
  *
@@ -112,11 +117,19 @@ alsa_audio_thread(void *V)
         db.len = inframes * n_input_channels;
         db.data = procbuf;
         db.channels = n_input_channels;
-        for (i = 0; i < db.len; i++)
-	    db.data[i] = rdbuf[i];
+	if (bits == 32)
+	    for (i = 0; i < db.len; i++)
+		db.data[i] = rdbuf[i] >> 8;
+	else
+	    for (i = 0; i < db.len; i++)
+		db.data[i] = rdbuf[i] << 8;
 	pump_sample(&db);
-        for (i = 0; i < db.len; i++)
-	    rdbuf[i] = db.data[i];
+	if (bits == 32)
+	    for (i = 0; i < db.len; i++)
+		rdbuf[i] = db.data[i] << 8;
+	else
+	    for (i = 0; i < db.len; i++)
+		rdbuf[i] = db.data[i] >>  8;
 
         /* adapting must have worked, and effects must not have changed
          * frame counts somehow */
@@ -161,7 +174,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
 {
     snd_pcm_hw_params_t *hw_params;
     int                 err;
-    int                 tmp;
+    unsigned int        tmp;
     snd_pcm_uframes_t   frame_info;
     int                 frame_size = channels * (bits / 8);
     
@@ -185,8 +198,13 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
 	return 1;
     }
 
-    /* 8 bit audio hasn't worked for a long time, I suppose */
-    if ((err = snd_pcm_hw_params_set_format(device, hw_params, SND_PCM_FORMAT_S16_LE)) < 0) {
+    if (bits == 32)
+	tmp = SND_PCM_FORMAT_S32_LE;
+    else {
+	tmp = SND_PCM_FORMAT_S16_LE;
+	bits = 16;
+    }
+    if ((err = snd_pcm_hw_params_set_format(device, hw_params, tmp)) < 0) {
         fprintf (stderr, "can't set sample format: %s\n",
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
@@ -331,6 +349,14 @@ alsa_init_sound(void)
     state = STATE_PROCESS;
     pthread_mutex_unlock(&snd_open);
     return ERR_NOERROR;
+}
+
+int
+alsa_available() {
+    if (snd_pcm_open(&playback_handle, snd_device_out, SND_PCM_STREAM_PLAYBACK, 0) < 0)
+	return 0;
+    snd_pcm_close(playback_handle);
+    return 1;
 }
 
 #endif /* HAVE_ALSA */

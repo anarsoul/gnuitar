@@ -62,7 +62,8 @@ enum GnuitarErr {
     ERR_DSOUNDOPEN,		
     ERR_DSOUNDBUFFER,	
     ERR_DSOUNDPLAYBACK,	
-    ERR_DSCOOPLEVEL
+    ERR_DSCOOPLEVEL,
+    ERR_NOAUDIOAVAILABLE
 };
     
 extern volatile int state;

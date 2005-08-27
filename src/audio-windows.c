@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2005/08/27 18:11:35  alankila
+ * - support 32-bit sampling
+ * - use 24-bit precision in integer arithmetics
+ * - fix effects that contain assumptions about absolute sample values
+ *
  * Revision 1.4  2005/08/26 16:00:36  fonin
  * Fixed error with wrong uppercase audio_thread identifier
  *
@@ -137,7 +142,7 @@ windows_audio_thread(void *V)
 		    for (i = 0; i < count; i++) {
 			procbuf[i] =
 			   ((SAMPLE *) (((WAVEHDR *) msg.lParam)->
-					 lpData))[i];
+					 lpData))[i] << 8;
 				//procbuf[i] = ((SAMPLE*) twh->lpData)[i];
 		    }
 
@@ -240,7 +245,7 @@ windows_audio_thread(void *V)
 
 			    }
 			    for (i = 0, j = 0, k = 0; i < count; i++) {
-				DSP_SAMPLE      W = procbuf[i];
+				DSP_SAMPLE      W = procbuf[i] >> 8;
 				SAMPLE         *curpos;
 
 				if (j * sizeof(SAMPLE) >= len1
@@ -330,7 +335,7 @@ windows_audio_thread(void *V)
 			 */
 			else {
 			    for (i = 0; i < count; i++) {
-				DSP_SAMPLE       W = procbuf[i];
+				DSP_SAMPLE W = procbuf[i] >> 8;
 				((SAMPLE *) (write_header[hdr_avail].
 					     lpData))[i] = W;
 			    }
