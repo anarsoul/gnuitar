@@ -71,8 +71,8 @@ extern volatile int state;
 pthread_t       	audio_thread;
 extern pthread_mutex_t	snd_open;
 
-extern SAMPLE           rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
-extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
+extern SAMPLE16         rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern void*            (*audio_proc) (void *V); /* pointer to audio thread routine */
 #else
 extern HANDLE	        audio_thread;	/* defined in main.c */

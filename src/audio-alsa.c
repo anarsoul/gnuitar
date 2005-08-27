@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2005/08/27 19:05:43  alankila
+ * - introduce SAMPLE16 and SAMPLE32 types, and switch
+ *
  * Revision 1.4  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -68,6 +71,8 @@ alsa_audio_thread(void *V)
 {
     int             i, frames, inframes, outframes;
     struct data_block db; 
+    SAMPLE16    *rdbuf16 = (SAMPLE16 *) rdbuf;
+    SAMPLE32    *rdbuf32 = (SAMPLE32 *) rdbuf;
     
     /* frame counts are always the same to both read and write */
     while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
@@ -119,17 +124,17 @@ alsa_audio_thread(void *V)
         db.channels = n_input_channels;
 	if (bits == 32)
 	    for (i = 0; i < db.len; i++)
-		db.data[i] = rdbuf[i] >> 8;
+		db.data[i] = rdbuf32[i] >> 8;
 	else
 	    for (i = 0; i < db.len; i++)
-		db.data[i] = rdbuf[i] << 8;
+		db.data[i] = rdbuf16[i] << 8;
 	pump_sample(&db);
 	if (bits == 32)
 	    for (i = 0; i < db.len; i++)
-		rdbuf[i] = db.data[i] << 8;
+		rdbuf32[i] = db.data[i] << 8;
 	else
 	    for (i = 0; i < db.len; i++)
-		rdbuf[i] = db.data[i] >>  8;
+		rdbuf16[i] = db.data[i] >>  8;
 
         /* adapting must have worked, and effects must not have changed
          * frame counts somehow */

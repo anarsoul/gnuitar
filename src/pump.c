@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2005/08/27 19:05:43  alankila
+ * - introduce SAMPLE16 and SAMPLE32 types, and switch
+ *
  * Revision 1.30  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -287,6 +290,16 @@ adjust_master_volume(struct data_block *db) {
 }
 
 void
+dither_output(struct data_block *db) {
+    int		    i;
+    static unsigned int randseed = 1;
+    
+    for (i = 0; i < db->len; i += 1) {
+	db->data[i] += rand_r(&randseed) / (RAND_MAX / 256);
+    }
+}
+
+void
 adapt_to_output(struct data_block *db)
 {
     int             i;
@@ -361,8 +374,10 @@ pump_sample(struct data_block *db)
 
     adapt_to_output(db);
     adjust_master_volume(db);
+    if (bits == 16)
+	dither_output(db);
     vu_meter(db);
- 
+    
     if (write_track)
 	track_write(db->data, db->len);
 

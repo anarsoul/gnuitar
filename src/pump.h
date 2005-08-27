@@ -24,14 +24,16 @@
 #define PUMP_H 1
 
 #include <gtk/gtk.h>
+#include <sys/types.h>
 
 #ifdef FLOAT_DSP
 typedef double	DSP_SAMPLE;
 #else
-typedef int	DSP_SAMPLE;
+typedef int32_t	DSP_SAMPLE;
 #endif
 
-typedef short SAMPLE;
+typedef int16_t SAMPLE16;
+typedef int32_t SAMPLE32;
 
 #ifdef _WIN32
 #define MAX_BUFFERS	1024	/* number of input/output sound buffers */

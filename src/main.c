@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2005/08/27 19:05:43  alankila
+ * - introduce SAMPLE16 and SAMPLE32 types, and switch
+ *
  * Revision 1.36  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -174,8 +177,8 @@ char            version[13] = "GNUitar "VERSION;
 pthread_t       audio_thread;
 pthread_mutex_t snd_open = PTHREAD_MUTEX_INITIALIZER;
 
-SAMPLE          rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
-DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
+SAMPLE16        rdbuf[MAX_BUFFER_SIZE   / sizeof(SAMPLE16)];
+DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 void*           (*audio_proc) (void *V); /* pointer to audio thread routine */
 #else
 HANDLE          audio_thread;

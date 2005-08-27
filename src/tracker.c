@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/08/27 19:05:43  alankila
+ * - introduce SAMPLE16 and SAMPLE32 types, and switch
+ *
  * Revision 1.14  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -190,7 +193,7 @@ tracker_done()
 void
 track_write(DSP_SAMPLE *s, int count)
 {
-    SAMPLE          tmp[MAX_BUFFER_SIZE / sizeof(SAMPLE)];
+    SAMPLE16        tmp[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
     int             i;
 
     /*
@@ -204,7 +207,7 @@ track_write(DSP_SAMPLE *s, int count)
     if (sf_write_short(fout, tmp, count) != count)
         fprintf(stderr, "Error writing samples: %s\n", sf_strerror(fout));
 #else
-    write(fout, tmp, sizeof(SAMPLE) * count);
+    write(fout, tmp, sizeof(SAMPLE16) * count);
 #endif
 #else
     if (fout != NULL)
