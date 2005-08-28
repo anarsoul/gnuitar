@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2005/08/28 12:28:44  alankila
+ * switch to GMutex that is also available on win32
+ *
  * Revision 1.4  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -50,7 +53,6 @@
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <pthread.h>
 #include <sys/soundcard.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -73,10 +75,10 @@ oss_audio_thread(void *V)
 	if (state == STATE_PAUSE) {
 	    usleep(10000);
 	}
-        pthread_mutex_lock(&snd_open);
+        g_mutex_lock(snd_open);
         /* catch transition PAUSE -> EXIT with mutex being waited already */
         if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
-            pthread_mutex_unlock(&snd_open);
+            g_mutex_unlock(snd_open);
             break;
         }
 
@@ -112,7 +114,7 @@ oss_audio_thread(void *V)
 	count = write(fd, rdbuf, buffer_size);
 	if (count != buffer_size)
 	    fprintf(stderr, "warning: short write (%d/%d) to sound device\n", count, buffer_size);
-        pthread_mutex_unlock(&snd_open);
+        g_mutex_unlock(snd_open);
     }
 
     return NULL;
@@ -122,7 +124,7 @@ void
 oss_finish_sound(void)
 {
     state = STATE_PAUSE;
-    pthread_mutex_lock(&snd_open);
+    g_mutex_lock(snd_open);
     close(fd);
 }
 
@@ -197,7 +199,7 @@ oss_init_sound(void)
     }
     
     state = STATE_PROCESS;
-    pthread_mutex_unlock(&snd_open);
+    g_mutex_unlock(&snd_open);
     return ERR_NOERROR;
 }
 

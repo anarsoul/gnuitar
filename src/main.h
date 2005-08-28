@@ -23,6 +23,8 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_ 1
 
+#include <glib.h>
+
 /* compile-time decision is easier to make working first */
 #ifndef _WIN32
 #    ifdef HAVE_ALSA
@@ -68,8 +70,8 @@ enum GnuitarErr {
     
 extern volatile int state;
 #ifndef _WIN32
-pthread_t       	audio_thread;
-extern pthread_mutex_t	snd_open;
+extern GMutex          *snd_open;
+extern pthread_t        audio_thread;
 
 extern SAMPLE16         rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];

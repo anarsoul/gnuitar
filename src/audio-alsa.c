@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2005/08/28 12:28:44  alankila
+ * switch to GMutex that is also available on win32
+ *
  * Revision 1.5  2005/08/27 19:05:43  alankila
  * - introduce SAMPLE16 and SAMPLE32 types, and switch
  *
@@ -49,7 +52,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <alsa/asoundlib.h>
 #include <assert.h>
 
@@ -79,10 +81,10 @@ alsa_audio_thread(void *V)
         while (state == STATE_PAUSE) {
             usleep(10000);
         }
-        pthread_mutex_lock(&snd_open);
+        g_mutex_lock(snd_open);
         /* catch transition PAUSE -> EXIT with mutex being waited already */
         if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
-            pthread_mutex_unlock(&snd_open);
+            g_mutex_unlock(snd_open);
             break;
         }
         
@@ -151,7 +153,7 @@ alsa_audio_thread(void *V)
         if (outframes != frames)
             fprintf(stderr, "Short write to playback device: %d, expecting %d\n", outframes, frames);
         
-        pthread_mutex_unlock(&snd_open);
+        g_mutex_unlock(snd_open);
     }
     return NULL;
 }
@@ -163,7 +165,7 @@ void
 alsa_finish_sound(void)
 {
     state = STATE_PAUSE;
-    pthread_mutex_lock(&snd_open);
+    g_mutex_lock(snd_open);
     snd_pcm_drop(playback_handle);
     snd_pcm_close(playback_handle);
     snd_pcm_drop(capture_handle);
@@ -352,7 +354,7 @@ alsa_init_sound(void)
     restarting = 1;
     
     state = STATE_PROCESS;
-    pthread_mutex_unlock(&snd_open);
+    g_mutex_unlock(snd_open);
     return ERR_NOERROR;
 }
 

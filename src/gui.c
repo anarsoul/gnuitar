@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.42  2005/08/28 12:28:44  alankila
+ * switch to GMutex that is also available on win32
+ *
  * Revision 1.41  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -1171,7 +1174,7 @@ start_stop(GtkWidget * widget, gpointer data)
 #endif
 	if(state == STATE_ATHREAD_RESTART) {
 #ifndef _WIN32
-	    pthread_mutex_unlock(&snd_open);
+	    g_mutex_unlock(snd_open);
 	    pthread_join(audio_thread, NULL);
 	    state = STATE_PAUSE;
 	    if (pthread_create(&audio_thread, NULL, audio_proc, NULL)) {

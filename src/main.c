@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2005/08/28 12:28:44  alankila
+ * switch to GMutex that is also available on win32
+ *
  * Revision 1.37  2005/08/27 19:05:43  alankila
  * - introduce SAMPLE16 and SAMPLE32 types, and switch
  *
@@ -174,8 +177,8 @@ volatile int    state;
 char            version[13] = "GNUitar "VERSION;
 
 #ifndef _WIN32
+GMutex         *snd_open;
 pthread_t       audio_thread;
-pthread_mutex_t snd_open = PTHREAD_MUTEX_INITIALIZER;
 
 SAMPLE16        rdbuf[MAX_BUFFER_SIZE   / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
@@ -224,10 +227,13 @@ main(int argc, char **argv)
 	printf("No usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
 	return ERR_NOAUDIOAVAILABLE;
     }
-    
+
+    g_thread_init(NULL);
+    snd_open = g_mutex_new();   
+ 
     /* prepare state & mutex for audio thread init_sound() */
     state = STATE_PAUSE;
-    pthread_mutex_lock(&snd_open);
+    g_mutex_lock(snd_open);
     
     max_priority = sched_get_priority_max(SCHED_FIFO);
     p.sched_priority = max_priority;
@@ -292,7 +298,7 @@ main(int argc, char **argv)
     /* wait for audio thread to finish */
     if (state == STATE_PAUSE || state == STATE_ATHREAD_RESTART) {
         state = STATE_EXIT;
-        pthread_mutex_unlock(&snd_open);
+        g_mutex_unlock(snd_open);
         pthread_join(audio_thread, NULL);
     } else {
         state = STATE_EXIT;
