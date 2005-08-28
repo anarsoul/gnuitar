@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2005/08/28 14:04:04  alankila
+ * - OSS copypaste error fix
+ * - remove my_log2 in favour of doing pow, trunc, log.
+ * - OSS driver rounds buffer sizes to suitable values by itself now. There's
+ *   a precedent in tuning user parameters automatically in ALSA code. The
+ *   new behaviour rounds buffer size down, though.
+ *
  * Revision 1.5  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -39,28 +46,6 @@
  *
  */
 #include "utils.h"
-
-#ifndef _WIN32
-/*
- * Calculate base-2 logarithm of the value, up to 512k
- */
-short
-my_log2(int x)
-{
-    int             pow[] =
-	{ 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,
-	16384, 32768,
-	65536, 131072, 262144, 524288
-    };
-    int             i;
-    for (i = 0; i < sizeof(pow) / sizeof(int); i++) {
-	if (pow[i] == x)
-	    return i;
-    }
-    return 0;
-}
-
-#endif
 
 char           *
 my_itoa(int i)

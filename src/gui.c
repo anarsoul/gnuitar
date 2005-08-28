@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2005/08/28 14:04:04  alankila
+ * - OSS copypaste error fix
+ * - remove my_log2 in favour of doing pow, trunc, log.
+ * - OSS driver rounds buffer sizes to suitable values by itself now. There's
+ *   a precedent in tuning user parameters automatically in ALSA code. The
+ *   new behaviour rounds buffer size down, though.
+ *
  * Revision 1.44  2005/08/28 12:42:27  alankila
  * move write_track flag properly into pump.h, make it volatile because it's
  * shared by threads
@@ -444,6 +451,7 @@ help_contents(void)
 gint
 delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 {
+
     return (TRUE);
 }
 
@@ -828,32 +836,9 @@ update_latency_label(GtkWidget * widget, gpointer sparams)
     int             bufsize,
                     n,
                     sr;
-#ifdef HAVE_OSS
-    static int      old_bufsize = 0;
-#endif
-
     sample_params  *sp = (sample_params *) sparams;
     bufsize =
 	gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
-
-#ifdef HAVE_OSS
-    /*
-     * OSS cannot accept buffer size that is not a level of 2 
-     */
-    while (audio_proc==oss_audio_thread && my_log2(bufsize) == 0) {
-	if (bufsize % 128) {
-	    bufsize=128;
-	    old_bufsize=0;
-	}
-	if (bufsize > old_bufsize) {
-	    bufsize += MIN_BUFFER_SIZE;
-	} else {
-	    bufsize -= MIN_BUFFER_SIZE;
-	}
-    }
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(sp->latency), bufsize);
-    old_bufsize = bufsize;
-#endif
 
     n = atoi(gtk_entry_get_text
 	     (GTK_ENTRY(GTK_COMBO(sp->channels)->entry)));

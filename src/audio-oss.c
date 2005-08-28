@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2005/08/28 14:04:04  alankila
+ * - OSS copypaste error fix
+ * - remove my_log2 in favour of doing pow, trunc, log.
+ * - OSS driver rounds buffer sizes to suitable values by itself now. There's
+ *   a precedent in tuning user parameters automatically in ALSA code. The
+ *   new behaviour rounds buffer size down, though.
+ *
  * Revision 1.5  2005/08/28 12:28:44  alankila
  * switch to GMutex that is also available on win32
  *
@@ -56,6 +63,7 @@
 #include <sys/soundcard.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <math.h>
 
 #include "pump.h"
 #include "main.h"
@@ -138,6 +146,9 @@ oss_init_sound(void)
 	return ERR_WAVEINOPEN;
     }
 
+    /* force buffer size to 2^N */
+    buffer_size = pow(2, (int) (log(buffer_size) / log(2)));
+
     /*
      * unlimited fragments, fragment size is equal to the buffer size,
      * so we operate with one full fragment at a time
@@ -149,7 +160,7 @@ oss_init_sound(void)
      *                           9 for 512
      *                           etc.
      */
-    i = 0x7fff0000 + my_log2(buffer_size);
+    i = 0x7fff0000 + (int) (log(buffer_size) / log(2));
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
 	fprintf(stderr, "Cannot setup fragments!\n");
 	close(fd);
@@ -199,12 +210,11 @@ oss_init_sound(void)
     }
     
     state = STATE_PROCESS;
-    g_mutex_unlock(&snd_open);
+    g_mutex_unlock(snd_open);
     return ERR_NOERROR;
 }
 
-/* try to momentarily open /dev/dsp.
- * Is there a better test to know? */
+/* try to open /dev/dsp. Is there a better test to know? */
 int
 oss_available() {
     if ((fd = open("/dev/dsp", O_RDWR | O_NONBLOCK)) == -1)

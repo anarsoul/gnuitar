@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.40  2005/08/28 14:04:04  alankila
+ * - OSS copypaste error fix
+ * - remove my_log2 in favour of doing pow, trunc, log.
+ * - OSS driver rounds buffer sizes to suitable values by itself now. There's
+ *   a precedent in tuning user parameters automatically in ALSA code. The
+ *   new behaviour rounds buffer size down, though.
+ *
  * Revision 1.39  2005/08/28 12:39:01  alankila
  * - make audio_lock a real mutex
  * - fix mutex cleanup at exit
@@ -222,9 +229,9 @@ main(int argc, char **argv)
 #endif
 #ifdef HAVE_OSS
     if (oss_available()) {
-	audio_init=alsa_init_sound;
-	audio_finish=alsa_finish_sound;
-	audio_proc=alsa_audio_thread;
+	audio_init=oss_init_sound;
+	audio_finish=oss_finish_sound;
+	audio_proc=oss_audio_thread;
     } else
 #endif
     {
