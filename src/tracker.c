@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/08/28 21:45:30  fonin
+ * Added type casting for >> operations on SAMPLE16/32 vars, to shut up MSVC
+ *
  * Revision 1.15  2005/08/27 19:05:43  alankila
  * - introduce SAMPLE16 and SAMPLE32 types, and switch
  *
@@ -200,7 +203,7 @@ track_write(DSP_SAMPLE *s, int count)
      * Convert to 16bit raw data
      */
     for (i = 0; i < count; i++)
-       tmp[i] = s[i] >> 8;
+       tmp[i] = (SAMPLE32)s[i] >> 8;
 
 #ifndef _WIN32
 #ifdef HAVE_SNDFILE
@@ -211,6 +214,6 @@ track_write(DSP_SAMPLE *s, int count)
 #endif
 #else
     if (fout != NULL)
-	mmioWrite(fout, tmp, sizeof(SAMPLE) * count);
+	mmioWrite(fout, tmp, sizeof(SAMPLE16) * count);
 #endif
 }

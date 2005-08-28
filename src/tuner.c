@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.8  2005/08/28 21:45:30  fonin
+ * Added type casting for >> operations on SAMPLE16/32 vars, to shut up MSVC
+ *
  * Revision 1.7  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -248,12 +251,12 @@ tuner_filter(struct effect *p, struct data_block *db)
     while (i > 0) {
 	if (nchannels > 1) {
 	    /* mix stereo signal */
-	    newval  = *s++ >> 8;
-	    newval += *s++ >> 8;
+	    newval  = (SAMPLE32)*s++ >> 8;
+	    newval += (SAMPLE32)*s++ >> 8;
 	    newval /= 2.0;
 	    i -= 2;
 	} else {
-	    newval = *s++ >> 8;
+	    newval = (SAMPLE32)*s++ >> 8;
 	    i -= 1;
 	}
 
