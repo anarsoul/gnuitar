@@ -104,7 +104,7 @@ extern unsigned int fragments;
 extern unsigned int nbuffers;
 #endif
 
-extern unsigned short audio_lock;
+extern GMutex  *effectlist_lock;
 extern int      n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2005/08/28 12:39:01  alankila
+ * - make audio_lock a real mutex
+ * - fix mutex cleanup at exit
+ *
  * Revision 1.38  2005/08/28 12:28:44  alankila
  * switch to GMutex that is also available on win32
  *
@@ -304,6 +308,7 @@ main(int argc, char **argv)
         state = STATE_EXIT;
         pthread_join(audio_thread, NULL);
         (*audio_finish)();
+        g_mutex_unlock(snd_open);
     }
 #else
     state = STATE_EXIT;
@@ -311,6 +316,7 @@ main(int argc, char **argv)
 #endif
     pump_stop();
     save_settings();
+    g_mutex_free(snd_open);
     
     return ERR_NOERROR;
 }

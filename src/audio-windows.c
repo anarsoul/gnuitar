@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2005/08/28 12:39:01  alankila
+ * - make audio_lock a real mutex
+ * - fix mutex cleanup at exit
+ *
  * Revision 1.5  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -135,7 +139,7 @@ windows_audio_thread(void *V)
 		}
 
 		count = ((WAVEHDR *) msg.lParam)->dwBytesRecorded;
-		if (count && !audio_lock) {
+		if (count) {
 		    count /= bits >> 3;
 			//WAVEHDR *twh;
 			//twh = (WAVEHDR*) msg.lParam;

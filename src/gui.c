@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2005/08/28 12:39:01  alankila
+ * - make audio_lock a real mutex
+ * - fix mutex cleanup at exit
+ *
  * Revision 1.42  2005/08/28 12:28:44  alankila
  * switch to GMutex that is also available on win32
  *
@@ -463,12 +467,10 @@ up_pressed(GtkWidget * widget, gpointer data)
     if (curr_row > 0 && curr_row < n) {
 	swap = effects[curr_row - 1];
 
-	audio_lock = 1;
-
-	effects[curr_row - 1] = effects[curr_row];
+	g_mutex_lock(effectlist_lock);
+        effects[curr_row - 1] = effects[curr_row];
 	effects[curr_row] = swap;
-
-	audio_lock = 0;
+	g_mutex_unlock(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row - 1);
@@ -490,12 +492,10 @@ down_pressed(GtkWidget * widget, gpointer data)
     if (curr_row >= 0 && curr_row < n - 1) {
 	swap = effects[curr_row + 1];
 
-	audio_lock = 1;
-
+	g_mutex_lock(effectlist_lock);
 	effects[curr_row + 1] = effects[curr_row];
 	effects[curr_row] = swap;
-
-	audio_lock = 0;
+	g_mutex_unlock(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row);
@@ -515,14 +515,13 @@ del_pressed(GtkWidget * widget, gpointer data)
     int             i;
 
     if (curr_row >= 0 && curr_row < n) {
-	audio_lock = 1;
 
+        g_mutex_lock(effectlist_lock);
 	effects[curr_row]->proc_done(effects[curr_row]);
 	for (i = curr_row; i < n; i++)
 	    effects[i] = effects[i + 1];
 	effects[n--] = NULL;
-
-	audio_lock = 0;
+        g_mutex_unlock(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row);
@@ -546,7 +545,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	effect_list[effects_row].create_f(tmp_effect);
 	tmp_effect->proc_init(tmp_effect);
 
-	audio_lock = 1;
+	g_mutex_lock(effectlist_lock);
 	if (curr_row >= 0 && curr_row < n) {
 	    idx = curr_row + 1;
 	    for (i = n; i > idx; i--) {
@@ -557,7 +556,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	    idx = n++;
 	}
 	effects[idx] = tmp_effect;
-	audio_lock = 0;
+	g_mutex_unlock(effectlist_lock);
 
 	gtk_clist_insert(GTK_CLIST(processor), idx,
 			 &effect_list[effects[idx]->id].str);

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2005/08/28 12:39:01  alankila
+ * - make audio_lock a real mutex
+ * - fix mutex cleanup at exit
+ *
  * Revision 1.31  2005/08/27 19:05:43  alankila
  * - introduce SAMPLE16 and SAMPLE32 types, and switch
  *
@@ -184,9 +188,8 @@
 struct effect  *effects[MAX_EFFECTS];
 
 int             n = 0;
-unsigned short  audio_lock = 0;	/* 
-				 * when nonzero pause pumping 
-				 */
+GMutex         *effectlist_lock;
+
 extern char     version[];
 unsigned short  write_track = 0;	/* 
 					 * when nonzero we should write
@@ -361,16 +364,15 @@ pump_sample(struct data_block *db)
 {
     int             i;
     
-    if (audio_lock)
-	return 0;
-
     /* NR is enabled only experimentally until 
      * the noise filter will have been implemented */
     noise_reduction(db);
     bias_elimination(db);
  
+    g_mutex_lock(effectlist_lock);
     for (i = 0; i < n; i++)
 	effects[i]->proc_filter(effects[i], db);
+    g_mutex_unlock(effectlist_lock);
 
     adapt_to_output(db);
     adjust_master_volume(db);
@@ -378,8 +380,9 @@ pump_sample(struct data_block *db)
 	dither_output(db);
     vu_meter(db);
     
-    if (write_track)
+    if (write_track) {
 	track_write(db->data, db->len);
+    }
 
     return 0;
 }
@@ -532,10 +535,10 @@ pump_start(int argc, char **argv)
 
     void            (*create_f[10]) (struct effect *);
 
+    effectlist_lock = g_mutex_new();
     init_sin_lookup_table();
     
     master_volume = 0.0;
-    audio_lock = 1;
     j = 0;
 
     if (argc == 1) {
@@ -578,8 +581,6 @@ pump_start(int argc, char **argv)
     memset(bias_s, 0, sizeof(bias_s));
     memset(bias_n, 0, sizeof(bias_n));
     memset(nr_last, 0, sizeof(nr_last));
-    
-    audio_lock = 0;
 }
 
 void
@@ -591,11 +592,11 @@ pump_stop(void)
         write_track = 0;
         tracker_done();
     }
-    audio_lock = 1;
     for (i = 0; i < n; i++) {
 	effects[i]->proc_done(effects[i]);
     }
     n = 0;
+    g_mutex_free(effectlist_lock);
 }
 
 void
@@ -660,7 +661,7 @@ load_pump(const char *fname)
     }
 
     gtk_clist_clear(GTK_CLIST(processor));
-    audio_lock = 1;
+    g_mutex_lock(effectlist_lock);
     pump_stop();
 
     n = 0;
@@ -683,5 +684,5 @@ load_pump(const char *fname)
     }
     close(fd);
     fprintf(stderr, "\n");
-    audio_lock = 0;
+    g_mutex_unlock(effectlist_lock);
 }
