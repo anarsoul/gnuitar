@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2005/08/28 21:41:51  fonin
+ * Fixed mutex locking
+ *
  * Revision 1.6  2005/08/28 12:39:01  alankila
  * - make audio_lock a real mutex
  * - fix mutex cleanup at exit
@@ -102,10 +105,12 @@ windows_audio_thread(void *V)
                     read_pos = 0,
                     len1 = 0,
                     len2 = 0;
+//    HANDLE          snd_open2=NULL;
+
     /*
      * read/write cursors and lengths for DS calls
      */
-    SAMPLE         *pos1 = NULL,
+    SAMPLE16       *pos1 = NULL,
                    *pos2 = NULL;	/* pointers for DirectSound lock
 					 * call */
     static unsigned int bufpos = 0;	/* current write position in the
@@ -119,6 +124,17 @@ windows_audio_thread(void *V)
 	if (!GetMessage(&msg, 0, 0, 0)) {
 	    return 0;
 	}
+
+        if (state == STATE_PAUSE) {
+            my_unlock_mutex(snd_open);
+	    Sleep(10);
+	}
+        WaitForSingleObject(snd_open,INFINITE);
+        /* catch transition PAUSE -> EXIT with mutex being waited already */
+        if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
+            my_unlock_mutex(snd_open);
+            break;
+        }
 
 	/*
 	 * Figure out which message was sent
@@ -135,6 +151,7 @@ windows_audio_thread(void *V)
 						 * index */
 		active_in_buffers--;
 		if (state == STATE_PAUSE || state == STATE_START_PAUSE) {
+                    my_unlock_mutex(snd_open);
 		    continue;
 		}
 
@@ -145,7 +162,7 @@ windows_audio_thread(void *V)
 			//twh = (WAVEHDR*) msg.lParam;
 		    for (i = 0; i < count; i++) {
 			procbuf[i] =
-			   ((SAMPLE *) (((WAVEHDR *) msg.lParam)->
+			   ((SAMPLE16 *) (((WAVEHDR *) msg.lParam)->
 					 lpData))[i] << 8;
 				//procbuf[i] = ((SAMPLE*) twh->lpData)[i];
 		    }
@@ -249,28 +266,28 @@ windows_audio_thread(void *V)
 
 			    }
 			    for (i = 0, j = 0, k = 0; i < count; i++) {
-				DSP_SAMPLE      W = procbuf[i] >> 8;
-				SAMPLE         *curpos;
+				DSP_SAMPLE      W = (SAMPLE32)procbuf[i] >> 8;
+				SAMPLE16       *curpos;
 
-				if (j * sizeof(SAMPLE) >= len1
+				if (j * sizeof(SAMPLE16) >= len1
 				    && pos2 != NULL
-				    && k * sizeof(SAMPLE) < len2) {
+				    && k * sizeof(SAMPLE16) < len2) {
 				    curpos = pos2 + k;
 				    k++;
 				} else if (pos1 != NULL) {
 				    curpos = pos1 + j;
 				    j++;
 				}
-				*(SAMPLE *) curpos = W;
+				*(SAMPLE16 *) curpos = W;
 			    }
 
 			    res =
 				IDirectSoundBuffer_Unlock(dbuffer, pos1,
 							  j *
-							  sizeof(SAMPLE),
+							  sizeof(SAMPLE16),
 							  pos2,
 							  k *
-							  sizeof(SAMPLE));
+							  sizeof(SAMPLE16));
 			    if (res != DS_OK) {
 				fprintf(stderr, "\nunlock:");
 				switch (res) {
@@ -339,8 +356,8 @@ windows_audio_thread(void *V)
 			 */
 			else {
 			    for (i = 0; i < count; i++) {
-				DSP_SAMPLE W = procbuf[i] >> 8;
-				((SAMPLE *) (write_header[hdr_avail].
+				DSP_SAMPLE W = (SAMPLE32)procbuf[i] >> 8;
+				((SAMPLE16 *) (write_header[hdr_avail].
 					     lpData))[i] = W;
 			    }
 
@@ -368,12 +385,14 @@ windows_audio_thread(void *V)
 		active_in_buffers++;
 		if (active_in_buffers == 0 && state == STATE_PAUSE)
 		    SetEvent(input_bufs_done);
+                my_unlock_mutex(snd_open);
 		continue;
 	    }
 	    /*
 	     * Our main thread is opening the WAVE device
 	     */
 	case MM_WIM_OPEN:{
+                my_unlock_mutex(snd_open);
 		continue;
 	    }
 	    /*
@@ -405,11 +424,13 @@ windows_audio_thread(void *V)
 		active_out_buffers++;
 		if (active_out_buffers == 0 && state == STATE_PAUSE)
 		    SetEvent(output_bufs_done);
+                my_unlock_mutex(snd_open);
 		continue;
 	    }
 	default:
 	    ;
 	}
+        my_unlock_mutex(snd_open);
     }
     CloseHandle(audio_thread);
     return 0;
@@ -488,6 +509,7 @@ windows_finish_sound(void)
 	snd=NULL;
     }
     waveInClose(in);
+    my_unlock_mutex(snd_open);
 }
 
 /*
@@ -707,6 +729,8 @@ windows_init_sound(void)
     } else
 	state = STATE_PROCESS;
 
+    my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
+
 
