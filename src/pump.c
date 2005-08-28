@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2005/08/28 12:42:27  alankila
+ * move write_track flag properly into pump.h, make it volatile because it's
+ * shared by threads
+ *
  * Revision 1.32  2005/08/28 12:39:01  alankila
  * - make audio_lock a real mutex
  * - fix mutex cleanup at exit
@@ -191,10 +195,8 @@ int             n = 0;
 GMutex         *effectlist_lock;
 
 extern char     version[];
-unsigned short  write_track = 0;	/* 
-					 * when nonzero we should write
-					 * sample to disk 
-					 */
+/* flag for whether we are creating .wav */
+volatile unsigned short  write_track = 0;
 
 /* default settings */
 unsigned short  nchannels = 1;

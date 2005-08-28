@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.44  2005/08/28 12:42:27  alankila
+ * move write_track flag properly into pump.h, make it volatile because it's
+ * shared by threads
+ *
  * Revision 1.43  2005/08/28 12:39:01  alankila
  * - make audio_lock a real mutex
  * - fix mutex cleanup at exit
@@ -266,8 +270,6 @@ gint            effects_row = -1;	/*
 gint            bank_row = -1;	/* 
 				 * current row in bank list 
 				 */
-
-extern unsigned short write_track;
 
 /*
  * Cleaning and quit from application
