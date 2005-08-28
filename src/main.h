@@ -24,26 +24,18 @@
 #define _MAIN_H_ 1
 
 #include <glib.h>
+#include "utils.h"
 
 /* compile-time decision is easier to make working first */
 #ifndef _WIN32
 #    ifdef HAVE_ALSA
 #        include "audio-alsa.h"
-//#        define AUDIO_THREAD alsa_audio_thread
-//#        define AUDIO_INIT   alsa_init_sound
-//#        define AUDIO_FINISH alsa_finish_sound
 #    endif
 #    ifdef HAVE_OSS
 #        include "audio-oss.h"
-//#        define AUDIO_THREAD oss_audio_thread
-//#        define AUDIO_INIT   oss_init_sound
-//#        define AUDIO_FINISH oss_finish_sound
 #    endif
 #else
 #    include "audio-windows.h"
-//#    define AUDIO_THREAD windows_audio_thread
-//#    define AUDIO_INIT windows_init_sound
-//#    define AUDIO_FINISH windows_finish_sound
 #endif
 enum GnuitarErr {
     ERR_NOERROR = 0,
@@ -69,8 +61,8 @@ enum GnuitarErr {
 };
     
 extern volatile int state;
+extern my_mutex         snd_open;
 #ifndef _WIN32
-extern GMutex          *snd_open;
 extern pthread_t        audio_thread;
 
 extern SAMPLE16         rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
@@ -84,7 +76,7 @@ extern char             rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE];
 extern unsigned short   overrun_threshold;
 extern DWORD            thread_id;
-extern DWORD WINAPI     (*audio_proc) (void *V); /* pointer to audio thread routine */
+extern DWORD (WINAPI    *audio_proc) (void *V); /* pointer to audio thread routine */
 #endif
 extern int		(*audio_init) (void);	/* init sound routine   */
 extern void		(*audio_finish) (void);	/* finish sound routine */

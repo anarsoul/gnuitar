@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2005/08/28 21:41:28  fonin
+ * Portability: introduced new functions for mutexes
+ *
  * Revision 1.6  2005/08/28 14:04:04  alankila
  * - OSS copypaste error fix
  * - remove my_log2 in favour of doing pow, trunc, log.
@@ -83,10 +86,10 @@ oss_audio_thread(void *V)
 	if (state == STATE_PAUSE) {
 	    usleep(10000);
 	}
-        g_mutex_lock(snd_open);
+        my_lock_mutex(snd_open);
         /* catch transition PAUSE -> EXIT with mutex being waited already */
         if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
-            g_mutex_unlock(snd_open);
+            my_unlock_mutex(snd_open);
             break;
         }
 
@@ -122,7 +125,7 @@ oss_audio_thread(void *V)
 	count = write(fd, rdbuf, buffer_size);
 	if (count != buffer_size)
 	    fprintf(stderr, "warning: short write (%d/%d) to sound device\n", count, buffer_size);
-        g_mutex_unlock(snd_open);
+        my_unlock_mutex(snd_open);
     }
 
     return NULL;
@@ -132,7 +135,7 @@ void
 oss_finish_sound(void)
 {
     state = STATE_PAUSE;
-    g_mutex_lock(snd_open);
+    my_lock_mutex(snd_open);
     close(fd);
 }
 
@@ -210,7 +213,7 @@ oss_init_sound(void)
     }
     
     state = STATE_PROCESS;
-    g_mutex_unlock(snd_open);
+    my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
 

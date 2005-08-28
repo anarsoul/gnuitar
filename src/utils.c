@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2005/08/28 21:45:12  fonin
+ * Portability: introduced new functions for mutexes
+ *
  * Revision 1.6  2005/08/28 14:04:04  alankila
  * - OSS copypaste error fix
  * - remove my_log2 in favour of doing pow, trunc, log.
@@ -74,3 +77,42 @@ my_itoa(int i)
     }
     return "";
 }
+
+#ifndef _WIN32
+inline void my_create_mutex(my_mutex* m) {
+    *m=g_mutex_new();
+}
+
+inline void my_lock_mutex(my_mutex m) {
+    g_mutex_lock(m);
+}
+
+inline void my_unlock_mutex(my_mutex m) {
+    g_mutex_unlock(m);
+}
+
+inline void my_close_mutex(my_mutex m) {
+    g_mutex_free(m);
+}
+
+#else
+
+inline void my_create_mutex(my_mutex m*) {
+    *m=CreateMutex(NULL,FALSE,NULL);
+}
+
+inline void my_lock_mutex(my_mutex m) {
+    if(m)
+        WaitForSingleObject(m,INFINITE);
+}
+
+inline void my_unlock_mutex(my_mutex m) {
+    if(m)
+        ReleaseMutex(m);
+}
+
+inline void my_close_mutex(my_mutex m) {
+    if(m)
+        CloseHandle(m);
+}
+#endif

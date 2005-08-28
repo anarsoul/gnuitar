@@ -37,10 +37,24 @@
 #    endif
 #    define FILESEP "\\"
 #    define isnan _isnan
+#    define rand_r(x) rand()
+
+#include <windows.h>
+typedef HANDLE  my_mutex;
+
 #else
 #    define FILESEP "/"
+
+#include <glib.h>
+typedef GMutex* my_mutex;
+
 #endif
 
 extern char    *my_itoa(int i);
+extern void     my_create_mutex(my_mutex*);
+extern void     my_lock_mutex(my_mutex);
+extern void     my_unlock_mutex(my_mutex);
+extern void     my_close_mutex(my_mutex);
 
 #endif
+

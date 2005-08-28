@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2005/08/28 21:41:28  fonin
+ * Portability: introduced new functions for mutexes
+ *
  * Revision 1.40  2005/08/28 14:04:04  alankila
  * - OSS copypaste error fix
  * - remove my_log2 in favour of doing pow, trunc, log.
@@ -173,12 +176,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
 #ifndef _WIN32
+#include <unistd.h>
 #include <pthread.h>
 #endif
- 
+
 #include "pump.h"
 #include "main.h"
 #include "tracker.h"
@@ -187,8 +190,8 @@
 volatile int    state;
 char            version[13] = "GNUitar "VERSION;
 
+my_mutex        snd_open=NULL;
 #ifndef _WIN32
-GMutex         *snd_open;
 pthread_t       audio_thread;
 
 SAMPLE16        rdbuf[MAX_BUFFER_SIZE   / sizeof(SAMPLE16)];
@@ -200,7 +203,7 @@ HANDLE          audio_thread;
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
-DWORD WINAPI    (*audio_proc) (void *V); /* pointer to audio thread routine */
+DWORD (WINAPI   *audio_proc) (void *V); /* pointer to audio thread routine */
 #endif
 int		(*audio_init) (void);	/* init sound routine   */
 void		(*audio_finish) (void);	/* finish sound routine */
@@ -240,12 +243,12 @@ main(int argc, char **argv)
     }
 
     g_thread_init(NULL);
-    snd_open = g_mutex_new();   
- 
+    my_create_mutex(&snd_open);
+
     /* prepare state & mutex for audio thread init_sound() */
     state = STATE_PAUSE;
-    g_mutex_lock(snd_open);
-    
+    my_lock_mutex(snd_open);
+
     max_priority = sched_get_priority_max(SCHED_FIFO);
     p.sched_priority = max_priority;
 
@@ -268,8 +271,11 @@ main(int argc, char **argv)
     audio_init=windows_init_sound;
     audio_finish=windows_finish_sound;
 
+    my_create_mutex(&snd_open);
+
+
     /*
-     * create audio thread 
+     * create audio thread
      */
     audio_thread =
 	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_proc, 0,
@@ -281,7 +287,7 @@ main(int argc, char **argv)
     }
 
     /*
-     * set realtime priority to the thread 
+     * set realtime priority to the thread
      */
     if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
 	fprintf(stderr,
@@ -297,7 +303,7 @@ main(int argc, char **argv)
     gtk_init(&argc, &argv);
     load_settings();
     init_gui();
-    
+
     pump_start(argc, argv);
     if ((error = (*audio_init)()) != ERR_NOERROR) {
 	fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
@@ -309,21 +315,23 @@ main(int argc, char **argv)
     /* wait for audio thread to finish */
     if (state == STATE_PAUSE || state == STATE_ATHREAD_RESTART) {
         state = STATE_EXIT;
-        g_mutex_unlock(snd_open);
+        my_unlock_mutex(snd_open);
         pthread_join(audio_thread, NULL);
     } else {
         state = STATE_EXIT;
         pthread_join(audio_thread, NULL);
         (*audio_finish)();
-        g_mutex_unlock(snd_open);
+        my_unlock_mutex(snd_open);
     }
 #else
     state = STATE_EXIT;
+    my_unlock_mutex(snd_open);
     (*audio_finish)();
 #endif
     pump_stop();
     save_settings();
-    g_mutex_free(snd_open);
-    
+    my_close_mutex(snd_open);
+
     return ERR_NOERROR;
 }
+

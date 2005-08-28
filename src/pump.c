@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2005/08/28 21:45:12  fonin
+ * Portability: introduced new functions for mutexes
+ *
  * Revision 1.33  2005/08/28 12:42:27  alankila
  * move write_track flag properly into pump.h, make it volatile because it's
  * shared by threads
@@ -161,6 +164,7 @@
 #    include <unistd.h>
 #else
 #    include <io.h>
+#    include <windows.h>
 #endif
 #include <assert.h>
 #include <fcntl.h>
@@ -172,7 +176,7 @@
 #ifdef HAVE_GTK2
 #include <glib/gstdio.h>
 #endif
- 
+
 #include "autowah.h"
 #include "phasor.h"
 #include "chorus.h"
@@ -188,11 +192,11 @@
 #include "noise.h"
 #include "eqbank.h"
 #include "tuner.h"
+#include "utils.h"
 
 struct effect  *effects[MAX_EFFECTS];
 
 int             n = 0;
-GMutex         *effectlist_lock;
 
 extern char     version[];
 /* flag for whether we are creating .wav */
@@ -203,6 +207,7 @@ unsigned short  nchannels = 1;
 unsigned int    sample_rate = 44100;
 unsigned short  bits = 16;
 unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
+my_mutex        effectlist_lock=NULL;
 #ifndef _WIN32
 unsigned int    fragments = 2;
 #else
@@ -244,7 +249,7 @@ noise_reduction(struct data_block *db) {
     int             i, j;
     int             curr_channel = 0;
     DSP_SAMPLE      tmp;
-    
+
     for (i = 0; i < db->len; i += 1) {
         for (j = NR_SIZE; j > 1; j -= 1)
             nr_last[curr_channel][j-1] = nr_last[curr_channel][j-2];
@@ -254,7 +259,7 @@ noise_reduction(struct data_block *db) {
         for (j = 0; j < NR_SIZE; j += 1)
             tmp += nr_last[curr_channel][j];
         db->data[i] = tmp / NR_SIZE;
-        
+
         curr_channel = (curr_channel + 1) % db->channels;
     }
 }
@@ -264,7 +269,7 @@ vu_meter(struct data_block *db) {
     int             i;
     DSP_SAMPLE      sample, max_sample = 0;
     double          peak, power = 0;
-    
+
     for (i = 0; i < db->len; i += 1) {
         sample = db->data[i];
         power += pow(sample, 2);
@@ -283,7 +288,7 @@ void
 adjust_master_volume(struct data_block *db) {
     int		    i;
     double	    volume = pow(10, master_volume / 20.0);
-   
+
     for (i = 0; i < db->len; i += 1) {
 	double val = db->data[i] * volume;
         if (val < -MAX_SAMPLE)
@@ -298,7 +303,7 @@ void
 dither_output(struct data_block *db) {
     int		    i;
     static unsigned int randseed = 1;
-    
+
     for (i = 0; i < db->len; i += 1) {
 	db->data[i] += rand_r(&randseed) / (RAND_MAX / 256);
     }
@@ -314,9 +319,9 @@ adapt_to_output(struct data_block *db)
     /* temporarily here to make this compile */
     int n_output_channels;
     return;
-    
+
     assert(db->channels <= n_output_channels);
-    
+
     /* nothing to do */
     if (db->channels == n_output_channels)
         return;
@@ -365,23 +370,23 @@ int
 pump_sample(struct data_block *db)
 {
     int             i;
-    
-    /* NR is enabled only experimentally until 
+
+    /* NR is enabled only experimentally until
      * the noise filter will have been implemented */
     noise_reduction(db);
     bias_elimination(db);
- 
-    g_mutex_lock(effectlist_lock);
+
+    my_lock_mutex(effectlist_lock);
     for (i = 0; i < n; i++)
 	effects[i]->proc_filter(effects[i], db);
-    g_mutex_unlock(effectlist_lock);
+    my_unlock_mutex(effectlist_lock);
 
     adapt_to_output(db);
     adjust_master_volume(db);
     if (bits == 16)
 	dither_output(db);
     vu_meter(db);
-    
+
     if (write_track) {
 	track_write(db->data, db->len);
     }
@@ -430,23 +435,23 @@ load_settings() {
     GKeyFile       *file;
     GError         *error;
     gint            tmp;
-    
+
     settingspath = discover_settings_path();
     if (! g_file_test(settingspath, G_FILE_TEST_EXISTS))
         goto LOAD_SETTINGS_CLEANUP1;
-    
+
     file = g_key_file_new();
-    
+
     /* Thanks, glib! */
     g_key_file_load_from_file(file, settingspath, G_KEY_FILE_NONE, NULL);
-    
+
     /* this seems a bit clumsy, maybe I should do
      * { "bits", &bits, INTEGER } structure */
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "bits", &error);
     if (error == NULL)
         bits = tmp;
-    
+
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "n_output_channels", &error);
     if (error == NULL)
@@ -463,7 +468,7 @@ load_settings() {
     tmp = g_key_file_get_integer(file, "global", "sample_rate", &error);
     if (error == NULL)
         sample_rate = tmp;
-    
+
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "buffer_size", &error);
     if (error == NULL)
@@ -488,7 +493,7 @@ void save_settings() {
     gsize           length;
     int             w_length;
     int             fd;
-    
+
     settingspath = discover_settings_path();
     file = g_key_file_new();
 
@@ -501,7 +506,7 @@ void save_settings() {
     g_key_file_set_integer(file, "global", "n_inout_buffers", nbuffers);
 #endif
     key_file_as_str = g_key_file_to_data(file, &length, NULL);
-    
+
     /* there's g_set_file_contents() in glib 2.8 */
     fd = g_open(settingspath, O_WRONLY | O_TRUNC | O_CREAT, 0777);
     if (fd == -1)
@@ -510,7 +515,7 @@ void save_settings() {
     if (w_length != length)
         perror("Failed to write settings file completely: ");
     close(fd);
-    
+
   SAVE_SETTINGS_CLEANUP1:
     g_key_file_free(file);
     free((void *) settingspath);
@@ -537,9 +542,9 @@ pump_start(int argc, char **argv)
 
     void            (*create_f[10]) (struct effect *);
 
-    effectlist_lock = g_mutex_new();
+    my_create_mutex(&effectlist_lock);
     init_sin_lookup_table();
-    
+
     master_volume = 0.0;
     j = 0;
 
@@ -598,7 +603,7 @@ pump_stop(void)
 	effects[i]->proc_done(effects[i]);
     }
     n = 0;
-    g_mutex_free(effectlist_lock);
+    my_close_mutex(effectlist_lock);
 }
 
 void
@@ -606,7 +611,7 @@ passthru(struct effect *p, struct data_block *db)
 {
 }
 
-/* for UNIX; O_BINARY exists only on Win32. We must open() files with this 
+/* for UNIX; O_BINARY exists only on Win32. We must open() files with this
  * flag because otherwise it gets corrupted by the CR/LF translation */
 #ifndef O_BINARY
 #  define O_BINARY 0
@@ -626,7 +631,7 @@ save_pump(const char *fname)
     }
 
     /*
-     * writing signature 
+     * writing signature
      */
     write(fd, version, 13);
     for (i = 0; i < n; i++) {
@@ -653,7 +658,7 @@ load_pump(const char *fname)
     }
 
     /*
-     * reading signature and compare with our version 
+     * reading signature and compare with our version
      */
     read(fd, rc_version, 13);
     if (strncmp(version, rc_version, 13) != 0) {
@@ -663,7 +668,7 @@ load_pump(const char *fname)
     }
 
     gtk_clist_clear(GTK_CLIST(processor));
-    g_mutex_lock(effectlist_lock);
+    my_lock_mutex(effectlist_lock);
     pump_stop();
 
     n = 0;
@@ -686,5 +691,6 @@ load_pump(const char *fname)
     }
     close(fd);
     fprintf(stderr, "\n");
-    g_mutex_unlock(effectlist_lock);
+    my_unlock_mutex(effectlist_lock);
 }
+

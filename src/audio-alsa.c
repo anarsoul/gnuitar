@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2005/08/28 21:41:28  fonin
+ * Portability: introduced new functions for mutexes
+ *
  * Revision 1.6  2005/08/28 12:28:44  alankila
  * switch to GMutex that is also available on win32
  *
@@ -81,10 +84,10 @@ alsa_audio_thread(void *V)
         while (state == STATE_PAUSE) {
             usleep(10000);
         }
-        g_mutex_lock(snd_open);
+        my_lock_mutex(snd_open);
         /* catch transition PAUSE -> EXIT with mutex being waited already */
         if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
-            g_mutex_unlock(snd_open);
+            my_unlock_mutex(snd_open);
             break;
         }
         
@@ -153,7 +156,7 @@ alsa_audio_thread(void *V)
         if (outframes != frames)
             fprintf(stderr, "Short write to playback device: %d, expecting %d\n", outframes, frames);
         
-        g_mutex_unlock(snd_open);
+        my_unlock_mutex(snd_open);
     }
     return NULL;
 }
@@ -165,7 +168,7 @@ void
 alsa_finish_sound(void)
 {
     state = STATE_PAUSE;
-    g_mutex_lock(snd_open);
+    my_lock_mutex(snd_open);
     snd_pcm_drop(playback_handle);
     snd_pcm_close(playback_handle);
     snd_pcm_drop(capture_handle);
@@ -354,7 +357,7 @@ alsa_init_sound(void)
     restarting = 1;
     
     state = STATE_PROCESS;
-    g_mutex_unlock(snd_open);
+    my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
 

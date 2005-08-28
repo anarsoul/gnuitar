@@ -25,15 +25,16 @@
 
 #include <gtk/gtk.h>
 #include <sys/types.h>
+#include <glib.h>
 
 #ifdef FLOAT_DSP
 typedef double	DSP_SAMPLE;
 #else
-typedef int32_t	DSP_SAMPLE;
+typedef gint32	DSP_SAMPLE;
 #endif
 
-typedef int16_t SAMPLE16;
-typedef int32_t SAMPLE32;
+typedef gint16  SAMPLE16;
+typedef gint32  SAMPLE32;
 
 #ifdef _WIN32
 #define MAX_BUFFERS	1024	/* number of input/output sound buffers */
@@ -100,13 +101,13 @@ extern unsigned short nchannels;
 extern unsigned int sample_rate;
 extern unsigned short bits;
 extern unsigned int buffer_size;
+
 #ifndef _WIN32
 extern unsigned int fragments;
 #else
 extern unsigned int nbuffers;
 #endif
 
-extern GMutex  *effectlist_lock;
 extern int      n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];

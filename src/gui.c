@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.46  2005/08/28 21:41:28  fonin
+ * Portability: introduced new functions for mutexes
+ *
  * Revision 1.45  2005/08/28 14:04:04  alankila
  * - OSS copypaste error fix
  * - remove my_log2 in favour of doing pow, trunc, log.
@@ -220,9 +223,9 @@
 #ifdef _WIN32
 extern short dsound;
 #endif
- 
+
 #define VU_UPDATE_INTERVAL 20.0    /* ms */
- 
+
 void            bank_start_save(GtkWidget * widget, gpointer data);
 void            bank_start_load(GtkWidget * widget, gpointer data);
 void            sample_dlg(GtkWidget * widget, gpointer data);
@@ -268,15 +271,17 @@ GtkWidget      *tracker;
 GtkWidget      *start;
 GtkTooltips    *tooltips;
 double		master_volume;
-gint            curr_row = -1;	/* 
-				 * current row in processor list 
+gint            curr_row = -1;	/*
+				 * current row in processor list
 				 */
-gint            effects_row = -1;	/* 
-					 * current row in known effects list 
+gint            effects_row = -1;	/*
+					 * current row in known effects list
 					 */
-gint            bank_row = -1;	/* 
-				 * current row in bank list 
+gint            bank_row = -1;	/*
+				 * current row in bank list
 				 */
+extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
+                                 * MSVC 6.0 complains: identifier effectlist_lock: */
 
 /*
  * Cleaning and quit from application
@@ -381,11 +386,11 @@ help_contents(void)
     int             i;
 
     /*
-     * first get environment variable for a browser 
+     * first get environment variable for a browser
      */
     env_browser = getenv("BROWSER");
     /*
-     * if there is no preference, trying to guess 
+     * if there is no preference, trying to guess
      */
     if (env_browser == NULL) {
 	for (i = 0; i < 7; i++) {
@@ -405,7 +410,7 @@ help_contents(void)
 	    return;
 	}
 	/*
-	 * child process 
+	 * child process
 	 */
 	if (pid == 0) {
 	    for (i = 0; i < 7; i++) {
@@ -477,10 +482,10 @@ up_pressed(GtkWidget * widget, gpointer data)
     if (curr_row > 0 && curr_row < n) {
 	swap = effects[curr_row - 1];
 
-	g_mutex_lock(effectlist_lock);
+        my_lock_mutex(effectlist_lock);
         effects[curr_row - 1] = effects[curr_row];
 	effects[curr_row] = swap;
-	g_mutex_unlock(effectlist_lock);
+	my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row - 1);
@@ -502,10 +507,10 @@ down_pressed(GtkWidget * widget, gpointer data)
     if (curr_row >= 0 && curr_row < n - 1) {
 	swap = effects[curr_row + 1];
 
-	g_mutex_lock(effectlist_lock);
+	my_lock_mutex(effectlist_lock);
 	effects[curr_row + 1] = effects[curr_row];
 	effects[curr_row] = swap;
-	g_mutex_unlock(effectlist_lock);
+	my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row);
@@ -526,12 +531,12 @@ del_pressed(GtkWidget * widget, gpointer data)
 
     if (curr_row >= 0 && curr_row < n) {
 
-        g_mutex_lock(effectlist_lock);
+        my_lock_mutex(effectlist_lock);
 	effects[curr_row]->proc_done(effects[curr_row]);
 	for (i = curr_row; i < n; i++)
 	    effects[i] = effects[i + 1];
 	effects[n--] = NULL;
-        g_mutex_unlock(effectlist_lock);
+        my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row);
@@ -555,7 +560,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	effect_list[effects_row].create_f(tmp_effect);
 	tmp_effect->proc_init(tmp_effect);
 
-	g_mutex_lock(effectlist_lock);
+	my_lock_mutex(effectlist_lock);
 	if (curr_row >= 0 && curr_row < n) {
 	    idx = curr_row + 1;
 	    for (i = n; i > idx; i--) {
@@ -566,7 +571,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	    idx = n++;
 	}
 	effects[idx] = tmp_effect;
-	g_mutex_unlock(effectlist_lock);
+        my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_insert(GTK_CLIST(processor), idx,
 			 &effect_list[effects[idx]->id].str);
@@ -576,7 +581,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 }
 
 /*
- * callback for gtk_set_pointer_data_full() 
+ * callback for gtk_set_pointer_data_full()
  */
 void
 free_clist_ptr(gpointer data)
@@ -740,7 +745,7 @@ tracker_pressed(GtkWidget * widget, gpointer data)
     GtkWidget      *filesel;
     time_t          t;
     char            defaultname[80];
-    
+
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
         time(&t);
         strftime(defaultname, 80, "%F-%T."
@@ -796,7 +801,7 @@ timeout_update_vumeter(gpointer vumeter) {
     GtkRcStyle *rc_style = NULL;
     GdkColor color;
     double power = 0.0;
-   
+
     rc_style = gtk_rc_style_new();
     if (vumeter_peak >= 1.0) {
 
@@ -805,13 +810,13 @@ timeout_update_vumeter(gpointer vumeter) {
         color.red   = 65535;
         color.green = 0;
         color.blue  = 0;
-        
-        rc_style->bg[GTK_STATE_NORMAL] = color; 
+
+        rc_style->bg[GTK_STATE_NORMAL] = color;
         rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG;
     }
     gtk_widget_modify_style(vumeter, rc_style);
     gtk_rc_style_unref(rc_style);
-    
+
     if (vumeter_power != 0.0) {
         power = log(vumeter_power) / log(10) * 10;
         /* 16 bits hold ~91 dB resolution */
@@ -820,7 +825,7 @@ timeout_update_vumeter(gpointer vumeter) {
         if (power < -91)
             power = -91;
     }
-    
+
     gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
     return TRUE;
 }
@@ -1030,6 +1035,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
 #endif
 #ifdef _WIN32
     drivers_list = g_list_append(drivers_list, "MMSystem");
+    drivers_list = g_list_append(drivers_list, "DirectX");
 #endif
 
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.driver), drivers_list);
@@ -1159,8 +1165,8 @@ start_stop(GtkWidget * widget, gpointer data)
 	    state = STATE_PROCESS;
 #endif
 	if(state == STATE_ATHREAD_RESTART) {
+            my_unlock_mutex(snd_open);
 #ifndef _WIN32
-	    g_mutex_unlock(snd_open);
 	    pthread_join(audio_thread, NULL);
 	    state = STATE_PAUSE;
 	    if (pthread_create(&audio_thread, NULL, audio_proc, NULL)) {
@@ -1168,15 +1174,16 @@ start_stop(GtkWidget * widget, gpointer data)
 		state = STATE_EXIT;
 	    }
 #else
-// FIXME - what is the windows analog of pthread_join ???
-	    state = STATE_PAUSE;
+            WaitForSingleObject(audio_thread,INFINITE);
+            state = STATE_PAUSE;
 	    audio_thread =
 		CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_proc, 0,
 		     0, &thread_id);
+
             /*
-	     * set realtime priority to the thread 
+	     * set realtime priority to the thread
     	     */
-	    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
+	    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL))
 		fprintf(stderr,
 		    "\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
 			GetLastError());
@@ -1261,7 +1268,7 @@ init_gui(void)
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(0), 0, 0);
     /*
-     * disable options menu 
+     * disable options menu
      */
     gtk_widget_set_sensitive(GTK_WIDGET
 			     (gtk_item_factory_get_widget
@@ -1281,7 +1288,7 @@ init_gui(void)
 				   GTK_POLICY_AUTOMATIC);
     gtk_tooltips_set_tip(tooltips,processor,"This area contains a list of current applied effects." \
 	"You can use Add/Up/Down/Delete buttons to control this list.",NULL);
-    
+
     known_effects = gtk_clist_new_with_titles(1, effects_titles);
     gtk_clist_set_selection_mode(GTK_CLIST(known_effects),
 				 GTK_SELECTION_SINGLE);
@@ -1370,7 +1377,7 @@ init_gui(void)
     adj_master = gtk_adjustment_new(master_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
     master = gtk_hscale_new(GTK_ADJUSTMENT(adj_master));
     gtk_scale_set_draw_value(GTK_SCALE(master), FALSE);
-    
+
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 3, 4,
@@ -1418,7 +1425,7 @@ init_gui(void)
     gtk_widget_show_all(mainWnd);
 
     g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter, vumeter);
-    
+
     /*
      * Attach icon to the window
      */
@@ -1439,3 +1446,4 @@ init_gui(void)
     gdk_window_set_icon(mainWnd->window, mainWnd->window, app_icon, mask);
 #endif
 }
+
