@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.47  2005/08/31 14:43:35  alankila
+ * fix one more qualifier err
+ *
  * Revision 1.46  2005/08/28 21:41:28  fonin
  * Portability: introduced new functions for mutexes
  *
@@ -855,7 +858,7 @@ update_latency_label(GtkWidget * widget, gpointer sparams)
 void
 update_driver(GtkWidget * widget, gpointer sparams)
 {
-    char* tmp=NULL;
+    const char *tmp=NULL;
 
     sample_params  *sp = (sample_params *) sparams;
     tmp=gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->driver)->entry));
