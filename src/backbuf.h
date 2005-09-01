@@ -34,6 +34,7 @@ typedef struct Backbuf {
     void	(*add)		    (struct Backbuf *, BUF_TYPE);
     BUF_TYPE	(*get)		    (struct Backbuf *, unsigned int);
     BUF_TYPE	(*get_interpolated) (struct Backbuf *, double);
+    void	(*clear)	    (struct Backbuf *);
 } Backbuf_t;
 
 Backbuf_t * new_Backbuf(unsigned int);

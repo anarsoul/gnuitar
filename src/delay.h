@@ -27,20 +27,15 @@
 
 #define MAX_STEP 65000
 #define MAX_COUNT 10
-#define MAX_SIZE (MAX_STEP*MAX_COUNT)
+#define MAX_SIZE (MAX_STEP*(MAX_COUNT+1))
 
 extern void     delay_create(struct effect *);
 
 struct delay_params {
-    DSP_SAMPLE     *history;	/* history of samples */
-
-    int             index;	/* curr.index in the history array */
-    int             delay_size,	/* length of history */
-                    delay_decay,	/* volume of processed signal */
-                    delay_start,
-                    delay_step,
-                   *idelay,
-                    delay_count;	/* number of repeats */
+    Backbuf_t       *history[MAX_CHANNELS];  /* history of samples */
+    int             delay_decay, /* volume of processed signal */
+                    delay_time,  /* time (in samples) between repeats */
+                    delay_count; /* number of repeats */
 };
 
 #endif

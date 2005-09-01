@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2005/09/01 14:09:56  alankila
+ * - multichannel work: delay independent of nchannels; uses backbuf instead
+ *   of doing it all on its own. Also fixes bugs with delay load/save.
+ *
  * Revision 1.7  2005/09/01 13:36:23  alankila
  * Objectify backbuf, correct naming and make it a typedef.
  *
@@ -49,7 +53,7 @@
 #include <assert.h>
 
 void
-backbuf_add(struct Backbuf *b, BUF_TYPE d)
+backbuf_add(Backbuf_t *b, BUF_TYPE d)
 {
     b->curpos++;
     if (b->curpos == b->nstor)
@@ -58,7 +62,7 @@ backbuf_add(struct Backbuf *b, BUF_TYPE d)
 }
 
 BUF_TYPE
-backbuf_get(struct Backbuf *b, unsigned int delay)
+backbuf_get(Backbuf_t *b, unsigned int delay)
 {
     int             getpos;
     assert(delay < b->nstor);
@@ -74,7 +78,7 @@ backbuf_get(struct Backbuf *b, unsigned int delay)
 
 /* XXX optimize this a bit */
 BUF_TYPE
-backbuf_get_interpolated(struct Backbuf *b, double delay)
+backbuf_get_interpolated(Backbuf_t *b, double delay)
 {
     BUF_TYPE x, x1, x2;
     unsigned int delay1 = delay;
@@ -92,21 +96,28 @@ backbuf_get_interpolated(struct Backbuf *b, double delay)
     return x;
 }
 
-struct Backbuf *
-new_Backbuf(unsigned int maxDelay)
+void
+backbuf_clear(Backbuf_t *b)
 {
-    struct Backbuf *b = calloc(1, sizeof(struct Backbuf));
-    b->nstor = maxDelay + 1;
-    b->storage = (BUF_TYPE *) calloc(b->nstor, sizeof(BUF_TYPE));
+    memset(b->storage, 0, b->nstor * sizeof(b->storage[0]));
+}
+
+Backbuf_t *
+new_Backbuf(unsigned int max_delay)
+{
+    Backbuf_t *b = calloc(1, sizeof(Backbuf_t));
+    b->nstor = max_delay + 1;
+    b->storage = calloc(b->nstor, sizeof(BUF_TYPE));
     b->curpos = 0;
     b->add = backbuf_add;
     b->get = backbuf_get;
     b->get_interpolated = backbuf_get_interpolated;
+    b->clear = backbuf_clear;
     return b;
 }
 
 void
-del_Backbuf(struct Backbuf *b)
+del_Backbuf(Backbuf_t *b)
 {
     free(b->storage);
     free(b);

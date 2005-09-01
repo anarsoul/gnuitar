@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/09/01 14:09:56  alankila
+ * - multichannel work: delay independent of nchannels; uses backbuf instead
+ *   of doing it all on its own. Also fixes bugs with delay load/save.
+ *
  * Revision 1.15  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -70,6 +74,7 @@
  *
  */
 
+#include "backbuf.h"
 #include "delay.h"
 #include "gui.h"
 #include <string.h>
@@ -86,18 +91,19 @@ void            delay_filter(struct effect *p, struct data_block *db);
 void
 update_delay_decay(GtkAdjustment * adj, struct delay_params *params)
 {
+    int             i;
     params->delay_decay = (int) adj->value * 10;
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        params->history[i]->clear(params->history[i]);
 }
 
 void
 update_delay_time(GtkAdjustment * adj, struct delay_params *params)
 {
-    int             new_time;
-    new_time = (int) adj->value * sample_rate * nchannels / 1000;
-    params->delay_start = params->delay_step = new_time;
-    params->index = 0;
-    memset(params->history, 0, MAX_SIZE);
-    memset(params->idelay, 0, MAX_COUNT * sizeof(int));
+    int             i;
+    params->delay_time = (int) adj->value * sample_rate / 1000;
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        params->history[i]->clear(params->history[i]);
 }
 
 void
@@ -155,7 +161,7 @@ delay_init(struct effect *p)
     parmTable = gtk_table_new(2, 8, FALSE);
 
     adj_decay = gtk_adjustment_new(pdelay->delay_decay / 10,
-				   10.0, 101.0, 1.0, 1.0, 1.0);
+				   10.0, 100.0, 1.0, 1.0, 0.0);
     decay_label = gtk_label_new("Decay\n%");
     gtk_table_attach(GTK_TABLE(parmTable), decay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -180,8 +186,7 @@ delay_init(struct effect *p)
 
 
     adj_time =
-	gtk_adjustment_new(pdelay->delay_step * 1000 /
-			   (sample_rate * nchannels), 1.0,
+	gtk_adjustment_new(pdelay->delay_time * 1000 / sample_rate, 1.0,
 			   MAX_STEP * 1000 / (sample_rate * nchannels),
 			   1.0, 1.0, 1.0);
     time_label = gtk_label_new("Time\nms");
@@ -194,7 +199,6 @@ delay_init(struct effect *p)
 
     gtk_signal_connect(GTK_OBJECT(adj_time), "value_changed",
 		       GTK_SIGNAL_FUNC(update_delay_time), pdelay);
-
     time = gtk_vscale_new(GTK_ADJUSTMENT(adj_time));
 
     gtk_table_attach(GTK_TABLE(parmTable), time, 3, 4, 1, 2,
@@ -205,7 +209,7 @@ delay_init(struct effect *p)
 
 
     adj_repeat = gtk_adjustment_new(pdelay->delay_count,
-				    1.0, MAX_COUNT, 1.0, 1.0, 1.0);
+				    1.0, MAX_COUNT, 1.0, 1.0, 0.0);
     repeat_label = gtk_label_new("Repeat\ntimes");
     gtk_table_attach(GTK_TABLE(parmTable), repeat_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -252,42 +256,36 @@ delay_filter(struct effect *p, struct data_block *db)
     struct delay_params *dp;
     int             i,
                     count,
-                    current_decay;
-    DSP_SAMPLE     *s;
+                    current_delay = 0;
+    double          current_decay;
+    DSP_SAMPLE     *s, newval;
+    int             curr_channel = 0;
 
     dp = (struct delay_params *) p->params;
 
     s = db->data;
     count = db->len;
 
+    /* this is a simple mono version */
     while (count) {
-	/*
-	 * add sample to history 
-	 */
-	dp->history[dp->index++] = *s;
-	/*
-	 * wrap around 
-	 */
-	if (dp->index == dp->delay_size)
-	    dp->index = 0;
+        /* mix stuff from history to current data */
+        newval = 0;
+        current_delay = 0;
+        current_decay = 1.0;
+	
+        for (i = 0; i < dp->delay_count; i++) {
+            current_delay += dp->delay_time;
+            current_decay *= dp->delay_decay / 1000.0;
 
-	current_decay = dp->delay_decay;
-	for (i = 0; i < dp->delay_count; i++) {
-	    if (dp->index >= dp->idelay[i]) {
-		if (dp->index - dp->idelay[i] ==
-		    dp->delay_start + i * dp->delay_step)
-		    dp->idelay[i]++;
-	    } else if (dp->delay_size + dp->index - dp->idelay[i] ==
-		       dp->delay_start + i * dp->delay_step) {
-		dp->idelay[i]++;
-	    }
-	    if (dp->idelay[i] == dp->delay_size)
-		dp->idelay[i] = 0;
-
-	    *s += dp->history[dp->idelay[i]] * current_decay / 1000;
-	    current_decay = current_decay * dp->delay_decay / 1000;
+            newval += dp->history[curr_channel]->get(dp->history[curr_channel], current_delay) * current_decay;
 	}
+        
+        /* write to history, add decay to current sample, avoid overflow */
+        dp->history[curr_channel]->add(dp->history[curr_channel], *s);
+        *s = *s/2 + newval/2;
 
+        curr_channel = (curr_channel + 1) % db->channels;
+        
 	s++;
 	count--;
     }
@@ -297,16 +295,15 @@ void
 delay_done(struct effect *p)
 {
     struct delay_params *dp;
+    int i;
 
     dp = (struct delay_params *) p->params;
-
-    free(dp->history);
-    free(dp->idelay);
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        del_Backbuf(dp->history[i]);
 
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
@@ -316,10 +313,8 @@ delay_save(struct effect *p, int fd)
 
     dp = (struct delay_params *) p->params;
 
-    write(fd, &dp->delay_size, sizeof(dp->delay_size));
     write(fd, &dp->delay_decay, sizeof(dp->delay_decay));
-    write(fd, &dp->delay_start, sizeof(dp->delay_start));
-    write(fd, &dp->delay_step, sizeof(dp->delay_step));
+    write(fd, &dp->delay_time, sizeof(dp->delay_time));
     write(fd, &dp->delay_count, sizeof(dp->delay_count));
 }
 
@@ -330,10 +325,8 @@ delay_load(struct effect *p, int fd)
 
     dp = (struct delay_params *) p->params;
 
-    read(fd, &dp->delay_size, sizeof(dp->delay_size));
     read(fd, &dp->delay_decay, sizeof(dp->delay_decay));
-    read(fd, &dp->delay_start, sizeof(dp->delay_start));
-    read(fd, &dp->delay_step, sizeof(dp->delay_step));
+    read(fd, &dp->delay_time, sizeof(dp->delay_time));
     read(fd, &dp->delay_count, sizeof(dp->delay_count));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -346,9 +339,9 @@ void
 delay_create(struct effect *p)
 {
     struct delay_params *pdelay;
+    int                 i;
 
-    p->params =
-	(struct delay_params *) malloc(sizeof(struct delay_params));
+    p->params = calloc(1, sizeof(struct delay_params));
     pdelay = p->params;
     p->proc_init = delay_init;
     p->proc_filter = passthru;
@@ -366,15 +359,9 @@ delay_create(struct effect *p)
      * 
      */
 
-    pdelay->delay_size = MAX_SIZE;
     pdelay->delay_decay = 550;
-    pdelay->delay_start = 11300;
-    pdelay->delay_step = 11300;
+    pdelay->delay_time = 11300;
     pdelay->delay_count = 8;
-
-    pdelay->history = (DSP_SAMPLE *) malloc(MAX_SIZE * sizeof(DSP_SAMPLE));
-    pdelay->idelay = (int *) malloc(MAX_COUNT * sizeof(int));
-    pdelay->index = 0;
-
-    memset(pdelay->idelay, 0, MAX_COUNT * sizeof(int));
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        pdelay->history[i] = new_Backbuf(MAX_SIZE);
 }
