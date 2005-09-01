@@ -23,6 +23,7 @@
 #ifndef _REVERB_H_
 #define _REVERB_H_ 1
 
+#include "backbuf.h"
 #include "pump.h"
 
 extern void     reverb_create(struct effect *);
@@ -34,7 +35,7 @@ struct reverbBuffer {
 };
 
 struct reverb_params {
-    struct reverbBuffer *history;
+    Backbuf_t       *history[MAX_CHANNELS];
     int             dry,
                     wet,
                     regen,

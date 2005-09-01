@@ -23,93 +23,45 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _WIN32
-#    include <unistd.h>
-#else
+#ifdef _WIN32
 #    include <io.h>
+#else
+#    include <unistd.h>
 #endif
+
 #include "reverb.h"
 #include "gui.h"
 
-DSP_SAMPLE *
-newChunk()
-{
-    return (DSP_SAMPLE *) malloc(buffer_size * sizeof(DSP_SAMPLE));
-}
-
-void
-freeChunk(DSP_SAMPLE *p)
-{
-    free(p);
-}
-
-void
-reverbBuffer_init(struct reverbBuffer *r, int chunks)
-{
-    r->data = (DSP_SAMPLE *) malloc(chunks * buffer_size * sizeof(DSP_SAMPLE));
-    r->nChunks = chunks;
-    r->nCursor = 0;
-}
-
-void
-reverbBuffer_done(struct reverbBuffer *r)
-{
-    free(r->data);
-    r->data = NULL;
-}
-
-void
-reverbBuffer_addChunk(struct reverbBuffer *r, DSP_SAMPLE *chunk)
-{
-    DSP_SAMPLE *addTo;
-    addTo = r->data + r->nCursor * buffer_size;
-    memcpy(addTo, chunk, buffer_size * sizeof(DSP_SAMPLE));
-    r->nCursor++;
-    r->nCursor %= r->nChunks;
-}
-
-DSP_SAMPLE            *
-reverbBuffer_getChunk(struct reverbBuffer *r, int delay)
-{
-    int             nFrom;
-    DSP_SAMPLE     *getFrom;
-    DSP_SAMPLE     *giveTo;
-
-    assert((delay >= 0) && (delay < r->nChunks));
-    nFrom = r->nCursor - delay;
-    while (nFrom < 0)
-	nFrom += r->nChunks;
-    getFrom = r->data + nFrom * buffer_size;
-    giveTo = newChunk();
-    memcpy(giveTo, getFrom, buffer_size * sizeof(DSP_SAMPLE));
-    return giveTo;
-}
+/* 1 second at max sample rate */
+#define MAX_REVERB_SIZE  48000
 
 void            reverb_filter(struct effect *p, struct data_block *db);
 
 void
 update_reverb_wet(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->wet = (int) adj->value * 2.56;
+    params->wet = (int) adj->value;
 }
 
 void
 update_reverb_dry(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->dry = (int) adj->value * 2.56;
+    params->dry = (int) adj->value;
 }
 
 void
 update_reverb_delay(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->delay =
-	(int) adj->value * nchannels * sample_rate / (1000 * buffer_size);
+    int             i;
+    params->delay = adj->value;
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        params->history[i]->clear(params->history[i]);
 }
 
 void
 update_reverb_regen(GtkAdjustment * adj, struct reverb_params *params)
 {
-    params->regen = (int) adj->value * 2.56;
+    params->regen = (int) adj->value;
 }
 
 void
@@ -160,19 +112,15 @@ reverb_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
 
-    parmTable = gtk_table_new(2, 8, FALSE);
+    parmTable = gtk_table_new(4, 3, FALSE);
 
-    adj_delay =
-	gtk_adjustment_new(preverb->delay * buffer_size * 1000 /
-			   (sample_rate * nchannels), 1.0,
-			   preverb->history->nChunks * buffer_size * 1000 /
-			   (sample_rate * nchannels), 1.0, 1.0, 1.0);
+    adj_delay = gtk_adjustment_new(preverb->delay, 1.0, 1000.0, 1.0, 1.0, 0.0);
     delay_label = gtk_label_new("delay\nms");
     gtk_table_attach(GTK_TABLE(parmTable), delay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     (GTK_FILL | GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_delay), "value_changed",
@@ -191,13 +139,13 @@ reverb_init(struct effect *p)
 
 
     adj_wet =
-	gtk_adjustment_new(preverb->wet / 2.56, 1.0, 101.0, 1.0, 1.0, 1.0);
+	gtk_adjustment_new(preverb->wet, 0.0, 100.0, 1.0, 1.0, 0.0);
     wet_label = gtk_label_new("wet\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), wet_label, 3, 4, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), wet_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     (GTK_FILL | GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_wet), "value_changed",
@@ -205,7 +153,7 @@ reverb_init(struct effect *p)
 
     wet = gtk_vscale_new(GTK_ADJUSTMENT(adj_wet));
 
-    gtk_table_attach(GTK_TABLE(parmTable), wet, 3, 4, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), wet, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
@@ -213,13 +161,13 @@ reverb_init(struct effect *p)
 
 
     adj_dry =
-	gtk_adjustment_new(preverb->dry / 2.56, 1.0, 101.0, 1.0, 1.0, 1.0);
+	gtk_adjustment_new(preverb->dry, 0.0, 100.0, 1.0, 1.0, 0.0);
     dry_label = gtk_label_new("dry\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), dry_label, 5, 6, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), dry_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     (GTK_FILL | GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_dry), "value_changed",
@@ -227,21 +175,20 @@ reverb_init(struct effect *p)
 
     dry = gtk_vscale_new(GTK_ADJUSTMENT(adj_dry));
 
-    gtk_table_attach(GTK_TABLE(parmTable), dry, 5, 6, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), dry, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_regen = gtk_adjustment_new(preverb->regen / 2.56,
-				   0.0, 101, 1.0, 1.0, 1.0);
+    adj_regen = gtk_adjustment_new(preverb->regen, 0.0, 95.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("regen\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), regen_label, 7, 8, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), regen_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     (GTK_FILL | GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_regen), "value_changed",
@@ -249,7 +196,7 @@ reverb_init(struct effect *p)
 
     regen = gtk_vscale_new(GTK_ADJUSTMENT(adj_regen));
 
-    gtk_table_attach(GTK_TABLE(parmTable), regen, 7, 8, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), regen, 3, 4, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
@@ -259,16 +206,15 @@ reverb_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_reverb), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 9, 10, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     (GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     (GTK_FILL | GTK_SHRINK), 0, 0);
     if (p->toggle == 1) {
 	p->toggle = 0;
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
-
 
     gtk_window_set_title(GTK_WINDOW(p->control),
 			 (gchar *) ("Reverberator"));
@@ -283,16 +229,10 @@ reverb_filter(struct effect *p, struct data_block *db)
 {
     struct reverb_params *dr;
     DSP_SAMPLE     *s;
-    int             Dry,
-                    Wet,
-                    Rgn,
-                    dd,
-                    count;
-    DSP_SAMPLE     *Old,
-                   *Old2,
-                    Out;
-    DSP_SAMPLE      tmp,
-                    tot;
+    int             dd,
+                    count,
+                    curr_channel = 0;
+    double          tmp, tot, Dry, Wet, Rgn;
     dr = (struct reverb_params *) p->params;
 
     s = db->data;
@@ -301,43 +241,35 @@ reverb_filter(struct effect *p, struct data_block *db)
     /*
      * get delay 
      */
-    dd = dr->delay;
-    dd = (dd < 1) ? 1 : (dd >=
-			 dr->history->nChunks) ? dr->history->nChunks -
-	1 : dd;
+    dd = dr->delay * sample_rate / 1000.0;
+    if (dd < 1)
+        dd = 1;
+    if (dd > MAX_REVERB_SIZE)
+        dd = MAX_REVERB_SIZE;
 
     /*
      * get parms 
      */
-    Dry = dr->dry;
-    Wet = dr->wet;
-    Rgn = dr->regen;
+    Dry = dr->dry / 100.0;
+    Wet = dr->wet / 100.0;
+    Rgn = dr->regen / 100.0;
 
-    Old = (DSP_SAMPLE *) reverbBuffer_getChunk(dr->history, dd);
-    Old2 = Old;
     while (count) {
-	/*
-	 * mix Old and In into Out, based upon Wet/Dry
-	 * then mix Out and In back into In, based upon Rgn/1 
-	 */
-	tmp = *s;
-	tmp *= Dry;
-	tmp /= 256;
-	tot = *Old;
-	tot *= Wet;
-	tot /= 256;
-	tot += tmp;
+	/* the old sample * Rgn */
+        tmp = dr->history[curr_channel]->get(dr->history[curr_channel], dd)
+                * Rgn;
+        /* mix with original and write to backbuf */
+        tot = tmp + *s;
 #ifdef CLIP_EVERYWHERE
 	tot =
 	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
 						 MAX_SAMPLE) ? MAX_SAMPLE :
 	    tot;
 #endif
-	Out = tot;
+        dr->history[curr_channel]->add(dr->history[curr_channel], tot);
 
-	tot *= Rgn;
-	tot /= 256;
-	tot += *s;
+        /* mix reverb with output with proportions as given by wet & dry % */
+        tot = ((double) *s) * Dry + tmp * Wet;
 #ifdef CLIP_EVERYWHERE
 	tot =
 	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
@@ -345,29 +277,27 @@ reverb_filter(struct effect *p, struct data_block *db)
 	    tot;
 #endif
 	*s = tot;
+        
+        curr_channel = (curr_channel + 1) % db->channels;
 	s++;
-	Old++;
 	count--;
     }
-
-    reverbBuffer_addChunk(dr->history, db->data);
-    freeChunk(Old2);
 }
 
 void
 reverb_done(struct effect *p)
 {
     struct reverb_params *dr;
-
+    int             i;
+    
     dr = (struct reverb_params *) p->params;
 
-    if (dr->history != NULL)
-	reverbBuffer_done(dr->history);
-    free(dr->history);
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        del_Backbuf(dr->history[i]);
+    
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
@@ -406,8 +336,9 @@ void
 reverb_create(struct effect *p)
 {
     struct reverb_params *dr;
-    p->params =
-	(struct reverb_params *) malloc(sizeof(struct reverb_params));
+    int             i;
+    
+    p->params = calloc(1, sizeof(struct reverb_params));
 
     p->proc_init = reverb_init;
     p->proc_filter = passthru;
@@ -417,14 +348,11 @@ reverb_create(struct effect *p)
     p->proc_load = reverb_load;
     p->proc_save = reverb_save;
     dr = (struct reverb_params *) p->params;
-    dr->history =
-	(struct reverbBuffer *) malloc(sizeof(struct reverbBuffer));
-    reverbBuffer_init(dr->history,
-		      (int) ((sample_rate * sizeof(int) * nchannels /
-			      buffer_size) / 4 + 1));
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        dr->history[i] = new_Backbuf(MAX_REVERB_SIZE); /* 1 second memory */
 
-    dr->delay = dr->history->nChunks * 0.3;
-    dr->wet = 80.0f;
-    dr->dry = 254.0f;
-    dr->regen = 100.0f;
+    dr->delay = 100;    /* ms */
+    dr->wet   = 50.0;
+    dr->dry   = 50.0;
+    dr->regen = 30.0;
 }
