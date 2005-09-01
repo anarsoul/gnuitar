@@ -22,18 +22,17 @@
 
 #ifndef _TREMOLO_H_
 #define _TREMOLO_H_ 1
-#define MAX_TREMOLO_BUFSIZE MAX_SAMPLE_RATE*MAX_CHANNELS/2
+#define MAX_TREMOLO_BUFSIZE (MAX_SAMPLE_RATE/16)
 #include "pump.h"
 #include "backbuf.h"
 
 extern void     tremolo_create(struct effect *);
 
 struct tremolo_params {
-    int             tremolo_size,
-                    tremolo_amplitude,
-                    tremolo_speed,
-                    tremolo_phase;
-    Backbuf_t  *history[MAX_CHANNELS];
+    Backbuf_t	   *history[MAX_CHANNELS];
+    float	    tremolo_amplitude,
+                    tremolo_speed;
+    int		    tremolo_phase;
 };
 
 #endif
