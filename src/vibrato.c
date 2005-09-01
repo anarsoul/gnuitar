@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/01 22:09:02  alankila
+ * decrypt parameters
+ *
  * Revision 1.21  2005/09/01 17:31:40  alankila
  * - various small fixes for multichannel / gui
  *
@@ -105,13 +108,13 @@ void
 void
 update_vibrato_speed(GtkAdjustment * adj, struct vibrato_params *params)
 {
-    params->vibrato_speed = adj->value / 1000.0;
+    params->vibrato_speed = adj->value;
 }
 
 void
 update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 {
-    params->vibrato_amplitude = adj->value / 100.0;
+    params->vibrato_amplitude = adj->value;
 }
 
 void
@@ -155,7 +158,7 @@ vibrato_init(struct effect *p)
     parmTable = gtk_table_new(2, 8, FALSE);
 
     adj_speed =
-	gtk_adjustment_new(pvibrato->vibrato_speed * 1000.0, 10.0,
+	gtk_adjustment_new(pvibrato->vibrato_speed, 10.0,
 			   3000.0, 1.0, 1.0, 0.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
@@ -179,7 +182,7 @@ vibrato_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
     adj_ampl =
-	gtk_adjustment_new(pvibrato->vibrato_amplitude * 100.0,
+	gtk_adjustment_new(pvibrato->vibrato_amplitude,
 			   0.0, 100.0, 1.0, 1.0, 0.0);
     ampl_label = gtk_label_new("Amplitude\n%");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
@@ -235,11 +238,11 @@ vibrato_filter(struct effect *p, struct data_block *db)
     vp = p->params;
 
     while (count) {
-	*s *= (1 + sin_lookup((double) vp->vibrato_phase / MAX_VIBRATO_BUFSIZE) * vp->vibrato_amplitude) / 2;
+	*s *= (1 + sin_lookup((double) vp->vibrato_phase / MAX_VIBRATO_BUFSIZE) * vp->vibrato_amplitude / 100.0) / 2;
 
         curr_channel = (curr_channel + 1) % db->channels;
-	if (! curr_channel)
-	    vp->vibrato_phase += MAX_VIBRATO_BUFSIZE / vp->vibrato_speed / sample_rate;
+	if (curr_channel == 0)
+	    vp->vibrato_phase += MAX_VIBRATO_BUFSIZE / vp->vibrato_speed / 1000.0 / sample_rate;
 
 	if (vp->vibrato_phase >= MAX_VIBRATO_BUFSIZE)
 	    vp->vibrato_phase -= MAX_VIBRATO_BUFSIZE;
@@ -305,7 +308,7 @@ vibrato_create(struct effect *p)
 
     pvibrato = (struct vibrato_params *) p->params;
 
-    pvibrato->vibrato_amplitude = 0.5; /* 0 .. 1 */
-    pvibrato->vibrato_speed = 0.200;   /* seconds */
+    pvibrato->vibrato_amplitude = 50;
+    pvibrato->vibrato_speed = 200;
     pvibrato->vibrato_phase = 0;
 }
