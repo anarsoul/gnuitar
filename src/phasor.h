@@ -29,12 +29,9 @@
 extern void     phasor_create(struct effect *);
 
 struct phasor_params {
-    float           freq_low;
-    float           freq_high;
-    float           f,
-                    df;
-    short           bandpass;
-    struct filter_data fd;
+    float           freq_low, freq_high, sweep_time, f;
+    short           bandpass, dir;
+    struct filter_data fd1, fd2;
 };
 
 #endif

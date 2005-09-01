@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/09/01 23:03:08  alankila
+ * - use separate filter structs for different filters
+ * - decrypt parameters, borrow code from autowah
+ * - use same logarithmic sweep
+ *
  * Revision 1.15  2005/08/22 22:11:59  alankila
  * - change RC filters to accept data_block
  * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
@@ -88,24 +93,19 @@ void            phasor_filter(struct effect *p, struct data_block *db);
 void
 update_phasor_speed(GtkAdjustment * adj, struct phasor_params *params)
 {
-    params->df =
-	(params->freq_high -
-	 params->freq_low) * 1000.0 * buffer_size / (sample_rate *
-						     nchannels *
-						     (float) adj->value);
+    params->sweep_time = adj->value;
 }
 
 void
 update_phasor_freq_low(GtkAdjustment * adj, struct phasor_params *params)
 {
-    params->freq_low = (float) adj->value;
-    params->f = params->freq_low;
+    params->freq_low = adj->value;
 }
 
 void
 update_phasor_freq_high(GtkAdjustment * adj, struct phasor_params *params)
 {
-    params->freq_high = (float) adj->value;
+    params->freq_high = adj->value;
 }
 
 void
@@ -160,11 +160,8 @@ phasor_init(struct effect *p)
     parmTable = gtk_table_new(4, 8, FALSE);
 
 
-    adj_speed = gtk_adjustment_new((pphasor->freq_high -
-				    pphasor->freq_low) * 1000 *
-				   buffer_size / (sample_rate * nchannels *
-						  pphasor->df), 5.0, 2000,
-				   1.0, 10.0, 1.0);
+    adj_speed = gtk_adjustment_new(pphasor->sweep_time, 20.0, 2000,
+				   1.0, 10.0, 0.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -272,19 +269,24 @@ void
 phasor_filter(struct effect *p, struct data_block *db)
 {
     struct phasor_params *pp;
+    double          freq;
 
     pp = (struct phasor_params *) p->params;
 
-    LC_filter(db, 0, pp->f, &(pp->fd));
+    if (pp->f > 1.0 && pp->dir > 0) {
+        pp->dir = -1;
+    }
+    if (pp->f < 0.0 && pp->dir < 0) {
+        pp->dir = 1;
+    }
+    freq = pp->freq_low * pow(2, log(pp->freq_high / pp->freq_low)/log(2) * pp->f);
 
+    LC_filter(db, 1, freq, &pp->fd1);
+    RC_set_freq(freq, &pp->fd2);
     if (pp->bandpass)
-	RC_bandpass(db, &(pp->fd));
-
-    pp->f += pp->df;
-    if (pp->f >= pp->freq_high || pp->f <= pp->freq_low)
-	pp->df = -pp->df;
-
-    RC_set_freq(pp->f, &(pp->fd));
+	RC_bandpass(db, &pp->fd2);
+    
+    pp->f += pp->dir * 1000.0 / pp->sweep_time * db->len / (sample_rate * db->channels) * 2;
 }
 
 void
@@ -293,7 +295,6 @@ phasor_done(struct effect *p)
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
@@ -301,11 +302,11 @@ phasor_save(struct effect *p, int fd)
 {
     struct phasor_params *pp;
 
-    pp = (struct phasor_params *) p->params;
+    pp = p->params;
 
     write(fd, &pp->freq_low, sizeof(pp->freq_low));
     write(fd, &pp->freq_high, sizeof(pp->freq_high));
-    write(fd, &pp->df, sizeof(pp->df));
+    write(fd, &pp->sweep_time, sizeof(pp->sweep_time));
 }
 
 void
@@ -313,12 +314,11 @@ phasor_load(struct effect *p, int fd)
 {
     struct phasor_params *pp;
 
-    pp = (struct phasor_params *) p->params;
+    pp = p->params;
 
     read(fd, &pp->freq_low, sizeof(pp->freq_low));
     read(fd, &pp->freq_high, sizeof(pp->freq_high));
-    read(fd, &pp->df, sizeof(pp->df));
-    pp->f = pp->freq_low;
+    read(fd, &pp->sweep_time, sizeof(pp->sweep_time));
 
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -332,8 +332,7 @@ phasor_create(struct effect *p)
 {
     struct phasor_params *pphasor;
 
-    p->params =
-	(struct phasor_params *) malloc(sizeof(struct phasor_params));
+    p->params = calloc(1, sizeof(struct phasor_params));
     p->proc_init = phasor_init;
     p->proc_filter = passthru;
     p->proc_done = phasor_done;
@@ -343,12 +342,13 @@ phasor_create(struct effect *p)
 
     pphasor = p->params;
 
+    pphasor->sweep_time = 1000.0;
     pphasor->freq_low = 300.0;
     pphasor->freq_high = 2500.0;
-    pphasor->f = pphasor->freq_low;
-    pphasor->df = 42.0;
+    pphasor->f = 0;
+    pphasor->dir = 1;
     pphasor->bandpass = 0;
 
-    RC_setup(10, 1.5, &(pphasor->fd));
-    RC_set_freq(pphasor->f, &(pphasor->fd));
+    RC_setup(10, 1.5, &pphasor->fd1);
+    RC_setup(10, 1.5, &pphasor->fd2);
 }
