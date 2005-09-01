@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/01 14:18:54  alankila
+ * - drop fractions in delay count
+ *
  * Revision 1.16  2005/09/01 14:09:56  alankila
  * - multichannel work: delay independent of nchannels; uses backbuf instead
  *   of doing it all on its own. Also fixes bugs with delay load/save.
@@ -222,6 +225,7 @@ delay_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_delay_repeat), pdelay);
 
     repeat = gtk_vscale_new(GTK_ADJUSTMENT(adj_repeat));
+    gtk_scale_set_digits(GTK_SCALE(repeat), 0);
 
     gtk_table_attach(GTK_TABLE(parmTable), repeat, 5, 6, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
