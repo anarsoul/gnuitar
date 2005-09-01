@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.16  2005/09/01 22:23:27  alankila
+ * - missed one nchannels
+ *
  * Revision 1.15  2005/09/01 22:07:18  alankila
  * - multichannel ready
  *
@@ -368,7 +371,7 @@ eqbank_create(struct effect *p)
     peq->boosts  = calloc(FB_NB, sizeof(peq->boosts[0]));
     for (i = 0; i < FB_NB; i++) 
     {
-    	peq->filters[i].mem = calloc(nchannels, sizeof(double) * 4);
+    	peq->filters[i].mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
 	peq->boosts[i] = 0;
 	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], peq->boosts[i], &peq->filters[i]);
     }
