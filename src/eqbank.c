@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.15  2005/09/01 22:07:18  alankila
+ * - multichannel ready
+ *
  * Revision 1.14  2005/08/24 10:49:47  fonin
  * Minor change to compile on windows (#include utils.h for isnan)
  *
@@ -284,8 +287,7 @@ eqbank_filter(struct effect *p, struct data_block *db)
 	    t = -MAX_SAMPLE;
 #endif
 	*s = t;
-	if (nchannels > 1)
-	    cchannel = !cchannel;
+	cchannel = (cchannel + 1) % db->channels;
 	  
 	s++;
 	count--;
