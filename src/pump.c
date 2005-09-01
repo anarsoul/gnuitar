@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2005/09/01 00:35:35  alankila
+ * - add support for GKeyFile into glib 1.2
+ *
  * Revision 1.34  2005/08/28 21:45:12  fonin
  * Portability: introduced new functions for mutexes
  *
@@ -172,10 +175,7 @@
 #include <sys/stat.h>
 #include "pump.h"
 #include "gui.h"
-#include <glib.h>
-#ifdef HAVE_GTK2
-#include <glib/gstdio.h>
-#endif
+#include <glib12-compat.h>
 
 #include "autowah.h"
 #include "phasor.h"
@@ -419,13 +419,14 @@ void init_sin_lookup_table() {
         sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE) * SIN_LOOKUP_AMPLITUDE;
 }
 
-/* the keyfile is a GTK+ 2.6 feature */
-#ifdef HAVE_GTK2
 const gchar *
 discover_settings_path() {
     const gchar *path;
-    /* XXX what is the path for windows? */
-    path = g_build_filename(g_get_home_dir(), ".gnuitarrc", NULL);
+#ifdef _WIN32
+    path = g_strdup_printf("%s\\%s", g_get_home_dir(), ".gnuitarrc");
+#else
+    path = g_strdup_printf("%s/%s", g_get_home_dir(), ".gnuitarrc");
+#endif
     return path;
 }
 
@@ -437,9 +438,6 @@ load_settings() {
     gint            tmp;
 
     settingspath = discover_settings_path();
-    if (! g_file_test(settingspath, G_FILE_TEST_EXISTS))
-        goto LOAD_SETTINGS_CLEANUP1;
-
     file = g_key_file_new();
 
     /* Thanks, glib! */
@@ -481,7 +479,6 @@ load_settings() {
         nbuffers = tmp;
 #endif
     g_key_file_free(file);
-  LOAD_SETTINGS_CLEANUP1:
     free((void *) settingspath);
     return;
 }
@@ -522,17 +519,6 @@ void save_settings() {
     free((void *) key_file_as_str);
     return;
 }
-#else
-/* GTK 1.2 hacks for same effect? */
-void
-load_settings() {
-    return;
-}
-void
-save_settings() {
-    return;
-}
-#endif /* HAVE_GTK2 */
 
 void
 pump_start(int argc, char **argv)

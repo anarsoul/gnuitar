@@ -47,7 +47,7 @@ typedef gint32  SAMPLE32;
 #define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
 
-enum effects {
+typedef enum {
     AUTOWAH = 0,
     DISTORT,
     DELAY,
@@ -63,7 +63,7 @@ enum effects {
     EQBANK,
     TUNER,
     EFFECT_AMOUNT
-};
+} GnuitarEffects;
 
 struct data_block {
     DSP_SAMPLE     *data;
