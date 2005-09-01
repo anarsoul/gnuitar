@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/01 16:20:21  alankila
+ * - fix comment, and reduce autowah gain
+ *
  * Revision 1.16  2005/09/01 16:09:54  alankila
  * - make rcfilter and autowah multichannel ready. In addition, autowah
  *   now performs linear sweep in logarithmic domain rather than exponential.
@@ -293,8 +296,8 @@ autowah_filter(struct effect *p, struct data_block *db)
     }
 
     /* in order to have audibly linear sweep, we must map
-     * [0..1] -> [freq_low, freq_high] in log2 such that
-     * freq(f) = a * 2 ^ (b * f)
+     * [0..1] -> [freq_low, freq_high] linearly in log2, which requires
+     * f(x) = a * 2 ^ (b * x)
      *
      * we know that f(0) = freq_low, and f(1) = freq_high. It follows that:
      * a = freq_low, and b = log2(freq_high / freq_low)
@@ -370,7 +373,7 @@ autowah_create(struct effect *p)
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;
     ap->fd = (struct filter_data *) malloc(sizeof(struct filter_data));
-    RC_setup(10, 1.5, ap->fd);
+    RC_setup(10, 1.3, ap->fd);
 
     ap->freq_low = 150;
     ap->freq_high = 1000;
