@@ -33,7 +33,7 @@
 #include "gui.h"
 
 /* 1 second at max sample rate */
-#define MAX_REVERB_SIZE  48000
+#define MAX_REVERB_SIZE  MAX_SAMPLE_RATE
 
 void            reverb_filter(struct effect *p, struct data_block *db);
 
