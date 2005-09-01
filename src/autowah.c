@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/09/01 16:09:54  alankila
+ * - make rcfilter and autowah multichannel ready. In addition, autowah
+ *   now performs linear sweep in logarithmic domain rather than exponential.
+ *
  * Revision 1.15  2005/08/22 22:11:59  alankila
  * - change RC filters to accept data_block
  * - LC filters have no concept of "LOWPASS" or "HIGHPASS" filtering, there's
@@ -94,29 +98,19 @@ void
 void
 update_wah_speed(GtkAdjustment * adj, struct autowah_params *params)
 {
-    params->df =
-	(params->freq_high -
-	 params->freq_low) * 1000.0 * buffer_size / (sample_rate *
-						     nchannels *
-						     (float) adj->value);
+    params->sweep_time = adj->value;
 }
 
 void
 update_wah_freqlow(GtkAdjustment * adj, struct autowah_params *params)
 {
     params->freq_low = (float) adj->value;
-    params->f = params->freq_low;
-
-    RC_setup(10, 1.5, params->fd);
-    RC_set_freq(params->f, params->fd);
 }
 
 void
 update_wah_freqhi(GtkAdjustment * adj, struct autowah_params *params)
 {
     params->freq_high = (float) adj->value;
-    RC_setup(10, 1.5, params->fd);
-    RC_set_freq(params->f, params->fd);
 }
 
 void
@@ -165,9 +159,6 @@ autowah_init(struct effect *p)
 
     pautowah = (struct autowah_params *) p->params;
 
-    RC_setup(10, 1.5, pautowah->fd);
-    RC_set_freq(pautowah->f, pautowah->fd);
-
     /*
      * GUI Init
      */
@@ -176,18 +167,15 @@ autowah_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
 
-    parmTable = gtk_table_new(4, 8, FALSE);
+    parmTable = gtk_table_new(3, 3, FALSE);
 
-    adj_speed =
-	gtk_adjustment_new((pautowah->freq_high -
-			    pautowah->freq_low) * 1000 * buffer_size /
-			   (sample_rate * nchannels * pautowah->df), 100.0,
-			   20000.0, 1.0, 10.0, 1.0);
+    adj_speed = gtk_adjustment_new(pautowah->sweep_time, 100.0,
+                               20000.0, 1.0, 10.0, 0.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
@@ -207,12 +195,12 @@ autowah_init(struct effect *p)
 
 
     adj_freqlow = gtk_adjustment_new(pautowah->freq_low,
-				     150.0, 300.0, 1.0, 1.0, 1.0);
+				     150.0, 300.0, 1.0, 1.0, 0.0);
     freqlow_label = gtk_label_new("Freq. low\nHz");
-    gtk_table_attach(GTK_TABLE(parmTable), freqlow_label, 3, 4, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), freqlow_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
 
@@ -221,19 +209,19 @@ autowah_init(struct effect *p)
 
     freq_low = gtk_vscale_new(GTK_ADJUSTMENT(adj_freqlow));
     gtk_range_set_update_policy(GTK_RANGE(freq_low), GTK_UPDATE_DELAYED);
-    gtk_table_attach(GTK_TABLE(parmTable), freq_low, 3, 4, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), freq_low, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
     adj_freqhi = gtk_adjustment_new(pautowah->freq_high,
-				    500.0, 3500.0, 1.0, 1.0, 1.0);
+				    500.0, 3500.0, 1.0, 1.0, 0.0);
     freqhi_label = gtk_label_new("Freq. hi\nHz");
-    gtk_table_attach(GTK_TABLE(parmTable), freqhi_label, 5, 6, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), freqhi_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
 
@@ -242,7 +230,7 @@ autowah_init(struct effect *p)
 
     freq_high = gtk_vscale_new(GTK_ADJUSTMENT(adj_freqhi));
     gtk_range_set_update_policy(GTK_RANGE(freq_high), GTK_UPDATE_DELAYED);
-    gtk_table_attach(GTK_TABLE(parmTable), freq_high, 5, 6, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), freq_high, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -253,10 +241,10 @@ autowah_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_wah), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
     if (p->toggle == 1) {
 	p->toggle = 0;
@@ -267,16 +255,15 @@ autowah_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(mix), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_mix), &(pautowah->mixx));
 
-    gtk_table_attach(GTK_TABLE(parmTable), mix, 3, 4, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+    gtk_table_attach(GTK_TABLE(parmTable), mix, 2, 3, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
     if (pautowah->mixx == 1) {
 	pautowah->mixx = 0;
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mix), TRUE);
     }
-
 
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Wah-wah"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
@@ -290,6 +277,7 @@ autowah_filter(struct effect *p, struct data_block *db)
     struct autowah_params *ap;
     static DSP_SAMPLE      dry[MAX_BUFFER_SIZE];
     int             i;
+    double          freq;
 
     ap = (struct autowah_params *) p->params;
 
@@ -297,40 +285,26 @@ autowah_filter(struct effect *p, struct data_block *db)
     if (ap->mixx == 1)
 	memcpy(dry, db->data, db->len * sizeof(DSP_SAMPLE));
 
-/*
-    if (ap->wah_count != 0) {
-	LC_filter(db->data, db->len, HIGHPASS,ap->freq_high, ap->fd);
+    if (ap->f > 1.0 && ap->dir > 0) {
+	ap->dir = -1;
     }
-*/
-    ap->f += ap->df;
-    if (ap->f >= ap->freq_high) {
-	ap->df = -ap->df;
-	ap->wah_count = 2;
+    if (ap->f < 0.0 && ap->dir < 0) {
+	ap->dir = 1;
     }
 
-    if (ap->f <= ap->freq_low && ap->wah_count == 2) {
-	ap->wah_count = 0;
-    }
+    /* in order to have audibly linear sweep, we must map
+     * [0..1] -> [freq_low, freq_high] in log2 such that
+     * freq(f) = a * 2 ^ (b * f)
+     *
+     * we know that f(0) = freq_low, and f(1) = freq_high. It follows that:
+     * a = freq_low, and b = log2(freq_high / freq_low)
+     */
+    
+    freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->f);
+    RC_set_freq(freq, ap->fd);
+    RC_bandpass(db, ap->fd);
 
-    if (ap->wah_count == 1) {
-	ap->df = 0;
-	ap->f = ap->freq_low;
-	ap->wah_count = 0;
-    }
-
-    if (ap->df != 0)
-	RC_bandpass(db, ap->fd);
-
-    ap->f += ap->df;
-    if (ap->f >= ap->freq_high || ap->f <= ap->freq_low) {
-	ap->df = -ap->df;
-	ap->wah_count += 2;
-
-	if (ap->df != 0)
-	    ap->wah_count++;
-    }
-
-    RC_set_freq(ap->f, ap->fd);
+    ap->f += ap->dir * 1000.0 / ap->sweep_time * db->len / (sample_rate * db->channels) * 2;
 
     if (ap->mixx == 1) {
 	for (i = 0; i < db->len; i++)
@@ -348,23 +322,18 @@ autowah_done(struct effect *p)
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
 autowah_save(struct effect *p, int fd)
 {
     struct autowah_params *ap;
-    float           dummy;
 
     ap = (struct autowah_params *) p->params;
 
+    write(fd, &ap->sweep_time, sizeof(ap->sweep_time));
     write(fd, &ap->freq_low, sizeof(ap->freq_low));
     write(fd, &ap->freq_high, sizeof(ap->freq_high));
-    write(fd, &dummy, sizeof(dummy));
-    write(fd, &ap->wah_count, sizeof(ap->wah_count));
-    write(fd, &ap->f, sizeof(ap->f));
-    write(fd, &ap->df, sizeof(ap->df));
     write(fd, &ap->mixx, sizeof(ap->mixx));
 }
 
@@ -372,16 +341,12 @@ void
 autowah_load(struct effect *p, int fd)
 {
     struct autowah_params *ap;
-    float           dummy;
 
     ap = (struct autowah_params *) p->params;
 
+    read(fd, &ap->sweep_time, sizeof(ap->sweep_time));
     read(fd, &ap->freq_low, sizeof(ap->freq_low));
     read(fd, &ap->freq_high, sizeof(ap->freq_high));
-    read(fd, &dummy, sizeof(dummy));
-    read(fd, &ap->wah_count, sizeof(ap->wah_count));
-    read(fd, &ap->f, sizeof(ap->f));
-    read(fd, &ap->df, sizeof(ap->df));
     read(fd, &ap->mixx, sizeof(ap->mixx));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
@@ -405,11 +370,12 @@ autowah_create(struct effect *p)
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;
     ap->fd = (struct filter_data *) malloc(sizeof(struct filter_data));
+    RC_setup(10, 1.5, ap->fd);
 
     ap->freq_low = 150;
     ap->freq_high = 1000;
-    ap->df = 1;
-    ap->wah_count = 0;
-    ap->f = ap->freq_low;
+    ap->sweep_time = 1000;
+    ap->dir = 1;
+    ap->f = 0.0;
     ap->mixx = 0;
 }

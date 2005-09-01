@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2005/09/01 16:09:54  alankila
+ * - make rcfilter and autowah multichannel ready. In addition, autowah
+ *   now performs linear sweep in logarithmic domain rather than exponential.
+ *
  * Revision 1.10  2005/08/22 22:27:34  alankila
  * - erase the nchannel parts from constant computations. These can't be
  *   correct, because all state variables are per channel. In case of RC_filter
@@ -106,8 +110,7 @@ LC_filter(struct data_block *db, int filter_no, double freq,
 	*sound = (int) (pp->i[filter_no][0][currchannel] * 500.0);
 	if(isnan(*sound))
 	    *sound=0;
-	if (nchannels > 1)
-	    currchannel = !currchannel;
+	currchannel = (currchannel + 1) % db->channels;
 
 	sound++;
     }
@@ -170,8 +173,7 @@ RC_filter(struct data_block *db, int mode, int filter_no,
 		(((double) *sound -
 			pp->i[filter_no][mode][currchannel] * pp->R) *
 		       pp->amplify);
-	if (nchannels > 1)
-	    currchannel = !currchannel;
+	currchannel = (currchannel + 1) % db->channels;
 	if(isnan(*sound))
 	    *sound=0;
 
