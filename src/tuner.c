@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.10  2005/09/01 19:07:18  alankila
+ * - make multichannel ready, although it just tries to mix channels together
+ *
  * Revision 1.9  2005/09/01 13:36:23  alankila
  * Objectify backbuf, correct naming and make it a typedef.
  *
@@ -236,32 +239,24 @@ void
 tuner_filter(struct effect *p, struct data_block *db)
 {
     struct tuner_params *params;
-    int i;
-    int loop_len;
-    DSP_SAMPLE *s;
-    DSP_SAMPLE newval;
-    double power = 0;
-    double good_loop_len = 0;
-    double good_loop_len_n = 0;
-    double max_diff = 0;
-    double max_tmp2 = 0;
-    double freq = 0;
+    int			i, j, loop_len;
+    DSP_SAMPLE	       *s;
+    DSP_SAMPLE		newval;
+    double		power = 0,
+			good_loop_len = 0,
+			good_loop_len_n = 0,
+			max_diff = 0,
+			max_tmp2 = 0,
+			freq = 0;
     
     i = db->len;
     s = db->data;
     params = p->params;
 
     while (i > 0) {
-	if (nchannels > 1) {
-	    /* mix stereo signal */
-	    newval  = (SAMPLE32)*s++ >> 8;
-	    newval += (SAMPLE32)*s++ >> 8;
-	    newval /= 2.0;
-	    i -= 2;
-	} else {
-	    newval = (SAMPLE32)*s++ >> 8;
-	    i -= 1;
-	}
+	newval = 0;
+	for (j = 0; j < db->channels; j += 1)
+	    newval += ((SAMPLE32)*s++ >> 8) / db->channels;
 
 	/* smooth signal a bit for noise reduction */
 	/* NR is FIR with y_n = 1/k * sum(x_i) */
