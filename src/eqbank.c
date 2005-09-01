@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.17  2005/09/01 23:52:15  alankila
+ * - make window delete event do something useful
+ *
  * Revision 1.16  2005/09/01 22:23:27  alankila
  * - missed one nchannels
  *
@@ -171,7 +174,7 @@ eqbank_init(struct effect *p)
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
-		       GTK_SIGNAL_FUNC(delete_event), NULL);
+		       GTK_SIGNAL_FUNC(delete_event), p);
 
     parmTable = gtk_table_new(3, FB_NB + 2, FALSE);
 

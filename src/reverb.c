@@ -110,7 +110,7 @@ reverb_init(struct effect *p)
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
-		       GTK_SIGNAL_FUNC(delete_event), NULL);
+		       GTK_SIGNAL_FUNC(delete_event), p);
 
     parmTable = gtk_table_new(4, 3, FALSE);
 

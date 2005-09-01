@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/09/01 23:52:15  alankila
+ * - make window delete event do something useful
+ *
  * Revision 1.14  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -137,7 +140,7 @@ sustain_init(struct effect *p)
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
-		       GTK_SIGNAL_FUNC(delete_event), NULL);
+		       GTK_SIGNAL_FUNC(delete_event), p);
 
     gtk_window_set_position(GTK_WINDOW(p->control), GTK_WIN_POS_CENTER);
 

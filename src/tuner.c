@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.12  2005/09/01 23:52:15  alankila
+ * - make window delete event do something useful
+ *
  * Revision 1.11  2005/09/01 22:41:08  alankila
  * - simplifications and fixes
  *
@@ -144,7 +147,7 @@ tuner_init(struct effect *p)
     params = (struct tuner_params *) p->params;
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
-                       GTK_SIGNAL_FUNC(delete_event), NULL);
+                       GTK_SIGNAL_FUNC(delete_event), p);
     
     table = gtk_table_new(2, 3, FALSE);
  

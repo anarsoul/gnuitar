@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.48  2005/09/01 23:52:15  alankila
+ * - make window delete event do something useful
+ *
  * Revision 1.47  2005/08/31 14:43:35  alankila
  * fix one more qualifier err
  *
@@ -459,8 +462,28 @@ help_contents(void)
 gint
 delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 {
+    struct effect  *p = data;
+    int             i;
+    
+    my_lock_mutex(effectlist_lock);
+    for (i = 0; i < n; i++) {
+        if (effects[i] == p)
+            break;
+    }
+    if (i == n) {
+        fprintf(stderr, "hmm, can't find effect to destroy in subwindow delete\n");
+        return TRUE;
+    }
+    effects[i]->proc_done(effects[i]);
+    gtk_clist_freeze(GTK_CLIST(processor));
+    gtk_clist_remove(GTK_CLIST(processor), i);
+    gtk_clist_thaw(GTK_CLIST(processor));
+    for (; i < n-1; i += 1)
+        effects[i] = effects[i+1];
+    effects[n--] = NULL;
+    my_unlock_mutex(effectlist_lock);
 
-    return (TRUE);
+    return TRUE;
 }
 
 void
@@ -533,7 +556,6 @@ del_pressed(GtkWidget * widget, gpointer data)
     int             i;
 
     if (curr_row >= 0 && curr_row < n) {
-
         my_lock_mutex(effectlist_lock);
 	effects[curr_row]->proc_done(effects[curr_row]);
 	for (i = curr_row; i < n; i++)
