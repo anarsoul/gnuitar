@@ -25,17 +25,18 @@
 
 #include "pump.h"
 
-#define MAX_STEP 65000
 #define MAX_COUNT 10
-#define MAX_SIZE (MAX_STEP*(MAX_COUNT+1))
+#define MAX_SECONDS 10
+#define MAX_STEP (MAX_SAMPLE_RATE * MAX_SECONDS)
+#define MAX_SIZE (MAX_STEP * (MAX_COUNT + 1))
 
 extern void     delay_create(struct effect *);
 
 struct delay_params {
     Backbuf_t       *history[MAX_CHANNELS];  /* history of samples */
-    float           delay_decay; /* volume % of processed signal */
-    int             delay_time,  /* time (in samples) between repeats */
-                    delay_count; /* number of repeats */
+    float            delay_decay,   /* % of decay each time */
+                     delay_time;    /* time (ms) between repeats */
+    int              delay_count;    /* number of repeats */
 };
 
 #endif

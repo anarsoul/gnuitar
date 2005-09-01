@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2005/09/01 23:16:10  alankila
+ * - make delay params independent of sampling rate
+ *
  * Revision 1.18  2005/09/01 17:31:40  alankila
  * - various small fixes for multichannel / gui
  *
@@ -107,7 +110,7 @@ void
 update_delay_time(GtkAdjustment * adj, struct delay_params *params)
 {
     int             i;
-    params->delay_time = (int) adj->value * sample_rate / 1000;
+    params->delay_time = adj->value;
     for (i = 0; i < MAX_CHANNELS; i += 1)
         params->history[i]->clear(params->history[i]);
 }
@@ -115,7 +118,7 @@ update_delay_time(GtkAdjustment * adj, struct delay_params *params)
 void
 update_delay_repeat(GtkAdjustment * adj, struct delay_params *params)
 {
-    params->delay_count = (int) adj->value;
+    params->delay_count = adj->value;
 }
 
 void
@@ -192,8 +195,8 @@ delay_init(struct effect *p)
 
 
     adj_time =
-	gtk_adjustment_new(pdelay->delay_time * 1000 / sample_rate, 1.0,
-			   MAX_STEP * 1000 / sample_rate,
+	gtk_adjustment_new(pdelay->delay_time, 1.0,
+			   MAX_SECONDS * 1000,
 			   1.0, 1.0, 0.0);
     time_label = gtk_label_new("Time\nms");
     gtk_table_attach(GTK_TABLE(parmTable), time_label, 1, 2, 0, 1,
@@ -281,7 +284,7 @@ delay_filter(struct effect *p, struct data_block *db)
         current_decay = 1.0;
 	
         for (i = 0; i < dp->delay_count; i++) {
-            current_delay += dp->delay_time;
+            current_delay += dp->delay_time / 1000.0 * sample_rate;
             current_decay *= dp->delay_decay / 100.0;
 
             newval += dp->history[curr_channel]->get(dp->history[curr_channel], current_delay) * current_decay;
@@ -367,7 +370,7 @@ delay_create(struct effect *p)
      */
 
     pdelay->delay_decay = 55;
-    pdelay->delay_time = 11300;
+    pdelay->delay_time = 1000;
     pdelay->delay_count = 8;
     for (i = 0; i < MAX_CHANNELS; i += 1)
         pdelay->history[i] = new_Backbuf(MAX_SIZE);
