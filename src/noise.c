@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2005/09/01 22:48:20  alankila
+ * - factor nchannels out of noise, but should treat every channel
+ *   separately. This effect is not yet multichannel ready but broken.
+ *
  * Revision 1.9  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -76,14 +80,14 @@ update_noise_threshold(GtkAdjustment * adj, struct noise_params *params)
 void
 update_noise_hold(GtkAdjustment * adj, struct noise_params *params)
 {
-    params->hold_time = (int) adj->value * nchannels * sample_rate / 1000;
+    params->hold_time = (int) adj->value * sample_rate / 1000;
 }
 
 void
 update_noise_release(GtkAdjustment * adj, struct noise_params *params)
 {
     params->release_time =
-	(int) adj->value * nchannels * sample_rate / 1000;
+	(int) adj->value * sample_rate / 1000;
 }
 
 void
@@ -95,7 +99,7 @@ update_noise_hyst(GtkAdjustment * adj, struct noise_params *params)
 void
 update_noise_attack(GtkAdjustment * adj, struct noise_params *params)
 {
-    params->attack = (int) adj->value * nchannels * sample_rate / 1000;
+    params->attack = (int) adj->value * sample_rate / 1000;
 }
 
 void
@@ -179,7 +183,7 @@ noise_init(struct effect *p)
 
     adj_hold =
 	gtk_adjustment_new(pnoise->hold_time * 1000 /
-			   (sample_rate * nchannels), 0.0, 201.0, 1.0, 1.0,
+			   sample_rate, 0.0, 201.0, 1.0, 1.0,
 			   1.0);
     hold_label = gtk_label_new("Hold\nms");
     gtk_table_attach(GTK_TABLE(parmTable), hold_label, 3, 4, 0, 1,
@@ -201,7 +205,7 @@ noise_init(struct effect *p)
 
     adj_release =
 	gtk_adjustment_new(pnoise->release_time * 1000 /
-			   (sample_rate * nchannels), 0.0, 15001.0, 1.0,
+			   sample_rate, 0.0, 15001.0, 1.0,
 			   1.0, 1.0);
     release_label = gtk_label_new("Release\nms");
     gtk_table_attach(GTK_TABLE(parmTable), release_label, 5, 6, 0, 1,
@@ -223,7 +227,7 @@ noise_init(struct effect *p)
 
     adj_attack =
 	gtk_adjustment_new(pnoise->attack * 1000 /
-			   (sample_rate * nchannels), 0.0, 4001.0, 1.0,
+			   sample_rate, 0.0, 4001.0, 1.0,
 			   1.0, 1.0);
     attack_label = gtk_label_new("Attack\nms");
     gtk_table_attach(GTK_TABLE(parmTable), attack_label, 7, 8, 0, 1,
@@ -322,7 +326,7 @@ noise_filter(struct effect *p, struct data_block *db)
 	    /* When the signal is near the zero for the hold time long,
 	     * we do the fadeout  */
 	    hold_counter++;
-	    if (hold_counter >= dn->hold_time) {
+	    if (hold_counter >= dn->hold_time * db->channels) {
 		/* we're within the hysteresis - init the fadein attack vars,
 		 * also we'll now react on threshold instead of hysteresis
 		 * (fadeout = 0) */
@@ -334,7 +338,7 @@ noise_filter(struct effect *p, struct data_block *db)
 		}
 
 		/* we're fading out - adjust the fadeout amplify coefficient */
-		if (dn->release_time && release_counter < dn->release_time) {
+		if (dn->release_time && release_counter < dn->release_time * db->channels) {
 		    release_counter++;
 		    release_amp =
 			((float) dn->release_time -
@@ -354,7 +358,7 @@ noise_filter(struct effect *p, struct data_block *db)
 	    fadeout = 1;
 
 	    /* if fadein is setup, we adjust the attack amp.coeff. */
-	    if (dn->attack && attack_counter < dn->attack) {
+	    if (dn->attack && attack_counter < dn->attack * db->channels) {
 		attack_counter++;
 		attack_amp = (float) attack_counter / (float) dn->attack;
 	    /* otherwise, it's always 1 */
@@ -431,8 +435,8 @@ noise_create(struct effect *p)
     pnoise = (struct noise_params *) p->params;
 
     pnoise->threshold = 500;
-    pnoise->hold_time = 2 * nchannels * sample_rate / 1000;
-    pnoise->release_time = 500 * nchannels * sample_rate / 1000;
-    pnoise->attack = 0 * nchannels * sample_rate / 1000;
+    pnoise->hold_time = 2 * sample_rate / 1000;
+    pnoise->release_time = 500 * sample_rate / 1000;
+    pnoise->attack = 0 * sample_rate / 1000;
     pnoise->hysteresis = 410;
 }
