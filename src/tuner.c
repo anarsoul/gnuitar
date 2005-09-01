@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.11  2005/09/01 22:41:08  alankila
+ * - simplifications and fixes
+ *
  * Revision 1.10  2005/09/01 19:07:18  alankila
  * - make multichannel ready, although it just tries to mix channels together
  *
@@ -255,8 +258,10 @@ tuner_filter(struct effect *p, struct data_block *db)
 
     while (i > 0) {
 	newval = 0;
-	for (j = 0; j < db->channels; j += 1)
+	for (j = 0; j < db->channels; j += 1) {
 	    newval += ((SAMPLE32)*s++ >> 8) / db->channels;
+            i--;
+        }
 
 	/* smooth signal a bit for noise reduction */
 	/* NR is FIR with y_n = 1/k * sum(x_i) */

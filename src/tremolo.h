@@ -31,8 +31,8 @@ extern void     tremolo_create(struct effect *);
 struct tremolo_params {
     Backbuf_t	   *history[MAX_CHANNELS];
     float	    tremolo_amplitude,
-                    tremolo_speed;
-    int		    tremolo_phase;
+                    tremolo_speed,
+                    tremolo_phase;
 };
 
 #endif

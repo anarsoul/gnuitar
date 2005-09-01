@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/09/01 22:41:08  alankila
+ * - simplifications and fixes
+ *
  * Revision 1.22  2005/09/01 22:09:02  alankila
  * decrypt parameters
  *
@@ -238,14 +241,14 @@ vibrato_filter(struct effect *p, struct data_block *db)
     vp = p->params;
 
     while (count) {
-	*s *= (1 + sin_lookup((double) vp->vibrato_phase / MAX_VIBRATO_BUFSIZE) * vp->vibrato_amplitude / 100.0) / 2;
+	*s *= (1 + sin_lookup(vp->vibrato_phase) * vp->vibrato_amplitude / 100.0) / 2;
 
         curr_channel = (curr_channel + 1) % db->channels;
-	if (curr_channel == 0)
-	    vp->vibrato_phase += MAX_VIBRATO_BUFSIZE / vp->vibrato_speed / 1000.0 / sample_rate;
-
-	if (vp->vibrato_phase >= MAX_VIBRATO_BUFSIZE)
-	    vp->vibrato_phase -= MAX_VIBRATO_BUFSIZE;
+	if (curr_channel == 0) {
+	    vp->vibrato_phase += 1000.0 / vp->vibrato_speed / sample_rate;
+            if (vp->vibrato_phase >= 1.0)
+                vp->vibrato_phase -= 1.0;
+        }
 
 	s++;
 	count--;
