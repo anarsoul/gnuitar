@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/09/01 16:22:42  alankila
+ * - oops, revert gain change
+ *
  * Revision 1.17  2005/09/01 16:20:21  alankila
  * - fix comment, and reduce autowah gain
  *
@@ -373,7 +376,7 @@ autowah_create(struct effect *p)
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;
     ap->fd = (struct filter_data *) malloc(sizeof(struct filter_data));
-    RC_setup(10, 1.3, ap->fd);
+    RC_setup(10, 1.5, ap->fd);
 
     ap->freq_low = 150;
     ap->freq_high = 1000;
