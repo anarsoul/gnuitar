@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/09/01 14:18:38  alankila
+ * - multichannel ready chorus
+ *
  * Revision 1.17  2005/09/01 13:36:23  alankila
  * Objectify backbuf, correct naming and make it a typedef.
  *
@@ -99,7 +102,7 @@ void
 update_chorus_speed(GtkAdjustment * adj, struct chorus_params *params)
 {
     params->speed =
-	(int) 360.0 *sample_rate / (adj->value * 1000.0 * nchannels);
+	(int) 360.0 *sample_rate / (adj->value * 1000.0);
 }
 
 void
@@ -193,7 +196,7 @@ chorus_init(struct effect *p)
 
     adj_speed =
 	gtk_adjustment_new(sample_rate * 360 /
-			   (pchorus->speed * 1000 * nchannels), 1.0, 3500,
+			   (pchorus->speed * 1000), 1.0, 3500,
 			   0.1, 1.0, 0.0);
     speed_label = gtk_label_new("Speed\n1/ms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 3, 4, 0, 1,
@@ -367,19 +370,22 @@ chorus_filter(struct effect *p, struct data_block *db)
 	tmp = *s;
 	tmp *= cp->dry;
 	tmp /= 256;
-	switch (cp->mode) {
-	case 0:		/* chorus */
-	    dly =      MaxDly * (1 + sin_lookup(Ang / 360.0)     );
-	    break;
-	case 1:		/* flange */
-	    dly = 16 * MaxDly * (1 + sin_lookup(Ang / 360.0) / 16);
-	    break;
-	};
-	Ang += AngInc;
-	if (Ang > 360)
-	    Ang -= 360;
-	if (dly < 0)
-	    dly = 0;
+
+        if (currchannel == 0) {
+            switch (cp->mode) {
+                case 0:		/* chorus */
+                    dly =      MaxDly * (1 + sin_lookup(Ang / 360.0)     );
+                    break;
+                case 1:		/* flange */
+                    dly = 16 * MaxDly * (1 + sin_lookup(Ang / 360.0) / 16);
+                    break;
+            };
+            Ang += AngInc;
+            if (Ang > 360)
+                Ang -= 360;
+            if (dly < 0)
+                dly = 0;
+        }
 
 	tot = cp->memory[currchannel]->get_interpolated(cp->memory[currchannel], dly);
 	tot *= cp->wet;
@@ -403,8 +409,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	cp->memory[currchannel]->add(cp->memory[currchannel], rgn);
 	*s = tot;
 
-	if (nchannels > 1)
-	    currchannel = !currchannel;
+	currchannel = (currchannel + 1) % db->channels;
 	s++;
 	count--;
     }
