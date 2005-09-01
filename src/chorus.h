@@ -29,15 +29,14 @@
 extern void     chorus_create(struct effect *);
 
 struct chorus_params {
-    int             wet,
+    Backbuf_t      *history[MAX_CHANNELS];
+    float           wet,
                     dry,
-                    depth;
+                    depth,
+                    speed,
+                    regen,
+                    ang;
     short           mode;
-    int             speed,
-                    regen;
-    float           ang;
-
-    Backbuf_t *memory[MAX_CHANNELS];
 };
 
 #endif
