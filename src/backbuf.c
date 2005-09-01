@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2005/09/01 13:36:23  alankila
+ * Objectify backbuf, correct naming and make it a typedef.
+ *
  * Revision 1.6  2005/08/10 18:37:54  alankila
  * - add function for fetching interpolated samples
  *
@@ -46,22 +49,7 @@
 #include <assert.h>
 
 void
-backbuff_init(struct backBuf *b, unsigned int maxDelay)
-{
-    b->nstor = maxDelay + 1;
-    b->storage = (BUF_TYPE *) malloc(sizeof(BUF_TYPE) * b->nstor);
-    memset(b->storage, 0, b->nstor * sizeof(BUF_TYPE));
-    b->curpos = 0;
-}
-
-void
-backbuff_done(struct backBuf *b)
-{
-    free(b->storage);
-}
-
-void
-backbuff_add(struct backBuf *b, BUF_TYPE d)
+backbuf_add(struct Backbuf *b, BUF_TYPE d)
 {
     b->curpos++;
     if (b->curpos == b->nstor)
@@ -69,28 +57,8 @@ backbuff_add(struct backBuf *b, BUF_TYPE d)
     b->storage[b->curpos] = d;
 }
 
-/* XXX optimize this a bit */
 BUF_TYPE
-backbuff_get_interpolated(struct backBuf *b, double delay)
-{
-    BUF_TYPE x, x1, x2;
-    unsigned int delay1 = delay;
-    unsigned int delay2 = delay + 1;
-    
-    if (delay2 == b->nstor)
-        delay2 = 0;
-    
-    x1 = backbuff_get(b, delay1);
-    x2 = backbuff_get(b, delay2);
-
-    delay = delay - delay1;
-    x = x1 * (1 - delay) + x2 * delay;
-    
-    return x;
-}
-
-BUF_TYPE
-backbuff_get(struct backBuf *b, unsigned int delay)
+backbuf_get(struct Backbuf *b, unsigned int delay)
 {
     int             getpos;
     assert(delay < b->nstor);
@@ -102,4 +70,44 @@ backbuff_get(struct backBuf *b, unsigned int delay)
     assert(getpos >= 0 && getpos < (int) b->nstor);
 
     return b->storage[getpos];
+}
+
+/* XXX optimize this a bit */
+BUF_TYPE
+backbuf_get_interpolated(struct Backbuf *b, double delay)
+{
+    BUF_TYPE x, x1, x2;
+    unsigned int delay1 = delay;
+    unsigned int delay2 = delay + 1;
+    
+    if (delay2 == b->nstor)
+        delay2 = 0;
+    
+    x1 = backbuf_get(b, delay1);
+    x2 = backbuf_get(b, delay2);
+
+    delay = delay - delay1;
+    x = x1 * (1 - delay) + x2 * delay;
+    
+    return x;
+}
+
+struct Backbuf *
+new_Backbuf(unsigned int maxDelay)
+{
+    struct Backbuf *b = calloc(1, sizeof(struct Backbuf));
+    b->nstor = maxDelay + 1;
+    b->storage = (BUF_TYPE *) calloc(b->nstor, sizeof(BUF_TYPE));
+    b->curpos = 0;
+    b->add = backbuf_add;
+    b->get = backbuf_get;
+    b->get_interpolated = backbuf_get_interpolated;
+    return b;
+}
+
+void
+del_Backbuf(struct Backbuf *b)
+{
+    free(b->storage);
+    free(b);
 }

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/01 13:36:23  alankila
+ * Objectify backbuf, correct naming and make it a typedef.
+ *
  * Revision 1.16  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -378,7 +381,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	if (dly < 0)
 	    dly = 0;
 
-	tot = backbuff_get_interpolated(cp->memory[currchannel], dly);
+	tot = cp->memory[currchannel]->get_interpolated(cp->memory[currchannel], dly);
 	tot *= cp->wet;
 	tot /= 256;
 	tot += tmp;
@@ -389,7 +392,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 	    tot;
 #endif
 	rgn =
-	    (backbuff_get_interpolated(cp->memory[currchannel], dly) *
+	    (cp->memory[currchannel]->get_interpolated(cp->memory[currchannel], dly) *
 	     cp->regen) / 256 + *s;
 #ifdef CLIP_EVERYWHERE
 	rgn =
@@ -397,7 +400,7 @@ chorus_filter(struct effect *p, struct data_block *db)
 						 MAX_SAMPLE) ? MAX_SAMPLE :
 	    rgn;
 #endif
-	backbuff_add(cp->memory[currchannel], rgn);
+	cp->memory[currchannel]->add(cp->memory[currchannel], rgn);
 	*s = tot;
 
 	if (nchannels > 1)
@@ -419,10 +422,8 @@ chorus_done(struct effect *p)
 
     cp = (struct chorus_params *) p->params;
 
-    for (i = 0; i < MAX_CHANNELS; i++) {
-	backbuff_done(cp->memory[i]);
-	free(cp->memory[i]);
-    }
+    for (i = 0; i < MAX_CHANNELS; i++)
+	del_Backbuf(cp->memory[i]);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -470,8 +471,7 @@ chorus_create(struct effect *p)
     struct chorus_params *cp;
     int             i;
 
-    p->params =
-	(struct chorus_params *) malloc(sizeof(struct chorus_params));
+    p->params = calloc(1, sizeof(struct chorus_params));
     p->proc_init = chorus_init;
     p->proc_filter = passthru;
     p->toggle = 0;
@@ -479,12 +479,11 @@ chorus_create(struct effect *p)
     p->proc_done = chorus_done;
     p->proc_save = chorus_save;
     p->proc_load = chorus_load;
-    cp = (struct chorus_params *) p->params;
+    cp = p->params;
 
-    for (i = 0; i < MAX_CHANNELS; i++) {
-	cp->memory[i] = (struct backBuf *) malloc(sizeof(struct backBuf));
-	backbuff_init(cp->memory[i], sample_rate);	/* 1 second memory */
-    }
+    for (i = 0; i < MAX_CHANNELS; i++)
+	cp->memory[i] = new_Backbuf(sample_rate); /* 1 second memory */
+    
     cp->ang = 0.0f;
     cp->depth = 50;
     cp->speed = 5;

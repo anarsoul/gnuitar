@@ -26,18 +26,17 @@
 #include "pump.h"		/* for DSP_SAMPLE */
 
 #define BUF_TYPE DSP_SAMPLE
-
-struct backBuf {
-
+typedef struct Backbuf {
     BUF_TYPE       *storage;
     unsigned int    nstor;
     unsigned int    curpos;
-};
+    /* method slots */
+    void	(*add)		    (struct Backbuf *, BUF_TYPE);
+    BUF_TYPE	(*get)		    (struct Backbuf *, unsigned int);
+    BUF_TYPE	(*get_interpolated) (struct Backbuf *, double);
+} Backbuf_t;
 
-void            backbuff_init(struct backBuf *b, unsigned int maxDelay);
-void            backbuff_done(struct backBuf *b);
-void            backbuff_add(struct backBuf *b, BUF_TYPE d);
-BUF_TYPE        backbuff_get(struct backBuf *b, unsigned int delay);
-BUF_TYPE        backbuff_get_interpolated(struct backBuf *b, double delay);
+Backbuf_t * new_Backbuf(unsigned int);
+void	    del_Backbuf(Backbuf_t *);
 
 #endif

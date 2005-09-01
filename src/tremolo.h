@@ -33,7 +33,7 @@ struct tremolo_params {
                     tremolo_amplitude,
                     tremolo_speed,
                     tremolo_phase;
-    struct backBuf  *history[MAX_CHANNELS];
+    Backbuf_t  *history[MAX_CHANNELS];
 };
 
 #endif

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2005/09/01 13:36:23  alankila
+ * Objectify backbuf, correct naming and make it a typedef.
+ *
  * Revision 1.3  2005/08/10 17:55:11  alankila
  * - migrate tuner to use the backbuff code
  *
@@ -50,7 +53,7 @@ extern void     tuner_create(struct effect *);
 /* data defined in order of progressive refinements */
 struct tuner_params {
     /* backlog of sample data */
-    struct backBuf  *history;
+    Backbuf_t	    *history;
 
     /* signal processing helpers */
     double	    power;

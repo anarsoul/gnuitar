@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/01 13:36:23  alankila
+ * Objectify backbuf, correct naming and make it a typedef.
+ *
  * Revision 1.16  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -226,14 +229,14 @@ tremolo_filter(struct effect *p, struct data_block *db)
     count = db->len;
 
     while (count) {
-        backbuff_add(tp->history[currchannel], *s);
+        tp->history[currchannel]->add(tp->history[currchannel], *s);
 	
 	tp->tremolo_phase++;
 	if (tp->tremolo_phase >= tp->tremolo_speed)
 	    tp->tremolo_phase = 0;
 
 	pos = tp->tremolo_amplitude * (1.0 + sin_lookup((double) tp->tremolo_phase / tp->tremolo_speed));
-	*s = backbuff_get_interpolated(tp->history[currchannel], pos);
+	*s = tp->history[currchannel]->get_interpolated(tp->history[currchannel], pos);
 
 	if (nchannels > 1)
 	    currchannel = !currchannel;
@@ -251,10 +254,8 @@ tremolo_done(struct effect *p)
 
     tp = (struct tremolo_params *) p->params;
 
-    for (i = 0; i < MAX_CHANNELS; i++) {
-	backbuff_done(tp->history[i]);
-        free(tp->history[i]);
-    }
+    for (i = 0; i < MAX_CHANNELS; i++)
+	del_Backbuf(tp->history[i]);
 
     free(tp);
     gtk_widget_destroy(p->control);
@@ -269,7 +270,6 @@ tremolo_save(struct effect *p, int fd)
     struct tremolo_params *tp;
 
     tp = (struct tremolo_params *) p->params;
-
     write(fd, &tp->tremolo_amplitude, sizeof(tp->tremolo_amplitude));
     write(fd, &tp->tremolo_speed, sizeof(tp->tremolo_speed));
 }
@@ -312,9 +312,7 @@ tremolo_create(struct effect *p)
     ptremolo->tremolo_amplitude = 25;
     ptremolo->tremolo_speed = MAX_TREMOLO_BUFSIZE * 0.2 / nchannels;
 
-    for (i = 0; i < MAX_CHANNELS; i++) {
-        ptremolo->history[i] = calloc(1, sizeof(ptremolo->history[0]));
-	backbuff_init(ptremolo->history[i], ptremolo->tremolo_size);
-    }
+    for (i = 0; i < MAX_CHANNELS; i++)
+        ptremolo->history[i] = new_Backbuf(ptremolo->tremolo_size);
     ptremolo->tremolo_phase = 0;
 }

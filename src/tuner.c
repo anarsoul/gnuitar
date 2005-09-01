@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.9  2005/09/01 13:36:23  alankila
+ * Objectify backbuf, correct naming and make it a typedef.
+ *
  * Revision 1.8  2005/08/28 21:45:30  fonin
  * Added type casting for >> operations on SAMPLE16/32 vars, to shut up MSVC
  *
@@ -270,7 +273,7 @@ tuner_filter(struct effect *p, struct data_block *db)
 	newval = (params->oldval[3] + params->oldval[2] + params->oldval[1] + params->oldval[0]) / 4;
 	
 	power += newval * newval;
-	backbuff_add(params->history, newval);
+	params->history->add(params->history, newval);
     }
     power /= db->len;
     
@@ -301,7 +304,7 @@ tuner_filter(struct effect *p, struct data_block *db)
         double diff = 0;
         double weight = 0;
         for (i = 0; i < COMPARE_LEN; i += 1) {
-            DSP_SAMPLE tmp = backbuff_get(params->history, i) - backbuff_get(params->history, i + loop_len);
+            DSP_SAMPLE tmp = params->history->get(params->history, i) - params->history->get(params->history, i + loop_len);
             double tmp2 = tmp * tmp;
             diff += tmp2;
             /* give up as soon as possible */
@@ -322,8 +325,10 @@ tuner_filter(struct effect *p, struct data_block *db)
   END_SEARCH:
 
     /* did we find any? */
-    if (good_loop_len_n == 0)
+    if (good_loop_len_n == 0) {
+        params->freq = 0;
         return;
+    }
     
     /* average loop len; hopefully better than any of the discrete values */
     good_loop_len /= good_loop_len_n;
@@ -369,12 +374,10 @@ void tuner_done_really(struct effect *p) {
     struct tuner_params *params;
     
     params = p->params;
-    backbuff_done(params->history);
-    free(params->history);
+    del_Backbuf(params->history);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
     return;
 }
 
@@ -394,7 +397,6 @@ void
 tuner_create(struct effect *p)
 {
     struct tuner_params *params;
-    int i;
     
     /* standard effect init */
     p->proc_init = tuner_init;
@@ -406,22 +408,7 @@ tuner_create(struct effect *p)
     
     p->params = calloc(1, sizeof(struct tuner_params));
     params = p->params;
-    
-    params->history = calloc(1, sizeof(params->history));
-    backbuff_init(params->history, HISTORY_SIZE);
-
-    params->freq = 0;
-    params->freq_index = 0;
-
-    params->oldval[3] =
-    params->oldval[2] =
-    params->oldval[1] =
-    params->oldval[0] = 0;
-    
-    for (i = 0; i < FREQ_SIZE; i += 1)
-	params->freq_history[i] = 0;
-
-    params->quitting = 0;
+    params->history = new_Backbuf(HISTORY_SIZE);
     
     return;
 }

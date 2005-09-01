@@ -37,7 +37,7 @@ struct chorus_params {
                     regen;
     float           ang;
 
-    struct backBuf *memory[MAX_CHANNELS];
+    Backbuf_t *memory[MAX_CHANNELS];
 };
 
 #endif
