@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2005/09/01 19:07:31  alankila
+ * - ask audio in host byte order
+ *
  * Revision 1.7  2005/08/28 21:41:28  fonin
  * Portability: introduced new functions for mutexes
  *
@@ -190,7 +193,7 @@ oss_init_sound(void)
     }
 
     /* 16-bit recording is the best available with OSS */
-    i = AFMT_S16_LE;
+    i = AFMT_S16_NE;
     bits = 16;
     if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
 	fprintf(stderr, "Cannot setup %d bit audio!\n", bits);

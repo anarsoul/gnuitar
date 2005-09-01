@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2005/09/01 19:07:31  alankila
+ * - ask audio in host byte order
+ *
  * Revision 1.7  2005/08/28 21:41:28  fonin
  * Portability: introduced new functions for mutexes
  *
@@ -209,9 +212,9 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
     }
 
     if (bits == 32)
-	tmp = SND_PCM_FORMAT_S32_LE;
+	tmp = SND_PCM_FORMAT_S32;
     else {
-	tmp = SND_PCM_FORMAT_S16_LE;
+	tmp = SND_PCM_FORMAT_S16;
 	bits = 16;
     }
     if ((err = snd_pcm_hw_params_set_format(device, hw_params, tmp)) < 0) {
