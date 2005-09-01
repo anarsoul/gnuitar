@@ -33,8 +33,8 @@ extern void     delay_create(struct effect *);
 
 struct delay_params {
     Backbuf_t       *history[MAX_CHANNELS];  /* history of samples */
-    int             delay_decay, /* volume of processed signal */
-                    delay_time,  /* time (in samples) between repeats */
+    float           delay_decay; /* volume % of processed signal */
+    int             delay_time,  /* time (in samples) between repeats */
                     delay_count; /* number of repeats */
 };
 

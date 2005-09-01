@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2005/09/01 17:31:40  alankila
+ * - various small fixes for multichannel / gui
+ *
  * Revision 1.19  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -315,9 +318,8 @@ distort_filter(struct effect *p, struct data_block *db)
 	    t = dp->lastval[currchannel] - (dp->sat << 8);
 
 	dp->lastval[currchannel] = t;
-	if (nchannels > 1)
-	    currchannel = !currchannel;
-
+        currchannel = (currchannel + 1) % db->channels;
+        
 	t *= dp->level;
 	t /= 256;
 #ifdef CLIP_EVERYWHERE

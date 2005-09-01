@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/09/01 17:31:40  alankila
+ * - various small fixes for multichannel / gui
+ *
  * Revision 1.20  2005/08/18 23:54:32  alankila
  * - use GTK_WINDOW_DIALOG instead of TOPLEVEL, however #define them the same
  *   for GTK2.
@@ -234,9 +237,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
     while (count) {
 	*s *= (1 + sin_lookup((double) vp->vibrato_phase / MAX_VIBRATO_BUFSIZE) * vp->vibrato_amplitude) / 2;
 
-	/* move channels synchronously */
-	if (nchannels > 1)
-	    curr_channel = !curr_channel;
+        curr_channel = (curr_channel + 1) % db->channels;
 	if (! curr_channel)
 	    vp->vibrato_phase += MAX_VIBRATO_BUFSIZE / vp->vibrato_speed / sample_rate;
 

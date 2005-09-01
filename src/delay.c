@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/09/01 17:31:40  alankila
+ * - various small fixes for multichannel / gui
+ *
  * Revision 1.17  2005/09/01 14:18:54  alankila
  * - drop fractions in delay count
  *
@@ -95,7 +98,7 @@ void
 update_delay_decay(GtkAdjustment * adj, struct delay_params *params)
 {
     int             i;
-    params->delay_decay = (int) adj->value * 10;
+    params->delay_decay = adj->value;
     for (i = 0; i < MAX_CHANNELS; i += 1)
         params->history[i]->clear(params->history[i]);
 }
@@ -161,15 +164,15 @@ delay_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), NULL);
 
-    parmTable = gtk_table_new(2, 8, FALSE);
+    parmTable = gtk_table_new(3, 3, FALSE);
 
-    adj_decay = gtk_adjustment_new(pdelay->delay_decay / 10,
+    adj_decay = gtk_adjustment_new(pdelay->delay_decay,
 				   10.0, 100.0, 1.0, 1.0, 0.0);
     decay_label = gtk_label_new("Decay\n%");
     gtk_table_attach(GTK_TABLE(parmTable), decay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
 
@@ -190,13 +193,13 @@ delay_init(struct effect *p)
 
     adj_time =
 	gtk_adjustment_new(pdelay->delay_time * 1000 / sample_rate, 1.0,
-			   MAX_STEP * 1000 / (sample_rate * nchannels),
-			   1.0, 1.0, 1.0);
+			   MAX_STEP * 1000 / sample_rate,
+			   1.0, 1.0, 0.0);
     time_label = gtk_label_new("Time\nms");
-    gtk_table_attach(GTK_TABLE(parmTable), time_label, 3, 4, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), time_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
 
@@ -204,7 +207,7 @@ delay_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_delay_time), pdelay);
     time = gtk_vscale_new(GTK_ADJUSTMENT(adj_time));
 
-    gtk_table_attach(GTK_TABLE(parmTable), time, 3, 4, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), time, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -214,10 +217,10 @@ delay_init(struct effect *p)
     adj_repeat = gtk_adjustment_new(pdelay->delay_count,
 				    1.0, MAX_COUNT, 1.0, 1.0, 0.0);
     repeat_label = gtk_label_new("Repeat\ntimes");
-    gtk_table_attach(GTK_TABLE(parmTable), repeat_label, 5, 6, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), repeat_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
 
@@ -227,7 +230,7 @@ delay_init(struct effect *p)
     repeat = gtk_vscale_new(GTK_ADJUSTMENT(adj_repeat));
     gtk_scale_set_digits(GTK_SCALE(repeat), 0);
 
-    gtk_table_attach(GTK_TABLE(parmTable), repeat, 5, 6, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), repeat, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -237,10 +240,10 @@ delay_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_delay), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
     if (p->toggle == 1) {
 	p->toggle = 0;
@@ -279,7 +282,7 @@ delay_filter(struct effect *p, struct data_block *db)
 	
         for (i = 0; i < dp->delay_count; i++) {
             current_delay += dp->delay_time;
-            current_decay *= dp->delay_decay / 1000.0;
+            current_decay *= dp->delay_decay / 100.0;
 
             newval += dp->history[curr_channel]->get(dp->history[curr_channel], current_delay) * current_decay;
 	}
@@ -363,7 +366,7 @@ delay_create(struct effect *p)
      * 
      */
 
-    pdelay->delay_decay = 550;
+    pdelay->delay_decay = 55;
     pdelay->delay_time = 11300;
     pdelay->delay_count = 8;
     for (i = 0; i < MAX_CHANNELS; i += 1)

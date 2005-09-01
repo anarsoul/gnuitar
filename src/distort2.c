@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2005/09/01 17:31:40  alankila
+ * - various small fixes for multichannel / gui
+ *
  * Revision 1.36  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -560,7 +563,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	s++;
 	count--;
 
-        curr_channel = (curr_channel + 1) % nchannels;
+        curr_channel = (curr_channel + 1) % db->channels;
     }
     RC_lowpass(db, &(dp->drivesmooth));
     RC_lowpass(db, &(dp->rolloff));
