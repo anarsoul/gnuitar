@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.49  2005/09/02 00:06:34  alankila
+ * - support row moving event
+ *
  * Revision 1.48  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -499,6 +502,27 @@ selectrow_effects(GtkWidget * widget, gint row, gint col,
 {
     effects_row = row;
 }
+
+void rowmove_processor(GtkWidget * widget, gint start, gint end, gpointer data)
+{
+    struct effect  *swap;
+    
+    my_lock_mutex(effectlist_lock);
+    swap = effects[start];
+    effects[start] = effects[end];
+    effects[end] = swap;
+    my_unlock_mutex(effectlist_lock);
+    
+    gtk_clist_freeze(GTK_CLIST(processor));
+    gtk_clist_remove(GTK_CLIST(processor), start);
+    gtk_clist_insert(GTK_CLIST(processor), start,
+		     &effect_list[effects[end]->id].str);
+    gtk_clist_remove(GTK_CLIST(processor), end);
+    gtk_clist_insert(GTK_CLIST(processor), end,
+		     &effect_list[effects[start]->id].str);
+    gtk_clist_thaw(GTK_CLIST(processor));
+}
+
 
 void
 up_pressed(GtkWidget * widget, gpointer data)
@@ -1379,7 +1403,8 @@ init_gui(void)
     pango_font_description_set_style(style->font_desc,PANGO_STYLE_NORMAL);
     pango_font_description_set_weight(style->font_desc,PANGO_WEIGHT_NORMAL);
 #endif
-
+    gtk_clist_set_reorderable(GTK_CLIST(processor), TRUE);
+    
     bank_switch = gtk_button_new_with_label("SWITCH");
     gtk_tooltips_set_tip(tooltips,bank_switch,"Use this button to switch between presets",NULL);
     up = gtk_button_new_with_label("Up");
@@ -1443,6 +1468,8 @@ init_gui(void)
 		       GTK_SIGNAL_FUNC(tracker_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(processor), "select_row",
 		       GTK_SIGNAL_FUNC(selectrow_processor), NULL);
+    gtk_signal_connect(GTK_OBJECT(processor), "row_move",
+		       GTK_SIGNAL_FUNC(rowmove_processor), NULL);
     gtk_signal_connect(GTK_OBJECT(known_effects), "select_row",
 		       GTK_SIGNAL_FUNC(selectrow_effects), NULL);
     gtk_signal_connect(GTK_OBJECT(adj_master), "value_changed",
