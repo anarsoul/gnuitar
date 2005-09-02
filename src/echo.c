@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/09/02 11:58:49  alankila
+ * - remove #ifdef HAVE_GTK2 entirely from all effect code
+ *
  * Revision 1.14  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -168,9 +171,7 @@ echo_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_echo_decay), pecho);
 
     decay = gtk_vscale_new(GTK_ADJUSTMENT(adj_decay));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(GTK_WIDGET(decay),0,100);
-#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), decay, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |

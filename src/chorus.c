@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/09/02 11:58:49  alankila
+ * - remove #ifdef HAVE_GTK2 entirely from all effect code
+ *
  * Revision 1.20  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -98,7 +101,6 @@
 #ifndef _WIN32
 #    include <unistd.h>
 #else
-#    include "utils.h"
 #    include <io.h>
 #endif
 #include <stdio.h>
@@ -215,9 +217,7 @@ chorus_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_chorus_speed), pchorus);
 
     speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
-#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), speed, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |

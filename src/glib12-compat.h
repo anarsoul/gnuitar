@@ -4,11 +4,19 @@
 #ifndef _GTK12_COMPAT_H_
 #define _GTK12_COMPAT_H_
 
+#ifdef HAVE_GTK2
+#define GTK_WINDOW_DIALOG GTK_WINDOW_TOPLEVEL
+#endif
+
 #include <glib.h>
 #ifndef HAVE_GTK
 #include <glib/gstdio.h>
 #include <glib/gthread.h>
 #else
+
+/* define some GTK 2.x functions away */
+#define gtk_widget_set_size_request(a, b, c)
+#define gtk_range_set_inverted(a, b)
 
 /* glib/gfileutils.h */
 #define G_FILE_ERROR g_file_error_quark ()

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2005/09/02 11:58:49  alankila
+ * - remove #ifdef HAVE_GTK2 entirely from all effect code
+ *
  * Revision 1.38  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -362,9 +365,7 @@ distort2_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(adj_drive), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_drive), pdistort);
     drive = gtk_vscale_new(GTK_ADJUSTMENT(adj_drive));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(GTK_WIDGET(drive),50,100);
-#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), drive, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -384,9 +385,7 @@ distort2_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(adj_mUt), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_mUt), pdistort);
     mUt = gtk_vscale_new(GTK_ADJUSTMENT(adj_mUt));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(GTK_WIDGET(mUt), 50, 100);
-#endif
     gtk_table_attach(GTK_TABLE(parmTable), mUt, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -405,9 +404,7 @@ distort2_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(adj_treble), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_treble), pdistort);
     treble = gtk_vscale_new(GTK_ADJUSTMENT(adj_treble));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(GTK_WIDGET(treble),50,100);
-#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), treble, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |

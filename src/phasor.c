@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/09/02 11:58:49  alankila
+ * - remove #ifdef HAVE_GTK2 entirely from all effect code
+ *
  * Revision 1.17  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -177,9 +180,7 @@ phasor_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_phasor_speed), pphasor);
 
     speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
-#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), speed, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS

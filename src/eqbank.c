@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.18  2005/09/02 11:58:49  alankila
+ * - remove #ifdef HAVE_GTK2 entirely from all effect code
+ *
  * Revision 1.17  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -191,10 +194,8 @@ eqbank_init(struct effect *p)
 	adj_boost[i] = gtk_adjustment_new(peq->boosts[i],
 					  FB_MIN, FB_MAX, 1.0, 5.0, 0.0);
 	boost[i] = gtk_vscale_new(GTK_ADJUSTMENT(adj_boost[i]));
-#ifdef HAVE_GTK2
 	gtk_widget_set_size_request(GTK_WIDGET(boost[i]),32,100);
 	gtk_range_set_inverted(GTK_RANGE(boost[i]), TRUE);
-#endif
 
 	sl_wrappers[i].par = peq;
 	sl_wrappers[i].slider_id = i;
@@ -230,10 +231,8 @@ eqbank_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 3, 3);
     adj_output = gtk_adjustment_new(peq->volume, -30, 30, 1.0, 5.0, 0.0);
     output = gtk_vscale_new(GTK_ADJUSTMENT(adj_output));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(output,55,100);
     gtk_range_set_inverted(GTK_RANGE(output), TRUE);
-#endif
     gtk_signal_connect(GTK_OBJECT(adj_output), "value_changed",
 		       GTK_SIGNAL_FUNC(update_eqbank_volume),
 		       (void *) peq);

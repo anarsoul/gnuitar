@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/09/02 11:58:49  alankila
+ * - remove #ifdef HAVE_GTK2 entirely from all effect code
+ *
  * Revision 1.11  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -174,9 +177,7 @@ noise_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_noise_threshold), pnoise);
 
     threshold = gtk_vscale_new(GTK_ADJUSTMENT(adj_threshold));
-#ifdef HAVE_GTK2
     gtk_widget_set_size_request(GTK_WIDGET(threshold),0,100);
-#endif
 
     gtk_table_attach(GTK_TABLE(parmTable), threshold, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS

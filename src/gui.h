@@ -24,13 +24,8 @@
 #define _GUI_H_ 1
 
 #define GTK_ENABLE_BROKEN /* for gtk_text_new() */
+#include "glib12-compat.h"
 #include <gtk/gtk.h>
-
-#ifdef HAVE_GTK2
-#define GTK_WINDOW_DIALOG GTK_WINDOW_TOPLEVEL
-#endif
-
-#define MAINGUI_TITLE "GNUitar"
 
 #ifdef __cplusplus
 #define __GTKATTACHOPTIONS GtkAttachOptions
@@ -48,10 +43,8 @@
 #define COPYRIGHT   "GNUitar "VERSION"\n" \
 		    "Copyright (C) 2000,2001,2003,2004 Max Rudensky <fonin@omnistaronline.com>\n" \
 		    "http://www.omnistaronline.com/~fonin/\n"
-void
-                init_gui(void);
-gint            delete_event(GtkWidget * widget, GdkEvent * event,
-			     gpointer data);
+void		init_gui(void);
+gint            delete_event(GtkWidget *, GdkEvent *, gpointer);
 
 extern GtkWidget *processor;
 extern double master_volume;

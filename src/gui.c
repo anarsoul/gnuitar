@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.50  2005/09/02 11:58:49  alankila
+ * - remove #ifdef HAVE_GTK2 entirely from all effect code
+ *
  * Revision 1.49  2005/09/02 00:06:34  alankila
  * - support row moving event
  *
@@ -1382,7 +1385,7 @@ init_gui(void)
 
 
     gtk_container_add(GTK_CONTAINER(mainWnd), tbl);
-    gtk_window_set_title(GTK_WINDOW(mainWnd), MAINGUI_TITLE);
+    gtk_window_set_title(GTK_WINDOW(mainWnd), "GNUitar");
 
     bank_add = gtk_button_new_with_label("Add Preset >>");
     gtk_tooltips_set_tip(tooltips,bank_add,"Use this button to add the presets to the presets list.",NULL);
