@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.40  2005/09/03 12:14:02  alankila
+ * - decrypt distort2 on-disk format
+ *
  * Revision 1.39  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -265,6 +268,7 @@
 #define RC_FEEDBACK_C          47e-9    /* farads */
 #define RC_DRIVE_C             51e-12   /* farads */
 #define DRIVE_STATIC           50e3     /* ohms */
+#define DRIVE_LOG              500e3    /* ohms */
  
 #define UPSAMPLE	6
 #define MAX_NEWTON_ITERATIONS   50
@@ -285,21 +289,20 @@ void            distort2_filter(struct effect *p, struct data_block *db);
 void
 update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->r2 = adj->value * 5000;
-    params->r2 += DRIVE_STATIC;
+    params->drive = adj->value;
+
 }
 
 void
 update_distort2_mUt(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->mUt = (20.0 + adj->value) * 1e-3;
+    params->clip = adj->value;
 }
 
 void
 update_distort2_treble(GtkAdjustment * adj, struct distort2_params *params)
 {
-    params->noisegate = (int) adj->value;
-    RC_set_freq(params->noisegate, &(params->noise));
+    params->noisegate = adj->value;
 }
 
 void
@@ -312,12 +315,6 @@ toggle_distort2(void *bullshit, struct effect *p)
 	p->proc_filter = distort2_filter;
 	p->toggle = 1;
     }
-}
-
-void
-toggle_treble(void *bullshit, struct distort2_params *params)
-{
-    params->treble = !params->treble;
 }
 
 void
@@ -338,7 +335,6 @@ distort2_init(struct effect *p)
     GtkObject      *adj_treble;
 
     GtkWidget      *button;
-    GtkWidget      *treble_switch;
 
     GtkWidget      *parmTable;
 
@@ -354,7 +350,7 @@ distort2_init(struct effect *p)
 
     parmTable = gtk_table_new(4, 2, FALSE);
 
-    adj_drive = gtk_adjustment_new((pdistort->r2 - DRIVE_STATIC) / 5000,
+    adj_drive = gtk_adjustment_new(pdistort->drive,
 				   0.0, 100.0, 0, 0, 0);
     drive_label = gtk_label_new("Drive\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
@@ -373,7 +369,7 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_mUt = gtk_adjustment_new((pdistort->mUt / 1e-3 - 20.0),
+    adj_mUt = gtk_adjustment_new(pdistort->clip,
 				 0.0, 100.0, 1.0, 5.0, 0);
     mUt_label = gtk_label_new("Clip\n%");
     gtk_label_set_justify(GTK_LABEL(mUt_label), GTK_JUSTIFY_CENTER);
@@ -394,7 +390,7 @@ distort2_init(struct effect *p)
 
     
     adj_treble = gtk_adjustment_new(pdistort->noisegate,
-				   1000.0, 8000.0, 1, 1, 0);
+				   720.0, 3200.0, 1, 1, 0);
     treble_label = gtk_label_new("Treble\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), treble_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -425,17 +421,6 @@ distort2_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    treble_switch = gtk_check_button_new_with_label("On");
-    if (pdistort->treble)
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(treble_switch), TRUE);
-    gtk_signal_connect(GTK_OBJECT(treble_switch), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_treble), pdistort);
-
-    gtk_table_attach(GTK_TABLE(parmTable), treble_switch, 2, 3, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
-
     gtk_window_set_title(GTK_WINDOW(p->control),
 			 (gchar *) ("Overdrive"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
@@ -453,9 +438,11 @@ distort2_filter(struct effect *p, struct data_block *db)
     struct distort2_params *dp;
     static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4,mUt,Is;
     static double upsample [UPSAMPLE];
-#define DRIVE dp->r2
+    
     dp = (struct distort2_params *) p->params;
-    mUt = dp->mUt;
+
+    double DRIVE = DRIVE_STATIC + dp->drive / 100.0 * DRIVE_LOG;
+    mUt = (30.0 + dp->clip) * 1e-3;
     /* correct Is with mUt to approximately keep drive the
      * same. Original parameters said Is is 10e-12 and mUt 30e-3.
      * If mUt grows, Is must shrink. 0.40 is experimental */
@@ -566,10 +553,8 @@ distort2_filter(struct effect *p, struct data_block *db)
         curr_channel = (curr_channel + 1) % db->channels;
     }
     RC_lowpass(db, &(dp->drivesmooth));
+    RC_set_freq(dp->noisegate, &(dp->rolloff));
     RC_lowpass(db, &(dp->rolloff));
-    if (dp->treble)
-        RC_lowpass(db, &(dp->noise));
-#undef DRIVE
 }
 
 void
@@ -592,10 +577,9 @@ distort2_save(struct effect *p, int fd)
 
     ap = (struct distort2_params *) p->params;
 
-    write(fd, &ap->r2, sizeof(ap->r2));
-    write(fd, &ap->mUt, sizeof(ap->mUt));
-    write(fd, &ap->noise, sizeof(ap->noise));
-    write(fd, &ap->treble, sizeof(ap->treble));
+    write(fd, &ap->drive, sizeof(ap->drive));
+    write(fd, &ap->clip, sizeof(ap->clip));
+    write(fd, &ap->noisegate, sizeof(ap->noisegate));
 }
 
 void
@@ -605,16 +589,14 @@ distort2_load(struct effect *p, int fd)
 
     ap = (struct distort2_params *) p->params;
 
-    read(fd, &ap->r2, sizeof(ap->r2));
-    read(fd, &ap->mUt, sizeof(ap->mUt));
-    read(fd, &ap->noise, sizeof(ap->noise));
-    read(fd, &ap->treble, sizeof(ap->treble));
+    read(fd, &ap->drive, sizeof(ap->drive));
+    read(fd, &ap->clip, sizeof(ap->clip));
+    read(fd, &ap->noisegate, sizeof(ap->noisegate));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {
 	p->proc_filter = distort2_filter;
     }
-    RC_set_freq(ap->noisegate, &(ap->noise));
 }
 
 void
@@ -635,19 +617,13 @@ distort2_create(struct effect *p)
     p->id = DISTORT2;
     p->proc_done = distort2_done;
 
-    ap->r2 = DRIVE_STATIC;
-    ap->mUt = (20.0 + 50.0) * 1e-3;
-    ap->noisegate = 6000;
-    ap->treble = 0;
+    ap->drive = 0.0;
+    ap->clip = 50.0;
+    ap->noisegate = 1440;
 
     RC_setup(1, 1, &(ap->drivesmooth));
-    /* RC_set_freq done at filter() */
-    
     RC_setup(1, 1, &(ap->rolloff));
-    RC_set_freq(2700.0, &(ap->rolloff));
-
-    RC_setup(1, 1, &(ap->noise));
-    RC_set_freq(ap->noisegate, &(ap->noise));
+    
     /* RC Filter tied to ground setup */
     Ts = 1.0/sample_rate;
     Ts1 = Ts / UPSAMPLE;  /* Ts1 is Ts for upsampled processing  */

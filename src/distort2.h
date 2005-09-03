@@ -30,11 +30,8 @@
 extern void     distort2_create(struct effect *);
 
 struct distort2_params {
-    int         r2;
-    double      mUt;
-    int		noisegate;
-    int		treble;
-    struct filter_data noise, rolloff, drivesmooth;
+    double      drive, clip, noisegate;
+    struct filter_data rolloff, drivesmooth;
     double	c0,d1,lyf[MAX_CHANNELS];
     double 	last[MAX_CHANNELS];
     double	lastupsample[MAX_CHANNELS];
