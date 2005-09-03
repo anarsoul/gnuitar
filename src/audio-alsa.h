@@ -1,6 +1,6 @@
 /*
  * GNUitar
- * OSS parts
+ * ALSA parts
  * Copyright (C) 2005 Antti Lankila  <alankila@bel.fi>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.2  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -38,9 +43,9 @@
 #ifndef _AUDIO_ALSA_H_
 #define _AUDIO_ALSA_H_ 1
 
-void *alsa_audio_thread(void *V);
-void  alsa_finish_sound(void);
-int   alsa_init_sound(void);
-int   alsa_available(void);
+#include "pump.h"
+
+int                 alsa_available();
+extern audio_driver_t alsa_driver;
 
 #endif

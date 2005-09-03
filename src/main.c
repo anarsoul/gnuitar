@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.42  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.41  2005/08/28 21:41:28  fonin
  * Portability: introduced new functions for mutexes
  *
@@ -187,6 +192,7 @@
 #include "tracker.h"
 #include "gui.h"
 
+volatile audio_driver_t  *audio_driver;
 volatile int    state;
 char            version[13] = "GNUitar "VERSION;
 
@@ -196,17 +202,13 @@ pthread_t       audio_thread;
 
 SAMPLE16        rdbuf[MAX_BUFFER_SIZE   / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-void*           (*audio_proc) (void *V); /* pointer to audio thread routine */
 #else
 HANDLE          audio_thread;
 
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
-DWORD (WINAPI   *audio_proc) (void *V); /* pointer to audio thread routine */
 #endif
-int		(*audio_init) (void);	/* init sound routine   */
-void		(*audio_finish) (void);	/* finish sound routine */
 
 int
 main(int argc, char **argv)
@@ -215,26 +217,20 @@ main(int argc, char **argv)
 #ifndef _WIN32
     int             max_priority;
     struct sched_param p;
-
+    
 #ifdef HAVE_JACK
     if (jack_available()) {
-	audio_init = jack_init_sound;
-	audio_finish = jack_finish_sound;
-	audio_proc = jack_audio_thread;
+        audio_driver = &jack_driver;
     } else
 #endif
 #ifdef HAVE_ALSA
     if (alsa_available()) {
-	audio_init = alsa_init_sound;
-	audio_finish = alsa_finish_sound;
-	audio_proc = alsa_audio_thread;
+        audio_driver = &alsa_driver;
     } else
 #endif
 #ifdef HAVE_OSS
     if (oss_available()) {
-	audio_init=oss_init_sound;
-	audio_finish=oss_finish_sound;
-	audio_proc=oss_audio_thread;
+        audio_driver = &oss_driver;
     } else
 #endif
     {
@@ -256,7 +252,7 @@ main(int argc, char **argv)
 	fprintf(stderr, "warning: unable to set realtime priority (needs root privileges)\n");
     }
 
-    if (pthread_create(&audio_thread, NULL, audio_proc, NULL)) {
+    if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
 	fprintf(stderr, "Audio thread creation failed!\n");
 	return ERR_THREAD;
     }
@@ -267,10 +263,8 @@ main(int argc, char **argv)
     setuid(getuid());
 #else
     state = STATE_START_PAUSE;
-    audio_proc=windows_audio_thread;
-    audio_init=windows_init_sound;
-    audio_finish=windows_finish_sound;
-
+    audio_driver = &windows_driver;
+    
     my_create_mutex(&snd_open);
 
 
@@ -278,7 +272,7 @@ main(int argc, char **argv)
      * create audio thread
      */
     audio_thread =
-	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_proc, 0,
+	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->thread, 0,
 		     0, &thread_id);
     if (!audio_thread) {
 	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
@@ -305,7 +299,7 @@ main(int argc, char **argv)
     init_gui();
 
     pump_start(argc, argv);
-    if ((error = (*audio_init)()) != ERR_NOERROR) {
+    if ((error = audio_driver->init()) != ERR_NOERROR) {
 	fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
     }
 
@@ -320,13 +314,13 @@ main(int argc, char **argv)
     } else {
         state = STATE_EXIT;
         pthread_join(audio_thread, NULL);
-        (*audio_finish)();
+        audio_driver->finish();
         my_unlock_mutex(snd_open);
     }
 #else
     state = STATE_EXIT;
     my_unlock_mutex(snd_open);
-    (*audio_finish)();
+    audio_driver->finish();
 #endif
     pump_stop();
     save_settings();

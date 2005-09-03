@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.2  2005/08/25 19:51:45  fonin
  * Fixed windows audio driver
  *
@@ -37,10 +42,7 @@
 #define _AUDIO_WINDOWS_H_ 1
 
 #include <windows.h>
-
-DWORD WINAPI windows_audio_thread(void *V);
-void windows_finish_sound(void);
-int windows_init_sound(void);
+audio_driver_t windows_driver;
 
 #endif
 

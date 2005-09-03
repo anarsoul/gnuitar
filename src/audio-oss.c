@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.8  2005/09/01 19:07:31  alankila
  * - ask audio in host byte order
  *
@@ -228,5 +233,20 @@ oss_available() {
     close(fd);
     return 1;
 }
+
+struct audio_driver_channels oss_channels_cfg[] = {
+    { 1, 1 },
+    { 2, 2 }
+};
+
+int oss_bits_cfg[1] = { 16 };
+
+audio_driver_t oss_driver = {
+    oss_init_sound,
+    oss_finish_sound,
+    oss_audio_thread,
+    oss_channels_cfg,
+    oss_bits_cfg
+};
 
 #endif /* HAVE_OSS */

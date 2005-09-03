@@ -47,6 +47,23 @@ typedef gint32  SAMPLE32;
 #define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
 
+struct audio_driver_channels {
+    unsigned int in, out;
+};
+
+struct audio_driver {
+    int     (*init)(void);
+    void    (*finish)(void);
+#ifndef _WIN32
+    void *  (*thread)(void *);
+#else
+    DWORD (WINAPI *audio_proc)(void *);
+#endif
+    struct audio_driver_channels *channels;
+    unsigned int *bits;
+};
+typedef struct audio_driver audio_driver_t;
+
 typedef enum {
     AUTOWAH = 0,
     DISTORT,
@@ -70,6 +87,7 @@ struct data_block {
     unsigned int    len;
     unsigned int    channels;
 };
+typedef struct data_block data_block_t;
 
 struct effect {
     void           *params;
@@ -82,6 +100,7 @@ struct effect {
     unsigned short  id;
     GtkWidget      *control;
 };
+typedef struct effect effect_t;
 
 struct effect_creator {
     char           *str;

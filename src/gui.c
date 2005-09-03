@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.51  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.50  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -914,24 +919,18 @@ update_driver(GtkWidget * widget, gpointer sparams)
     if(tmp==NULL)
 	return;
 #ifdef HAVE_ALSA
-    if(strcmp(tmp,"ALSA")==0) {
-	audio_proc=alsa_audio_thread;
-	audio_init=alsa_init_sound;
-	audio_finish=alsa_finish_sound;
+    if (strcmp(tmp,"ALSA")==0) {
+        audio_driver = &alsa_driver;
     }
 #endif
 #ifdef HAVE_OSS
-    if(strcmp(tmp,"OSS")==0) {
-	audio_proc=oss_audio_thread;
-	audio_init=oss_init_sound;
-	audio_finish=oss_finish_sound;
+    if (strcmp(tmp,"OSS")==0) {
+        audio_driver = &oss_driver;
     }
 #endif
 #ifdef _WIN32
     if(strcmp(tmp,"MMSystem")==0) {
-	audio_proc=windows_audio_thread;
-	audio_init=windows_init_sound;
-	audio_finish=windows_finish_sound;
+        audio_driver = &windows_driver;
     }
 #endif
     state=STATE_ATHREAD_RESTART;
@@ -1092,15 +1091,15 @@ sample_dlg(GtkWidget * widget, gpointer data)
 
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.driver), drivers_list);
 #ifdef HAVE_OSS
-    if(audio_proc==oss_audio_thread)
+    if (audio_driver == &oss_driver)
 	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"OSS");
 #endif
 #ifdef HAVE_ALSA
-    if(audio_proc==alsa_audio_thread)
+    if (audio_driver == &alsa_driver)
 	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"ALSA");
 #endif
 #ifdef _WIN32
-    if(audio_proc==windows_audio_thread)
+    if (audio_driver == &windows_driver)
 	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"MMSystem");
 #endif
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
@@ -1221,7 +1220,7 @@ start_stop(GtkWidget * widget, gpointer data)
 #ifndef _WIN32
 	    pthread_join(audio_thread, NULL);
 	    state = STATE_PAUSE;
-	    if (pthread_create(&audio_thread, NULL, audio_proc, NULL)) {
+	    if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
 		fprintf(stderr, "Audio thread restart failed!\n");
 		state = STATE_EXIT;
 	    }
@@ -1229,7 +1228,7 @@ start_stop(GtkWidget * widget, gpointer data)
             WaitForSingleObject(audio_thread,INFINITE);
             state = STATE_PAUSE;
 	    audio_thread =
-		CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_proc, 0,
+		CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->thread, 0,
 		     0, &thread_id);
 
             /*
@@ -1242,7 +1241,7 @@ start_stop(GtkWidget * widget, gpointer data)
 #endif
 	}
 
-	if ((error = (*audio_init)()) != ERR_NOERROR) {
+	if ((error = audio_driver->init()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
             gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "ERROR");
             return;
@@ -1259,7 +1258,7 @@ start_stop(GtkWidget * widget, gpointer data)
 // FIXME: need to make sure that we left the pump_sample().
 	SuspendThread(audio_thread);
 #endif
-	audio_finish();
+	audio_driver->finish();
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),

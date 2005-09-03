@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.7  2005/08/28 21:41:51  fonin
  * Fixed mutex locking
  *
@@ -733,4 +738,16 @@ windows_init_sound(void)
     return ERR_NOERROR;
 }
 
+struct audio_driver_channels[] *windows_channels_cfg {
+    { 1, 1 },
+    { 2, 2 }
+};
+int windows_bits_cfg[1] = { 16 };
 
+audio_driver_t windows_driver = {
+    windows_init_sound,
+    windows_finish_sound,
+    windows_audio_thread,
+    windows_channels_cfg,
+    windows_bits_cfg
+};

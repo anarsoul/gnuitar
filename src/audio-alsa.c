@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.8  2005/09/01 19:07:31  alankila
  * - ask audio in host byte order
  *
@@ -371,5 +376,24 @@ alsa_available() {
     snd_pcm_close(playback_handle);
     return 1;
 }
+
+struct audio_driver_channels alsa_channels_cfg[] = {
+    { 1, 1 },
+    { 1, 2 },
+    { 1, 4 },
+    { 2, 2 },
+    { 2, 4 }
+};
+
+int alsa_bits_cfg[2] = { 16, 32 };
+
+audio_driver_t alsa_driver = {
+    alsa_init_sound,
+    alsa_finish_sound,
+    alsa_audio_thread,
+    alsa_channels_cfg,
+    alsa_bits_cfg
+};
+
 
 #endif /* HAVE_ALSA */

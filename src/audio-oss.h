@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2005/09/03 20:20:42  alankila
+ * - create audio_driver type and write all the driver stuff into it. This
+ *   faciliates carrying configuration data about the capabilities of
+ *   a specific audio driver and uses less global variables.
+ *
  * Revision 1.2  2005/08/27 18:11:35  alankila
  * - support 32-bit sampling
  * - use 24-bit precision in integer arithmetics
@@ -38,9 +43,7 @@
 #ifndef _AUDIO_OSS_H_
 #define _AUDIO_OSS_H_ 1
 
-void *oss_audio_thread(void *V);
-void  oss_finish_sound(void);
-int   oss_init_sound(void);
-int   oss_available(void);
+int                 oss_available();
+extern audio_driver_t oss_driver;
 
 #endif

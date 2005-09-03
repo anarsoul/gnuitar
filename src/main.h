@@ -23,7 +23,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_ 1
 
-#include <glib.h>
+#include <glib12-compat.h>
 #include "utils.h"
 
 /* compile-time decision is easier to make working first */
@@ -37,7 +37,7 @@
 #else
 #    include "audio-windows.h"
 #endif
-enum GnuitarErr {
+typedef enum {
     ERR_NOERROR = 0,
     ERR_THREAD, 		/* cannot create audio thread */
     ERR_WAVEINOPEN,		/* cannot open wave in device */
@@ -58,16 +58,16 @@ enum GnuitarErr {
     ERR_DSOUNDPLAYBACK,	
     ERR_DSCOOPLEVEL,
     ERR_NOAUDIOAVAILABLE
-};
-    
+} GnuitarErr;
+
 extern volatile int state;
+extern volatile audio_driver_t *audio_driver;
 extern my_mutex         snd_open;
 #ifndef _WIN32
 extern pthread_t        audio_thread;
 
 extern SAMPLE16         rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-extern void*            (*audio_proc) (void *V); /* pointer to audio thread routine */
 #else
 extern HANDLE	        audio_thread;	/* defined in main.c */
 
@@ -76,10 +76,7 @@ extern char             rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE];
 extern unsigned short   overrun_threshold;
 extern DWORD            thread_id;
-extern DWORD (WINAPI    *audio_proc) (void *V); /* pointer to audio thread routine */
 #endif
-extern int		(*audio_init) (void);	/* init sound routine   */
-extern void		(*audio_finish) (void);	/* finish sound routine */
 
 /*
  * Program states:
