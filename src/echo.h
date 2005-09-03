@@ -24,20 +24,21 @@
 #define _ECHO_H_ 1
 
 #include "pump.h"
+#include "backbuf.h"
 
-#define MAX_ECHO_COUNT 20
-#define MAX_ECHO_SIZE 1000
+#define MAX_ECHO_COUNT  20
+#define MAX_ECHO_LENGTH 2000 /* ms */
 
 extern void     echo_create(struct effect *);
 
 struct echo_params {
-    int             echo_size,
-                    echo_decay,
-                    buffer_count;	/* number of buffers */
-    DSP_SAMPLE    **history;	/* array[MAX_ECHO_COUNT] of history */
-    int            *size,	/* size of one buffer */
-                   *factor,
-                   *index;	/* array[MAX_ECHO_COUNT] of history index */
+    Backbuf_t       *history[MAX_CHANNELS][MAX_ECHO_COUNT];
+    double          primes[MAX_ECHO_COUNT];
+    double          size_factor[MAX_ECHO_COUNT];
+    double          decay_factor[MAX_ECHO_COUNT];
+    double          echo_size,
+                    echo_decay;
+    int             echoes;
 };
 
 #endif

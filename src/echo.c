@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/09/03 16:36:51  alankila
+ * - reworked effect to use backbuff
+ * - removed some output scaling that made this effect almost inaudible
+ * - reinstated a decay based on delay % and echo delay
+ * - echo_size adjustment works again
+ *
  * Revision 1.15  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -72,6 +78,7 @@
 
 #include "echo.h"
 #include "gui.h"
+#include <math.h>
 #include <stdlib.h>
 #ifndef _WIN32
 #    include <unistd.h>
@@ -85,19 +92,19 @@ void
 void
 update_echo_decay(GtkAdjustment * adj, struct echo_params *params)
 {
-    params->echo_decay = (int) adj->value * 10;
+    params->echo_decay = adj->value;
 }
 
 void
 update_echo_count(GtkAdjustment * adj, struct echo_params *params)
 {
-    params->buffer_count = (int) adj->value;
+    params->echoes = adj->value;
 }
 
 void
 update_echo_size(GtkAdjustment * adj, struct echo_params *params)
 {
-    params->echo_size = (int) adj->value * sample_rate * nchannels / 1000;
+    params->echo_size = adj->value;
 }
 
 void
@@ -112,9 +119,8 @@ toggle_echo(void *bullshit, struct effect *p)
     }
 }
 
-
 int
-prime(int n)
+is_prime(int n)
 {
     int             i;
 
@@ -128,7 +134,7 @@ prime(int n)
 void
 echo_init(struct effect *p)
 {
-    struct echo_params *pecho;
+    struct echo_params *params;
 
     GtkWidget      *decay;
     GtkWidget      *decay_label;
@@ -145,7 +151,7 @@ echo_init(struct effect *p)
     GtkWidget      *button;
     GtkWidget      *parmTable;
 
-    pecho = (struct echo_params *) p->params;
+    params = p->params;
 
     /*
      * GUI Init
@@ -157,18 +163,17 @@ echo_init(struct effect *p)
 
     parmTable = gtk_table_new(2, 8, FALSE);
 
-    adj_decay = gtk_adjustment_new(pecho->echo_decay / 10,
-				   1.0, 100.0, 1.0, 10.0, 1.0);
+    adj_decay = gtk_adjustment_new(params->echo_decay,
+				   1.0, 80.0, 1.0, 10.0, 0.0);
     decay_label = gtk_label_new("Decay\n%");
     gtk_table_attach(GTK_TABLE(parmTable), decay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_decay), "value_changed",
-		       GTK_SIGNAL_FUNC(update_echo_decay), pecho);
+		       GTK_SIGNAL_FUNC(update_echo_decay), params);
 
     decay = gtk_vscale_new(GTK_ADJUSTMENT(adj_decay));
     gtk_widget_set_size_request(GTK_WIDGET(decay),0,100);
@@ -180,47 +185,42 @@ echo_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
 
-    adj_count = gtk_adjustment_new(pecho->buffer_count,
-				   1.0, MAX_ECHO_COUNT, 1.0, 1.0, 1.0);
-    count_label = gtk_label_new("Repeat\ntimes");
-    gtk_table_attach(GTK_TABLE(parmTable), count_label, 3, 4, 0, 1,
+    adj_count = gtk_adjustment_new(params->echoes,
+				   1.0, MAX_ECHO_COUNT, 1.0, 1.0, 0.0);
+    count_label = gtk_label_new("Voices\n#");
+    gtk_table_attach(GTK_TABLE(parmTable), count_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_count), "value_changed",
-		       GTK_SIGNAL_FUNC(update_echo_count), pecho);
+		       GTK_SIGNAL_FUNC(update_echo_count), params);
 
     count = gtk_vscale_new(GTK_ADJUSTMENT(adj_count));
+    gtk_scale_set_digits(GTK_SCALE(count), 0);
 
-    gtk_table_attach(GTK_TABLE(parmTable), count, 3, 4, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), count, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-    adj_size =
-	gtk_adjustment_new(pecho->echo_size * 1000 /
-			   (sample_rate * nchannels), 1.0,
-			   MAX_ECHO_SIZE * 1000 / (sample_rate *
-						   nchannels), 1.0, 1.0,
-			   1.0);
+    adj_size = gtk_adjustment_new(params->echo_size, 1.0,
+                                  MAX_ECHO_LENGTH, 1.0, 1.0, 0.0);
     size_label = gtk_label_new("Delay\nms");
-    gtk_table_attach(GTK_TABLE(parmTable), size_label, 5, 6, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), size_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_size), "value_changed",
-		       GTK_SIGNAL_FUNC(update_echo_size), pecho);
+		       GTK_SIGNAL_FUNC(update_echo_size), params);
 
     size = gtk_vscale_new(GTK_ADJUSTMENT(adj_size));
 
-    gtk_table_attach(GTK_TABLE(parmTable), size, 5, 6, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), size, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
@@ -231,11 +231,9 @@ echo_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_echo), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 3, 4,
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
     if (p->toggle == 1) {
 	p->toggle = 0;
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -251,78 +249,77 @@ echo_init(struct effect *p)
 void
 echo_filter(struct effect *p, struct data_block *db)
 {
-    DSP_SAMPLE     *s,sample;
-    int             j,
-                    count;
-    struct echo_params *ep;
+    int                 i, count, curr_channel = 0;
+    DSP_SAMPLE          *s, tmp;
+    double              in, out, echo_samples, echo_decay;
+    struct echo_params  *params;
 
     s = db->data;
     count = db->len;
 
-    ep = p->params;
+    params = p->params;
 
+    echo_samples = params->echo_size / 1000.0 * sample_rate;
+    echo_decay = params->echo_decay / 100.0;
+    
     while (count) {
-	sample = *s * ep->buffer_count;
-	/*
-	 * add sample, decay history 
-	 */
-	for (j = 0; j < ep->buffer_count; j++) {
-	    sample +=
-		(ep->history[j][ep->index[j]] =
-		 ep->history[j][ep->index[j]] * (ep->echo_decay +
-						 j * 0) / 1000 + *s);
-	    ep->index[j]++;
-	    if (ep->index[j] >= ep->size[j])
-		ep->index[j] = 0;
-	}
-	sample = sample / 2 / ep->buffer_count;
-	*s = sample;
-
-	s++;
-	count--;
+        /* mix current input into the various echo buffers at their
+         * expected delays */
+        in = *s;
+        out = *s;
+        for (i = 0; i < params->echoes; i += 1) {
+            tmp = params->history[curr_channel][i]->get(params->history[curr_channel][i], echo_samples * params->size_factor[i]);
+            tmp *= pow(echo_decay, params->decay_factor[i]);
+            out += tmp;
+            params->history[curr_channel][i]->add(params->history[curr_channel][i], in + tmp);
+        }
+        *s = out;
+        
+        curr_channel = (curr_channel + 1) % db->channels; 
+        s++;
+        count--;
     }
 }
 
 void
 echo_done(struct effect *p)
 {
-    struct echo_params *ep;
-    int             i;
+    struct echo_params *params;
+    int             i, j;
 
-    ep = p->params;
-
-    for (i = 0; i < ep->buffer_count; i++) {
-	free(ep->history[i]);
+    params = p->params;
+    for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
+        for (j = 0; j < MAX_CHANNELS; j += 1) {
+            del_Backbuf(params->history[j][i]);
+        }
     }
 
-    free(ep->history);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
 echo_save(struct effect *p, int fd)
 {
-    struct echo_params *ep;
+    struct echo_params *params;
 
-    ep = (struct echo_params *) p->params;
+    params = (struct echo_params *) p->params;
 
-    write(fd, &ep->echo_size, sizeof(ep->echo_size));
-    write(fd, &ep->echo_decay, sizeof(ep->echo_decay));
-    write(fd, &ep->buffer_count, sizeof(ep->buffer_count));
+    write(fd, &params->echo_size, sizeof(params->echo_size));
+    write(fd, &params->echo_decay, sizeof(params->echo_decay));
+    write(fd, &params->echoes, sizeof(params->echoes));
 }
 
 void
 echo_load(struct effect *p, int fd)
 {
-    struct echo_params *ep;
+    struct echo_params *params;
 
-    ep = (struct echo_params *) p->params;
+    params = (struct echo_params *) p->params;
 
-    read(fd, &ep->echo_size, sizeof(ep->echo_size));
-    read(fd, &ep->echo_decay, sizeof(ep->echo_decay));
-    read(fd, &ep->buffer_count, sizeof(ep->buffer_count));
+    read(fd, &params->echo_size, sizeof(params->echo_size));
+    read(fd, &params->echo_decay, sizeof(params->echo_decay));
+    read(fd, &params->echoes, sizeof(params->echoes));
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {
@@ -333,11 +330,10 @@ echo_load(struct effect *p, int fd)
 void
 echo_create(struct effect *p)
 {
-    struct echo_params *pecho;
-    int             i = 10,
-                    k = 0;
+    struct echo_params *params;
+    int             i, j, k;
 
-    p->params = (struct echo_params *) malloc(sizeof(struct echo_params));
+    p->params = calloc(1, sizeof(*params));
     p->proc_init = echo_init;
     p->proc_filter = passthru;
     p->proc_save = echo_save;
@@ -346,30 +342,34 @@ echo_create(struct effect *p)
     p->id = ECHO;
     p->proc_done = echo_done;
 
-    pecho = (struct echo_params *) p->params;
+    params = p->params;
 
-    pecho->echo_size = 128;
-    pecho->echo_decay = 700;
-    pecho->buffer_count = 20;
+    params->echo_size = MAX_ECHO_LENGTH / 2;
+    params->echo_decay = 50.0;      /* 50 % */
+    params->echoes = MAX_ECHO_COUNT;
 
-    pecho->history = (DSP_SAMPLE **) malloc(MAX_ECHO_COUNT * sizeof(DSP_SAMPLE *));
-    pecho->index = (int *) calloc(MAX_ECHO_COUNT, sizeof(int));
-    pecho->size = (int *) malloc(MAX_ECHO_COUNT * sizeof(int));
-    pecho->factor = (int *) malloc(MAX_ECHO_COUNT * sizeof(int));
-
-    while (k < MAX_ECHO_COUNT) {
-	while (!prime(i))
-	    i++;
-	i++;
-	while (!prime(i))
-	    i++;
-	pecho->factor[k] = i;
-	k++;
-	i++;
+    /* find some primes to base echo times on */
+    k = 10;
+    for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
+	while (! is_prime(k))
+	    k += 1;
+        k += 1;
+	while (! is_prime(k))
+	    k += 1;
+        params->primes[i] = k;
+        k += 1;
     }
-
-    for (i = 0; i < MAX_ECHO_COUNT; i++) {
-	pecho->size[i] = pecho->factor[i] * MAX_ECHO_SIZE;
-	pecho->history[i] = (DSP_SAMPLE *) calloc(pecho->size[i], sizeof(DSP_SAMPLE));
+    /* scale primes such that largest value is 1.0 in both */
+    for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
+        params->size_factor[i] = params->primes[i] / params->primes[MAX_ECHO_COUNT-1];
+        params->decay_factor[i] = params->primes[i] / params->primes[0];
+    }
+    /* build history buffers, one per channel per echo */
+    /* with 20 voices, 0.5 s max buffer, 48 kHz sample rate
+     * and 4 bytes per sample we need approx. 1 MB */
+    for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
+        for (j = 0; j < MAX_CHANNELS; j += 1) {
+            params->history[j][i] = new_Backbuf(MAX_ECHO_LENGTH / 1000.0 * MAX_SAMPLE_RATE * params->size_factor[i]);
+        }
     }
 }
