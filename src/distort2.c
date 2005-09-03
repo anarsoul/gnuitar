@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2005/09/03 23:29:03  alankila
+ * - I finally cracked the alignment problem. You align GTK labels with
+ *   gtk_misc_set_alignment.
+ *
  * Revision 1.40  2005/09/03 12:14:02  alankila
  * - decrypt distort2 on-disk format
  *
@@ -353,6 +357,7 @@ distort2_init(struct effect *p)
     adj_drive = gtk_adjustment_new(pdistort->drive,
 				   0.0, 100.0, 0, 0, 0);
     drive_label = gtk_label_new("Drive\n%");
+    gtk_label_set_justify(GTK_LABEL(drive_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -392,6 +397,7 @@ distort2_init(struct effect *p)
     adj_treble = gtk_adjustment_new(pdistort->noisegate,
 				   720.0, 3200.0, 1, 1, 0);
     treble_label = gtk_label_new("Treble\nHz");
+    gtk_label_set_justify(GTK_LABEL(treble_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), treble_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),

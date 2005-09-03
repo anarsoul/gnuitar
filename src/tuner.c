@@ -57,6 +57,10 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.13  2005/09/03 23:29:03  alankila
+ * - I finally cracked the alignment problem. You align GTK labels with
+ *   gtk_misc_set_alignment.
+ *
  * Revision 1.12  2005/09/01 23:52:15  alankila
  * - make window delete event do something useful
  *
@@ -151,23 +155,22 @@ tuner_init(struct effect *p)
     
     table = gtk_table_new(2, 3, FALSE);
  
-    /* XXX figure out why the justifications don't work */
-    label = gtk_label_new("Current:");
-    gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+    label = gtk_label_new("Current: ");
+    gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 0, 1, 0, 1,
 		     OPTS, OPTS, 2, 2);
-    label = gtk_label_new("Ideal:");
-    gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+    label = gtk_label_new("Ideal: ");
+    gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 0, 1, 1, 2,
 		     OPTS, OPTS, 2, 2);
     
     label = gtk_label_new("");
-    gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+    gtk_misc_set_alignment(GTK_MISC(label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 1, 2, 0, 1,
 		     OPTS, OPTS, 2, 2);
     params->label_current = label;
     label = gtk_label_new("");
-    gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+    gtk_misc_set_alignment(GTK_MISC(label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 1, 2, 1, 2,
 		     OPTS, OPTS, 2, 2);
     params->label_ideal = label;

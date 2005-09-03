@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.54  2005/09/03 23:29:03  alankila
+ * - I finally cracked the alignment problem. You align GTK labels with
+ *   gtk_misc_set_alignment.
+ *
  * Revision 1.53  2005/09/03 22:59:24  alankila
  * - be more diligent about updating latency
  *
@@ -1006,12 +1010,12 @@ sample_dlg(GtkWidget *widget, gpointer data)
     sp_table = gtk_table_new(4, 4, FALSE);
     gtk_container_add(GTK_CONTAINER(group), sp_table);
     
-#define LABELOPT __GTKATTACHOPTIONS(GTK_FILL)
-#define WIDGETOPT __GTKATTACHOPTIONS(GTK_FILL|GTK_EXPAND|GTK_SHRINK)
+#define TBLOPT  __GTKATTACHOPTIONS(GTK_FILL|GTK_EXPAND|GTK_SHRINK)
     
     rate_label = gtk_label_new("Sampling rate:");
+    gtk_misc_set_alignment(GTK_MISC(rate_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), rate_label, 0, 1, 0, 1,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
 
     sparams.rate = gtk_combo_new();
     /* these may also be driver dependant but let's leave them as is for now */
@@ -1024,12 +1028,13 @@ sample_dlg(GtkWidget *widget, gpointer data)
 		       g_strdup_printf("%d", sample_rate));
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.rate)->entry), FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.rate, 1, 2, 0, 1,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.rate)->entry,"This is the current sampling rate.",NULL);
 
     channels_label = gtk_label_new("Channels:");
+    gtk_misc_set_alignment(GTK_MISC(channels_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), channels_label, 2, 3, 0, 1,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     sparams.channels = gtk_combo_new();
     
     for (i = 0; audio_driver->channels[i].in != 0; i += 1) {
@@ -1043,11 +1048,12 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.channels)->entry),
 		       g_strdup_printf("%d in - %d out", n_input_channels, n_output_channels));
     gtk_table_attach(GTK_TABLE(sp_table), sparams.channels, 3, 4, 0, 1,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.channels)->entry,"Mono/Stereo/Quadrophonic",NULL);
     bits_label = gtk_label_new("Bits:");
+    gtk_misc_set_alignment(GTK_MISC(bits_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), bits_label, 0, 1, 1, 2,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     sparams.bits = gtk_combo_new();
 
     for (i = 0; audio_driver->bits[i] != 0; i += 1) {
@@ -1060,12 +1066,13 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
 			   FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.bits, 1, 2, 1, 2,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.bits)->entry, "ALSA can do 32-bit input with some cards", NULL);
 
     latency_label = gtk_label_new("Fragment size:");
+    gtk_misc_set_alignment(GTK_MISC(latency_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), latency_label, 2, 3, 1, 2,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     latency_adj =
 	gtk_adjustment_new(buffer_size, MIN_BUFFER_SIZE, MAX_BUFFER_SIZE,
 			   MIN_BUFFER_SIZE, MIN_BUFFER_SIZE, 0);
@@ -1073,13 +1080,13 @@ sample_dlg(GtkWidget *widget, gpointer data)
 	gtk_spin_button_new(GTK_ADJUSTMENT(latency_adj), 1, 0);
     dummy1 = GTK_SPIN_BUTTON(sparams.latency);
     dummy2 = &(dummy1->entry);
-    gtk_entry_set_editable(dummy2, FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.latency, 3, 4, 1, 2,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
 
     driver_label = gtk_label_new("Audio Driver:");
+    gtk_misc_set_alignment(GTK_MISC(driver_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), driver_label, 0, 1, 2, 3,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     sparams.driver = gtk_combo_new();
 #ifdef HAVE_OSS
     drivers_list = g_list_append(drivers_list, "OSS");
@@ -1108,16 +1115,18 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
 			   FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.driver, 1, 2, 2, 3,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.driver)->entry,
 	"Sound driver is an API that you use to capture/playback sound.",NULL);
 
     latency_label = gtk_label_new("Latency:");
+    gtk_misc_set_alignment(GTK_MISC(latency_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), latency_label, 2, 3, 2, 3,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     sparams.latency_label = gtk_label_new("- ms");
+    gtk_misc_set_alignment(GTK_MISC(sparams.latency_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.latency_label, 3, 4, 2, 3,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,sparams.latency,"The fragment size is the number of samples " \
 	"that the sound driver reads by one time. " \
 	"The smaller is the fragment size, the lower is the latency, " \
@@ -1126,10 +1135,9 @@ sample_dlg(GtkWidget *widget, gpointer data)
 	"try to increase this setting.",NULL);
 #ifdef _WIN32
     /* DirectSound checkbox */
-    directsound =
-	gtk_check_button_new_with_label("Output via DirectSound");
+    directsound = gtk_check_button_new_with_label("Output via DirectSound");
     gtk_table_attach(GTK_TABLE(sp_table), directsound, 0, 1, 3, 4,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     if (dsound)
 	GTK_TOGGLE_BUTTON(directsound)->active = 1;
     gtk_tooltips_set_tip(tooltips,directsound,"If this is turned on, " \
@@ -1139,8 +1147,9 @@ sample_dlg(GtkWidget *widget, gpointer data)
 
     /* threshold spin button */
     threshold_label = gtk_label_new("Overrun threshold:");
+    gtk_misc_set_alignment(GTK_MISC(threshold_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), threshold_label, 1, 2, 3, 4,
-                     LABELOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     threshold_adj =
 	gtk_adjustment_new(overrun_threshold, 0, 200,
 			   1, 1, 0);
@@ -1150,14 +1159,15 @@ sample_dlg(GtkWidget *widget, gpointer data)
     dummy2 = &(dummy1->entry);
     gtk_entry_set_editable(dummy2, FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), threshold, 2, 3, 3, 4,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,threshold,"Large value will force buffer overruns " \
 	"to be ignored. If you encounter heavy overruns, " \
 	"especially with autowah, decrease this to 1. " \
 	"(for hackers: this is the number of fragments that are allowed to be lost).",NULL);
     threshold_fragments = gtk_label_new("fragments");
+    gtk_misc_set_alignment(GTK_MISC(threshold_fragments), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), threshold_fragments, 3, 4, 3, 4,
-                     WIDGETOPT, 0, 0, 0);
+                     TBLOPT, TBLOPT, 3, 3);
     gtk_signal_connect(GTK_OBJECT(directsound), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_directsound), threshold);
     gtk_signal_connect(GTK_OBJECT(threshold_adj), "value_changed",
