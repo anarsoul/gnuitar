@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.53  2005/09/03 22:59:24  alankila
+ * - be more diligent about updating latency
+ *
  * Revision 1.52  2005/09/03 22:13:56  alankila
  * - make multichannel processing selectable
  * - new GUI (it sucks as much as the old one and I'll need to grok GTK
@@ -248,14 +251,14 @@
 extern short dsound;
 #endif
 
-#define VU_UPDATE_INTERVAL 20.0    /* ms */
+#define VU_UPDATE_INTERVAL 25.0    /* ms */
 
-void            bank_start_save(GtkWidget * widget, gpointer data);
-void            bank_start_load(GtkWidget * widget, gpointer data);
-void            sample_dlg(GtkWidget * widget, gpointer data);
-void            update_sampling_params(GtkWidget * widget,
-				       gpointer sparams);
-void            quit(GtkWidget * widget, gpointer data);
+void            bank_start_save(GtkWidget *, gpointer);
+void            bank_start_load(GtkWidget *, gpointer);
+void            sample_dlg(GtkWidget *, gpointer);
+void            update_sampling_params(GtkWidget *, gpointer);
+void            update_sampling_params_and_close_dialog(GtkWidget *, gpointer);
+void            quit(GtkWidget *, gpointer);
 void            about_dlg(void);
 void            help_contents(void);
 
@@ -899,31 +902,25 @@ void update_master_volume(GtkAdjustment *adj, void *nothing) {
 }
 
 void
-update_latency_label(GtkWidget * widget, gpointer sparams)
+update_latency_label(GtkWidget *widget, gpointer data)
 {
-    char            tmp[256];
-    int             bufsize,
-                    n,
-                    sr;
-    sample_params  *sp = (sample_params *) sparams;
-    bufsize =
-	gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
+    gchar          *gtmp;
+    sample_params  *sp = data;
 
-    n = atoi(gtk_entry_get_text
-	     (GTK_ENTRY(GTK_COMBO(sp->channels)->entry)));
-    sr = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
-    sprintf(tmp, "%.2f ms", bufsize * 1000.0 / (sr * n));
-    gtk_label_set_text(GTK_LABEL(sp->latency_label), tmp);
+    update_sampling_params(widget, data);
+    gtmp = g_strdup_printf("%.2f ms", 1000.0 * buffer_size / (sample_rate * n_input_channels) / (bits / 8));
+    gtk_label_set_text(GTK_LABEL(sp->latency_label), gtmp);
+    free(gtmp);
 }
 
 void
-update_driver(GtkWidget * widget, gpointer sparams)
+update_driver(GtkWidget * widget, gpointer data)
 {
     const char *tmp=NULL;
-
-    sample_params  *sp = (sample_params *) sparams;
-    tmp=gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->driver)->entry));
-    if(tmp==NULL)
+    sample_params *sp = (sample_params *) data;
+    
+    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->driver)->entry));
+    if(tmp == NULL)
 	return;
 #ifdef HAVE_ALSA
     if (strcmp(tmp,"ALSA")==0) {
@@ -940,6 +937,8 @@ update_driver(GtkWidget * widget, gpointer sparams)
         audio_driver = &windows_driver;
     }
 #endif
+    /* XXX we should now reopen the dialog because changing audio driver
+     * updates bits & channels settings */
     state = STATE_ATHREAD_RESTART;
 }
 
@@ -962,7 +961,7 @@ update_threshold(GtkWidget * widget, gpointer threshold)
  * Sampling parameters dialog
  */
 void
-sample_dlg(GtkWidget * widget, gpointer data)
+sample_dlg(GtkWidget *widget, gpointer data)
 {
     static sample_params sparams;
     int             i;
@@ -1004,14 +1003,15 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(vpack), group, TRUE, TRUE, 0);
     gtk_container_add(GTK_CONTAINER(sparams.dialog), vpack);
 
-    sp_table = gtk_table_new(3, 4, FALSE);
+    sp_table = gtk_table_new(4, 4, FALSE);
     gtk_container_add(GTK_CONTAINER(group), sp_table);
     
-#define ATTACHEXP __GTKATTACHOPTIONS(GTK_FILL|GTK_EXPAND|GTK_SHRINK)
+#define LABELOPT __GTKATTACHOPTIONS(GTK_FILL)
+#define WIDGETOPT __GTKATTACHOPTIONS(GTK_FILL|GTK_EXPAND|GTK_SHRINK)
     
-    rate_label = gtk_label_new("Sampling Rate:");
+    rate_label = gtk_label_new("Sampling rate:");
     gtk_table_attach(GTK_TABLE(sp_table), rate_label, 0, 1, 0, 1,
-                     ATTACHEXP, 0, 0, 0);
+                     LABELOPT, 0, 0, 0);
 
     sparams.rate = gtk_combo_new();
     /* these may also be driver dependant but let's leave them as is for now */
@@ -1024,12 +1024,12 @@ sample_dlg(GtkWidget * widget, gpointer data)
 		       g_strdup_printf("%d", sample_rate));
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.rate)->entry), FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.rate, 1, 2, 0, 1,
-                     ATTACHEXP, 0, 0, 0);
+                     WIDGETOPT, 0, 0, 0);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.rate)->entry,"This is the current sampling rate.",NULL);
 
     channels_label = gtk_label_new("Channels:");
     gtk_table_attach(GTK_TABLE(sp_table), channels_label, 2, 3, 0, 1,
-                     ATTACHEXP, 0, 0, 0);
+                     LABELOPT, 0, 0, 0);
     sparams.channels = gtk_combo_new();
     
     for (i = 0; audio_driver->channels[i].in != 0; i += 1) {
@@ -1043,11 +1043,11 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.channels)->entry),
 		       g_strdup_printf("%d in - %d out", n_input_channels, n_output_channels));
     gtk_table_attach(GTK_TABLE(sp_table), sparams.channels, 3, 4, 0, 1,
-                     0, 0, 0, 0);
+                     WIDGETOPT, 0, 0, 0);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.channels)->entry,"Mono/Stereo/Quadrophonic",NULL);
     bits_label = gtk_label_new("Bits:");
     gtk_table_attach(GTK_TABLE(sp_table), bits_label, 0, 1, 1, 2,
-                     ATTACHEXP, 0, 0, 0);
+                     LABELOPT, 0, 0, 0);
     sparams.bits = gtk_combo_new();
 
     for (i = 0; audio_driver->bits[i] != 0; i += 1) {
@@ -1060,12 +1060,12 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
 			   FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.bits, 1, 2, 1, 2,
-                     ATTACHEXP, 0, 0, 0);
-    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.bits)->entry,"I thought that no one will ever need 8 bits, and this option is disabled.",NULL);
+                     WIDGETOPT, 0, 0, 0);
+    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.bits)->entry, "ALSA can do 32-bit input with some cards", NULL);
 
     latency_label = gtk_label_new("Fragment size:");
     gtk_table_attach(GTK_TABLE(sp_table), latency_label, 2, 3, 1, 2,
-                     0, 0, 0, 0);
+                     LABELOPT, 0, 0, 0);
     latency_adj =
 	gtk_adjustment_new(buffer_size, MIN_BUFFER_SIZE, MAX_BUFFER_SIZE,
 			   MIN_BUFFER_SIZE, MIN_BUFFER_SIZE, 0);
@@ -1075,11 +1075,11 @@ sample_dlg(GtkWidget * widget, gpointer data)
     dummy2 = &(dummy1->entry);
     gtk_entry_set_editable(dummy2, FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.latency, 3, 4, 1, 2,
-                     0, 0, 0, 0);
+                     WIDGETOPT, 0, 0, 0);
 
     driver_label = gtk_label_new("Audio Driver:");
     gtk_table_attach(GTK_TABLE(sp_table), driver_label, 0, 1, 2, 3,
-                     0, 0, 0, 0);
+                     LABELOPT, 0, 0, 0);
     sparams.driver = gtk_combo_new();
 #ifdef HAVE_OSS
     drivers_list = g_list_append(drivers_list, "OSS");
@@ -1108,20 +1108,16 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
 			   FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.driver, 1, 2, 2, 3,
-                     0, 0, 0, 0);
+                     WIDGETOPT, 0, 0, 0);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.driver)->entry,
 	"Sound driver is an API that you use to capture/playback sound.",NULL);
 
     latency_label = gtk_label_new("Latency:");
     gtk_table_attach(GTK_TABLE(sp_table), latency_label, 2, 3, 2, 3,
-                     0, 0, 0, 0);
-    gtmp = g_strdup_printf("%.2f ms",
-	    buffer_size * 1000.0 / (sample_rate * n_input_channels));
-    sparams.latency_label = gtk_label_new(gtmp);
-    gtk_label_set_justify(GTK_LABEL(sparams.latency_label),
-			  GTK_JUSTIFY_LEFT);
+                     LABELOPT, 0, 0, 0);
+    sparams.latency_label = gtk_label_new("- ms");
     gtk_table_attach(GTK_TABLE(sp_table), sparams.latency_label, 3, 4, 2, 3,
-                     0, 0, 0, 0);
+                     LABELOPT, 0, 0, 0);
     gtk_tooltips_set_tip(tooltips,sparams.latency,"The fragment size is the number of samples " \
 	"that the sound driver reads by one time. " \
 	"The smaller is the fragment size, the lower is the latency, " \
@@ -1133,7 +1129,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     directsound =
 	gtk_check_button_new_with_label("Output via DirectSound");
     gtk_table_attach(GTK_TABLE(sp_table), directsound, 0, 1, 3, 4,
-                     0, 0, 0, 0);
+                     WIDGETOPT, 0, 0, 0);
     if (dsound)
 	GTK_TOGGLE_BUTTON(directsound)->active = 1;
     gtk_tooltips_set_tip(tooltips,directsound,"If this is turned on, " \
@@ -1144,7 +1140,7 @@ sample_dlg(GtkWidget * widget, gpointer data)
     /* threshold spin button */
     threshold_label = gtk_label_new("Overrun threshold:");
     gtk_table_attach(GTK_TABLE(sp_table), threshold_label, 1, 2, 3, 4,
-                     0, 0, 0, 0);
+                     LABELOPT, 0, 0, 0);
     threshold_adj =
 	gtk_adjustment_new(overrun_threshold, 0, 200,
 			   1, 1, 0);
@@ -1154,14 +1150,14 @@ sample_dlg(GtkWidget * widget, gpointer data)
     dummy2 = &(dummy1->entry);
     gtk_entry_set_editable(dummy2, FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), threshold, 2, 3, 3, 4,
-                     0, 0, 0, 0);
+                     WIDGETOPT, 0, 0, 0);
     gtk_tooltips_set_tip(tooltips,threshold,"Large value will force buffer overruns " \
 	"to be ignored. If you encounter heavy overruns, " \
 	"especially with autowah, decrease this to 1. " \
 	"(for hackers: this is the number of fragments that are allowed to be lost).",NULL);
     threshold_fragments = gtk_label_new("fragments");
     gtk_table_attach(GTK_TABLE(sp_table), threshold_fragments, 3, 4, 3, 4,
-                     0, 0, 0, 0);
+                     WIDGETOPT, 0, 0, 0);
     gtk_signal_connect(GTK_OBJECT(directsound), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_directsound), threshold);
     gtk_signal_connect(GTK_OBJECT(threshold_adj), "value_changed",
@@ -1174,10 +1170,13 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(buttons_pack), ok, TRUE, FALSE, 0);
 
     gtk_signal_connect(GTK_OBJECT(ok), "clicked",
-		       GTK_SIGNAL_FUNC(update_sampling_params), &sparams);
+		       GTK_SIGNAL_FUNC(update_sampling_params_and_close_dialog), &sparams);
     gtk_signal_connect(GTK_OBJECT(latency_adj), "value_changed",
 		       GTK_SIGNAL_FUNC(update_latency_label), &sparams);
     gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.channels)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
+		       &sparams);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.bits)->entry),
 		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
 		       &sparams);
     gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.rate)->entry),
@@ -1195,24 +1194,30 @@ sample_dlg(GtkWidget * widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(vpack), buttons_pack, TRUE, TRUE, 0);
     gtk_widget_grab_focus(ok);
 
+    update_latency_label(NULL, &sparams);
     gtk_widget_show_all(sparams.dialog);
 }
 
 void
-update_sampling_params(GtkWidget * dialog, gpointer sparams)
+update_sampling_params(GtkWidget * dialog, gpointer data)
 {
-    int tmp1, tmp2;
-    sample_params  *sp = (sample_params *) sparams;
+    int             tmp1, tmp2;
+    sample_params  *sp = data;
 
-    buffer_size =
-	gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
+    buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
     bits = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->bits)->entry)));
     sscanf(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->channels)->entry)),
            "%d in - %d out", &tmp1, &tmp2);
     n_input_channels = tmp1;
     n_output_channels = tmp2;
-    sample_rate =
-	atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
+    sample_rate = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
+}
+
+void update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
+{
+    sample_params  *sp = data;
+    
+    update_sampling_params(dialog, data);
     gtk_widget_destroy(GTK_WIDGET(sp->dialog));
 }
 
