@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/03 22:13:56  alankila
+ * - make multichannel processing selectable
+ * - new GUI (it sucks as much as the old one and I'll need to grok GTK
+ *   tables first before it gets better)
+ * - make pump.c do the multichannel adapting bits
+ * - effects can now change channel counts
+ *
  * Revision 1.16  2005/08/28 21:45:30  fonin
  * Added type casting for >> operations on SAMPLE16/32 vars, to shut up MSVC
  *
@@ -118,7 +125,7 @@ tracker_out(const char *outfile)
     memset(&sfinfo, 0, sizeof(sfinfo));
     sfinfo.samplerate = sample_rate;
     sfinfo.frames     = 0;
-    sfinfo.channels   = nchannels;
+    sfinfo.channels   = n_output_channels;
     sfinfo.format     = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
     
     fout = sf_open(outfile, SFM_WRITE, &sfinfo);
@@ -153,7 +160,7 @@ tracker_out(const char *outfile)
 	    return;
 	}
 	format.wFormatTag = WAVE_FORMAT_PCM;
-	format.nChannels = nchannels;
+	format.nChannels = n_output_channels;
 	format.nSamplesPerSec = sample_rate;
 	format.wBitsPerSample = bits;
 	format.nBlockAlign =

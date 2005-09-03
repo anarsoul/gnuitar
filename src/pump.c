@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2005/09/03 22:13:56  alankila
+ * - make multichannel processing selectable
+ * - new GUI (it sucks as much as the old one and I'll need to grok GTK
+ *   tables first before it gets better)
+ * - make pump.c do the multichannel adapting bits
+ * - effects can now change channel counts
+ *
  * Revision 1.35  2005/09/01 00:35:35  alankila
  * - add support for GKeyFile into glib 1.2
  *
@@ -203,7 +210,8 @@ extern char     version[];
 volatile unsigned short  write_track = 0;
 
 /* default settings */
-unsigned short  nchannels = 1;
+unsigned short  n_input_channels = 1;
+unsigned short  n_output_channels = 1;
 unsigned int    sample_rate = 44100;
 unsigned short  bits = 16;
 unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
@@ -315,10 +323,6 @@ adapt_to_output(struct data_block *db)
     int             i;
     int             size = db->len;
     DSP_SAMPLE     *s = db->data;
-
-    /* temporarily here to make this compile */
-    int n_output_channels;
-    return;
 
     assert(db->channels <= n_output_channels);
 
@@ -453,14 +457,12 @@ load_settings() {
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "n_output_channels", &error);
     if (error == NULL)
-        nchannels = tmp;
+        n_output_channels = tmp;
 
-    /*
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "n_input_channels", &error);
     if (error == NULL)
         n_input_channels = tmp;
-    */
 
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "sample_rate", &error);
@@ -495,8 +497,8 @@ void save_settings() {
     file = g_key_file_new();
 
     g_key_file_set_integer(file, "global", "bits", bits);
-    g_key_file_set_integer(file, "global", "n_output_channels", nchannels);
-    //g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
+    g_key_file_set_integer(file, "global", "n_output_channels", n_output_channels);
+    g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
     g_key_file_set_integer(file, "global", "sample_rate", sample_rate);
     g_key_file_set_integer(file, "global", "buffer_size", buffer_size);
 #ifdef _WIN32

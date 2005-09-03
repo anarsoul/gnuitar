@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2005/09/03 22:13:56  alankila
+ * - make multichannel processing selectable
+ * - new GUI (it sucks as much as the old one and I'll need to grok GTK
+ *   tables first before it gets better)
+ * - make pump.c do the multichannel adapting bits
+ * - effects can now change channel counts
+ *
  * Revision 1.8  2005/09/03 20:20:42  alankila
  * - create audio_driver type and write all the driver stuff into it. This
  *   faciliates carrying configuration data about the capabilities of
@@ -186,7 +193,7 @@ windows_audio_thread(void *V)
 		    if (dsound || hdr_avail != -1) {
                         db.data = procbuf;
                         db.len = count;
-                        db.channels = nchannels;
+                        db.channels = n_input_channels;
 			pump_sample(&db);
 
 			/*
@@ -530,7 +537,8 @@ windows_init_sound(void)
      * set audio parameters - sampling rate, number of channels etc.
      */
     format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = nchannels;
+    format.nChannels = n_input_channels;
+    n_output_channels = n_input_channels;
     format.nSamplesPerSec = sample_rate;
     format.wBitsPerSample = bits;
     format.nBlockAlign = format.nChannels * (format.wBitsPerSample >> 3);
@@ -740,7 +748,8 @@ windows_init_sound(void)
 
 struct audio_driver_channels[] *windows_channels_cfg {
     { 1, 1 },
-    { 2, 2 }
+    { 2, 2 },
+    { NULL, NULL }
 };
 int windows_bits_cfg[1] = { 16 };
 

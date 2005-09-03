@@ -116,7 +116,8 @@ extern int sin_lookup_table[SIN_LOOKUP_SIZE];
 
 extern volatile unsigned short write_track;
 
-extern unsigned short nchannels;
+extern unsigned short n_input_channels;
+extern unsigned short n_output_channels;
 extern unsigned int sample_rate;
 extern unsigned short bits;
 extern unsigned int buffer_size;

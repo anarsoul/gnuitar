@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2005/09/03 22:13:56  alankila
+ * - make multichannel processing selectable
+ * - new GUI (it sucks as much as the old one and I'll need to grok GTK
+ *   tables first before it gets better)
+ * - make pump.c do the multichannel adapting bits
+ * - effects can now change channel counts
+ *
  * Revision 1.9  2005/09/03 20:20:42  alankila
  * - create audio_driver type and write all the driver stuff into it. This
  *   faciliates carrying configuration data about the capabilities of
@@ -74,10 +81,6 @@ const char     *snd_device_in  = "plughw:0,0";
 const char     *snd_device_out = "plughw:0,0";
 snd_pcm_t      *playback_handle;
 snd_pcm_t      *capture_handle;
-
-/* temporary defines until rest of the code is multichannel-ready */
-#define n_input_channels nchannels
-#define n_output_channels nchannels
 
 void           *
 alsa_audio_thread(void *V)
@@ -382,7 +385,8 @@ struct audio_driver_channels alsa_channels_cfg[] = {
     { 1, 2 },
     { 1, 4 },
     { 2, 2 },
-    { 2, 4 }
+    { 2, 4 },
+    { 0, 0 }
 };
 
 int alsa_bits_cfg[2] = { 16, 32 };

@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2005/09/03 22:13:56  alankila
+ * - make multichannel processing selectable
+ * - new GUI (it sucks as much as the old one and I'll need to grok GTK
+ *   tables first before it gets better)
+ * - make pump.c do the multichannel adapting bits
+ * - effects can now change channel counts
+ *
  * Revision 1.7  2005/08/28 21:45:12  fonin
  * Portability: introduced new functions for mutexes
  *
@@ -49,34 +56,6 @@
  *
  */
 #include "utils.h"
-
-char           *
-my_itoa(int i)
-{
-    switch (i) {
-    case 48000:
-	return "48000";
-    case 44100:
-	return "44100";
-    case 22050:
-	return "22050";
-    case 16000:
-	return "16000";
-    case 8:
-	return "8";
-    case 16:
-	return "16";
-    case 32:
-	return "32";
-    case 1:
-	return "1";
-    case 2:
-	return "2";
-    case 4:
-	return "4";
-    }
-    return "";
-}
 
 #ifndef _WIN32
 inline void my_create_mutex(my_mutex* m) {

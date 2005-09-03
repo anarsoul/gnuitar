@@ -50,7 +50,6 @@ typedef GMutex* my_mutex;
 
 #endif
 
-extern char    *my_itoa(int i);
 extern void     my_create_mutex(my_mutex*);
 extern void     my_lock_mutex(my_mutex);
 extern void     my_unlock_mutex(my_mutex);

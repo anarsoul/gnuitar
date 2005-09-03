@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2005/09/03 22:13:56  alankila
+ * - make multichannel processing selectable
+ * - new GUI (it sucks as much as the old one and I'll need to grok GTK
+ *   tables first before it gets better)
+ * - make pump.c do the multichannel adapting bits
+ * - effects can now change channel counts
+ *
  * Revision 1.9  2005/09/03 20:20:42  alankila
  * - create audio_driver type and write all the driver stuff into it. This
  *   faciliates carrying configuration data about the capabilities of
@@ -121,7 +128,7 @@ oss_audio_thread(void *V)
 	count /= bits / 8;
         db.data = procbuf;
         db.len = count;
-        db.channels = nchannels;
+        db.channels = n_input_channels;
 
 	/* 16 bits is the only possible for OSS */
 	for (i = 0; i < count; i++)
@@ -206,7 +213,9 @@ oss_init_sound(void)
 	return ERR_WAVESETBIT;
     }
 
-    i = nchannels;
+    i = n_input_channels;
+    /* doesn't support asymmetric in/out */
+    n_output_channels = n_input_channels;
     if (ioctl(fd, SNDCTL_DSP_CHANNELS, &i) == -1) {
 	fprintf(stderr, "Cannot setup mono audio!\n");
 	close(fd);
@@ -236,7 +245,8 @@ oss_available() {
 
 struct audio_driver_channels oss_channels_cfg[] = {
     { 1, 1 },
-    { 2, 2 }
+    { 2, 2 },
+    { 0, 0 }
 };
 
 int oss_bits_cfg[1] = { 16 };
