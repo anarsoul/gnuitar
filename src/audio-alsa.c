@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2005/09/03 23:31:40  alankila
+ * - add signs
+ *
  * Revision 1.10  2005/09/03 22:13:56  alankila
  * - make multichannel processing selectable
  * - new GUI (it sucks as much as the old one and I'll need to grok GTK
@@ -389,7 +392,7 @@ struct audio_driver_channels alsa_channels_cfg[] = {
     { 0, 0 }
 };
 
-int alsa_bits_cfg[2] = { 16, 32 };
+unsigned int alsa_bits_cfg[2] = { 16, 32 };
 
 audio_driver_t alsa_driver = {
     alsa_init_sound,

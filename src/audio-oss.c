@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2005/09/03 23:31:40  alankila
+ * - add signs
+ *
  * Revision 1.10  2005/09/03 22:13:56  alankila
  * - make multichannel processing selectable
  * - new GUI (it sucks as much as the old one and I'll need to grok GTK
@@ -249,7 +252,7 @@ struct audio_driver_channels oss_channels_cfg[] = {
     { 0, 0 }
 };
 
-int oss_bits_cfg[1] = { 16 };
+unsigned int oss_bits_cfg[1] = { 16 };
 
 audio_driver_t oss_driver = {
     oss_init_sound,
