@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2005/09/03 23:46:04  alankila
+ * - add some release polish
+ *
  * Revision 1.36  2005/09/03 22:13:56  alankila
  * - make multichannel processing selectable
  * - new GUI (it sucks as much as the old one and I'll need to grok GTK
@@ -227,6 +230,9 @@ int sin_lookup_table[SIN_LOOKUP_SIZE];
 double bias_s[MAX_CHANNELS];
 int    bias_n[MAX_CHANNELS];
 
+/* If the long-term average of input data does not exactly equal to 0,
+ * compensate. Some soundcards would also need highpass filtering ~20 Hz
+ * or so. */
 void
 bias_elimination(struct data_block *db) {
     int             i;
@@ -240,7 +246,7 @@ bias_elimination(struct data_block *db) {
     }
     /* keep bias within computable value */
     for (i = 0; i < MAX_CHANNELS; i += 1) {
-	if (fabs(bias_s[i]) >= 1E12) {
+	if (fabs(bias_s[i]) > 1E12) {
 	    bias_s[i] /= 2;
 	    bias_n[i] /= 2;
 	}
@@ -252,6 +258,10 @@ bias_elimination(struct data_block *db) {
 #define NR_SIZE 2
 DSP_SAMPLE nr_last[MAX_CHANNELS][NR_SIZE];
 
+/* a simple moving window averaging filter. This is good against random
+ * noise and probably helps with crappy soundcards, although its
+ * effect is very subtle. Nevertheless, it drops noise floor here
+ * worth 1-2 dB. */
 void
 noise_reduction(struct data_block *db) {
     int             i, j;
@@ -272,6 +282,7 @@ noise_reduction(struct data_block *db) {
     }
 }
 
+/* accumulate power estimate and monitor clipping */
 void
 vu_meter(struct data_block *db) {
     int             i;
@@ -292,6 +303,7 @@ vu_meter(struct data_block *db) {
     set_vumeter_value(peak, power);
 }
 
+/* adjust master volume according to the main window slider and clip */
 void
 adjust_master_volume(struct data_block *db) {
     int		    i;
@@ -307,6 +319,12 @@ adjust_master_volume(struct data_block *db) {
     }
 }
 
+/* dithering can be thought of as a procedure where quantization errors
+ * are drowned in noise that has the same energy as the errors themselves.
+ *
+ * More specifically dithering prevents repeatable roundoff errors from
+ * accumulating into an audible distortion, instead producing wideband
+ * noise rather than distortion */
 void
 dither_output(struct data_block *db) {
     int		    i;
@@ -400,20 +418,20 @@ pump_sample(struct data_block *db)
 
 /* note that vibrato & tremolo effects are swapped */
 struct effect_creator effect_list[] = {
-    {"autowah", autowah_create},
-    {"distort", distort_create},
-    {"delay", delay_create},
-    {"reverb", reverb_create},
-    {"tremolo", vibrato_create},
-    {"chorus", chorus_create},
-    {"echo", echo_create},
-    {"phasor", phasor_create},
-    {"vibrato", tremolo_create},
-    {"sustain", sustain_create},
-    {"overdrive", distort2_create},
-    {"noise gate", noise_create},
-    {"eq bank", eqbank_create},
-    {"tuner", tuner_create},
+    {"Autowah", autowah_create},
+    {"Distort", distort_create},
+    {"Delay", delay_create},
+    {"Reverb", reverb_create},
+    {"Tremolo", vibrato_create},
+    {"Chorus", chorus_create},
+    {"Echo", echo_create},
+    {"Phasor", phasor_create},
+    {"Vibrato", tremolo_create},
+    {"Sustain", sustain_create},
+    {"Overdrive", distort2_create},
+    {"Noise gate", noise_create},
+    {"Eq bank", eqbank_create},
+    {"Tuner", tuner_create},
     {NULL, NULL}
 };
 
