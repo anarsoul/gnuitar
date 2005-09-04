@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2005/09/04 20:45:01  alankila
+ * - store audio driver into config
+ * - make it possible to start gnuitar with invalid audio driver and enter
+ *   options and correct the driver. Some rough edges still remain with
+ *   the start/stop button, mutexes, etc.
+ *
  * Revision 1.44  2005/09/04 16:06:59  alankila
  * - first multichannel effect: delay
  * - need to use surround40 driver in alsa
@@ -191,6 +197,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #ifndef _WIN32
 #include <locale.h>
@@ -203,7 +210,7 @@
 #include "tracker.h"
 #include "gui.h"
 
-volatile audio_driver_t  *audio_driver;
+volatile audio_driver_t  *audio_driver = NULL;
 volatile int    state;
 char            version[13] = "GNUitar "VERSION;
 
@@ -231,33 +238,6 @@ main(int argc, char **argv)
     int             max_priority;
     struct sched_param p;
 
-#ifdef HAVE_JACK
-    if (jack_available()) {
-        audio_driver = &jack_driver;
-    } else
-#endif
-#ifdef HAVE_ALSA
-    if (alsa_available()) {
-        audio_driver = &alsa_driver;
-    } else
-#endif
-#ifdef HAVE_OSS
-    if (oss_available()) {
-        audio_driver = &oss_driver;
-    } else
-#endif
-    {
-	printf("No usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
-	return ERR_NOAUDIOAVAILABLE;
-    }
-
-    g_thread_init(NULL);
-    my_create_mutex(&snd_open);
-
-    /* prepare state & mutex for audio thread init_sound() */
-    state = STATE_PAUSE;
-    my_lock_mutex(snd_open);
-
     max_priority = sched_get_priority_max(SCHED_FIFO);
     p.sched_priority = max_priority;
 
@@ -265,22 +245,72 @@ main(int argc, char **argv)
 	fprintf(stderr, "warning: unable to set realtime priority (needs root privileges)\n");
     }
 
-    if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
-	fprintf(stderr, "Audio thread creation failed!\n");
-	return ERR_THREAD;
-    }
     /*
      * We were running to this point as setuid root program.
      * Switching to our native user id
      */
     setuid(getuid());
+#endif
+
+    printf(COPYRIGHT
+       "This program is a free software under the GPL;\n"
+       "see Help->About for details.\n");
+
+    gtk_init(&argc, &argv);
+    load_settings();
+
+#ifndef _WIN32
+    state = STATE_PAUSE;
+    /* choose audio driver if not given in config */
+    if (audio_driver_str == NULL) {
+        fprintf(stderr, "Discovering audio driver.\n");
+#    ifdef HAVE_JACK
+        if (jack_available()) {
+            audio_driver_str = "JACK";
+        } else
+#    endif
+#    ifdef HAVE_ALSA
+        if (alsa_available()) {
+            audio_driver_str = "ALSA";
+        } else
+#    endif
+#    ifdef HAVE_OSS
+        if (oss_available()) {
+            audio_driver_str = "OSS";
+        } else
+#    endif
+            printf("warning: no usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
+    }
+#    ifdef HAVE_JACK
+    if (strcmp(audio_driver_str, "JACK") == 0) {
+        audio_driver = &jack_driver;
+    } else
+#    endif
+#    ifdef HAVE_ALSA
+    if (strcmp(audio_driver_str, "ALSA") == 0) {
+        audio_driver = &alsa_driver;
+    } else
+#    endif
+#    ifdef HAVE_OSS
+    if (strcmp(audio_driver_str, "OSS") == 0) {
+        audio_driver = &oss_driver;
+    }
+#    endif
+    g_thread_init(NULL);
+    my_create_mutex(&snd_open);
+    my_lock_mutex(snd_open);
+
+    if (audio_driver) {
+        if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
+            fprintf(stderr, "Audio thread creation failed!\n");
+            return ERR_THREAD;
+        }
+    }
 #else
     state = STATE_START_PAUSE;
+
     audio_driver = &windows_driver;
-    
     my_create_mutex(&snd_open);
-
-
     /*
      * create audio thread
      */
@@ -290,7 +320,7 @@ main(int argc, char **argv)
     if (!audio_thread) {
 	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
 		GetLastError());
-	return (ERR_THREAD);
+	return ERR_THREAD;
     }
 
     /*
@@ -302,18 +332,13 @@ main(int argc, char **argv)
 		GetLastError());
     }
 #endif
-
-    printf(COPYRIGHT
-       "This program is a free software under the GPL;\n"
-       "see Help->About for details.\n");
-
-    gtk_init(&argc, &argv);
-    load_settings();
     init_gui();
 
     pump_start(argc, argv);
-    if ((error = audio_driver->init()) != ERR_NOERROR) {
-	fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
+    if (audio_driver) {
+        if ((error = audio_driver->init()) != ERR_NOERROR) {
+            fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
+        }
     }
 
     gtk_main();

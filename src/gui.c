@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.58  2005/09/04 20:45:00  alankila
+ * - store audio driver into config
+ * - make it possible to start gnuitar with invalid audio driver and enter
+ *   options and correct the driver. Some rough edges still remain with
+ *   the start/stop button, mutexes, etc.
+ *
  * Revision 1.57  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -947,16 +953,19 @@ update_driver(GtkWidget * widget, gpointer data)
 #ifdef HAVE_ALSA
     if (strcmp(tmp,"ALSA")==0) {
         audio_driver = &alsa_driver;
+        audio_driver_str = "ALSA";
     }
 #endif
 #ifdef HAVE_OSS
     if (strcmp(tmp,"OSS")==0) {
         audio_driver = &oss_driver;
+        audio_driver_str = "OSS";
     }
 #endif
 #ifdef _WIN32
     if(strcmp(tmp,"MMSystem")==0) {
         audio_driver = &windows_driver;
+        audio_driver_str = "MMSystem";
     }
 #endif
     /* XXX we should now reopen the dialog because changing audio driver
@@ -1054,10 +1063,12 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_table_attach(GTK_TABLE(sp_table), channels_label, 2, 3, 0, 1,
                      TBLOPT, TBLOPT, 3, 3);
     sparams.channels = gtk_combo_new();
-    
-    for (i = 0; audio_driver->channels[i].in != 0; i += 1) {
-        gtmp = g_strdup_printf("%d in - %d out", audio_driver->channels[i].in, audio_driver->channels[i].out);
-        channels_list = g_list_append(channels_list, gtmp);
+
+    if (audio_driver) { 
+        for (i = 0; audio_driver->channels[i].in != 0; i += 1) {
+            gtmp = g_strdup_printf("%d in - %d out", audio_driver->channels[i].in, audio_driver->channels[i].out);
+            channels_list = g_list_append(channels_list, gtmp);
+        }
     }
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.channels),
 				  channels_list);
@@ -1074,9 +1085,11 @@ sample_dlg(GtkWidget *widget, gpointer data)
                      TBLOPT, TBLOPT, 3, 3);
     sparams.bits = gtk_combo_new();
 
-    for (i = 0; audio_driver->bits[i] != 0; i += 1) {
-        gtmp = g_strdup_printf("%d", audio_driver->bits[i]);
-        bits_list = g_list_append(bits_list, gtmp);
+    if (audio_driver) { 
+        for (i = 0; audio_driver->bits[i] != 0; i += 1) {
+            gtmp = g_strdup_printf("%d", audio_driver->bits[i]);
+            bits_list = g_list_append(bits_list, gtmp);
+        }
     }
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.bits), bits_list);
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
@@ -1118,18 +1131,8 @@ sample_dlg(GtkWidget *widget, gpointer data)
 #endif
 
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.driver), drivers_list);
-#ifdef HAVE_OSS
-    if (audio_driver == &oss_driver)
-	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"OSS");
-#endif
-#ifdef HAVE_ALSA
-    if (audio_driver == &alsa_driver)
-	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"ALSA");
-#endif
-#ifdef _WIN32
-    if (audio_driver == &windows_driver)
-	gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),"MMSystem");
-#endif
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry), audio_driver_str);
+    
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
 			   FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.driver, 1, 2, 2, 3,
@@ -1250,9 +1253,11 @@ void update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
 }
 
 void
-start_stop(GtkWidget * widget, gpointer data)
+start_stop(GtkWidget *widget, gpointer data)
 {
     int             error;
+    if (! audio_driver)
+        return;
     if (GTK_TOGGLE_BUTTON(widget)->active) {
 #ifdef _WIN32
 	ResumeThread(audio_thread);
@@ -1262,7 +1267,8 @@ start_stop(GtkWidget * widget, gpointer data)
 	if(state == STATE_ATHREAD_RESTART) {
             my_unlock_mutex(snd_open);
 #ifndef _WIN32
-	    pthread_join(audio_thread, NULL);
+            if (audio_thread)
+                pthread_join(audio_thread, NULL);
 	    state = STATE_PAUSE;
 	    if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
 		fprintf(stderr, "Audio thread restart failed!\n");
@@ -1365,9 +1371,10 @@ init_gui(void)
     /*
      * disable options menu
      */
-    gtk_widget_set_sensitive(GTK_WIDGET
-			     (gtk_item_factory_get_widget
-			      (item_factory, "/Options/Options")), FALSE);
+    if (audio_driver)
+        gtk_widget_set_sensitive(GTK_WIDGET
+                                 (gtk_item_factory_get_widget
+                                  (item_factory, "/Options/Options")), FALSE);
 
 
     tooltips=gtk_tooltips_new();
@@ -1397,7 +1404,6 @@ init_gui(void)
 	"To apply effects to the sound, you need to add the effects" \
 	"to the \"Current Effects\" list." \
 	"You can use Add/Up/Down/Delete buttons to do this.",NULL);
-
 
     for (i = 0; effect_list[i].str; i++)
 	gtk_clist_append(GTK_CLIST(known_effects), &effect_list[i].str);
@@ -1465,7 +1471,8 @@ init_gui(void)
     gtk_tooltips_set_tip(tooltips,tracker,"You can write the output to the file, did you know ?.",NULL);
     start = gtk_toggle_button_new_with_label("STOP");
     gtk_tooltips_set_tip(tooltips,start,"This button starts/stops the sound processing.",NULL);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
+    if (audio_driver)
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
     vumeter = gtk_progress_bar_new();
     gtk_progress_set_format_string(GTK_PROGRESS(vumeter), "%v dB");
     gtk_progress_configure(GTK_PROGRESS(vumeter), -91, -91, 0);

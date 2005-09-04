@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.44  2005/09/04 20:45:01  alankila
+ * - store audio driver into config
+ * - make it possible to start gnuitar with invalid audio driver and enter
+ *   options and correct the driver. Some rough edges still remain with
+ *   the start/stop button, mutexes, etc.
+ *
  * Revision 1.43  2005/09/04 16:06:59  alankila
  * - first multichannel effect: delay
  * - need to use surround40 driver in alsa
@@ -234,6 +240,7 @@ int             n = 0;
 volatile unsigned short  write_track = 0;
 
 /* default settings */
+char           *audio_driver_str = NULL;
 unsigned short  n_input_channels = 1;
 unsigned short  n_output_channels = 1;
 unsigned int    sample_rate = 44100;
@@ -480,6 +487,7 @@ load_settings() {
     const gchar    *settingspath;
     GKeyFile       *file;
     GError         *error;
+    gchar          *gstr;
     gint            tmp;
 
     settingspath = discover_settings_path();
@@ -488,8 +496,11 @@ load_settings() {
     /* Thanks, glib! */
     g_key_file_load_from_file(file, settingspath, G_KEY_FILE_NONE, NULL);
 
-    /* this seems a bit clumsy, maybe I should do
-     * { "bits", &bits, INTEGER } structure */
+    error = NULL;
+    gstr = g_key_file_get_string(file, "global", "driver", &error);
+    if (error == NULL)
+        audio_driver_str = gstr;
+    
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "bits", &error);
     if (error == NULL)
@@ -537,6 +548,7 @@ void save_settings() {
     settingspath = discover_settings_path();
     file = g_key_file_new();
 
+    g_key_file_set_string(file, "global", "driver", audio_driver_str);
     g_key_file_set_integer(file, "global", "bits", bits);
     g_key_file_set_integer(file, "global", "n_output_channels", n_output_channels);
     g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
