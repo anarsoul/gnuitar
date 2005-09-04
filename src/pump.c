@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.40  2005/09/04 11:21:48  alankila
+ * - one warning is really an error
+ *
  * Revision 1.39  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -681,11 +684,12 @@ load_pump(const char *fname)
     g_key_file_load_from_file(preset, fname, G_KEY_FILE_NONE, NULL);
     gtmp = g_key_file_get_string(preset, "global", "version", &error);
     if (error != NULL) {
-	fprintf(stderr, "warning: failed to read file version, giving up\n");
+	fprintf(stderr, "error: failed to read file version.\n");
 	g_key_file_free(preset);
 	return;
     }
     
+    /* we should adapt the keyfile between version changes */
     if (strncmp(gtmp, version, 13) != 0) {
 	fprintf(stderr, "warning: version number mismatch: %s vs. %s\n", version, gtmp);
     }
@@ -693,7 +697,7 @@ load_pump(const char *fname)
 
     n_effects = g_key_file_get_integer(preset, "global", "effects", &error);
     if (error != NULL) {
-	fprintf(stderr, "warning: failed to read effect count, giving up\n");
+	fprintf(stderr, "error: failed to read effect count.\n");
 	g_key_file_free(preset);
 	return;
     }
