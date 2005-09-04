@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.47  2005/09/04 23:17:07  alankila
+ * - gtk+ ui fixes
+ *
  * Revision 1.46  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -365,7 +368,7 @@ distort2_init(struct effect *p)
     gtk_table_attach(GTK_TABLE(parmTable), drive_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 3, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_drive), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_drive), pdistort);
@@ -376,7 +379,7 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     adj_mUt = gtk_adjustment_new(pdistort->clip,
 				 0.0, 100.0, 1.0, 5.0, 0);
@@ -385,7 +388,7 @@ distort2_init(struct effect *p)
     gtk_table_attach(GTK_TABLE(parmTable), mUt_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 3, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_mUt), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_mUt), pdistort);
@@ -395,7 +398,7 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     
     adj_treble = gtk_adjustment_new(pdistort->noisegate,
@@ -405,7 +408,7 @@ distort2_init(struct effect *p)
     gtk_table_attach(GTK_TABLE(parmTable), treble_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 3, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_treble), "value_changed",
 		       GTK_SIGNAL_FUNC(update_distort2_treble), pdistort);
@@ -416,7 +419,7 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",

@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.19  2005/09/04 23:17:07  alankila
+ * - gtk+ ui fixes
+ *
  * Revision 1.18  2005/09/04 19:30:24  fonin
  * Added lid indicators for tuner. Added tuning layouts (so far for bass and guitar)
  *
@@ -219,11 +222,11 @@ void ignored_event(void *whatever) {
     return;
 }
 
-#define OPTS __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK)
+#define OPTS __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND)
 void
 tuner_init(struct effect *p)
 {
-    struct tuner_params *params;
+    struct tuner_params *params = p->params;
     GtkWidget *label;
     GtkWidget *table;
     GtkWidget *slider;
@@ -232,15 +235,10 @@ tuner_init(struct effect *p)
     static GtkWidget *layout_combo;
     int i;
     
-    params = (struct tuner_params *) p->params;
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+    gtk_widget_realize(p->control);
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
                        GTK_SIGNAL_FUNC(delete_event), p);
-#ifdef HAVE_GTK
-    gtk_widget_set_usize(p->control, 200, 150);
-#elif defined(HAVE_GTK2)
-    gtk_window_set_default_size(GTK_WINDOW(p->control), 200, 150);
-#endif
     
     table = gtk_table_new(2, 5, FALSE);
  
@@ -300,15 +298,15 @@ tuner_init(struct effect *p)
 	    continue;
 	}
 	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
-	gtk_table_attach(GTK_TABLE(lid_table), lids[i], i, i+1, 4, 5,
+	gtk_table_attach(GTK_TABLE(lid_table), lids[i], i, i+1, 1, 2,
 		     OPTS, OPTS, 2, 2);
 	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
-	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], i, i+1, 3, 4,
+	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], i, i+1, 0, 1,
 		     OPTS, OPTS, 2, 2);
     }
 
     gtk_table_attach(GTK_TABLE(table), lid_table, 0, 2, 3, 4,
-		     OPTS, OPTS, 2, 2);    
+		     OPTS, OPTS, 10, 20);
 
     tuning_layouts = g_list_append(tuning_layouts, LAYOUT_6GUITAR); 
     tuning_layouts = g_list_append(tuning_layouts, LAYOUT_4BASS);
