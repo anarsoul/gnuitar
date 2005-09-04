@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/09/04 19:30:46  fonin
+ * Added casts for DSP_FLOAT
+ *
  * Revision 1.12  2005/09/04 16:06:59  alankila
  * - first multichannel effect: delay
  * - need to use surround40 driver in alsa
@@ -145,7 +148,7 @@ oss_audio_thread(void *V)
 	    db.data[i] = rdbuf[i] << 8;
 	pump_sample(&db);
 	for (i = 0; i < count; i++)
-	    rdbuf[i] = db.data[i] >> 8;
+	    rdbuf[i] = (SAMPLE32)db.data[i] >> 8;
 
 	count = write(fd, rdbuf, buffer_size);
 	if (count != buffer_size)

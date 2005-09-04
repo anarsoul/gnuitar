@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/09/04 19:30:46  fonin
+ * Added casts for DSP_FLOAT
+ *
  * Revision 1.12  2005/09/04 16:06:58  alankila
  * - first multichannel effect: delay
  * - need to use surround40 driver in alsa
@@ -158,10 +161,10 @@ alsa_audio_thread(void *V)
 	pump_sample(&db);
 	if (bits == 32)
 	    for (i = 0; i < db.len; i++)
-		rdbuf32[i] = db.data[i] << 8;
+		rdbuf32[i] = (SAMPLE32)db.data[i] << 8;
 	else
 	    for (i = 0; i < db.len; i++)
-		rdbuf16[i] = db.data[i] >>  8;
+		rdbuf16[i] = (SAMPLE32)db.data[i] >>  8;
 
         /* adapting must have worked, and effects must not have changed
          * frame counts somehow */
