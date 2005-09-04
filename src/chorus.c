@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/09/04 19:29:40  alankila
+ * - generalize flange as base delay setting
+ * - support additional chorus voices
+ * - new default settings that use the new features
+ *
  * Revision 1.25  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -119,46 +124,51 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX_DEPTH       20
+#define MAX_BASEDELAY   50
+ 
 void chorus_filter(struct effect *p, struct data_block *db);
 
 void
-update_chorus_speed(GtkAdjustment * adj, struct chorus_params *params)
+update_chorus_basedelay(GtkAdjustment *adj, struct chorus_params *params)
 {
-    params->speed = adj->value;
+    params->basedelay = adj->value;
 }
 
 void
-update_chorus_depth(GtkAdjustment * adj, struct chorus_params *params)
+update_chorus_depth(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->depth = adj->value;
 }
 
 void
-update_chorus_mode(GtkAdjustment * adj, struct chorus_params *params)
+update_chorus_speed(GtkAdjustment *adj, struct chorus_params *params)
 {
-    if (params->mode == 0) {
-	params->mode = 1;
-    } else {
-	params->mode = 0;
-    }
+    params->speed = adj->value;
 }
 
 void
-update_chorus_wet(GtkAdjustment * adj, struct chorus_params *params)
+update_chorus_voices(GtkAdjustment *adj, struct chorus_params *params)
 {
-    params->wet = (int) adj->value * 2.56;
+    params->voices = adj->value;
 }
 
 void
-update_chorus_dry(GtkAdjustment * adj, struct chorus_params *params)
+update_chorus_wet(GtkAdjustment *adj, struct chorus_params *params)
 {
-    params->dry = (int) adj->value * 2.56;
+    params->wet = adj->value;
 }
 
 void
-update_chorus_regen(GtkAdjustment * adj, struct chorus_params *params)
+update_chorus_dry(GtkAdjustment *adj, struct chorus_params *params)
 {
-    params->regen = (int) adj->value * 2.56;
+    params->dry = adj->value;
+}
+
+void
+update_chorus_regen(GtkAdjustment *adj, struct chorus_params *params)
+{
+    params->regen = adj->value;
 }
 
 void
@@ -167,19 +177,26 @@ toggle_chorus(void *bullshit, struct effect *p)
     p->toggle = !p->toggle;
 }
 
-
 void
 chorus_init(struct effect *p)
 {
     struct chorus_params *pchorus;
 
-    GtkWidget      *speed;
-    GtkWidget      *speed_label;
-    GtkObject      *adj_speed;
+    GtkWidget      *basedelay;
+    GtkWidget      *basedelay_label;
+    GtkObject      *adj_basedelay;
 
     GtkWidget      *depth;
     GtkWidget      *depth_label;
     GtkObject      *adj_depth;
+
+    GtkWidget      *speed;
+    GtkWidget      *speed_label;
+    GtkObject      *adj_speed;
+
+    GtkWidget      *voices;
+    GtkWidget      *voices_label;
+    GtkObject      *adj_voices;
 
     GtkWidget      *wet;
     GtkWidget      *wet_label;
@@ -194,7 +211,6 @@ chorus_init(struct effect *p)
     GtkObject      *adj_regen;
 
     GtkWidget      *button;
-    GtkWidget      *flange;
 
     GtkWidget      *parmTable;
 
@@ -208,17 +224,55 @@ chorus_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
 
-    parmTable = gtk_table_new(5, 3, FALSE);
+    parmTable = gtk_table_new(9, 3, FALSE);
 
-    adj_speed = gtk_adjustment_new(pchorus->speed, 20.0, 3500,
-                                   0.1, 1.0, 0.0);
-    speed_label = gtk_label_new("Speed\n1/ms");
-    gtk_table_attach(GTK_TABLE(parmTable), speed_label, 1, 2, 0, 1,
+    adj_basedelay = gtk_adjustment_new(pchorus->basedelay, 0.0, MAX_BASEDELAY, 1.0, 1.0, 0.0);
+    basedelay_label = gtk_label_new("Delay\nms");
+    gtk_table_attach(GTK_TABLE(parmTable), basedelay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
+    
+    gtk_signal_connect(GTK_OBJECT(adj_basedelay), "value_changed",
+		       GTK_SIGNAL_FUNC(update_chorus_basedelay), pchorus);
 
+    basedelay = gtk_vscale_new(GTK_ADJUSTMENT(adj_basedelay));
+    gtk_scale_set_digits(GTK_SCALE(basedelay), 3);
+
+    gtk_table_attach(GTK_TABLE(parmTable), basedelay, 0, 1, 1, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK), 0, 0);
+    
+    adj_depth = gtk_adjustment_new(pchorus->depth, 0.0, MAX_DEPTH, 1.0, 1.0, 0.0);
+    depth_label = gtk_label_new("Depth\nms");
+    gtk_table_attach(GTK_TABLE(parmTable), depth_label, 1, 2, 0, 1,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL |
+					GTK_SHRINK), 0, 0);
+    
+    gtk_signal_connect(GTK_OBJECT(adj_depth), "value_changed",
+		       GTK_SIGNAL_FUNC(update_chorus_depth), pchorus);
+
+    depth = gtk_vscale_new(GTK_ADJUSTMENT(adj_depth));
+    gtk_scale_set_digits(GTK_SCALE(depth), 3);
+
+    gtk_table_attach(GTK_TABLE(parmTable), depth, 1, 2, 1, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK), 0, 0);
+
+    adj_speed = gtk_adjustment_new(pchorus->speed, 50.0, 3500, 0.1, 1.0, 0.0);
+    speed_label = gtk_label_new("Speed\n1/ms");
+    gtk_table_attach(GTK_TABLE(parmTable), speed_label, 2, 3, 0, 1,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL |
+					GTK_SHRINK), 0, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_speed), pchorus);
@@ -226,39 +280,36 @@ chorus_init(struct effect *p)
     speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
     gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
 
-    gtk_table_attach(GTK_TABLE(parmTable), speed, 1, 2, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), speed, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
-
-
-    adj_depth =
-	gtk_adjustment_new(pchorus->depth, 0.001, 10.0, 1.0, 1.0, 0.0);
-    depth_label = gtk_label_new("Depth\nms");
-    gtk_table_attach(GTK_TABLE(parmTable), depth_label, 0, 1, 0, 1,
+    
+    adj_voices = gtk_adjustment_new(pchorus->voices, 1, 4, 1, 1, 0);
+    voices_label = gtk_label_new("Voices\n#");
+    gtk_table_attach(GTK_TABLE(parmTable), voices_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
+    gtk_signal_connect(GTK_OBJECT(adj_voices), "value_changed",
+		       GTK_SIGNAL_FUNC(update_chorus_voices), pchorus);
 
-    gtk_signal_connect(GTK_OBJECT(adj_depth), "value_changed",
-		       GTK_SIGNAL_FUNC(update_chorus_depth), pchorus);
+    voices = gtk_vscale_new(GTK_ADJUSTMENT(adj_voices));
+    gtk_scale_set_digits(GTK_SCALE(voices), 0);
+    gtk_widget_set_size_request(GTK_WIDGET(voices),0,100);
 
-    depth = gtk_vscale_new(GTK_ADJUSTMENT(adj_depth));
-    gtk_scale_set_digits(GTK_SCALE(depth), 3);
-
-    gtk_table_attach(GTK_TABLE(parmTable), depth, 0, 1, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), voices, 3, 4, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_wet =
-	gtk_adjustment_new(pchorus->wet / 2.56, 0.0, 100.0, 1.0, 1.0, 0.0);
+    adj_wet = gtk_adjustment_new(pchorus->wet, 0.0, 100.0, 1.0, 1.0, 0.0);
     wet_label = gtk_label_new("Wet\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), wet_label, 2, 3, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), wet_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
@@ -270,16 +321,15 @@ chorus_init(struct effect *p)
 
     wet = gtk_vscale_new(GTK_ADJUSTMENT(adj_wet));
 
-    gtk_table_attach(GTK_TABLE(parmTable), wet, 2, 3, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), wet, 5, 6, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_dry =
-	gtk_adjustment_new(pchorus->dry / 2.56, 0.0, 100.0, 1.0, 1.0, 0.0);
+    adj_dry = gtk_adjustment_new(pchorus->dry, 0.0, 100.0, 1.0, 1.0, 0.0);
     dry_label = gtk_label_new("Dry\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), dry_label, 3, 4, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), dry_label, 7, 8, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
@@ -291,47 +341,30 @@ chorus_init(struct effect *p)
 
     dry = gtk_vscale_new(GTK_ADJUSTMENT(adj_dry));
 
-    gtk_table_attach(GTK_TABLE(parmTable), dry, 3, 4, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), dry, 7, 8, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_regen =
-	gtk_adjustment_new(pchorus->regen / 2.56, 0.0, 100.0, 1.0, 1.0,
-			   0.0);
+    adj_regen = gtk_adjustment_new(pchorus->regen, 0.0, 100.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("Regen\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), regen_label, 5, 6, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), regen_label, 8, 9, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
-
 
     gtk_signal_connect(GTK_OBJECT(adj_regen), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_regen), pchorus);
 
     regen = gtk_vscale_new(GTK_ADJUSTMENT(adj_regen));
 
-    gtk_table_attach(GTK_TABLE(parmTable), regen, 5, 6, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), regen, 8, 9, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
-
-    flange = gtk_check_button_new_with_label("Flange");
-    gtk_signal_connect(GTK_OBJECT(flange), "toggled",
-		       GTK_SIGNAL_FUNC(update_chorus_mode), pchorus);
-
-    gtk_table_attach(GTK_TABLE(parmTable), flange, 1, 2, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-    if (pchorus->mode == 1) {
-	pchorus->mode = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(flange), TRUE);
-    }
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
@@ -347,7 +380,7 @@ chorus_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Chorus"));
+    gtk_window_set_title(GTK_WINDOW(p->control), "Chorus");
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
@@ -357,79 +390,55 @@ void
 chorus_filter(struct effect *p, struct data_block *db)
 {
     struct chorus_params *cp;
-    int             count;
+    int             count, i, curr_channel = 0;
+    double          dly, Speed, tmp_ang, Depth, BaseDelay, Dry, Wet, Rgn;
     DSP_SAMPLE     *s;
-    double          dly = 0;
-    float           AngInc,
-                    Ang;
-    DSP_SAMPLE      tmp,
-                    tot,
-                    rgn;
-    int		    currchannel = 0;
+    DSP_SAMPLE      tmp, rgn;
 
     cp = (struct chorus_params *) p->params;
 
     s = db->data;
     count = db->len;
 
-#define MaxDly (cp->depth / 1000.0 * sample_rate)
-    AngInc = 1000.0 / cp->speed / sample_rate;
-    Ang = cp->ang;
+    Dry = cp->dry / 100.0;
+    Wet = cp->wet / 100.0;
+    Rgn = cp->regen / 100.0;
+    Speed = 1000.0 / cp->speed / sample_rate;
+    Depth = cp->depth / 1000.0 * sample_rate;
+    BaseDelay = cp->basedelay / 1000.0 * sample_rate;
 
-    /*
-     * process the samples 
-     */
     while (count) {
-	tmp = *s;
-	tmp *= cp->dry;
-	tmp /= 256;
+        tmp = 0.0;
+        tmp_ang = cp->ang;
+        for (i = 0; i < cp->voices; i += 1) {
+            dly = BaseDelay + Depth * (1 + sin_lookup(tmp_ang)) / 2.0;
+            tmp += cp->history[curr_channel]->get_interpolated(cp->history[curr_channel], dly) / cp->voices;
+            tmp_ang += 1.0 / cp->voices;
+            if (tmp_ang >= 1.0)
+                tmp_ang -= 1.0;
+        }
+#ifdef CLIP_EVERYWHERE
+        CLIP_SAMPLE(tot)
+#endif
+        /* XXX regen sounds generally bad, maybe we should take it away? */
+        dly = BaseDelay + Depth * (1 + sin_lookup(cp->ang)) / 2.0;
+        rgn = cp->history[curr_channel]->get_interpolated(cp->history[curr_channel], dly) * Rgn + *s;
+#ifdef CLIP_EVERYWHERE
+        CLIP_SAMPLE(rgn)
+#endif
+        cp->history[curr_channel]->add(cp->history[curr_channel], rgn);
+	*s = *s * Dry + tmp * Wet;
 
-        if (currchannel == 0) {
-            switch (cp->mode) {
-                case 0:		/* chorus */
-                    dly =      MaxDly * (1 + sin_lookup(Ang)     );
-                    break;
-                case 1:		/* flange */
-                    dly = 16 * MaxDly * (1 + sin_lookup(Ang) / 16);
-                    break;
-            };
-            Ang += AngInc;
-            if (Ang >= 1.0)
-                Ang -= 1.0;
-            if (dly < 0)
-                dly = 0;
+	curr_channel = (curr_channel + 1) % db->channels;
+        if (curr_channel == 0) {
+            cp->ang += Speed;
+            if (cp->ang >= 1.0)
+                cp->ang -= 1.0;
         }
 
-	tot = cp->history[currchannel]->get_interpolated(cp->history[currchannel], dly);
-	tot *= cp->wet;
-	tot /= 256;
-	tot += tmp;
-#ifdef CLIP_EVERYWHERE
-	tot =
-	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
-						 MAX_SAMPLE) ? MAX_SAMPLE :
-	    tot;
-#endif
-	rgn =
-	    (cp->history[currchannel]->get_interpolated(cp->history[currchannel], dly) *
-	     cp->regen) / 256 + *s;
-#ifdef CLIP_EVERYWHERE
-	rgn =
-	    (rgn < -MAX_SAMPLE) ? -MAX_SAMPLE : (rgn >
-						 MAX_SAMPLE) ? MAX_SAMPLE :
-	    rgn;
-#endif
-	cp->history[currchannel]->add(cp->history[currchannel], rgn);
-	*s = tot;
-
-	currchannel = (currchannel + 1) % db->channels;
 	s++;
 	count--;
     }
-
-    cp->ang = Ang;
-
-#undef MaxDly
 }
 
 void
@@ -454,10 +463,11 @@ chorus_save(struct effect *p, SAVE_ARGS)
 
     SAVE_DOUBLE("wet", params->wet);
     SAVE_DOUBLE("dry", params->dry);
+    SAVE_DOUBLE("basedelay", params->basedelay);
     SAVE_DOUBLE("depth", params->depth);
     SAVE_DOUBLE("speed", params->speed);
     SAVE_DOUBLE("regen", params->regen);
-    SAVE_INT("mode", params->mode);
+    SAVE_INT("voices", params->voices);
 }
 
 void
@@ -467,10 +477,11 @@ chorus_load(struct effect *p, LOAD_ARGS)
 
     LOAD_DOUBLE("wet", params->wet);
     LOAD_DOUBLE("dry", params->dry);
+    LOAD_DOUBLE("basedelay", params->basedelay);
     LOAD_DOUBLE("depth", params->depth);
     LOAD_DOUBLE("speed", params->speed);
     LOAD_DOUBLE("regen", params->regen);
-    LOAD_INT("mode", params->mode);
+    LOAD_INT("voices", params->voices);
 }
 
 effect_t *
@@ -490,16 +501,16 @@ chorus_create()
     p->proc_load = chorus_load;
     cp = p->params;
 
-    /* 320 ms history -- XXX 16 is not right for the flange */
     for (i = 0; i < MAX_CHANNELS; i++)
-	cp->history[i] = new_Backbuf(MAX_SAMPLE_RATE / 100 * 2 * 16);
+	cp->history[i] = new_Backbuf((MAX_DEPTH + MAX_BASEDELAY) / 1000.0 * MAX_SAMPLE_RATE);
     
     cp->ang = 0.0;
-    cp->depth = 5;
-    cp->speed = 300;
-    cp->mode = 0;
-    cp->wet = 250;
-    cp->dry = 200;
+    cp->depth = 2.5;
+    cp->basedelay = 2;
+    cp->voices = 3;
+    cp->speed = 1000;
+    cp->wet = 50;
+    cp->dry = 50;
     cp->regen = 0;
 
     return p;
