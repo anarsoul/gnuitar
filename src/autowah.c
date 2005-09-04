@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.25  2005/09/04 19:45:12  alankila
  * - replace "Speed 1/ms" with "Period ms" which is easier to understand
  *
@@ -143,7 +146,7 @@ update_wah_freqhi(GtkAdjustment * adj, struct autowah_params *params)
 }
 
 void
-toggle_mix(GtkWidget * bullshit, unsigned short *mixx)
+toggle_mix(GtkWidget *bullshit, unsigned short *mixx)
 {
     if (*mixx == 1) {
 	*mixx = 0;
@@ -151,13 +154,6 @@ toggle_mix(GtkWidget * bullshit, unsigned short *mixx)
 	*mixx = 1;
     }
 }
-
-void
-toggle_wah(GtkWidget * bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
-}
-
 
 void
 autowah_init(struct effect *p)
@@ -259,7 +255,7 @@ autowah_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_wah), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_EXPAND |

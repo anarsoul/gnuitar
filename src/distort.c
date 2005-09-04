@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.27  2005/09/04 19:30:23  alankila
  * - move the common clip code into a macro
  *
@@ -148,13 +151,6 @@ update_distort_lowpass(GtkAdjustment * adj, struct distort_params *params)
     params->lowpass = (int) adj->value;
 }
 
-
-void
-toggle_distort(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
-}
-
 void
 distort_init(struct effect *p)
 {
@@ -278,7 +274,7 @@ distort_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_distort), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 3, 4,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |

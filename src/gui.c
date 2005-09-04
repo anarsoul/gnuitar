@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.60  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.59  2005/09/04 21:04:21  alankila
  * - handle no audio driver more gracefully
  *
@@ -501,6 +504,12 @@ help_contents(void)
 	        perror("spawn");
     }
 #endif
+}
+
+void
+toggle_effect(GtkWidget *widget, effect_t *p)
+{
+    p->toggle = !p->toggle;
 }
 
 gint

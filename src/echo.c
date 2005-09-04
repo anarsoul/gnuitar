@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.20  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -118,12 +121,6 @@ void
 update_echo_size(GtkAdjustment * adj, struct echo_params *params)
 {
     params->echo_size = adj->value;
-}
-
-void
-toggle_echo(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
 }
 
 int
@@ -236,7 +233,7 @@ echo_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_echo), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_SHRINK),

@@ -25,6 +25,7 @@
 
 #define GTK_ENABLE_BROKEN /* for gtk_text_new() */
 #include "glib12-compat.h"
+#include "pump.h"
 #include <gtk/gtk.h>
 
 #ifdef __cplusplus
@@ -45,6 +46,7 @@
 		    "http://www.omnistaronline.com/~fonin/\n"
 void		init_gui(void);
 gint            delete_event(GtkWidget *, GdkEvent *, gpointer);
+void            toggle_effect(GtkWidget *, effect_t *);
 
 extern GtkWidget *processor;
 extern double master_volume;

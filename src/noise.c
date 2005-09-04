@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.16  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -119,12 +122,6 @@ void
 update_noise_attack(GtkAdjustment * adj, struct noise_params *params)
 {
     params->attack = (int) adj->value * sample_rate / 1000;
-}
-
-void
-toggle_noise(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
 }
 
 void
@@ -282,7 +279,7 @@ noise_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_noise), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 3, 4,
 		     __GTKATTACHOPTIONS

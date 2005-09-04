@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.30  2005/09/04 19:45:12  alankila
  * - replace "Speed 1/ms" with "Period ms" which is easier to understand
  *
@@ -143,12 +146,6 @@ update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 }
 
 void
-toggle_vibrato(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
-}
-
-void
 vibrato_init(struct effect *p)
 {
     struct vibrato_params *pvibrato;
@@ -222,7 +219,7 @@ vibrato_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_vibrato), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 2, 3,
 		     __GTKATTACHOPTIONS

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.46  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.45  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -323,12 +326,6 @@ update_distort2_treble(GtkAdjustment * adj, struct distort2_params *params)
 }
 
 void
-toggle_distort2(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
-}
-
-void
 distort2_init(struct effect *p)
 {
     struct distort2_params *pdistort;
@@ -423,7 +420,7 @@ distort2_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_distort2), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 3, 4,
 		     __GTKATTACHOPTIONS(GTK_EXPAND |

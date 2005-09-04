@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.25  2005/09/04 19:45:12  alankila
  * - replace "Speed 1/ms" with "Period ms" which is easier to understand
  *
@@ -127,13 +130,6 @@ update_tremolo_amplitude(GtkAdjustment * adj,
 }
 
 void
-toggle_tremolo(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
-}
-
-
-void
 tremolo_init(struct effect *p)
 {
     struct tremolo_params *ptremolo;
@@ -210,7 +206,7 @@ tremolo_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_tremolo), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 2, 3,
 		     __GTKATTACHOPTIONS

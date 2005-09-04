@@ -65,13 +65,6 @@ update_reverb_regen(GtkAdjustment * adj, struct reverb_params *params)
 }
 
 void
-toggle_reverb(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
-}
-
-
-void
 reverb_init(struct effect *p)
 {
     struct reverb_params *preverb;
@@ -196,7 +189,7 @@ reverb_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_reverb), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS

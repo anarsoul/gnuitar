@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.21  2005/09/04 19:30:23  alankila
  * - move the common clip code into a macro
  *
@@ -114,13 +117,6 @@ void
 update_sustain_gate(GtkAdjustment * adj, struct sustain_params *params)
 {
     params->threshold = (int) adj->value * 2.56;
-}
-
-
-void
-toggle_sustain(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
 }
 
 void
@@ -224,7 +220,7 @@ sustain_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_sustain), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 3, 4,
 		     __GTKATTACHOPTIONS

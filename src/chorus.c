@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.28  2005/09/04 19:56:41  alankila
  * - final strokes
  *
@@ -175,12 +178,6 @@ void
 update_chorus_regen(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->regen = adj->value;
-}
-
-void
-toggle_chorus(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
 }
 
 void
@@ -381,7 +378,7 @@ chorus_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_chorus), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_EXPAND |

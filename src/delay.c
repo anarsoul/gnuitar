@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/09/04 23:05:17  alankila
+ * - delete the repeated toggle_foo functions, use one global from gui.c
+ *
  * Revision 1.26  2005/09/04 16:06:59  alankila
  * - first multichannel effect: delay
  * - need to use surround40 driver in alsa
@@ -120,9 +123,11 @@
 #    include <io.h>
 #endif
 
-void            delay_filter(effect_t *p, data_block_t *db);
-void            delay_filter_mc(effect_t *p, data_block_t *db);
+/* used to swap rear channels */
+const int circular_order[] = { 0, 1, 3, 2 };
 
+void            delay_filter_mono(effect_t *p, data_block_t *db);
+void            delay_filter_mc(effect_t *p, data_block_t *db);
 
 void
 update_delay_decay(GtkAdjustment *adj, struct delay_params *params)
@@ -146,12 +151,6 @@ void
 update_delay_repeat(GtkAdjustment *adj, struct delay_params *params)
 {
     params->delay_count = adj->value;
-}
-
-void
-toggle_delay(void *bullshit, struct effect *p)
-{
-    p->toggle = !p->toggle;
 }
 
 void
@@ -276,7 +275,7 @@ delay_init(struct effect *p)
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_delay), p);
+		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_EXPAND |
@@ -298,42 +297,48 @@ delay_init(struct effect *p)
 void
 delay_filter(effect_t *p, data_block_t *db)
 {
-    struct delay_params *dp;
+    struct delay_params *params = p->params;
+    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
+        delay_filter_mc(p, db);
+    } else {
+	delay_filter_mono(p, db);
+    }
+}
+
+void
+delay_filter_mono(effect_t *p, data_block_t *db)
+{
+    struct delay_params *dp = p->params;
     int             i,
                     count,
                     current_delay = 0;
-    double          current_decay;
+    double          current_decay, delay_inc, decay_fac;
     DSP_SAMPLE     *s, newval;
     int             curr_channel = 0;
-
-    dp = (struct delay_params *) p->params;
-    if (dp->multichannel && db->channels == 1 && n_output_channels > 1) {
-        return delay_filter_mc(p, db);
-    }
 
     s = db->data;
     count = db->len;
 
+    delay_inc = dp->delay_time / 1000.0 * sample_rate;
+    decay_fac = dp->delay_decay / 100.0;
+    
     /* this is a simple mono version that treats all channels separately */
     while (count) {
-        /* mix stuff from history to current data */
         newval = 0;
         current_delay = 0;
         current_decay = 1.0;
-	
-        for (i = 0; i < dp->delay_count; i++) {
-            current_delay += dp->delay_time / 1000.0 * sample_rate;
-            current_decay *= dp->delay_decay / 100.0;
+        for (i = 0; i < dp->delay_count; i += 1) {
+            current_delay += delay_inc;
+            current_decay *= decay_fac;
 
             newval += dp->history[curr_channel]->get(dp->history[curr_channel], current_delay) * current_decay;
 	}
         
-        /* write to history, add decay to current sample, avoid overflow */
+        /* write to history, add decay to current sample */
         dp->history[curr_channel]->add(dp->history[curr_channel], *s);
-        *s = *s/2 + newval/2;
+        *s += newval;
 
         curr_channel = (curr_channel + 1) % db->channels;
-        
 	s++;
 	count--;
     }
@@ -342,60 +347,56 @@ delay_filter(effect_t *p, data_block_t *db)
 /* this is a mono-to-N channel mixer */
 void delay_filter_mc(effect_t *p, data_block_t *db)
 {
-    struct delay_params *dp;
+    struct delay_params *dp = p->params;
     int             i,
                     count,
                     current_delay = 0;
-    double          current_decay;
-    DSP_SAMPLE     *ins, *outs, newval, inval;
+    double          current_decay, delay_inc, decay_fac;
+    DSP_SAMPLE     *ins, *outs, newval;
     int             curr_channel = 0;
 
-    dp = (struct delay_params *) p->params;
-
-    /* this is only good for mono */
+    /* this is only good for mono and up to 4 channels */
     assert(db->channels == 1);
+    assert(n_output_channels <= 4);
     
     /* fill into provided output buffer */
     ins = db->data;
     outs = db->data_swap;
+    /* already swap the buffers for caller */
+    db->data = outs;
+    db->data_swap = ins;
+    
     count = db->len;
 
     db->channels = n_output_channels;
     db->len *= n_output_channels;
     
+    delay_inc = dp->delay_time / 1000.0 * sample_rate;
+    decay_fac = dp->delay_decay / 100.0;
+    
     while (count) {
-        /* input signal is mixed into all output channels, and delays are
-         * distributed across channels */
-        inval = *ins++;
+        /* delays are distributed across channels from history */
+        dp->history[0]->add(dp->history[0], *ins++);
 
         for (curr_channel = 0; curr_channel < db->channels; curr_channel += 1) {
-            newval = 0;
             current_delay = 0;
             current_decay = 1.0;
-        
-            for (i = 0; i < dp->delay_count; i++) {
-                current_delay += dp->delay_time / 1000.0 * sample_rate;
-                current_decay *= dp->delay_decay / 100.0;
-
+            newval = 0;
+	    /* +1 because we mix even the current data through history */
+            for (i = 0; i < dp->delay_count + 1; i += 1) {
                 /* mix only every Nth voice */
-                if (i % db->channels != curr_channel)
-                    continue;
-                
-                newval += dp->history[0]->get(dp->history[0], current_delay) * current_decay;
+                if (circular_order[i % db->channels] == curr_channel)
+		    newval += dp->history[0]->get(dp->history[0], current_delay) * current_decay;
+                current_delay += delay_inc;
+                current_decay *= decay_fac;
             }
-        
-            /* write to history, add decay to current sample */
-            *outs++ = inval/2 + newval/2;
+            *outs++ = newval;
         }
-        dp->history[0]->add(dp->history[0], inval);
         
 	count--;
     }
-
-    ins = db->data;
-    db->data = db->data_swap;
-    db->data_swap = ins;
 }
+
 void
 delay_done(struct effect *p)
 {
