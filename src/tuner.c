@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.17  2005/09/04 14:50:28  alankila
+ * - tuner defaults to on
+ *
  * Revision 1.16  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -409,6 +412,7 @@ tuner_create()
     p->proc_done = tuner_done;
     p->proc_save = NULL;
     p->proc_load = NULL;
+    p->toggle = 1;
     
     params = p->params;
     params->history = new_Backbuf(HISTORY_SIZE);
