@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.57  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.56  2005/09/04 14:20:30  alankila
  * - correct a brainfart about how row moving happens
  *
@@ -557,10 +560,11 @@ void rowmove_processor(GtkWidget * widget, gint start, gint end, gpointer data)
 
 
 void
-up_pressed(GtkWidget * widget, gpointer data)
+up_pressed(GtkWidget *widget, gpointer data)
 {
-    struct effect  *swap;
-
+    effect_t       *swap;
+    gchar          *name_above, *name_selected;
+    
     if (curr_row > 0 && curr_row < n) {
 	swap = effects[curr_row - 1];
 
@@ -570,13 +574,14 @@ up_pressed(GtkWidget * widget, gpointer data)
 	my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
-	gtk_clist_remove(GTK_CLIST(processor), curr_row - 1);
-	gtk_clist_remove(GTK_CLIST(processor), curr_row - 1);
-	gtk_clist_insert(GTK_CLIST(processor), curr_row - 1,
-			 &effect_list[effects[curr_row]->id].str);
-	gtk_clist_insert(GTK_CLIST(processor), curr_row - 1,
-			 &effect_list[effects[curr_row - 1]->id].str);
-	gtk_clist_select_row(GTK_CLIST(processor), curr_row - 1, 0);
+        gtk_clist_get_text(GTK_CLIST(processor), curr_row-1, 0, &name_above);
+        gtk_clist_get_text(GTK_CLIST(processor), curr_row, 0, &name_selected);
+        name_above    = strdup(name_above);
+        name_selected = strdup(name_selected);
+        gtk_clist_set_text(GTK_CLIST(processor), curr_row-1, 0, name_selected);
+        gtk_clist_set_text(GTK_CLIST(processor), curr_row, 0, name_above);
+
+        gtk_clist_select_row(GTK_CLIST(processor), curr_row-1, 0);
 	gtk_clist_thaw(GTK_CLIST(processor));
     }
 }
@@ -584,7 +589,8 @@ up_pressed(GtkWidget * widget, gpointer data)
 void
 down_pressed(GtkWidget * widget, gpointer data)
 {
-    struct effect  *swap;
+    effect_t       *swap;
+    gchar          *name_below, *name_selected;
 
     if (curr_row >= 0 && curr_row < n - 1) {
 	swap = effects[curr_row + 1];
@@ -595,19 +601,20 @@ down_pressed(GtkWidget * widget, gpointer data)
 	my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_freeze(GTK_CLIST(processor));
-	gtk_clist_remove(GTK_CLIST(processor), curr_row);
-	gtk_clist_remove(GTK_CLIST(processor), curr_row);
-	gtk_clist_insert(GTK_CLIST(processor), curr_row,
-			 &effect_list[effects[curr_row + 1]->id].str);
-	gtk_clist_insert(GTK_CLIST(processor), curr_row,
-			 &effect_list[effects[curr_row]->id].str);
-	gtk_clist_select_row(GTK_CLIST(processor), curr_row + 1, 0);
+        gtk_clist_get_text(GTK_CLIST(processor), curr_row, 0, &name_selected);
+        gtk_clist_get_text(GTK_CLIST(processor), curr_row+1, 0, &name_below);
+        name_selected = strdup(name_selected);
+        name_below    = strdup(name_below);
+        gtk_clist_set_text(GTK_CLIST(processor), curr_row, 0, name_below);
+        gtk_clist_set_text(GTK_CLIST(processor), curr_row+1, 0, name_selected);
+	
+        gtk_clist_select_row(GTK_CLIST(processor), curr_row+1, 0);
 	gtk_clist_thaw(GTK_CLIST(processor));
     }
 }
 
 void
-del_pressed(GtkWidget * widget, gpointer data)
+del_pressed(GtkWidget *widget, gpointer data)
 {
     int             i;
 
@@ -629,17 +636,20 @@ del_pressed(GtkWidget * widget, gpointer data)
 }
 
 void
-add_pressed(GtkWidget * widget, gpointer data)
+add_pressed(GtkWidget *widget, gpointer data)
 {
-    int             idx;
-    int             i;
-    struct effect  *tmp_effect;
-
-    if (n < MAX_EFFECTS && effects_row >= 0
-	&& effects_row <= EFFECT_AMOUNT) {
+    int             idx, i;
+    effect_t       *tmp_effect;
+    gchar          *name;
+    GtkWidget      *known_effects = data;
+    
+    if (n < MAX_EFFECTS && effects_row >= 0) {
 	tmp_effect = effect_list[effects_row].create_f();
 	tmp_effect->proc_init(tmp_effect);
 
+        gtk_clist_get_text(GTK_CLIST(known_effects), effects_row, 0, &name);
+        name = strdup(name);
+        
 	my_lock_mutex(effectlist_lock);
 	if (curr_row >= 0 && curr_row < n) {
 	    idx = curr_row + 1;
@@ -653,8 +663,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 	effects[idx] = tmp_effect;
         my_unlock_mutex(effectlist_lock);
 
-	gtk_clist_insert(GTK_CLIST(processor), idx,
-			 &effect_list[effects[idx]->id].str);
+	gtk_clist_insert(GTK_CLIST(processor), idx, &name);
 	gtk_clist_select_row(GTK_CLIST(processor), idx, 0);
 
     }
@@ -1500,7 +1509,7 @@ init_gui(void)
     gtk_signal_connect(GTK_OBJECT(del), "clicked",
 		       GTK_SIGNAL_FUNC(del_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(add), "clicked",
-		       GTK_SIGNAL_FUNC(add_pressed), NULL);
+		       GTK_SIGNAL_FUNC(add_pressed), known_effects);
     gtk_signal_connect(GTK_OBJECT(tracker), "clicked",
 		       GTK_SIGNAL_FUNC(tracker_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(processor), "select_row",

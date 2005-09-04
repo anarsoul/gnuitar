@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.21  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -338,7 +341,6 @@ phasor_create()
     p->proc_done = phasor_done;
     p->proc_load = phasor_load;
     p->proc_save = phasor_save;
-    p->id = PHASOR;
 
     pphasor = p->params;
 

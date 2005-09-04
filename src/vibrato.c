@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.28  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -302,7 +305,6 @@ vibrato_create()
     p->proc_filter = vibrato_filter;
     p->toggle = 0;
     p->proc_done = vibrato_done;
-    p->id = VIBRATO;
     p->proc_load = vibrato_load;
     p->proc_save = vibrato_save;
 

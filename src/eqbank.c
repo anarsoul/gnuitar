@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.22  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.21  2005/09/04 12:12:35  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -371,7 +374,6 @@ eqbank_create()
     p->proc_save = eqbank_save;
     p->proc_load = eqbank_load;
     p->toggle = 0;
-    p->id = EQBANK;
     p->proc_done = eqbank_done;
 
     peq = p->params;

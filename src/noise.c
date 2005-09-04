@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.15  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -429,7 +432,6 @@ noise_create()
     p->proc_save = noise_save;
     p->toggle = 0;
     p->proc_done = noise_done;
-    p->id = NOISE;
 
     pnoise = p->params;
     pnoise->threshold = 500;

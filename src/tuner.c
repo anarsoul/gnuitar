@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.16  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.15  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -403,7 +406,6 @@ tuner_create()
     p->params = calloc(1, sizeof(struct tuner_params));
     p->proc_init = tuner_init;
     p->proc_filter = tuner_filter;
-    p->id = TUNER;
     p->proc_done = tuner_done;
     p->proc_save = NULL;
     p->proc_load = NULL;

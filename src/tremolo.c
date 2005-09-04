@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.23  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -307,7 +310,6 @@ tremolo_create()
     p->proc_filter = tremolo_filter;
     p->toggle = 0;
     p->proc_done = tremolo_done;
-    p->id = TREMOLO;
 
     ptremolo = p->params;
     ptremolo->tremolo_amplitude = 25;

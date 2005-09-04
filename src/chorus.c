@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.24  2005/09/04 12:12:35  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -482,7 +485,6 @@ chorus_create()
     p->proc_init = chorus_init;
     p->proc_filter = chorus_filter;
     p->toggle = 0;
-    p->id = CHORUS;
     p->proc_done = chorus_done;
     p->proc_save = chorus_save;
     p->proc_load = chorus_load;

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.42  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.41  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -630,7 +633,7 @@ save_pump(const char *fname)
 {
     int             i, fd, w_length;
     gsize           length;
-    gchar	   *gtmp, *key_file_as_str;
+    gchar	   *gtmp, *key_file_as_str, *effect_name;
     GKeyFile	   *preset;
 
     if ((fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE)) < 0) {
@@ -647,7 +650,8 @@ save_pump(const char *fname)
     g_key_file_set_integer(preset, "global", "effects", n);
     for (i = 0; i < n; i++) {
 	gtmp = g_strdup_printf("effect%d", i+1);
-	g_key_file_set_string(preset, "global", gtmp, effect_list[effects[i]->id].str);
+        gtk_clist_get_text(GTK_CLIST(processor), i, 0, &effect_name);
+	g_key_file_set_string(preset, "global", gtmp, effect_name);
 	/* save enabled flag */
 	g_key_file_set_integer(preset, gtmp, "enabled", effects[i]->toggle);
 	/* save effect-specific settings */
@@ -713,11 +717,11 @@ load_pump(const char *fname)
 	    free(gtmp);
 	    continue;
 	}
-	for (j = 0; j < EFFECT_AMOUNT; j += 1) {
+	for (j = 0; effect_list[j].str != NULL; j += 1) {
 	    if (strcmp(effect_list[j].str, effect_name) == 0)
 		break;
 	}
-	if (j == EFFECT_AMOUNT) {
+	if (effect_list[j].str == NULL) {
 	    fprintf(stderr, "warning: no effect called '%s'\n", effect_name);
 	    free(effect_name);
 	    free(gtmp);

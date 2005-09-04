@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.19  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -342,7 +345,6 @@ sustain_create()
     p->proc_save = sustain_save;
     p->toggle = 0;
     p->proc_done = sustain_done;
-    p->id = SUSTAIN;
 
     psustain = p->params;
     psustain->noise = 40;

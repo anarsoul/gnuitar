@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.23  2005/09/04 12:12:35  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -372,7 +375,6 @@ autowah_create()
     p->proc_init = autowah_init;
     p->proc_filter = autowah_filter;
     p->toggle = 0;
-    p->id = AUTOWAH;
     p->proc_done = autowah_done;
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;

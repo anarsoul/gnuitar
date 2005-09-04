@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.44  2005/09/04 12:12:35  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -614,7 +617,6 @@ distort2_create()
     p->proc_save = distort2_save;
     p->proc_load = distort2_load;
     p->toggle = 0;
-    p->id = DISTORT2;
     p->proc_done = distort2_done;
 
     ap = p->params;

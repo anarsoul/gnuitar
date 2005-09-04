@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.24  2005/09/04 12:12:35  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -357,7 +360,6 @@ delay_create()
     p->proc_init = delay_init;
     p->proc_filter = delay_filter;
     p->toggle = 0;
-    p->id = DELAY;
     p->proc_done = delay_done;
     p->proc_save = delay_save;
     p->proc_load = delay_load;

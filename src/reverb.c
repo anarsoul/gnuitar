@@ -327,7 +327,6 @@ reverb_create()
     p->proc_init = reverb_init;
     p->proc_filter = reverb_filter;
     p->toggle = 0;
-    p->id = REVERB;
     p->proc_done = reverb_done;
     p->proc_load = reverb_load;
     p->proc_save = reverb_save;

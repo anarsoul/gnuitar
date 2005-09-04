@@ -66,24 +66,6 @@ struct audio_driver {
 };
 typedef struct audio_driver audio_driver_t;
 
-typedef enum {
-    AUTOWAH = 0,
-    DISTORT,
-    DELAY,
-    REVERB,
-    VIBRATO,
-    CHORUS,
-    ECHO,
-    PHASOR,
-    TREMOLO,
-    SUSTAIN,
-    DISTORT2,
-    NOISE,
-    EQBANK,
-    TUNER,
-    EFFECT_AMOUNT
-} GnuitarEffects;
-
 struct data_block {
     DSP_SAMPLE     *data;
     unsigned int    len;
@@ -99,7 +81,6 @@ struct effect {
     void            (*proc_save) (struct effect *, GKeyFile *, gchar *);
     void            (*proc_load) (struct effect *, GKeyFile *, gchar *, GError **error);
     short           toggle;
-    unsigned short  id;
     GtkWidget      *control;
 };
 typedef struct effect effect_t;

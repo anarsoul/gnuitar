@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2005/09/04 14:40:17  alankila
+ * - get rid of effect->id and associated enumeration
+ *
  * Revision 1.19  2005/09/04 12:12:35  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -336,7 +339,6 @@ echo_create()
     p->proc_save = echo_save;
     p->proc_load = echo_load;
     p->toggle = 0;
-    p->id = ECHO;
     p->proc_done = echo_done;
 
     params = p->params;
