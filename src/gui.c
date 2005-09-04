@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.59  2005/09/04 21:04:21  alankila
+ * - handle no audio driver more gracefully
+ *
  * Revision 1.58  2005/09/04 20:45:00  alankila
  * - store audio driver into config
  * - make it possible to start gnuitar with invalid audio driver and enter
@@ -1256,8 +1259,12 @@ void
 start_stop(GtkWidget *widget, gpointer data)
 {
     int             error;
-    if (! audio_driver)
+    if (! audio_driver) {
+        /* don't allow user to press us into active state */
+        if (GTK_TOGGLE_BUTTON(widget)->active)
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
         return;
+    }
     if (GTK_TOGGLE_BUTTON(widget)->active) {
 #ifdef _WIN32
 	ResumeThread(audio_thread);
@@ -1469,10 +1476,13 @@ init_gui(void)
     gtk_tooltips_set_tip(tooltips,add,"Use this button to add the current selected effect to the \"Current Effects\" list.",NULL);
     tracker = gtk_check_button_new_with_label("Write track");
     gtk_tooltips_set_tip(tooltips,tracker,"You can write the output to the file, did you know ?.",NULL);
-    start = gtk_toggle_button_new_with_label("STOP");
-    gtk_tooltips_set_tip(tooltips,start,"This button starts/stops the sound processing.",NULL);
-    if (audio_driver)
+    if (audio_driver) {
+        start = gtk_toggle_button_new_with_label("STOP");
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
+    } else {
+        start = gtk_toggle_button_new_with_label("START\n(disabled:\nno audio\ndriver)");
+    }
+    gtk_tooltips_set_tip(tooltips,start,"This button starts/stops the sound processing.",NULL);
     vumeter = gtk_progress_bar_new();
     gtk_progress_set_format_string(GTK_PROGRESS(vumeter), "%v dB");
     gtk_progress_configure(GTK_PROGRESS(vumeter), -91, -91, 0);

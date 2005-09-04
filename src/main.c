@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.46  2005/09/04 21:04:21  alankila
+ * - handle no audio driver more gracefully
+ *
  * Revision 1.45  2005/09/04 20:45:01  alankila
  * - store audio driver into config
  * - make it possible to start gnuitar with invalid audio driver and enter
@@ -216,13 +219,13 @@ char            version[13] = "GNUitar "VERSION;
 
 my_mutex        snd_open=NULL;
 #ifndef _WIN32
-pthread_t       audio_thread;
+pthread_t       audio_thread = 0;
 
 SAMPLE16        rdbuf[MAX_BUFFER_SIZE   / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 #else
-HANDLE          audio_thread;
+HANDLE          audio_thread = 0;
 
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
