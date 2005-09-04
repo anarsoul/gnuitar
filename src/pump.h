@@ -25,7 +25,9 @@
 
 #include <gtk/gtk.h>
 #include <sys/types.h>
-#include <glib.h>
+#include <stdio.h>
+
+#include "glib12-compat.h"
 
 #ifdef FLOAT_DSP
 typedef double	DSP_SAMPLE;

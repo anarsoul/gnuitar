@@ -5,16 +5,23 @@
 #define _GNU_SOURCE /* for vasprintf */
 #include <glib12-compat.h>
 
+/* substitute locale versions for glib1.2 */
+#ifdef HAVE_GTK
+#define g_ascii_strtod		strtod
+#define g_ascii_dtostr(a, b, c)	sprintf(a, "%lf", c)
+#endif
+
+#include <stdio.h>
 #include <stdlib.h>
+
 /* an addition that I hope will some day be in GLIB */
 void
 g_key_file_set_double(GKeyFile *kf, const gchar *grp, const gchar *name, gdouble val)
 {
-    gchar *tmp;
+    gchar   tmp[80];
     /* XXX this output should be locale independent, how to do it? */
-    tmp = g_strdup_printf("%lf", val);
+    g_ascii_dtostr(tmp, 80, val);
     g_key_file_set_string(kf, grp, name, tmp);
-    free(tmp);
 }
 
 gdouble
@@ -27,7 +34,7 @@ g_key_file_get_double(GKeyFile *kf, const gchar *grp, const gchar *name, GError 
     if (*error != NULL)
 	tmp = "NAN";
     /* XXX this parsing should be locale independent, how to do it? */
-    sscanf(tmp, "%lf", &value);
+    value = g_ascii_strtod(tmp, NULL);
     free(tmp);
     return value;
 }
@@ -38,7 +45,6 @@ g_key_file_get_double(GKeyFile *kf, const gchar *grp, const gchar *name, GError 
 #include <fcntl.h>
 #include <locale.h>
 #include <string.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

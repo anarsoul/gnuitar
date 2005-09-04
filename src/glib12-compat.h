@@ -10,15 +10,6 @@
 
 #include <glib.h>
 
-gdouble   g_key_file_get_double             (GKeyFile             *,
-					     const gchar          *,
-					     const gchar          *,
-					     GError              **);
-void      g_key_file_set_double             (GKeyFile             *,
-					     const gchar          *,
-					     const gchar          *,
-					     gdouble		   );
-
 #ifndef HAVE_GTK
 #include <glib/gstdio.h>
 #include <glib/gthread.h>
@@ -270,5 +261,14 @@ void      g_key_file_remove_group           (GKeyFile             *key_file,
 					     GError              **error);
 
 #endif /* HAVE_GTK */
+
+gdouble   g_key_file_get_double             (GKeyFile             *,
+					     const gchar          *,
+					     const gchar          *,
+					     GError              **);
+void      g_key_file_set_double             (GKeyFile             *,
+					     const gchar          *,
+					     const gchar          *,
+					     gdouble		   );
 
 #endif
