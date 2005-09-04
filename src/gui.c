@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.61  2005/09/04 23:27:38  alankila
+ * - in case audio driver init fails, set audio_driver to null, user needs
+ *   to go to options to fix it.
+ *
  * Revision 1.60  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -1310,6 +1314,9 @@ start_stop(GtkWidget *widget, gpointer data)
 	if ((error = audio_driver->init()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
             gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "ERROR");
+	    audio_driver = NULL;
+	    audio_driver_str = "invalid";
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
             return;
         }
 
