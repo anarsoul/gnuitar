@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.38  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -403,8 +406,10 @@ pump_sample(struct data_block *db)
     bias_elimination(db);
 
     my_lock_mutex(effectlist_lock);
-    for (i = 0; i < n; i++)
-	effects[i]->proc_filter(effects[i], db);
+    for (i = 0; i < n; i++) {
+        if (effects[i]->toggle)
+            effects[i]->proc_filter(effects[i], db);
+    }
     my_unlock_mutex(effectlist_lock);
 
     adapt_to_output(db);
@@ -616,11 +621,6 @@ pump_stop(void)
     my_close_mutex(effectlist_lock);
 }
 
-void
-passthru(struct effect *p, struct data_block *db)
-{
-}
-
 /* for UNIX; O_BINARY exists only on Win32. We must open() files with this
  * flag because otherwise it gets corrupted by the CR/LF translation */
 #ifndef O_BINARY
@@ -630,9 +630,8 @@ passthru(struct effect *p, struct data_block *db)
 void
 save_pump(const char *fname)
 {
-    int             i;
-    int		    fd;
-    unsigned int		    length, w_length;
+    int             i, fd, w_length;
+    gsize           length;
     gchar	   *gtmp, *key_file_as_str;
     GKeyFile	   *preset;
 

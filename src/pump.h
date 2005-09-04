@@ -161,7 +161,6 @@ extern void     pump_start(int argc, char **argv);
 extern void     pump_stop(void);
 extern void     save_pump(const char *fname);
 extern void     load_pump(const char *fname);
-extern void     passthru(struct effect *p, struct data_block *db);
 extern void     load_settings(void);
 extern void     save_settings(void);
 

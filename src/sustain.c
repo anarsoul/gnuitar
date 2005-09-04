@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.17  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -108,13 +111,7 @@ update_sustain_gate(GtkAdjustment * adj, struct sustain_params *params)
 void
 toggle_sustain(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = sustain_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 void
@@ -314,11 +311,6 @@ sustain_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("sust", params->sust);
     LOAD_INT("noise", params->noise);
     LOAD_INT("threshold", params->threshold);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = sustain_filter;
-    }
 }
 
 void
@@ -342,7 +334,7 @@ sustain_create(struct effect *p)
     p->params =
 	(struct sustain_params *) malloc(sizeof(struct sustain_params));
     p->proc_init = sustain_init;
-    p->proc_filter = passthru;
+    p->proc_filter = sustain_filter;
     p->proc_load = sustain_load;
     p->proc_save = sustain_save;
     p->toggle = 0;

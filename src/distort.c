@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.23  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -140,13 +143,7 @@ update_distort_lowpass(GtkAdjustment * adj, struct distort_params *params)
 void
 toggle_distort(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = distort_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 void
@@ -375,11 +372,6 @@ distort_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("level", params->level);
     LOAD_INT("drive", params->drive);
     LOAD_INT("lowpass", params->lowpass);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = distort_filter;
-    }
 }
 
 
@@ -393,7 +385,7 @@ distort_create(struct effect *p)
     ap = (struct distort_params *) p->params;
 
     p->proc_init = distort_init;
-    p->proc_filter = passthru;
+    p->proc_filter = distort_filter;
     p->proc_save = distort_save;
     p->proc_load = distort_load;
     p->toggle = 0;

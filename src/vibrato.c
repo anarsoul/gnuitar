@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.26  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -133,13 +136,7 @@ update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 void
 toggle_vibrato(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = vibrato_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 void
@@ -290,11 +287,6 @@ vibrato_load(struct effect *p, LOAD_ARGS)
 
     LOAD_DOUBLE("vibrato_speed", params->vibrato_speed);
     LOAD_DOUBLE("vibrato_amplitude", params->vibrato_amplitude);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = vibrato_filter;
-    }
 }
 
 void
@@ -305,7 +297,7 @@ vibrato_create(struct effect *p)
     p->params =
 	(struct vibrato_params *) malloc(sizeof(struct vibrato_params));
     p->proc_init = vibrato_init;
-    p->proc_filter = passthru;
+    p->proc_filter = vibrato_filter;
     p->toggle = 0;
     p->proc_done = vibrato_done;
     p->id = VIBRATO;

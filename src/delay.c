@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.22  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -134,13 +137,7 @@ update_delay_repeat(GtkAdjustment * adj, struct delay_params *params)
 void
 toggle_delay(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = delay_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 
@@ -342,11 +339,6 @@ delay_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("delay_decay", params->delay_decay);
     LOAD_DOUBLE("delay_time", params->delay_time);
     LOAD_INT("delay_count", params->delay_count);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = delay_filter;
-    }
 }
 
 void
@@ -358,7 +350,7 @@ delay_create(struct effect *p)
     p->params = calloc(1, sizeof(struct delay_params));
     pdelay = p->params;
     p->proc_init = delay_init;
-    p->proc_filter = passthru;
+    p->proc_filter = delay_filter;
     p->toggle = 0;
     p->id = DELAY;
     p->proc_done = delay_done;

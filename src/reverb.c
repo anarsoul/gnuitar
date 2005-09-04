@@ -67,13 +67,7 @@ update_reverb_regen(GtkAdjustment * adj, struct reverb_params *params)
 void
 toggle_reverb(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = reverb_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 
@@ -318,11 +312,6 @@ reverb_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("wet", params->wet);
     LOAD_DOUBLE("regen", params->regen);
     LOAD_DOUBLE("delay", params->delay);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = reverb_filter;
-    }
 }
 
 
@@ -335,7 +324,7 @@ reverb_create(struct effect *p)
     p->params = calloc(1, sizeof(struct reverb_params));
 
     p->proc_init = reverb_init;
-    p->proc_filter = passthru;
+    p->proc_filter = reverb_filter;
     p->toggle = 0;
     p->id = REVERB;
     p->proc_done = reverb_done;

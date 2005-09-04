@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.13  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -115,13 +118,7 @@ update_noise_attack(GtkAdjustment * adj, struct noise_params *params)
 void
 toggle_noise(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = noise_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 void
@@ -401,11 +398,6 @@ noise_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("release_time", params->release_time);
     LOAD_INT("attack", params->attack);
     LOAD_INT("hysteresis", params->hysteresis);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = noise_filter;
-    }
 }
 
 void
@@ -418,7 +410,6 @@ noise_done(struct effect *p)
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
@@ -429,7 +420,7 @@ noise_create(struct effect *p)
     p->params =
 	(struct noise_params *) malloc(sizeof(struct noise_params));
     p->proc_init = noise_init;
-    p->proc_filter = passthru;
+    p->proc_filter = noise_filter;
     p->proc_load = noise_load;
     p->proc_save = noise_save;
     p->toggle = 0;

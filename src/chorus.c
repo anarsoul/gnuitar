@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.22  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -155,13 +158,7 @@ update_chorus_regen(GtkAdjustment * adj, struct chorus_params *params)
 void
 toggle_chorus(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = chorus_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 
@@ -469,11 +466,6 @@ chorus_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("speed", params->speed);
     LOAD_DOUBLE("regen", params->regen);
     LOAD_INT("mode", params->mode);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = chorus_filter;
-    }
 }
 
 void
@@ -484,7 +476,7 @@ chorus_create(struct effect *p)
 
     p->params = calloc(1, sizeof(struct chorus_params));
     p->proc_init = chorus_init;
-    p->proc_filter = passthru;
+    p->proc_filter = chorus_filter;
     p->toggle = 0;
     p->id = CHORUS;
     p->proc_done = chorus_done;

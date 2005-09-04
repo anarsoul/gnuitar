@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.42  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -316,13 +319,7 @@ update_distort2_treble(GtkAdjustment * adj, struct distort2_params *params)
 void
 toggle_distort2(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = distort2_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 void
@@ -598,11 +595,6 @@ distort2_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("drive", params->drive);
     LOAD_DOUBLE("clip", params->clip);
     LOAD_DOUBLE("noisegate", params->noisegate);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = distort2_filter;
-    }
 }
 
 void
@@ -616,7 +608,7 @@ distort2_create(struct effect *p)
     ap = (struct distort2_params *) p->params;
 
     p->proc_init = distort2_init;
-    p->proc_filter = passthru;
+    p->proc_filter = distort2_filter;
     p->proc_save = distort2_save;
     p->proc_load = distort2_load;
     p->toggle = 0;

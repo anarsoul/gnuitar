@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.21  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -143,13 +146,7 @@ toggle_mix(GtkWidget * bullshit, unsigned short *mixx)
 void
 toggle_wah(GtkWidget * bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = autowah_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 
@@ -358,11 +355,6 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_DOUBLE("freq_low", params->freq_low);
     LOAD_DOUBLE("freq_high", params->freq_high);
     LOAD_INT("mixx", params->mixx);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = autowah_filter;
-    }
 }
 
 void
@@ -373,7 +365,7 @@ autowah_create(struct effect *p)
 	(struct autowah_params *) malloc(sizeof(struct autowah_params));
     ap = (struct autowah_params *) p->params;
     p->proc_init = autowah_init;
-    p->proc_filter = passthru;
+    p->proc_filter = autowah_filter;
     p->toggle = 0;
     p->id = AUTOWAH;
     p->proc_done = autowah_done;

@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.20  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.19  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -149,13 +152,7 @@ update_eqbank_volume(GtkAdjustment * adj, struct eqbank_params *p)
 void
 toggle_eqbank(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = eqbank_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 void
@@ -356,13 +353,6 @@ eqbank_load(struct effect *p, LOAD_ARGS)
     for (i = 0; i < FB_NB; i++) {
 	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], params->boosts[i], &params->filters[i]);
     }
-
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = eqbank_filter;
-    }
-
 }
 
 void
@@ -372,7 +362,7 @@ eqbank_create(struct effect *p)
     int             i;
 
     p->proc_init = eqbank_init;
-    p->proc_filter = passthru;
+    p->proc_filter = eqbank_filter;
     p->proc_save = eqbank_save;
     p->proc_load = eqbank_load;
     p->toggle = 0;

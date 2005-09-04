@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.17  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -114,13 +117,7 @@ update_echo_size(GtkAdjustment * adj, struct echo_params *params)
 void
 toggle_echo(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = echo_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 int
@@ -320,11 +317,6 @@ echo_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("echo_size", params->echo_size);
     LOAD_DOUBLE("echo_decay", params->echo_decay);
     LOAD_DOUBLE("echoes", params->echoes);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = echo_filter;
-    }
 }
 
 void
@@ -335,7 +327,7 @@ echo_create(struct effect *p)
 
     p->params = calloc(1, sizeof(*params));
     p->proc_init = echo_init;
-    p->proc_filter = passthru;
+    p->proc_filter = echo_filter;
     p->proc_save = echo_save;
     p->proc_load = echo_load;
     p->toggle = 0;

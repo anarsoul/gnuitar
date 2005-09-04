@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.19  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -121,13 +124,7 @@ update_phasor_freq_high(GtkAdjustment * adj, struct phasor_params *params)
 void
 toggle_phasor(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = phasor_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 void
@@ -323,11 +320,6 @@ phasor_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("sweep_time", params->sweep_time);
     LOAD_DOUBLE("freq_low", params->freq_low);
     LOAD_DOUBLE("freq_high", params->freq_low);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = phasor_filter;
-    }
 }
 
 void
@@ -337,7 +329,7 @@ phasor_create(struct effect *p)
 
     p->params = calloc(1, sizeof(struct phasor_params));
     p->proc_init = phasor_init;
-    p->proc_filter = passthru;
+    p->proc_filter = phasor_filter;
     p->proc_done = phasor_done;
     p->proc_load = phasor_load;
     p->proc_save = phasor_save;

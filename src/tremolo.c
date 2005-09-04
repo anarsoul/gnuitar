@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/04 11:16:59  alankila
+ * - destroy passthru function, move the toggle logic higher up
+ *
  * Revision 1.21  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -117,13 +120,7 @@ update_tremolo_amplitude(GtkAdjustment * adj,
 void
 toggle_tremolo(void *bullshit, struct effect *p)
 {
-    if (p->toggle == 1) {
-	p->proc_filter = passthru;
-	p->toggle = 0;
-    } else {
-	p->proc_filter = tremolo_filter;
-	p->toggle = 1;
-    }
+    p->toggle = !p->toggle;
 }
 
 
@@ -292,11 +289,6 @@ tremolo_load(struct effect *p, LOAD_ARGS)
 
     LOAD_DOUBLE("tremolo_amplitude", params->tremolo_amplitude);
     LOAD_DOUBLE("tremolo_speed", params->tremolo_speed);
-    if (p->toggle == 0) {
-	p->proc_filter = passthru;
-    } else {
-	p->proc_filter = tremolo_filter;
-    }
 }
 
 void
@@ -310,7 +302,7 @@ tremolo_create(struct effect *p)
     p->proc_init = tremolo_init;
     p->proc_load = tremolo_load;
     p->proc_save = tremolo_save;
-    p->proc_filter = passthru;
+    p->proc_filter = tremolo_filter;
     p->toggle = 0;
     p->proc_done = tremolo_done;
     p->id = TREMOLO;
