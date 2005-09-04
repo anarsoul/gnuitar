@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2005/09/04 16:06:59  alankila
+ * - first multichannel effect: delay
+ * - need to use surround40 driver in alsa
+ * - introduce new buffer data_swap so that effects need not reserve buffers
+ * - correct off-by-one error in multichannel adapting
+ *
  * Revision 1.9  2005/09/03 22:13:56  alankila
  * - make multichannel processing selectable
  * - new GUI (it sucks as much as the old one and I'll need to grok GTK
@@ -99,9 +105,6 @@ WAVEHDR         wave_header[MAX_BUFFERS];	/* input header */
 WAVEHDR         write_header[MAX_BUFFERS];	/* output headers */
 char            cur_wr_hdr[MAX_BUFFERS];	/* available write headers
 						 * array */
-char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* write buffers */
-char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];	/* receive buffer */
-DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];	/* procesing buffer */
 int             active_in_buffers = 0,
                 active_out_buffers = 0;
 
@@ -192,6 +195,7 @@ windows_audio_thread(void *V)
 
 		    if (dsound || hdr_avail != -1) {
                         db.data = procbuf;
+                        db.data_swap = procbuf2;
                         db.len = count;
                         db.channels = n_input_channels;
 			pump_sample(&db);
@@ -278,7 +282,7 @@ windows_audio_thread(void *V)
 
 			    }
 			    for (i = 0, j = 0, k = 0; i < count; i++) {
-				DSP_SAMPLE      W = (SAMPLE32)procbuf[i] >> 8;
+				DSP_SAMPLE      W = (SAMPLE32)db.data[i] >> 8;
 				SAMPLE16       *curpos;
 
 				if (j * sizeof(SAMPLE16) >= len1
@@ -368,7 +372,7 @@ windows_audio_thread(void *V)
 			 */
 			else {
 			    for (i = 0; i < count; i++) {
-				DSP_SAMPLE W = (SAMPLE32)procbuf[i] >> 8;
+				DSP_SAMPLE W = (SAMPLE32)db.data[i] >> 8;
 				((SAMPLE16 *) (write_header[hdr_avail].
 					     lpData))[i] = W;
 			    }

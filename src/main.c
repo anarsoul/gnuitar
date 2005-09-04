@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.44  2005/09/04 16:06:59  alankila
+ * - first multichannel effect: delay
+ * - need to use surround40 driver in alsa
+ * - introduce new buffer data_swap so that effects need not reserve buffers
+ * - correct off-by-one error in multichannel adapting
+ *
  * Revision 1.43  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -207,12 +213,14 @@ pthread_t       audio_thread;
 
 SAMPLE16        rdbuf[MAX_BUFFER_SIZE   / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 #else
 HANDLE          audio_thread;
 
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
+DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE];
 #endif
 
 int

@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/09/04 16:06:58  alankila
+ * - first multichannel effect: delay
+ * - need to use surround40 driver in alsa
+ * - introduce new buffer data_swap so that effects need not reserve buffers
+ * - correct off-by-one error in multichannel adapting
+ *
  * Revision 1.11  2005/09/03 23:31:40  alankila
  * - add signs
  *
@@ -81,7 +87,8 @@
 
 short           restarting;
 const char     *snd_device_in  = "plughw:0,0";
-const char     *snd_device_out = "plughw:0,0";
+const char     *snd_2ch_device_out = "plughw:0,0";
+const char     *snd_4ch_device_out = "surround40:0,0";
 snd_pcm_t      *playback_handle;
 snd_pcm_t      *capture_handle;
 
@@ -140,6 +147,7 @@ alsa_audio_thread(void *V)
             fprintf(stderr, "Short read from capture device: %d, expecting %d\n", inframes, frames);
         db.len = inframes * n_input_channels;
         db.data = procbuf;
+        db.data_swap = procbuf2;
         db.channels = n_input_channels;
 	if (bits == 32)
 	    for (i = 0; i < db.len; i++)
@@ -321,6 +329,9 @@ alsa_init_sound(void)
 {
     int             err;
     unsigned int    frames;
+    const char     *snd_device_out;
+
+    snd_device_out = n_output_channels == 4 ? snd_4ch_device_out : snd_2ch_device_out;
 
     if ((err = snd_pcm_open(&playback_handle, snd_device_out, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 	fprintf(stderr, "can't open output audio device %s: %s\n", snd_device_out, snd_strerror(err));
@@ -377,7 +388,7 @@ alsa_init_sound(void)
 
 int
 alsa_available() {
-    if (snd_pcm_open(&playback_handle, snd_device_out, SND_PCM_STREAM_PLAYBACK, 0) < 0)
+    if (snd_pcm_open(&playback_handle, snd_2ch_device_out, SND_PCM_STREAM_PLAYBACK, 0) < 0)
 	return 0;
     snd_pcm_close(playback_handle);
     return 1;

@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2005/09/04 16:06:59  alankila
+ * - first multichannel effect: delay
+ * - need to use surround40 driver in alsa
+ * - introduce new buffer data_swap so that effects need not reserve buffers
+ * - correct off-by-one error in multichannel adapting
+ *
  * Revision 1.42  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -364,7 +370,7 @@ adapt_to_output(data_block_t *db)
         return;
     /* clone 1 to 2 */
     if (db->channels == 1 && n_output_channels == 2) {
-        for (i = size - 1; i > 0; i -= 1) {
+        for (i = size - 1; i >= 0; i -= 1) {
             s[i*2+1] = s[i];
             s[i*2  ] = s[i];
         }
@@ -374,7 +380,7 @@ adapt_to_output(data_block_t *db)
     }
     /* clone 1 to 4, mute channels 2 & 3 (the rear channels) */
     if (db->channels == 1 && n_output_channels == 4) {
-        for (i = size - 1; i > 0; i -= 1) {
+        for (i = size - 1; i >= 0; i -= 1) {
             s[i*4+3] = 0;
             s[i*4+2] = 0;
             s[i*4+1] = s[i];
@@ -386,7 +392,7 @@ adapt_to_output(data_block_t *db)
     }
     /* clone 2 to 4, mute channels 2 & 3 */
     if (db->channels == 2 && n_output_channels == 4) {
-        for (i = size/2-1; i > 0; i -= 1) {
+        for (i = size/2-1; i >= 0; i -= 1) {
             s[i*4+3] = 0;
             s[i*4+2] = 0;
             s[i*4+1] = s[i*2+1];

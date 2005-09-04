@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2005/09/04 16:06:59  alankila
+ * - first multichannel effect: delay
+ * - need to use surround40 driver in alsa
+ * - introduce new buffer data_swap so that effects need not reserve buffers
+ * - correct off-by-one error in multichannel adapting
+ *
  * Revision 1.11  2005/09/03 23:31:40  alankila
  * - add signs
  *
@@ -130,6 +136,7 @@ oss_audio_thread(void *V)
 	
 	count /= bits / 8;
         db.data = procbuf;
+        db.data_swap = procbuf2;
         db.len = count;
         db.channels = n_input_channels;
 

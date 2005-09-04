@@ -68,6 +68,7 @@ typedef struct audio_driver audio_driver_t;
 
 struct data_block {
     DSP_SAMPLE     *data;
+    DSP_SAMPLE     *data_swap;
     unsigned int    len;
     unsigned int    channels;
 };

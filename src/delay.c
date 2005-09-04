@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/09/04 16:06:59  alankila
+ * - first multichannel effect: delay
+ * - need to use surround40 driver in alsa
+ * - introduce new buffer data_swap so that effects need not reserve buffers
+ * - correct off-by-one error in multichannel adapting
+ *
  * Revision 1.25  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -105,6 +111,7 @@
 #include "backbuf.h"
 #include "delay.h"
 #include "gui.h"
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #ifndef _WIN32
@@ -113,11 +120,12 @@
 #    include <io.h>
 #endif
 
-void            delay_filter(struct effect *p, struct data_block *db);
+void            delay_filter(effect_t *p, data_block_t *db);
+void            delay_filter_mc(effect_t *p, data_block_t *db);
 
 
 void
-update_delay_decay(GtkAdjustment * adj, struct delay_params *params)
+update_delay_decay(GtkAdjustment *adj, struct delay_params *params)
 {
     int             i;
     params->delay_decay = adj->value;
@@ -126,7 +134,7 @@ update_delay_decay(GtkAdjustment * adj, struct delay_params *params)
 }
 
 void
-update_delay_time(GtkAdjustment * adj, struct delay_params *params)
+update_delay_time(GtkAdjustment *adj, struct delay_params *params)
 {
     int             i;
     params->delay_time = adj->value;
@@ -135,7 +143,7 @@ update_delay_time(GtkAdjustment * adj, struct delay_params *params)
 }
 
 void
-update_delay_repeat(GtkAdjustment * adj, struct delay_params *params)
+update_delay_repeat(GtkAdjustment *adj, struct delay_params *params)
 {
     params->delay_count = adj->value;
 }
@@ -146,6 +154,11 @@ toggle_delay(void *bullshit, struct effect *p)
     p->toggle = !p->toggle;
 }
 
+void
+toggle_multichannel(void *bullshit, struct delay_params *params)
+{
+    params->multichannel = !params->multichannel;
+}
 
 void
 delay_init(struct effect *p)
@@ -164,7 +177,7 @@ delay_init(struct effect *p)
     GtkWidget      *repeat_label;
     GtkObject      *adj_repeat;
 
-    GtkWidget      *button;
+    GtkWidget      *button, *mcbutton;
 
     GtkWidget      *parmTable;
 
@@ -249,6 +262,17 @@ delay_init(struct effect *p)
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
+    
+    if (n_input_channels == 1 && n_output_channels > 1) {
+        mcbutton = gtk_check_button_new_with_label("Multichannel");
+        gtk_signal_connect(GTK_OBJECT(mcbutton), "toggled",
+                           GTK_SIGNAL_FUNC(toggle_multichannel), pdelay);
+        gtk_table_attach(GTK_TABLE(parmTable), mcbutton, 1, 3, 2, 3,
+                         __GTKATTACHOPTIONS(GTK_EXPAND |
+                                            GTK_SHRINK),
+                         __GTKATTACHOPTIONS(GTK_FILL |
+                                            GTK_SHRINK), 0, 0);
+    }
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
@@ -264,7 +288,7 @@ delay_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Delay"));
+    gtk_window_set_title(GTK_WINDOW(p->control), "Delay");
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
@@ -272,7 +296,7 @@ delay_init(struct effect *p)
 }
 
 void
-delay_filter(struct effect *p, struct data_block *db)
+delay_filter(effect_t *p, data_block_t *db)
 {
     struct delay_params *dp;
     int             i,
@@ -283,11 +307,14 @@ delay_filter(struct effect *p, struct data_block *db)
     int             curr_channel = 0;
 
     dp = (struct delay_params *) p->params;
+    if (dp->multichannel && db->channels == 1 && n_output_channels > 1) {
+        return delay_filter_mc(p, db);
+    }
 
     s = db->data;
     count = db->len;
 
-    /* this is a simple mono version */
+    /* this is a simple mono version that treats all channels separately */
     while (count) {
         /* mix stuff from history to current data */
         newval = 0;
@@ -312,6 +339,63 @@ delay_filter(struct effect *p, struct data_block *db)
     }
 }
 
+/* this is a mono-to-N channel mixer */
+void delay_filter_mc(effect_t *p, data_block_t *db)
+{
+    struct delay_params *dp;
+    int             i,
+                    count,
+                    current_delay = 0;
+    double          current_decay;
+    DSP_SAMPLE     *ins, *outs, newval, inval;
+    int             curr_channel = 0;
+
+    dp = (struct delay_params *) p->params;
+
+    /* this is only good for mono */
+    assert(db->channels == 1);
+    
+    /* fill into provided output buffer */
+    ins = db->data;
+    outs = db->data_swap;
+    count = db->len;
+
+    db->channels = n_output_channels;
+    db->len *= n_output_channels;
+    
+    while (count) {
+        /* input signal is mixed into all output channels, and delays are
+         * distributed across channels */
+        inval = *ins++;
+
+        for (curr_channel = 0; curr_channel < db->channels; curr_channel += 1) {
+            newval = 0;
+            current_delay = 0;
+            current_decay = 1.0;
+        
+            for (i = 0; i < dp->delay_count; i++) {
+                current_delay += dp->delay_time / 1000.0 * sample_rate;
+                current_decay *= dp->delay_decay / 100.0;
+
+                /* mix only every Nth voice */
+                if (i % db->channels != curr_channel)
+                    continue;
+                
+                newval += dp->history[0]->get(dp->history[0], current_delay) * current_decay;
+            }
+        
+            /* write to history, add decay to current sample */
+            *outs++ = inval/2 + newval/2;
+        }
+        dp->history[0]->add(dp->history[0], inval);
+        
+	count--;
+    }
+
+    ins = db->data;
+    db->data = db->data_swap;
+    db->data_swap = ins;
+}
 void
 delay_done(struct effect *p)
 {
@@ -335,6 +419,7 @@ delay_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("delay_decay", params->delay_decay);
     SAVE_DOUBLE("delay_time", params->delay_time);
     SAVE_INT("delay_count", params->delay_count);
+    SAVE_INT("multichannel", params->multichannel);
 }
 
 void
@@ -345,6 +430,7 @@ delay_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("delay_decay", params->delay_decay);
     LOAD_DOUBLE("delay_time", params->delay_time);
     LOAD_INT("delay_count", params->delay_count);
+    LOAD_INT("multichannel", params->multichannel);
 }
 
 effect_t *
@@ -372,6 +458,7 @@ delay_create()
      * 
      */
 
+    pdelay->multichannel = 0;
     pdelay->delay_decay = 55;
     pdelay->delay_time = 1000;
     pdelay->delay_count = 8;

@@ -34,6 +34,7 @@ extern effect_t *   delay_create();
 
 struct delay_params {
     Backbuf_t       *history[MAX_CHANNELS];  /* history of samples */
+    short            multichannel;
     float            delay_decay,   /* % of decay each time */
                      delay_time;    /* time (ms) between repeats */
     int              delay_count;    /* number of repeats */
