@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/09/04 19:45:12  alankila
+ * - replace "Speed 1/ms" with "Period ms" which is easier to understand
+ *
  * Revision 1.26  2005/09/04 19:29:40  alankila
  * - generalize flange as base delay setting
  * - support additional chorus voices
@@ -228,11 +231,12 @@ chorus_init(struct effect *p)
 
     adj_basedelay = gtk_adjustment_new(pchorus->basedelay, 0.0, MAX_BASEDELAY, 1.0, 1.0, 0.0);
     basedelay_label = gtk_label_new("Delay\nms");
+    gtk_label_set_justify(GTK_LABEL(basedelay_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), basedelay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
     
     gtk_signal_connect(GTK_OBJECT(adj_basedelay), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_basedelay), pchorus);
@@ -244,15 +248,16 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
     
     adj_depth = gtk_adjustment_new(pchorus->depth, 0.0, MAX_DEPTH, 1.0, 1.0, 0.0);
     depth_label = gtk_label_new("Depth\nms");
+    gtk_label_set_justify(GTK_LABEL(depth_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), depth_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
     
     gtk_signal_connect(GTK_OBJECT(adj_depth), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_depth), pchorus);
@@ -264,15 +269,16 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     adj_speed = gtk_adjustment_new(pchorus->speed, 50.0, 3500, 0.1, 1.0, 0.0);
-    speed_label = gtk_label_new("Speed\n1/ms");
+    speed_label = gtk_label_new("Period\nms");
+    gtk_label_set_justify(GTK_LABEL(speed_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_speed), pchorus);
@@ -284,15 +290,16 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
     
     adj_voices = gtk_adjustment_new(pchorus->voices, 1, 4, 1, 1, 0);
     voices_label = gtk_label_new("Voices\n#");
+    gtk_label_set_justify(GTK_LABEL(voices_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), voices_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_voices), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_voices), pchorus);
@@ -305,15 +312,16 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     adj_wet = gtk_adjustment_new(pchorus->wet, 0.0, 100.0, 1.0, 1.0, 0.0);
     wet_label = gtk_label_new("Wet\n%");
+    gtk_label_set_justify(GTK_LABEL(wet_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), wet_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_wet), "value_changed",
@@ -325,10 +333,11 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     adj_dry = gtk_adjustment_new(pchorus->dry, 0.0, 100.0, 1.0, 1.0, 0.0);
     dry_label = gtk_label_new("Dry\n%");
+    gtk_label_set_justify(GTK_LABEL(dry_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), dry_label, 7, 8, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -345,15 +354,16 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     adj_regen = gtk_adjustment_new(pchorus->regen, 0.0, 100.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("Regen\n%");
+    gtk_label_set_justify(GTK_LABEL(regen_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 8, 9, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_regen), "value_changed",
 		       GTK_SIGNAL_FUNC(update_chorus_regen), pchorus);
@@ -364,7 +374,7 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+					GTK_SHRINK), 3, 0);
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
@@ -506,7 +516,7 @@ chorus_create()
     
     cp->ang = 0.0;
     cp->depth = 2.5;
-    cp->basedelay = 2;
+    cp->basedelay = 3.5;
     cp->voices = 3;
     cp->speed = 1000;
     cp->wet = 50;

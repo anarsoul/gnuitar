@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/09/04 19:45:12  alankila
+ * - replace "Speed 1/ms" with "Period ms" which is easier to understand
+ *
  * Revision 1.24  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -191,7 +194,7 @@ autowah_init(struct effect *p)
 
     adj_speed = gtk_adjustment_new(pautowah->sweep_time, 100.0,
                                20000.0, 1.0, 10.0, 0.0);
-    speed_label = gtk_label_new("Speed\n1/ms");
+    speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),

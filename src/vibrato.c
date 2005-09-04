@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/09/04 19:45:12  alankila
+ * - replace "Speed 1/ms" with "Period ms" which is easier to understand
+ *
  * Revision 1.29  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -176,7 +179,7 @@ vibrato_init(struct effect *p)
     adj_speed =
 	gtk_adjustment_new(pvibrato->vibrato_speed, 10.0,
 			   3000.0, 1.0, 1.0, 0.0);
-    speed_label = gtk_label_new("Speed\n1/ms");
+    speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
