@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.56  2005/09/04 14:20:30  alankila
+ * - correct a brainfart about how row moving happens
+ *
  * Revision 1.55  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -230,6 +233,7 @@
  *
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -530,22 +534,25 @@ selectrow_effects(GtkWidget * widget, gint row, gint col,
 
 void rowmove_processor(GtkWidget * widget, gint start, gint end, gpointer data)
 {
-    struct effect  *swap;
+    effect_t   *swap;
+    int         i;
     
+    assert(start >= 0);
+    assert(end <= n);
+ 
     my_lock_mutex(effectlist_lock);
-    swap = effects[start];
-    effects[start] = effects[end];
-    effects[end] = swap;
+    if (start < end) {
+        swap = effects[start];
+        for (i = start; i < end; i += 1)
+            effects[i] = effects[i+1];
+        effects[end] = swap;
+    } else if (start > end) {
+        swap = effects[start];
+        for (i = start; i > end; i -= 1)
+            effects[i] = effects[i-1];
+        effects[end] = swap;
+    }
     my_unlock_mutex(effectlist_lock);
-    
-    gtk_clist_freeze(GTK_CLIST(processor));
-    gtk_clist_remove(GTK_CLIST(processor), start);
-    gtk_clist_insert(GTK_CLIST(processor), start,
-		     &effect_list[effects[end]->id].str);
-    gtk_clist_remove(GTK_CLIST(processor), end);
-    gtk_clist_insert(GTK_CLIST(processor), end,
-		     &effect_list[effects[start]->id].str);
-    gtk_clist_thaw(GTK_CLIST(processor));
 }
 
 
