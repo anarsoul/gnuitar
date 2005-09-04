@@ -32,11 +32,12 @@ struct chorus_params {
     Backbuf_t      *history[MAX_CHANNELS];
     float           wet,
                     dry,
+                    basedelay,
                     depth,
                     speed,
                     regen,
                     ang;
-    short           mode;
+    int             voices;
 };
 
 #endif
