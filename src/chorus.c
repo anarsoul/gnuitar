@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/09/04 19:56:41  alankila
+ * - final strokes
+ *
  * Revision 1.27  2005/09/04 19:45:12  alankila
  * - replace "Speed 1/ms" with "Period ms" which is easier to understand
  *
@@ -428,7 +431,7 @@ chorus_filter(struct effect *p, struct data_block *db)
                 tmp_ang -= 1.0;
         }
 #ifdef CLIP_EVERYWHERE
-        CLIP_SAMPLE(tot)
+        CLIP_SAMPLE(tmp)
 #endif
         /* XXX regen sounds generally bad, maybe we should take it away? */
         dly = BaseDelay + Depth * (1 + sin_lookup(cp->ang)) / 2.0;
@@ -437,7 +440,7 @@ chorus_filter(struct effect *p, struct data_block *db)
         CLIP_SAMPLE(rgn)
 #endif
         cp->history[curr_channel]->add(cp->history[curr_channel], rgn);
-	*s = *s * Dry + tmp * Wet;
+	*s = *s * Dry / cp->voices + tmp * Wet;
 
 	curr_channel = (curr_channel + 1) % db->channels;
         if (curr_channel == 0) {
