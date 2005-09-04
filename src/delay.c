@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.21  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -321,27 +325,23 @@ delay_done(struct effect *p)
 }
 
 void
-delay_save(struct effect *p, int fd)
+delay_save(struct effect *p, SAVE_ARGS)
 {
-    struct delay_params *dp;
+    struct delay_params *params = p->params;
 
-    dp = (struct delay_params *) p->params;
-
-    write(fd, &dp->delay_decay, sizeof(dp->delay_decay));
-    write(fd, &dp->delay_time, sizeof(dp->delay_time));
-    write(fd, &dp->delay_count, sizeof(dp->delay_count));
+    SAVE_DOUBLE("delay_decay", params->delay_decay);
+    SAVE_DOUBLE("delay_time", params->delay_time);
+    SAVE_INT("delay_count", params->delay_count);
 }
 
 void
-delay_load(struct effect *p, int fd)
+delay_load(struct effect *p, LOAD_ARGS)
 {
-    struct delay_params *dp;
+    struct delay_params *params = p->params;
 
-    dp = (struct delay_params *) p->params;
-
-    read(fd, &dp->delay_decay, sizeof(dp->delay_decay));
-    read(fd, &dp->delay_time, sizeof(dp->delay_time));
-    read(fd, &dp->delay_count, sizeof(dp->delay_count));
+    LOAD_DOUBLE("delay_decay", params->delay_decay);
+    LOAD_DOUBLE("delay_time", params->delay_time);
+    LOAD_INT("delay_count", params->delay_count);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

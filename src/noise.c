@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.12  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -376,31 +380,27 @@ noise_filter(struct effect *p, struct data_block *db)
 }
 
 void
-noise_save(struct effect *p, int fd)
+noise_save(struct effect *p, SAVE_ARGS)
 {
-    struct noise_params *sp;
+    struct noise_params *params = p->params;
 
-    sp = (struct noise_params *) p->params;
-
-    write(fd, &sp->threshold, sizeof(sp->threshold));
-    write(fd, &sp->hold_time, sizeof(sp->hold_time));
-    write(fd, &sp->release_time, sizeof(sp->release_time));
-    write(fd, &sp->attack, sizeof(sp->attack));
-    write(fd, &sp->hysteresis, sizeof(sp->hysteresis));
+    SAVE_INT("threshold", params->threshold);
+    SAVE_INT("hold_time", params->hold_time);
+    SAVE_INT("release_time", params->release_time);
+    SAVE_INT("attack", params->attack);
+    SAVE_INT("hysteresis", params->hysteresis);
 }
 
 void
-noise_load(struct effect *p, int fd)
+noise_load(struct effect *p, LOAD_ARGS)
 {
-    struct noise_params *sp;
+    struct noise_params *params = p->params;
 
-    sp = (struct noise_params *) p->params;
-
-    read(fd, &sp->threshold, sizeof(sp->threshold));
-    read(fd, &sp->hold_time, sizeof(sp->hold_time));
-    read(fd, &sp->release_time, sizeof(sp->release_time));
-    read(fd, &sp->attack, sizeof(sp->attack));
-    read(fd, &sp->hysteresis, sizeof(sp->hysteresis));
+    LOAD_INT("threshold", params->threshold);
+    LOAD_INT("hold_time", params->hold_time);
+    LOAD_INT("release_time", params->release_time);
+    LOAD_INT("attack", params->attack);
+    LOAD_INT("hysteresis", params->hysteresis);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

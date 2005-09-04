@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.16  2005/09/03 16:36:51  alankila
  * - reworked effect to use backbuff
  * - removed some output scaling that made this effect almost inaudible
@@ -299,27 +303,23 @@ echo_done(struct effect *p)
 }
 
 void
-echo_save(struct effect *p, int fd)
+echo_save(struct effect *p, SAVE_ARGS)
 {
-    struct echo_params *params;
+    struct echo_params *params = p->params;
 
-    params = (struct echo_params *) p->params;
-
-    write(fd, &params->echo_size, sizeof(params->echo_size));
-    write(fd, &params->echo_decay, sizeof(params->echo_decay));
-    write(fd, &params->echoes, sizeof(params->echoes));
+    SAVE_DOUBLE("echo_size", params->echo_size);
+    SAVE_DOUBLE("echo_decay", params->echo_decay);
+    SAVE_DOUBLE("echoes", params->echoes);
 }
 
 void
-echo_load(struct effect *p, int fd)
+echo_load(struct effect *p, LOAD_ARGS)
 {
-    struct echo_params *params;
+    struct echo_params *params = p->params;
 
-    params = (struct echo_params *) p->params;
-
-    read(fd, &params->echo_size, sizeof(params->echo_size));
-    read(fd, &params->echo_decay, sizeof(params->echo_decay));
-    read(fd, &params->echoes, sizeof(params->echoes));
+    LOAD_DOUBLE("echo_size", params->echo_size);
+    LOAD_DOUBLE("echo_decay", params->echo_decay);
+    LOAD_DOUBLE("echoes", params->echoes);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

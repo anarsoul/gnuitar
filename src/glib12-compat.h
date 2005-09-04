@@ -9,6 +9,16 @@
 #endif
 
 #include <glib.h>
+
+gdouble   g_key_file_get_double             (GKeyFile             *,
+					     const gchar          *,
+					     const gchar          *,
+					     GError              **);
+void      g_key_file_set_double             (GKeyFile             *,
+					     const gchar          *,
+					     const gchar          *,
+					     gdouble		   );
+
 #ifndef HAVE_GTK
 #include <glib/gstdio.h>
 #include <glib/gthread.h>

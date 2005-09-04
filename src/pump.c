@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.37  2005/09/03 23:46:04  alankila
  * - add some release polish
  *
@@ -605,10 +609,10 @@ pump_stop(void)
         write_track = 0;
         tracker_done();
     }
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
 	effects[i]->proc_done(effects[i]);
-    }
     n = 0;
+
     my_close_mutex(effectlist_lock);
 }
 
@@ -627,76 +631,127 @@ void
 save_pump(const char *fname)
 {
     int             i;
-    int             fd = 0;
+    int		    fd;
+    unsigned int		    length, w_length;
+    gchar	   *gtmp, *key_file_as_str;
+    GKeyFile	   *preset;
 
-    fprintf(stderr, "\nWriting preset (%s)...", fname);
-    if ((fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-                                            S_IREAD | S_IWRITE)) < 0) {
-	perror("Save failed");
-	return;
+    if ((fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE)) < 0) {
+        perror("Save failed: ");
+        return;
     }
+    
+    preset = g_key_file_new();
 
-    /*
-     * writing signature
-     */
-    write(fd, version, 13);
+    /* record software version */
+    g_key_file_set_string(preset, "global", "version", version);
+
+    my_lock_mutex(effectlist_lock);
+    g_key_file_set_integer(preset, "global", "effects", n);
     for (i = 0; i < n; i++) {
-	if (effects[i]->proc_save != NULL) {
-	    write(fd, &effects[i]->id, sizeof(effects[i]->id));
-	    write(fd, &effects[i]->toggle, sizeof(effects[i]->toggle));
-	    effects[i]->proc_save(effects[i], fd);
-	}
+	gtmp = g_strdup_printf("effect%d", i+1);
+	g_key_file_set_string(preset, "global", gtmp, effect_list[effects[i]->id].str);
+	/* save enabled flag */
+	g_key_file_set_integer(preset, gtmp, "enabled", effects[i]->toggle);
+	/* save effect-specific settings */
+	if (effects[i]->proc_save != NULL)
+	    effects[i]->proc_save(effects[i], preset, gtmp);
+	free(gtmp);
     }
+    my_unlock_mutex(effectlist_lock);
+
+    key_file_as_str = g_key_file_to_data(preset, &length, NULL);
+    w_length = write(fd, key_file_as_str, length);
+    if (length != w_length)
+	perror("Failed to write settings file completely: ");
+
+    g_key_file_free(preset);
+    
     close(fd);
-    fprintf(stderr, "ok\n");
 }
 
 void
 load_pump(const char *fname)
 {
-    int             fd = 0;
-    unsigned short  effect_tag = MAX_EFFECTS+1;
-    char            rc_version[32]="";
+    int		    i, j, n_effects;
+    GKeyFile	   *preset;
+    GError	   *error = NULL;
+    gchar	   *gtmp, *effect_name;
 
-    if (!(fd = open(fname, O_RDONLY | O_BINARY, S_IREAD | S_IWRITE))) {
-	perror("Load failed");
+    preset = g_key_file_new();
+    g_key_file_load_from_file(preset, fname, G_KEY_FILE_NONE, NULL);
+    gtmp = g_key_file_get_string(preset, "global", "version", &error);
+    if (error != NULL) {
+	fprintf(stderr, "warning: failed to read file version, giving up\n");
+	g_key_file_free(preset);
 	return;
     }
+    
+    if (strncmp(gtmp, version, 13) != 0) {
+	fprintf(stderr, "warning: version number mismatch: %s vs. %s\n", version, gtmp);
+    }
+    free(gtmp);
 
-    /*
-     * reading signature and compare with our version
-     */
-    read(fd, rc_version, 13);
-    if (strncmp(version, rc_version, 13) != 0) {
-	fprintf(stderr, "\nThis is not my rc file.");
-	close(fd);
+    n_effects = g_key_file_get_integer(preset, "global", "effects", &error);
+    if (error != NULL) {
+	fprintf(stderr, "warning: failed to read effect count, giving up\n");
+	g_key_file_free(preset);
 	return;
     }
-
+	
+    
     gtk_clist_clear(GTK_CLIST(processor));
     my_lock_mutex(effectlist_lock);
-    pump_stop();
-
+    for (i = 0; i < n; i++)
+	effects[i]->proc_done(effects[i]);
     n = 0;
-    while (read(fd, &effect_tag, sizeof(unsigned short)) > 0) {
-	if (effect_tag > EFFECT_AMOUNT) {
-            fprintf(stderr,"\nInvalid effect %i, load finished",effect_tag);
-            break;
-        }
 
-	fprintf(stderr, "\nloading %s", effect_list[effect_tag].str);
+    for (i = 0; i < n_effects; i += 1) {
+	gtmp = g_strdup_printf("effect%d", i+1);
+	effect_name = g_key_file_get_string(preset, "global", gtmp, &error);
+	if (error != NULL) {
+	    fprintf(stderr, "warning: effect tag '%s' not found\n", gtmp);
+	    error = NULL;
+	    free(gtmp);
+	    continue;
+	}
+	for (j = 0; j < EFFECT_AMOUNT; j += 1) {
+	    if (strcmp(effect_list[j].str, effect_name) == 0)
+		break;
+	}
+	if (j == EFFECT_AMOUNT) {
+	    fprintf(stderr, "warning: no effect called '%s'\n", effect_name);
+	    free(effect_name);
+	    free(gtmp);
+	    continue;
+	}
 
 	effects[n] = (struct effect *) calloc(1, sizeof(struct effect));
-	effect_list[effect_tag].create_f(effects[n]);
-	read(fd, &effects[n]->toggle, sizeof(unsigned short));
-	effects[n]->proc_load(effects[n], fd);
+	effect_list[j].create_f(effects[n]);
+	
+	/* read enabled flag */
+	effects[n]->toggle = g_key_file_get_integer(preset, gtmp, "enabled", &error);
+	if (error != NULL) {
+	    fprintf(stderr, "warning: no state flag in '%s'\n", effect_name);
+	    error = NULL;
+	    free(effect_name);
+	    free(gtmp);
+	    continue;
+	}
+	
+	/* load effect specific settings */
+	if (effects[n]->proc_load != NULL)
+	    effects[n]->proc_load(effects[n], preset, gtmp, &error);
+	
 	effects[n]->proc_init(effects[n]);
 	gtk_clist_append(GTK_CLIST(processor),
-			 &effect_list[effect_tag].str);
+			 &effect_list[j].str);
 	n++;
+	
+	free(effect_name);
+	free(gtmp);
     }
-    close(fd);
-    fprintf(stderr, "\n");
     my_unlock_mutex(effectlist_lock);
+    g_key_file_free(preset);
 }
 

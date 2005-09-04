@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.16  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -293,27 +297,23 @@ sustain_filter(struct effect *p, struct data_block *db)
 }
 
 void
-sustain_save(struct effect *p, int fd)
+sustain_save(struct effect *p, SAVE_ARGS)
 {
-    struct sustain_params *sp;
+    struct sustain_params *params = p->params;
 
-    sp = (struct sustain_params *) p->params;
-
-    write(fd, &sp->sust, sizeof(sp->sust));
-    write(fd, &sp->noise, sizeof(sp->noise));
-    write(fd, &sp->threshold, sizeof(sp->threshold));
+    SAVE_INT("sust", params->sust);
+    SAVE_INT("noise", params->noise);
+    SAVE_INT("threshold", params->threshold);
 }
 
 void
-sustain_load(struct effect *p, int fd)
+sustain_load(struct effect *p, LOAD_ARGS)
 {
-    struct sustain_params *sp;
+    struct sustain_params *params = p->params;
 
-    sp = (struct sustain_params *) p->params;
-
-    read(fd, &sp->sust, sizeof(sp->sust));
-    read(fd, &sp->noise, sizeof(sp->noise));
-    read(fd, &sp->threshold, sizeof(sp->threshold));
+    LOAD_INT("sust", params->sust);
+    LOAD_INT("noise", params->noise);
+    LOAD_INT("threshold", params->threshold);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

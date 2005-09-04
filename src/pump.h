@@ -94,13 +94,35 @@ struct effect {
     void            (*proc_init) (struct effect *);
     void            (*proc_done) (struct effect *);
     void            (*proc_filter) (struct effect *, struct data_block *);
-    void            (*proc_save) (struct effect *, int fd);
-    void            (*proc_load) (struct effect *, int fd);
+    void            (*proc_save) (struct effect *, GKeyFile *, gchar *);
+    void            (*proc_load) (struct effect *, GKeyFile *, gchar *, GError **error);
     short           toggle;
     unsigned short  id;
     GtkWidget      *control;
 };
 typedef struct effect effect_t;
+
+/* these macros are used to save my sanity */
+#define SAVE_ARGS \
+    GKeyFile *preset, gchar *group
+#define LOAD_ARGS \
+    GKeyFile *preset, gchar *group, GError **error
+#define SAVE_DOUBLE(name, param) \
+    g_key_file_set_double(preset, group, name, param);
+#define LOAD_DOUBLE(name, param) \
+    param = g_key_file_get_double(preset, group, name, error); \
+    if (*error != NULL) { \
+	fprintf(stderr, "warning: couldn't read '%s', '%s'\n", group, name); \
+	*error = NULL; \
+    }
+#define SAVE_INT(name, param) \
+    g_key_file_set_integer(preset, group, name, param);
+#define LOAD_INT(name, param) \
+    param = g_key_file_get_integer(preset, group, name, error); \
+    if (*error != NULL) { \
+	fprintf(stderr, "warning: couldn't read '%s', '%s'\n", group, name); \
+	*error = NULL; \
+    }
 
 struct effect_creator {
     char           *str;

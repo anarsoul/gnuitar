@@ -299,29 +299,25 @@ reverb_done(struct effect *p)
 }
 
 void
-reverb_save(struct effect *p, int fd)
+reverb_save(struct effect *p, SAVE_ARGS)
 {
-    struct reverb_params *rp;
+    struct reverb_params *params = p->params;
 
-    rp = (struct reverb_params *) p->params;
-
-    write(fd, &rp->dry, sizeof(rp->dry));
-    write(fd, &rp->wet, sizeof(rp->wet));
-    write(fd, &rp->regen, sizeof(rp->regen));
-    write(fd, &rp->delay, sizeof(rp->delay));
+    SAVE_DOUBLE("dry", params->dry);
+    SAVE_DOUBLE("wet", params->wet);
+    SAVE_DOUBLE("regen", params->regen);
+    SAVE_DOUBLE("delay", params->delay);
 }
 
 void
-reverb_load(struct effect *p, int fd)
+reverb_load(struct effect *p, LOAD_ARGS)
 {
-    struct reverb_params *rp;
+    struct reverb_params *params = p->params;
 
-    rp = (struct reverb_params *) p->params;
-
-    read(fd, &rp->dry, sizeof(rp->dry));
-    read(fd, &rp->wet, sizeof(rp->wet));
-    read(fd, &rp->regen, sizeof(rp->regen));
-    read(fd, &rp->delay, sizeof(rp->delay));
+    LOAD_DOUBLE("dry", params->dry);
+    LOAD_DOUBLE("wet", params->wet);
+    LOAD_DOUBLE("regen", params->regen);
+    LOAD_DOUBLE("delay", params->delay);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

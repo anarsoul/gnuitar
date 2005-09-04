@@ -57,6 +57,10 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.14  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.13  2005/09/03 23:29:03  alankila
  * - I finally cracked the alignment problem. You align GTK labels with
  *   gtk_misc_set_alignment.
@@ -388,18 +392,6 @@ void tuner_done_really(struct effect *p) {
 }
 
 void
-tuner_save(struct effect *p, int fd)
-{
-    return;
-}
-
-void
-tuner_load(struct effect *p, int fd)
-{
-    return;
-}
-
-void
 tuner_create(struct effect *p)
 {
     struct tuner_params *params;
@@ -409,8 +401,8 @@ tuner_create(struct effect *p)
     p->proc_filter = tuner_filter;
     p->id = TUNER;
     p->proc_done = tuner_done;
-    p->proc_save = tuner_save;
-    p->proc_load = tuner_load;
+    p->proc_save = NULL;
+    p->proc_load = NULL;
     
     p->params = calloc(1, sizeof(struct tuner_params));
     params = p->params;

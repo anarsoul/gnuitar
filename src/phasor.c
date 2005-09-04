@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.18  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -302,28 +306,23 @@ phasor_done(struct effect *p)
 }
 
 void
-phasor_save(struct effect *p, int fd)
+phasor_save(struct effect *p, SAVE_ARGS)
 {
-    struct phasor_params *pp;
+    struct phasor_params *params = p->params;
 
-    pp = p->params;
-
-    write(fd, &pp->freq_low, sizeof(pp->freq_low));
-    write(fd, &pp->freq_high, sizeof(pp->freq_high));
-    write(fd, &pp->sweep_time, sizeof(pp->sweep_time));
+    SAVE_DOUBLE("sweep_time", params->sweep_time);
+    SAVE_DOUBLE("freq_low", params->freq_low);
+    SAVE_DOUBLE("freq_high", params->freq_low);
 }
 
 void
-phasor_load(struct effect *p, int fd)
+phasor_load(struct effect *p, LOAD_ARGS)
 {
-    struct phasor_params *pp;
+    struct phasor_params *params = p->params;
 
-    pp = p->params;
-
-    read(fd, &pp->freq_low, sizeof(pp->freq_low));
-    read(fd, &pp->freq_high, sizeof(pp->freq_high));
-    read(fd, &pp->sweep_time, sizeof(pp->sweep_time));
-
+    LOAD_DOUBLE("sweep_time", params->sweep_time);
+    LOAD_DOUBLE("freq_low", params->freq_low);
+    LOAD_DOUBLE("freq_high", params->freq_low);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

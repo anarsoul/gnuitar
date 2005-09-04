@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.22  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -349,40 +353,28 @@ distort_done(struct effect *p)
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
-distort_save(struct effect *p, int fd)
+distort_save(struct effect *p, SAVE_ARGS)
 {
-    struct distort_params *ap;
-    short           tmp = 0;
+    struct distort_params *params = p->params;
 
-    ap = (struct distort_params *) p->params;
-
-    write(fd, &ap->sat, sizeof(ap->sat));
-    write(fd, &ap->level, sizeof(ap->level));
-    write(fd, &ap->drive, sizeof(ap->drive));
-    /*
-     * Fake write - for compatibility with old versions 
-     */
-    write(fd, &tmp, sizeof(tmp));
-    write(fd, &ap->lowpass, sizeof(ap->lowpass));
+    SAVE_INT("sat", params->sat);
+    SAVE_INT("level", params->level);
+    SAVE_INT("drive", params->drive);
+    SAVE_INT("lowpass", params->lowpass);
 }
 
 void
-distort_load(struct effect *p, int fd)
+distort_load(struct effect *p, LOAD_ARGS)
 {
-    struct distort_params *ap;
-    short           tmp;
+    struct distort_params *params = p->params;
 
-    ap = (struct distort_params *) p->params;
-
-    read(fd, &ap->sat, sizeof(ap->sat));
-    read(fd, &ap->level, sizeof(ap->level));
-    read(fd, &ap->drive, sizeof(ap->drive));
-    read(fd, &tmp, sizeof(tmp));
-    read(fd, &ap->lowpass, sizeof(ap->lowpass));
+    LOAD_INT("sat", params->sat);
+    LOAD_INT("level", params->level);
+    LOAD_INT("drive", params->drive);
+    LOAD_INT("lowpass", params->lowpass);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

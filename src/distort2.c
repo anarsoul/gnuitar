@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.42  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.41  2005/09/03 23:29:03  alankila
  * - I finally cracked the alignment problem. You align GTK labels with
  *   gtk_misc_set_alignment.
@@ -577,27 +581,23 @@ distort2_done(struct effect *p)
 }
 
 void
-distort2_save(struct effect *p, int fd)
+distort2_save(struct effect *p, SAVE_ARGS)
 {
-    struct distort2_params *ap;
+    struct distort2_params *params = p->params;
 
-    ap = (struct distort2_params *) p->params;
-
-    write(fd, &ap->drive, sizeof(ap->drive));
-    write(fd, &ap->clip, sizeof(ap->clip));
-    write(fd, &ap->noisegate, sizeof(ap->noisegate));
+    SAVE_DOUBLE("drive", params->drive);
+    SAVE_DOUBLE("clip", params->clip);
+    SAVE_DOUBLE("noisegate", params->noisegate);
 }
 
 void
-distort2_load(struct effect *p, int fd)
+distort2_load(struct effect *p, LOAD_ARGS)
 {
-    struct distort2_params *ap;
+    struct distort2_params *params = p->params;
 
-    ap = (struct distort2_params *) p->params;
-
-    read(fd, &ap->drive, sizeof(ap->drive));
-    read(fd, &ap->clip, sizeof(ap->clip));
-    read(fd, &ap->noisegate, sizeof(ap->noisegate));
+    LOAD_DOUBLE("drive", params->drive);
+    LOAD_DOUBLE("clip", params->clip);
+    LOAD_DOUBLE("noisegate", params->noisegate);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

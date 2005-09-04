@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.20  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -273,24 +277,21 @@ tremolo_done(struct effect *p)
 }
 
 void
-tremolo_save(struct effect *p, int fd)
+tremolo_save(struct effect *p, SAVE_ARGS)
 {
-    struct tremolo_params *tp;
+    struct tremolo_params *params = p->params;
 
-    tp = (struct tremolo_params *) p->params;
-    write(fd, &tp->tremolo_amplitude, sizeof(tp->tremolo_amplitude));
-    write(fd, &tp->tremolo_speed, sizeof(tp->tremolo_speed));
+    SAVE_DOUBLE("tremolo_amplitude", params->tremolo_amplitude);
+    SAVE_DOUBLE("tremolo_speed", params->tremolo_speed);
 }
 
 void
-tremolo_load(struct effect *p, int fd)
+tremolo_load(struct effect *p, LOAD_ARGS)
 {
-    struct tremolo_params *tp;
+    struct tremolo_params *params = p->params;
 
-    tp = (struct tremolo_params *) p->params;
-
-    read(fd, &tp->tremolo_amplitude, sizeof(tp->tremolo_amplitude));
-    read(fd, &tp->tremolo_speed, sizeof(tp->tremolo_speed));
+    LOAD_DOUBLE("tremolo_amplitude", params->tremolo_amplitude);
+    LOAD_DOUBLE("tremolo_speed", params->tremolo_speed);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

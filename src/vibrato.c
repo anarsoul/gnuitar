@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.25  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -271,26 +275,21 @@ vibrato_done(struct effect *p)
 }
 
 void
-vibrato_save(struct effect *p, int fd)
+vibrato_save(struct effect *p, SAVE_ARGS)
 {
-    struct vibrato_params *vp;
+    struct vibrato_params *params = p->params;
 
-    vp = (struct vibrato_params *) p->params;
-
-    write(fd, &vp->vibrato_speed, sizeof(vp->vibrato_speed));
-    write(fd, &vp->vibrato_amplitude, sizeof(vp->vibrato_amplitude));
+    SAVE_DOUBLE("vibrato_speed", params->vibrato_speed);
+    SAVE_DOUBLE("vibrato_amplitude", params->vibrato_amplitude);
 }
 
 void
-vibrato_load(struct effect *p, int fd)
+vibrato_load(struct effect *p, LOAD_ARGS)
 {
-    struct vibrato_params *vp;
+    struct vibrato_params *params = p->params;
 
-    vp = (struct vibrato_params *) p->params;
-
-    read(fd, &vp->vibrato_speed, sizeof(vp->vibrato_speed));
-    read(fd, &vp->vibrato_amplitude, sizeof(vp->vibrato_amplitude));
-
+    LOAD_DOUBLE("vibrato_speed", params->vibrato_speed);
+    LOAD_DOUBLE("vibrato_amplitude", params->vibrato_amplitude);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

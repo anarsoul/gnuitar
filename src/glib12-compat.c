@@ -5,6 +5,33 @@
 #define _GNU_SOURCE /* for vasprintf */
 #include <glib12-compat.h>
 
+#include <stdlib.h>
+/* an addition that I hope will some day be in GLIB */
+void
+g_key_file_set_double(GKeyFile *kf, const gchar *grp, const gchar *name, gdouble val)
+{
+    gchar *tmp;
+    /* XXX this output should be locale independent, how to do it? */
+    tmp = g_strdup_printf("%lf", val);
+    g_key_file_set_string(kf, grp, name, tmp);
+    free(tmp);
+}
+
+gdouble
+g_key_file_get_double(GKeyFile *kf, const gchar *grp, const gchar *name, GError **error)
+{
+    gchar   *tmp;
+    double   value;
+
+    tmp = g_key_file_get_string(kf, grp, name, error);
+    if (*error != NULL)
+	tmp = "NAN";
+    /* XXX this parsing should be locale independent, how to do it? */
+    sscanf(tmp, "%lf", &value);
+    free(tmp);
+    return value;
+}
+
 #ifdef HAVE_GTK
 
 #include <errno.h>
@@ -12,7 +39,6 @@
 #include <locale.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

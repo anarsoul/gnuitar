@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.21  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -442,33 +446,29 @@ chorus_done(struct effect *p)
 }
 
 void
-chorus_save(struct effect *p, int fd)
+chorus_save(struct effect *p, SAVE_ARGS)
 {
-    struct chorus_params *cp;
+    struct chorus_params *params = p->params;
 
-    cp = (struct chorus_params *) p->params;
-
-    write(fd, &cp->wet, sizeof(cp->wet));
-    write(fd, &cp->dry, sizeof(cp->dry));
-    write(fd, &cp->depth, sizeof(cp->depth));
-    write(fd, &cp->mode, sizeof(cp->mode));
-    write(fd, &cp->speed, sizeof(cp->speed));
-    write(fd, &cp->regen, sizeof(cp->regen));
+    SAVE_DOUBLE("wet", params->wet);
+    SAVE_DOUBLE("dry", params->dry);
+    SAVE_DOUBLE("depth", params->depth);
+    SAVE_DOUBLE("speed", params->speed);
+    SAVE_DOUBLE("regen", params->regen);
+    SAVE_INT("mode", params->mode);
 }
 
 void
-chorus_load(struct effect *p, int fd)
+chorus_load(struct effect *p, LOAD_ARGS)
 {
-    struct chorus_params *cp;
+    struct chorus_params *params = p->params;
 
-    cp = (struct chorus_params *) p->params;
-
-    read(fd, &cp->wet, sizeof(cp->wet));
-    read(fd, &cp->dry, sizeof(cp->dry));
-    read(fd, &cp->depth, sizeof(cp->depth));
-    read(fd, &cp->mode, sizeof(cp->mode));
-    read(fd, &cp->speed, sizeof(cp->speed));
-    read(fd, &cp->regen, sizeof(cp->regen));
+    LOAD_DOUBLE("wet", params->wet);
+    LOAD_DOUBLE("dry", params->dry);
+    LOAD_DOUBLE("depth", params->depth);
+    LOAD_DOUBLE("speed", params->speed);
+    LOAD_DOUBLE("regen", params->regen);
+    LOAD_INT("mode", params->mode);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

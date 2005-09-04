@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.20  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -92,6 +96,7 @@
  */
 
 #include "autowah.h"
+#include "glib12-compat.h"
 #include "gui.h"
 #include <math.h>
 #include <stdlib.h>
@@ -334,29 +339,25 @@ autowah_done(struct effect *p)
 }
 
 void
-autowah_save(struct effect *p, int fd)
+autowah_save(effect_t *p, SAVE_ARGS)
 {
-    struct autowah_params *ap;
+    struct autowah_params *params = p->params;
 
-    ap = (struct autowah_params *) p->params;
-
-    write(fd, &ap->sweep_time, sizeof(ap->sweep_time));
-    write(fd, &ap->freq_low, sizeof(ap->freq_low));
-    write(fd, &ap->freq_high, sizeof(ap->freq_high));
-    write(fd, &ap->mixx, sizeof(ap->mixx));
+    SAVE_DOUBLE("sweep_time", params->sweep_time);
+    SAVE_DOUBLE("freq_low", params->freq_low);
+    SAVE_DOUBLE("freq_high", params->freq_high);
+    SAVE_INT("mixx", params->mixx);
 }
 
 void
-autowah_load(struct effect *p, int fd)
+autowah_load(effect_t *p, LOAD_ARGS)
 {
-    struct autowah_params *ap;
-
-    ap = (struct autowah_params *) p->params;
-
-    read(fd, &ap->sweep_time, sizeof(ap->sweep_time));
-    read(fd, &ap->freq_low, sizeof(ap->freq_low));
-    read(fd, &ap->freq_high, sizeof(ap->freq_high));
-    read(fd, &ap->mixx, sizeof(ap->mixx));
+    struct autowah_params *params = p->params;
+    
+    LOAD_DOUBLE("sweep_time", params->sweep_time);
+    LOAD_DOUBLE("freq_low", params->freq_low);
+    LOAD_DOUBLE("freq_high", params->freq_high);
+    LOAD_INT("mixx", params->mixx);
     if (p->toggle == 0) {
 	p->proc_filter = passthru;
     } else {

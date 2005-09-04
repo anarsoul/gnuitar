@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.42  2005/09/03 20:20:42  alankila
  * - create audio_driver type and write all the driver stuff into it. This
  *   faciliates carrying configuration data about the capabilities of
@@ -183,6 +187,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #ifndef _WIN32
+#include <locale.h>
 #include <unistd.h>
 #include <pthread.h>
 #endif
@@ -217,7 +222,7 @@ main(int argc, char **argv)
 #ifndef _WIN32
     int             max_priority;
     struct sched_param p;
-    
+
 #ifdef HAVE_JACK
     if (jack_available()) {
         audio_driver = &jack_driver;

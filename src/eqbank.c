@@ -20,6 +20,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.19  2005/09/04 01:51:09  alankila
+ * - GKeyFile-based preset load/save
+ * - still need locale-immune %lf for printf and sscanf
+ *
  * Revision 1.18  2005/09/02 11:58:49  alankila
  * - remove #ifdef HAVE_GTK2 entirely from all effect code
  *
@@ -321,28 +325,36 @@ eqbank_done(struct effect *p)
 }
 
 void
-eqbank_save(struct effect *p, int fd)
+eqbank_save(struct effect *p, SAVE_ARGS)
 {
-    struct eqbank_params *ep;
+    struct eqbank_params *params = p->params;
+    gchar *label;
+    int i;
 
-    ep = (struct eqbank_params *) p->params;
-
-    write(fd, ep->boosts,  sizeof(ep->boosts[0]) * FB_NB);
-    write(fd, &ep->volume, sizeof(ep->volume));
-
+    for (i = 0; i < FB_NB; i += 1) {
+	label = g_strdup_printf("boost%d", i);
+	SAVE_DOUBLE(label, params->boosts[i]);
+	free(label);
+    }
+    SAVE_DOUBLE("volume", params->volume);
 }
 
 void
-eqbank_load(struct effect *p, int fd)
+eqbank_load(struct effect *p, LOAD_ARGS)
 {
-    struct eqbank_params *ep;
-    int             i;
+    struct eqbank_params *params = p->params;
+    gchar *label;
+    int i;
 
-    ep = (struct eqbank_params *) p->params;
-    read(fd, ep->boosts,  sizeof(ep->boosts[0]) * FB_NB);
-    read(fd, &ep->volume, sizeof(ep->volume));
+    for (i = 0; i < FB_NB; i += 1) {
+	label = g_strdup_printf("boost%d", i);
+	LOAD_DOUBLE(label, params->boosts[i]);
+	free(label);
+    }
+    LOAD_DOUBLE("volume", params->volume);
+
     for (i = 0; i < FB_NB; i++) {
-	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], ep->boosts[i], &ep->filters[i]);
+	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], params->boosts[i], &params->filters[i]);
     }
 
     if (p->toggle == 0) {
