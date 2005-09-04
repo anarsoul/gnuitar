@@ -253,20 +253,14 @@ reverb_filter(struct effect *p, struct data_block *db)
         /* mix with original and write to backbuf */
         tot = tmp + *s;
 #ifdef CLIP_EVERYWHERE
-	tot =
-	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
-						 MAX_SAMPLE) ? MAX_SAMPLE :
-	    tot;
+        CLIP_SAMPLE(tot)
 #endif
         dr->history[curr_channel]->add(dr->history[curr_channel], tot);
 
         /* mix reverb with output with proportions as given by wet & dry % */
         tot = ((double) *s) * Dry + tmp * Wet;
 #ifdef CLIP_EVERYWHERE
-	tot =
-	    (tot < -MAX_SAMPLE) ? -MAX_SAMPLE : (tot >
-						 MAX_SAMPLE) ? MAX_SAMPLE :
-	    tot;
+        CLIP_SAMPLE(tot)
 #endif
 	*s = tot;
         

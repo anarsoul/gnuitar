@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/09/04 19:30:23  alankila
+ * - move the common clip code into a macro
+ *
  * Revision 1.26  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -334,10 +337,7 @@ distort_filter(struct effect *p, struct data_block *db)
 	t *= dp->level;
 	t /= 256;
 #ifdef CLIP_EVERYWHERE
-	if (t > MAX_SAMPLE)
-	    t = MAX_SAMPLE;
-	if (t < -MAX_SAMPLE)
-	    t = -MAX_SAMPLE;
+        CLIP_SAMPLE(t)
 #endif
 	if(isnan(t))
 	    t=0;

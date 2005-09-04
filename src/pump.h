@@ -86,6 +86,12 @@ struct effect {
 };
 typedef struct effect effect_t;
 
+#define CLIP_SAMPLE(sm) \
+    if (sm > MAX_SAMPLE) \
+        sm = MAX_SAMPLE; \
+    if (sm < -MAX_SAMPLE) \
+        sm = -MAX_SAMPLE;
+
 /* these macros are used to save my sanity */
 #define SAVE_ARGS \
     GKeyFile *preset, gchar *group

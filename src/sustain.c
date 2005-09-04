@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/09/04 19:30:23  alankila
+ * - move the common clip code into a macro
+ *
  * Revision 1.20  2005/09/04 14:40:17  alankila
  * - get rid of effect->id and associated enumeration
  *
@@ -289,7 +292,7 @@ sustain_filter(struct effect *p, struct data_block *db)
 	 */
 	tmp = ((float) (*s) * compFac * gateFac);
 #ifdef CLIP_EVERYWHERE
-	tmp = (tmp < -MAX_SAMPLE) ? -MAX_SAMPLE : (tmp > MAX_SAMPLE) ? MAX_SAMPLE : tmp;
+        CLIP_SAMPLE(tmp)
 #endif
 	*s = tmp;
 	s++;
