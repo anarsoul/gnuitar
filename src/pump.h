@@ -95,7 +95,7 @@ struct effect {
     void           *params;
     void            (*proc_init) (struct effect *);
     void            (*proc_done) (struct effect *);
-    void            (*proc_filter) (struct effect *, struct data_block *);
+    void            (*proc_filter) (struct effect *, data_block_t *);
     void            (*proc_save) (struct effect *, GKeyFile *, gchar *);
     void            (*proc_load) (struct effect *, GKeyFile *, gchar *, GError **error);
     short           toggle;
@@ -128,7 +128,7 @@ typedef struct effect effect_t;
 
 struct effect_creator {
     char           *str;
-    void            (*create_f) (struct effect *);
+    effect_t *    (*create_f)();
 };
 
 #define SIN_LOOKUP_SIZE         36000
@@ -156,7 +156,7 @@ extern int      n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];
 
-extern int      pump_sample(struct data_block *db);
+extern int      pump_sample(data_block_t *db);
 extern void     pump_start(int argc, char **argv);
 extern void     pump_stop(void);
 extern void     save_pump(const char *fname);

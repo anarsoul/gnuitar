@@ -314,13 +314,14 @@ reverb_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("delay", params->delay);
 }
 
-
-void
-reverb_create(struct effect *p)
+effect_t *
+reverb_create()
 {
+    effect_t       *p;
     struct reverb_params *dr;
     int             i;
     
+    p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct reverb_params));
 
     p->proc_init = reverb_init;
@@ -338,4 +339,5 @@ reverb_create(struct effect *p)
     dr->wet   = 50.0;
     dr->dry   = 50.0;
     dr->regen = 30.0;
+    return p;
 }

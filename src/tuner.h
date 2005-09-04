@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.4  2005/09/01 13:36:23  alankila
  * Objectify backbuf, correct naming and make it a typedef.
  *
@@ -45,7 +48,7 @@
 
 #include "backbuf.h"
 
-extern void     tuner_create(struct effect *);
+extern effect_t *   tuner_create();
 
 /* frequency measurements history buffer size */
 #define FREQ_SIZE 16

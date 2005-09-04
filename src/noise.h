@@ -25,7 +25,7 @@
 
 #include "pump.h"
 
-extern void     noise_create(struct effect *);
+extern effect_t *   noise_create();
 
 struct noise_params {
     int             threshold,

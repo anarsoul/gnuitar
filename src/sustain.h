@@ -25,7 +25,7 @@
 
 #include "pump.h"
 
-extern void     sustain_create(struct effect *);
+extern effect_t *   sustain_create();
 
 struct sustain_params {
     int             sust,

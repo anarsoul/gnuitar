@@ -27,7 +27,7 @@
 
 #define MAX_VIBRATO_BUFSIZE 16384
 
-extern void     vibrato_create(struct effect *);
+extern effect_t *   vibrato_create();
 
 struct vibrato_params {
     float           vibrato_amplitude,

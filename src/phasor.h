@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "rcfilter.h"
 
-extern void     phasor_create(struct effect *);
+extern effect_t *   phasor_create();
 
 struct phasor_params {
     float           freq_low, freq_high, sweep_time, f;

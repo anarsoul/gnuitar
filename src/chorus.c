@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/09/04 12:12:35  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.23  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -439,7 +442,6 @@ chorus_done(struct effect *p)
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
@@ -468,12 +470,14 @@ chorus_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("mode", params->mode);
 }
 
-void
-chorus_create(struct effect *p)
+effect_t *
+chorus_create()
 {
+    effect_t       *p;
     struct chorus_params *cp;
     int             i;
 
+    p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct chorus_params));
     p->proc_init = chorus_init;
     p->proc_filter = chorus_filter;
@@ -495,4 +499,6 @@ chorus_create(struct effect *p)
     cp->wet = 250;
     cp->dry = 200;
     cp->regen = 0;
+
+    return p;
 }

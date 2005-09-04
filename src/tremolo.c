@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.22  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -269,8 +272,6 @@ tremolo_done(struct effect *p)
     free(tp);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
-
 }
 
 void
@@ -291,14 +292,15 @@ tremolo_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("tremolo_speed", params->tremolo_speed);
 }
 
-void
-tremolo_create(struct effect *p)
+effect_t *
+tremolo_create()
 {
+    effect_t       *p;
     struct tremolo_params *ptremolo;
     int             i;
 
-    p->params =
-	(struct tremolo_params *) malloc(sizeof(struct tremolo_params));
+    p = calloc(1, sizeof(effect_t));
+    p->params = calloc(1, sizeof(struct tremolo_params));
     p->proc_init = tremolo_init;
     p->proc_load = tremolo_load;
     p->proc_save = tremolo_save;
@@ -307,12 +309,12 @@ tremolo_create(struct effect *p)
     p->proc_done = tremolo_done;
     p->id = TREMOLO;
 
-    ptremolo = (struct tremolo_params *) p->params;
-
+    ptremolo = p->params;
     ptremolo->tremolo_amplitude = 25;
     ptremolo->tremolo_speed = 1000;
-
     for (i = 0; i < MAX_CHANNELS; i++)
         ptremolo->history[i] = new_Backbuf(MAX_TREMOLO_BUFSIZE);
     ptremolo->tremolo_phase = 0;
+
+    return p;
 }

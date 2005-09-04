@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.44  2005/09/04 12:12:35  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.43  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -574,7 +577,6 @@ distort2_done(struct effect *p)
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
 }
 
 void
@@ -597,16 +599,16 @@ distort2_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("noisegate", params->noisegate);
 }
 
-void
-distort2_create(struct effect *p)
+effect_t *
+distort2_create()
 {
+    effect_t   *p;
     struct distort2_params *ap;
     double	Ts, Ts1;
     double	RC = RC_FEEDBACK_C * RC_FEEDBACK_R;
-    p->params =
-	(struct distort2_params *) calloc(1, sizeof(struct distort2_params));
-    ap = (struct distort2_params *) p->params;
 
+    p = calloc(1, sizeof(effect_t)); 
+    p->params = calloc(1, sizeof(struct distort2_params));
     p->proc_init = distort2_init;
     p->proc_filter = distort2_filter;
     p->proc_save = distort2_save;
@@ -615,6 +617,7 @@ distort2_create(struct effect *p)
     p->id = DISTORT2;
     p->proc_done = distort2_done;
 
+    ap = p->params;
     ap->drive = 0.0;
     ap->clip = 50.0;
     ap->noisegate = 1440;
@@ -635,4 +638,6 @@ distort2_create(struct effect *p)
     
     /* a lowpass Chebyshev filter for downsampling */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/3, 0.5, 1, &ap->cheb );
+
+    return p;
 }

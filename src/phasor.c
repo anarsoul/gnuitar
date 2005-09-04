@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.20  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -322,11 +325,13 @@ phasor_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("freq_high", params->freq_low);
 }
 
-void
-phasor_create(struct effect *p)
+effect_t *
+phasor_create()
 {
+    effect_t           *p;
     struct phasor_params *pphasor;
 
+    p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct phasor_params));
     p->proc_init = phasor_init;
     p->proc_filter = phasor_filter;
@@ -346,4 +351,6 @@ phasor_create(struct effect *p)
 
     RC_setup(10, 1.5, &pphasor->fd1);
     RC_setup(10, 1.5, &pphasor->fd2);
+
+    return p;
 }

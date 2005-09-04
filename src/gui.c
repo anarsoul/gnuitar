@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.55  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.54  2005/09/03 23:29:03  alankila
  * - I finally cracked the alignment problem. You align GTK labels with
  *   gtk_misc_set_alignment.
@@ -627,8 +630,7 @@ add_pressed(GtkWidget * widget, gpointer data)
 
     if (n < MAX_EFFECTS && effects_row >= 0
 	&& effects_row <= EFFECT_AMOUNT) {
-	tmp_effect = (struct effect *) malloc(sizeof(struct effect));
-	effect_list[effects_row].create_f(tmp_effect);
+	tmp_effect = effect_list[effects_row].create_f();
 	tmp_effect->proc_init(tmp_effect);
 
 	my_lock_mutex(effectlist_lock);

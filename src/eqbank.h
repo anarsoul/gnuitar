@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.5  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.4  2005/08/10 11:06:26  alankila
  * - sync to biquad interface
  * - change storage types of boosts and volume to double to keep fractions
@@ -44,7 +47,7 @@
 	#include "biquad.h"
 #endif
 
-extern void     eqbank_create(struct effect *);
+extern effect_t *   eqbank_create();
 
 struct eqbank_params {
     double          *boosts;

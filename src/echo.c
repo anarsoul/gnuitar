@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2005/09/04 12:12:35  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.18  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -319,12 +322,14 @@ echo_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("echoes", params->echoes);
 }
 
-void
-echo_create(struct effect *p)
+effect_t *
+echo_create()
 {
+    effect_t       *p;
     struct echo_params *params;
     int             i, j, k;
 
+    p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(*params));
     p->proc_init = echo_init;
     p->proc_filter = echo_filter;
@@ -364,4 +369,5 @@ echo_create(struct effect *p)
             params->history[j][i] = new_Backbuf(MAX_ECHO_LENGTH / 1000.0 * MAX_SAMPLE_RATE * params->size_factor[i]);
         }
     }
+    return p;
 }

@@ -29,7 +29,7 @@
 #define MAX_ECHO_COUNT  20
 #define MAX_ECHO_LENGTH 2000 /* ms */
 
-extern void     echo_create(struct effect *);
+extern effect_t *   echo_create();
 
 struct echo_params {
     Backbuf_t       *history[MAX_CHANNELS][MAX_ECHO_COUNT];

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.27  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -267,8 +270,6 @@ vibrato_done(struct effect *p)
     free(vp);
     gtk_widget_destroy(p->control);
     free(p);
-    p = NULL;
-
 }
 
 void
@@ -289,13 +290,14 @@ vibrato_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("vibrato_amplitude", params->vibrato_amplitude);
 }
 
-void
-vibrato_create(struct effect *p)
+effect_t *
+vibrato_create()
 {
+    effect_t       *p;
     struct vibrato_params *pvibrato;
 
-    p->params =
-	(struct vibrato_params *) malloc(sizeof(struct vibrato_params));
+    p = calloc(1, sizeof(effect_t));
+    p->params = calloc(1, sizeof(struct vibrato_params));
     p->proc_init = vibrato_init;
     p->proc_filter = vibrato_filter;
     p->toggle = 0;
@@ -304,9 +306,10 @@ vibrato_create(struct effect *p)
     p->proc_load = vibrato_load;
     p->proc_save = vibrato_save;
 
-    pvibrato = (struct vibrato_params *) p->params;
-
+    pvibrato = p->params;
     pvibrato->vibrato_amplitude = 50;
     pvibrato->vibrato_speed = 200;
     pvibrato->vibrato_phase = 0;
+
+    return p;
 }

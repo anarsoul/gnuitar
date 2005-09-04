@@ -27,7 +27,7 @@
 #include "rcfilter.h"
 #include "biquad.h"
 
-extern void     distort2_create(struct effect *);
+extern effect_t *distort2_create();
 
 struct distort2_params {
     double      drive, clip, noisegate;

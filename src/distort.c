@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/09/04 12:12:35  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.24  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -374,15 +377,15 @@ distort_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("lowpass", params->lowpass);
 }
 
-
-void
-distort_create(struct effect *p)
+effect_t *
+distort_create()
 {
+    effect_t *p;
     struct distort_params *ap;
 
-    p->params =
-	(struct distort_params *) malloc(sizeof(struct distort_params));
-    ap = (struct distort_params *) p->params;
+    p = calloc(1, sizeof(effect_t));
+    p->params = calloc(1, sizeof(struct distort_params));
+    ap = p->params;
 
     p->proc_init = distort_init;
     p->proc_filter = distort_filter;
@@ -403,4 +406,6 @@ distort_create(struct effect *p)
 
     RC_setup(10, 1, &(ap->noise));
     RC_set_freq(ap->noisegate, &(ap->noise));
+
+    return p;
 }

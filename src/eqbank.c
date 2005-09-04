@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.21  2005/09/04 12:12:35  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.20  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -318,7 +321,6 @@ eqbank_done(struct effect *p)
 
     free(p->params);
     free(p);
-    p = NULL;
 }
 
 void
@@ -355,12 +357,15 @@ eqbank_load(struct effect *p, LOAD_ARGS)
     }
 }
 
-void
-eqbank_create(struct effect *p)
+effect_t *
+eqbank_create()
 {
+    effect_t       *p;
     struct eqbank_params *peq;
     int             i;
 
+    p = calloc(1, sizeof(effect_t));
+    p->params = calloc(1, sizeof(struct eqbank_params));
     p->proc_init = eqbank_init;
     p->proc_filter = eqbank_filter;
     p->proc_save = eqbank_save;
@@ -369,15 +374,15 @@ eqbank_create(struct effect *p)
     p->id = EQBANK;
     p->proc_done = eqbank_done;
 
-    p->params = calloc(1, sizeof(struct eqbank_params));
     peq = p->params;
     peq->filters = calloc(FB_NB, sizeof(peq->filters[0]));
     peq->boosts  = calloc(FB_NB, sizeof(peq->boosts[0]));
-    for (i = 0; i < FB_NB; i++) 
-    {
+    for (i = 0; i < FB_NB; i++) {
     	peq->filters[i].mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
 	peq->boosts[i] = 0;
 	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], peq->boosts[i], &peq->filters[i]);
     }
     peq->volume=0;
+
+    return p;
 }

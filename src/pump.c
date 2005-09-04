@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.40  2005/09/04 11:21:48  alankila
  * - one warning is really an error
  *
@@ -194,6 +197,7 @@
 //#include <sys/types.h>
 #include <sys/stat.h>
 #include "pump.h"
+#include "main.h"
 #include "gui.h"
 #include <glib12-compat.h>
 
@@ -214,11 +218,9 @@
 #include "tuner.h"
 #include "utils.h"
 
-struct effect  *effects[MAX_EFFECTS];
-
+effect_t       *effects[MAX_EFFECTS];
 int             n = 0;
 
-extern char     version[];
 /* flag for whether we are creating .wav */
 volatile unsigned short  write_track = 0;
 
@@ -244,7 +246,7 @@ int    bias_n[MAX_CHANNELS];
  * compensate. Some soundcards would also need highpass filtering ~20 Hz
  * or so. */
 void
-bias_elimination(struct data_block *db) {
+bias_elimination(data_block_t *db) {
     int             i;
     int             curr_channel = 0;
 
@@ -273,7 +275,7 @@ DSP_SAMPLE nr_last[MAX_CHANNELS][NR_SIZE];
  * effect is very subtle. Nevertheless, it drops noise floor here
  * worth 1-2 dB. */
 void
-noise_reduction(struct data_block *db) {
+noise_reduction(data_block_t *db) {
     int             i, j;
     int             curr_channel = 0;
     DSP_SAMPLE      tmp;
@@ -294,7 +296,7 @@ noise_reduction(struct data_block *db) {
 
 /* accumulate power estimate and monitor clipping */
 void
-vu_meter(struct data_block *db) {
+vu_meter(data_block_t *db) {
     int             i;
     DSP_SAMPLE      sample, max_sample = 0;
     double          peak, power = 0;
@@ -315,7 +317,7 @@ vu_meter(struct data_block *db) {
 
 /* adjust master volume according to the main window slider and clip */
 void
-adjust_master_volume(struct data_block *db) {
+adjust_master_volume(data_block_t *db) {
     int		    i;
     double	    volume = pow(10, master_volume / 20.0);
 
@@ -336,7 +338,7 @@ adjust_master_volume(struct data_block *db) {
  * accumulating into an audible distortion, instead producing wideband
  * noise rather than distortion */
 void
-dither_output(struct data_block *db) {
+dither_output(data_block_t *db) {
     int		    i;
     static unsigned int randseed = 1;
 
@@ -346,7 +348,7 @@ dither_output(struct data_block *db) {
 }
 
 void
-adapt_to_output(struct data_block *db)
+adapt_to_output(data_block_t *db)
 {
     int             i;
     int             size = db->len;
@@ -399,7 +401,7 @@ adapt_to_output(struct data_block *db)
 }
 
 int
-pump_sample(struct data_block *db)
+pump_sample(data_block_t *db)
 {
     int             i;
 
@@ -558,7 +560,7 @@ pump_start(int argc, char **argv)
     int             i,
                     j;
 
-    void            (*create_f[10]) (struct effect *);
+    effect_t *      (*create_f[10])();
 
     my_create_mutex(&effectlist_lock);
     init_sin_lookup_table();
@@ -597,8 +599,7 @@ pump_start(int argc, char **argv)
     }
 
     while (n < MAX_EFFECTS && create_f[n]) {
-	effects[n] = (struct effect *) calloc(1, sizeof(struct effect));
-	create_f[n] (effects[n]);
+	effects[n] = create_f[n]();
 	effects[n]->proc_init(effects[n]);
 	n++;
     }
@@ -623,12 +624,6 @@ pump_stop(void)
 
     my_close_mutex(effectlist_lock);
 }
-
-/* for UNIX; O_BINARY exists only on Win32. We must open() files with this
- * flag because otherwise it gets corrupted by the CR/LF translation */
-#ifndef O_BINARY
-#  define O_BINARY 0
-#endif
 
 void
 save_pump(const char *fname)
@@ -729,8 +724,7 @@ load_pump(const char *fname)
 	    continue;
 	}
 
-	effects[n] = (struct effect *) calloc(1, sizeof(struct effect));
-	effect_list[j].create_f(effects[n]);
+	effects[n] = effect_list[j].create_f();
 	
 	/* read enabled flag */
 	effects[n]->toggle = g_key_file_get_integer(preset, gtmp, "enabled", &error);

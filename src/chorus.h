@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "backbuf.h"
 
-extern void     chorus_create(struct effect *);
+extern effect_t *   chorus_create();
 
 struct chorus_params {
     Backbuf_t      *history[MAX_CHANNELS];

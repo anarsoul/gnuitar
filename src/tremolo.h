@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "backbuf.h"
 
-extern void     tremolo_create(struct effect *);
+extern effect_t *   tremolo_create();
 
 struct tremolo_params {
     Backbuf_t	   *history[MAX_CHANNELS];

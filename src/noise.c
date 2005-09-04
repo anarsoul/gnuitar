@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.14  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -412,13 +415,14 @@ noise_done(struct effect *p)
     free(p);
 }
 
-void
-noise_create(struct effect *p)
+effect_t *
+noise_create()
 {
+    effect_t       *p;
     struct noise_params *pnoise;
 
-    p->params =
-	(struct noise_params *) malloc(sizeof(struct noise_params));
+    p = calloc(1, sizeof(effect_t));
+    p->params = calloc(1, sizeof(struct noise_params));
     p->proc_init = noise_init;
     p->proc_filter = noise_filter;
     p->proc_load = noise_load;
@@ -427,11 +431,12 @@ noise_create(struct effect *p)
     p->proc_done = noise_done;
     p->id = NOISE;
 
-    pnoise = (struct noise_params *) p->params;
-
+    pnoise = p->params;
     pnoise->threshold = 500;
     pnoise->hold_time = 2 * sample_rate / 1000;
     pnoise->release_time = 500 * sample_rate / 1000;
     pnoise->attack = 0 * sample_rate / 1000;
     pnoise->hysteresis = 410;
+
+    return p;
 }

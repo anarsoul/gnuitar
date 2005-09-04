@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/09/04 12:12:35  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.23  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -341,12 +344,14 @@ delay_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("delay_count", params->delay_count);
 }
 
-void
-delay_create(struct effect *p)
+effect_t *
+delay_create()
 {
+    effect_t           *p;
     struct delay_params *pdelay;
     int                 i;
 
+    p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct delay_params));
     pdelay = p->params;
     p->proc_init = delay_init;
@@ -370,4 +375,5 @@ delay_create(struct effect *p)
     pdelay->delay_count = 8;
     for (i = 0; i < MAX_CHANNELS; i += 1)
         pdelay->history[i] = new_Backbuf(MAX_SIZE);
+    return p;
 }

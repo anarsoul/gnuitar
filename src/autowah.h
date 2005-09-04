@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "rcfilter.h"
 
-extern void     autowah_create(struct effect *);
+extern effect_t *   autowah_create();
 
 struct autowah_params {
     float           sweep_time;

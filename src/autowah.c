@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/09/04 12:12:35  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.22  2005/09/04 11:16:59  alankila
  * - destroy passthru function, move the toggle logic higher up
  *
@@ -357,13 +360,15 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_INT("mixx", params->mixx);
 }
 
-void
-autowah_create(struct effect *p)
+effect_t *
+autowah_create()
 {
+    effect_t *p;
     struct autowah_params *ap;
-    p->params =
-	(struct autowah_params *) malloc(sizeof(struct autowah_params));
-    ap = (struct autowah_params *) p->params;
+
+    p = calloc(1, sizeof(effect_t));
+    p->params = calloc(1, sizeof(struct autowah_params));
+    ap = p->params;
     p->proc_init = autowah_init;
     p->proc_filter = autowah_filter;
     p->toggle = 0;
@@ -371,7 +376,7 @@ autowah_create(struct effect *p)
     p->proc_done = autowah_done;
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;
-    ap->fd = (struct filter_data *) malloc(sizeof(struct filter_data));
+    ap->fd = calloc(1, sizeof(struct filter_data));
     RC_setup(10, 1.5, ap->fd);
 
     ap->freq_low = 150;
@@ -380,4 +385,6 @@ autowah_create(struct effect *p)
     ap->dir = 1;
     ap->f = 0.0;
     ap->mixx = 0;
+
+    return p;
 }

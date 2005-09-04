@@ -60,6 +60,8 @@ typedef enum {
     ERR_NOAUDIOAVAILABLE
 } GnuitarErr;
 
+extern char version[];
+
 extern volatile int state;
 extern volatile audio_driver_t *audio_driver;
 extern my_mutex         snd_open;

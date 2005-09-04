@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.15  2005/09/04 12:12:36  alankila
+ * - make create() and done() symmetric in memory allocation/free
+ *
  * Revision 1.14  2005/09/04 01:51:09  alankila
  * - GKeyFile-based preset load/save
  * - still need locale-immune %lf for printf and sscanf
@@ -388,15 +391,16 @@ void tuner_done_really(struct effect *p) {
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
-    return;
 }
 
-void
-tuner_create(struct effect *p)
+effect_t *
+tuner_create()
 {
+    effect_t       *p;
     struct tuner_params *params;
     
-    /* standard effect init */
+    p = calloc(1, sizeof(effect_t));
+    p->params = calloc(1, sizeof(struct tuner_params));
     p->proc_init = tuner_init;
     p->proc_filter = tuner_filter;
     p->id = TUNER;
@@ -404,9 +408,8 @@ tuner_create(struct effect *p)
     p->proc_save = NULL;
     p->proc_load = NULL;
     
-    p->params = calloc(1, sizeof(struct tuner_params));
     params = p->params;
     params->history = new_Backbuf(HISTORY_SIZE);
     
-    return;
+    return p;
 }
