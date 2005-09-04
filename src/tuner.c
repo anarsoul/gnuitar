@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.18  2005/09/04 19:30:24  fonin
+ * Added lid indicators for tuner. Added tuning layouts (so far for bass and guitar)
+ *
  * Revision 1.17  2005/09/04 14:50:28  alankila
  * - tuner defaults to on
  *
@@ -140,14 +143,78 @@
 #define COMPARE_LEN 192		/* sample data examining length */
 #define NOTES_N	    12		/* the note scale */
 #define NOTES_TO_C  9		/* how many notes to C sound from MIN_HZ */
+#define MAX_STRINGS 6		/* max.number of strings */
+#define LAYOUT_6GUITAR	"6-string guitar E A D G H E"
+#define LAYOUT_4BASS	"4-string bass E A D G"
 const char *notes[] = {
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"
 };
 
+/* images */
+static char * empty_xpm[] = {	/* empty black light */
+"7 7 10 1",
+" 	c None",
+".	c #FFFFFF",
+"+	c #FFFF00",
+"@	c #FF00FF",
+"#	c #FF0000",
+"$	c #00FFFF",
+"%	c #00FF00",
+"&	c #0000FF",
+"*	c #000000",
+"=	c #CFD9CB",
+" =***= ",
+"=*****=",
+"*******",
+"*******",
+"*******",
+"=*****=",
+" =***= "};
+
+static char * green_xpm[] = {	/* green light */
+"7 7 4 1",
+" 	c None",
+".	c #648356",
+"+	c #CFD9CB",
+"@	c #77936B",
+" +@.@+ ",
+"+.....+",
+"@.....@",
+".......",
+"@.....@",
+"+.....+",
+" +@.@+ "};
+
+GtkPixmap green,black;
+
+/* Tuner layouts
+ * The format is the following: the values are distances between tones
+ * measured in half-notes. First distance is from MIN_HZ; the subsequental
+ * distances are from 1st tone to 2nd and so on.
+ * For now, we assume all instruments have 6 strings; unused strings
+ * are replaced with zeroes.
+ */
+unsigned short layouts[][MAX_STRINGS+1]={
+    { 12+7, 5, 5, 5, 4, 5, 5 },	/* 6-string guitar */
+    {    7, 5, 5, 5, 4, 0, 0 }	/* 4-string bass   */
+};
+float layout[]={0,0,0,0,0,0};	/* the final layout contains
+				 * absolute frequencies; recalculated
+				 * on each layout change and on effect init;
+				 * init with zeroes for now */
+GtkWidget* lid_table;		/* sorry for this global; I won't pass
+				 * this through the callback functions as
+				 * a param */
+GtkWidget* lids[MAX_STRINGS]={NULL,NULL,NULL,NULL,NULL,NULL};
+GtkWidget* note_letters[MAX_STRINGS]={NULL,NULL,NULL,NULL,NULL,NULL};
+unsigned short curr_layout=0;	/* index of current layout */
+
 void tuner_filter(struct effect *p, struct data_block *db);
 void tuner_done_really(struct effect *p);
 gboolean timeout_update_label(gpointer gp);
-
+void calc_layout(const unsigned int index);	/* recalc layout */
+unsigned int freq2note(double freq);
+void update_layout(GtkWidget *widget, gpointer data);
 void ignored_event(void *whatever) {
     return;
 }
@@ -160,13 +227,22 @@ tuner_init(struct effect *p)
     GtkWidget *label;
     GtkWidget *table;
     GtkWidget *slider;
+    GtkStyle  *style;
+    GList     *tuning_layouts = NULL;
+    static GtkWidget *layout_combo;
+    int i;
     
     params = (struct tuner_params *) p->params;
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
                        GTK_SIGNAL_FUNC(delete_event), p);
+#ifdef HAVE_GTK
+    gtk_widget_set_usize(p->control, 200, 150);
+#elif defined(HAVE_GTK2)
+    gtk_window_set_default_size(GTK_WINDOW(p->control), 200, 150);
+#endif
     
-    table = gtk_table_new(2, 3, FALSE);
+    table = gtk_table_new(2, 5, FALSE);
  
     label = gtk_label_new("Current: ");
     gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
@@ -199,7 +275,95 @@ tuner_init(struct effect *p)
     gtk_container_add(GTK_CONTAINER(p->control), table);
     g_timeout_add(GUI_UPDATE_INTERVAL, timeout_update_label, p);
     
+    /* create pixmaps */
+    style = gtk_widget_get_style( p->control );
+
+    green.pixmap = gdk_pixmap_create_from_xpm_d( p->control->window,
+					    &(green.mask),
+                                            &style->bg[GTK_STATE_NORMAL],
+                                            (gchar **)green_xpm );
+
+    black.pixmap = gdk_pixmap_create_from_xpm_d( p->control->window,
+					    &(black.mask),
+                                            &style->bg[GTK_STATE_NORMAL],
+                                            (gchar **)empty_xpm );
+    calc_layout(curr_layout);
     gtk_widget_show_all(p->control);
+
+    lid_table = gtk_table_new(MAX_STRINGS, 2, FALSE);
+
+    for(i=0;i<MAX_STRINGS;i++) {
+	/* string is absent */
+	if(!layout[i]) {
+	    lids[i]=NULL;
+	    note_letters[i]=NULL;
+	    continue;
+	}
+	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
+	gtk_table_attach(GTK_TABLE(lid_table), lids[i], i, i+1, 4, 5,
+		     OPTS, OPTS, 2, 2);
+	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
+	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], i, i+1, 3, 4,
+		     OPTS, OPTS, 2, 2);
+    }
+
+    gtk_table_attach(GTK_TABLE(table), lid_table, 0, 2, 3, 4,
+		     OPTS, OPTS, 2, 2);    
+
+    tuning_layouts = g_list_append(tuning_layouts, LAYOUT_6GUITAR); 
+    tuning_layouts = g_list_append(tuning_layouts, LAYOUT_4BASS);
+    layout_combo = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(layout_combo), tuning_layouts);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(layout_combo)->entry), FALSE);
+    gtk_table_attach(GTK_TABLE(table), layout_combo, 0, 2, 4, 5,
+		     OPTS, OPTS, 2, 2);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(layout_combo)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_layout),
+		       &layout_combo);
+
+    gtk_widget_show_all(p->control);
+}
+
+void
+update_layout(GtkWidget *widget, gpointer data) {
+    int i;
+    const char *tmp=NULL;
+    GtkWidget* combo;
+    
+    combo=*(GtkWidget**)data;
+    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+    if(tmp == NULL)
+	return;
+
+    /* does somebody know the better way to obtain an index of the gtk combo's
+     * choice ??? */
+    if (strcmp(tmp,LAYOUT_6GUITAR)==0)
+	curr_layout=0;
+    else if(strcmp(tmp,LAYOUT_4BASS)==0)
+	curr_layout=1;
+
+    calc_layout(curr_layout);
+
+    for(i=0;i<MAX_STRINGS;i++) {
+        if(lids[i]) {
+	    gtk_widget_destroy(lids[i]);
+	    gtk_widget_destroy(note_letters[i]);
+	}
+
+	/* string is absent */
+	if(!layout[i]) {
+	    lids[i]=NULL;
+	    continue;
+	}
+	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
+	gtk_table_attach(GTK_TABLE(lid_table), lids[i], i, i+1, 4, 5,
+		     OPTS, OPTS, 2, 2);
+	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
+	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], i, i+1, 3, 4,
+		     OPTS, OPTS, 2, 2);
+	gtk_widget_show(lids[i]);
+	gtk_widget_show(note_letters[i]);
+    }
 }
 
 gboolean
@@ -242,6 +406,42 @@ timeout_update_label(gpointer gp)
     gtk_label_set_text(GTK_LABEL(params->label_current), params->freq_str_buf);
     sprintf(params->freq_str_buf, "%.1f Hz (%s)", ideal, notes[note]);
     gtk_label_set_text(GTK_LABEL(params->label_ideal), params->freq_str_buf);
+
+    /* light the lid, if the accuracy is good */
+    if(fabs(accuracy)<=0.01) {
+	int i;
+	int string=-1;
+	/* search in array for the string's index */
+	for(i=0;i<MAX_STRINGS;i++) {
+	    if((int)ideal==(int)layout[i]) {
+		string=i;
+		break;
+	    }
+	}
+	if(string>=0) {
+	    if(lids[string]) {
+//		gtk_container_remove(GTK_CONTAINER(lid_table),lids[string]);
+		gtk_widget_destroy(lids[string]);
+	    }
+	    lids[string]=gtk_pixmap_new(green.pixmap,green.mask);
+    	    gtk_table_attach(GTK_TABLE(lid_table), lids[string], string,
+			     string+1, 4, 5, OPTS, OPTS, 2, 2);
+	}
+    }
+    /* darken all lids */
+    else {
+	int i;
+	for(i=0;i<MAX_STRINGS;i++) {
+	    if(lids[i]) {
+//		gtk_container_remove(GTK_CONTAINER(lid_table),lids[i]);
+		gtk_widget_destroy(lids[i]);
+	        lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
+    		gtk_table_attach(GTK_TABLE(lid_table), lids[i], i,
+			     i+1, 4, 5, OPTS, OPTS, 2, 2);
+	    }
+	}
+    }
+    gtk_widget_show_all(lid_table);
     
     return TRUE;
 }
@@ -404,7 +604,8 @@ tuner_create()
 {
     effect_t       *p;
     struct tuner_params *params;
-    
+
+    /* standard effect init */
     p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct tuner_params));
     p->proc_init = tuner_init;
@@ -416,6 +617,41 @@ tuner_create()
     
     params = p->params;
     params->history = new_Backbuf(HISTORY_SIZE);
-    
+
     return p;
+}
+
+/* Function with side effect - modifies global array "layout".
+ * Takes the layout index on input, and calculates freqs of the
+ * particular tones. */
+void calc_layout(const unsigned int index) {
+    unsigned short curr_tone=0;	/* current distance in half-notes
+				 * starting from MIN_HZ */
+    int i;
+
+    curr_tone=layouts[index][0];
+    for(i=1;i<=MAX_STRINGS;i++) {
+	if(layouts[index][i]) {
+	    layout[i-1]=MIN_HZ*pow(2,curr_tone/(double)NOTES_N);
+	    curr_tone+=layouts[index][i];
+	}
+	/* string is absent */
+	else layout[i-1]=0;
+    }
+}
+
+/* frequency on input, note letter (A, H, D# etc) on output */
+unsigned int freq2note(double freq) {
+    double halfnotes;
+    int note;
+    
+    halfnotes = (log(freq) - log(MIN_HZ)) / log(2);
+    note = (int) (halfnotes * NOTES_N + 0.5);
+    
+    /* clamp to array */
+    note = (NOTES_TO_C + note) % NOTES_N;
+    if (note < 0)
+	note = 0; /* bullshit, but shouldn't trigger */
+
+    return note;
 }
