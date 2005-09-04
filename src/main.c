@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.47  2005/09/04 23:28:32  alankila
+ * - in case audio driver opening fails, set driver to invalid
+ *
  * Revision 1.46  2005/09/04 21:04:21  alankila
  * - handle no audio driver more gracefully
  *
@@ -341,6 +344,8 @@ main(int argc, char **argv)
     if (audio_driver) {
         if ((error = audio_driver->init()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
+	    audio_driver = NULL;
+	    audio_driver_str = "invalid";
         }
     }
 
