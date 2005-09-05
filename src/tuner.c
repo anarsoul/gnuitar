@@ -57,6 +57,11 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.23  2005/09/05 19:30:07  alankila
+ * - remove some code duplication
+ * - to make bass tuning possible, the lowest measurable frequency need to be
+ *   adjusted. Bass plays at 42 Hz, so I made it 40 Hz at 48000 Hz sampling
+ *
  * Revision 1.22  2005/09/05 19:08:11  alankila
  * - abolish global variables. It's either that, or we forbid opening more than
  *   one tuner at once
@@ -152,7 +157,7 @@
 #define GUI_UPDATE_INTERVAL	125.0 /* ms */
 #define MIN_HZ	    27.5	/* lowest tone that will work: freq. of A */
 #define MAX_HZ	    1800.0	/* highest tone that will work */
-#define HISTORY_SIZE 1024	/* history buffer size: allows ~50 Hz */
+#define HISTORY_SIZE 1200	/* history buffer size: allows ~40 Hz */
 #define COMPARE_LEN 192		/* sample data examining length */
 #define NOTES_N	    12		/* the note scale */
 #define NOTES_TO_C  9		/* how many notes to C sound from MIN_HZ */
@@ -212,13 +217,13 @@ unsigned short layouts[][MAX_STRINGS+1]={
     {    7, 5, 5, 5, 4, 0, 0 }	/* 4-string bass   */
 };
 
-void tuner_filter(struct effect *p, struct data_block *db);
-void tuner_done_really(struct effect *p);
+void tuner_filter(effect_t *, data_block_t *);
+void tuner_done_really(effect_t *);
 gboolean timeout_update_label(gpointer gp);
-void calc_layout(const unsigned int index, int *layout);
+void calc_layout_gui(struct tuner_params *);
 unsigned int freq2note(double freq);
 void update_layout(GtkWidget *widget, gpointer data);
-void ignored_event(void *whatever) {
+void ignored_event(void *whatever, void *whatever2) {
     return;
 }
 
@@ -232,7 +237,6 @@ tuner_init(effect_t *p)
     GtkWidget *table;
     GtkStyle  *style;
     GList     *tuning_layouts = NULL;
-    int i;
     
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     gtk_widget_realize(p->control);
@@ -283,25 +287,10 @@ tuner_init(effect_t *p)
 					    &(black.mask),
                                             &style->bg[GTK_STATE_NORMAL],
                                             (gchar **)empty_xpm );
-    calc_layout(params->curr_layout, params->layout);
     gtk_widget_show_all(p->control);
 
     params->led_table = gtk_table_new(2, MAX_STRINGS, FALSE);
-
-    for(i=0;i<MAX_STRINGS;i++) {
-	/* string is absent */
-	if(!params->layout[i]) {
-	    params->leds[i]=NULL;
-	    params->note_letters[i]=NULL;
-	    continue;
-	}
-	params->leds[i]=gtk_pixmap_new(black.pixmap,black.mask);
-	gtk_table_attach(GTK_TABLE(params->led_table), params->leds[i], 1, 2, i, i+1,
-		     OPTS, OPTS_EXP, 2, 2);
-	params->note_letters[i]=gtk_label_new(notes[(params->layout[i]+NOTES_TO_C)%NOTES_N]);
-	gtk_table_attach(GTK_TABLE(params->led_table), params->note_letters[i], 0, 1, i, i+1,
-		     OPTS, OPTS_EXP, 2, 2);
-    }
+    calc_layout_gui(params);
 
     gtk_table_attach(GTK_TABLE(table), params->led_table, 2, 3, 0, 4,
 		     OPTS, OPTS_EXP, 6, 0);
@@ -336,27 +325,18 @@ update_layout(GtkWidget *widget, gpointer data) {
     else if(strcmp(tmp,LAYOUT_4BASS)==0)
 	params->curr_layout=1;
 
-    calc_layout(params->curr_layout, params->layout);
-
     for(i=0;i<MAX_STRINGS;i++) {
-        if(params->leds[i]) {
-	    gtk_widget_destroy(params->leds[i]);
-	    gtk_widget_destroy(params->note_letters[i]);
-	}
-
-	/* string is absent */
-	if(!params->layout[i]) {
-	    params->leds[i]=NULL;
-	    continue;
-	}
-	params->leds[i]=gtk_pixmap_new(black.pixmap,black.mask);
-	gtk_table_attach(GTK_TABLE(params->led_table), params->leds[i], 1, 2, i, i+1,
-		     OPTS, OPTS_EXP, 2, 2);
-	params->note_letters[i]=gtk_label_new(notes[(params->layout[i]+NOTES_TO_C) % NOTES_N]);
-	gtk_table_attach(GTK_TABLE(params->led_table), params->note_letters[i], 0, 1, i, i+1,
-		     OPTS, OPTS_EXP, 2, 2);
-	gtk_widget_show(params->leds[i]);
-	gtk_widget_show(params->note_letters[i]);
+        if (params->leds[i] == NULL)
+            break;
+        gtk_widget_destroy(params->leds[i]);
+        gtk_widget_destroy(params->note_letters[i]);
+    }
+    calc_layout_gui(params);
+    for(i=0;i<MAX_STRINGS;i++) {
+        if (params->leds[i] == NULL)
+            break;
+        gtk_widget_show(params->leds[i]);
+        gtk_widget_show(params->note_letters[i]);
     }
 }
 
@@ -403,7 +383,7 @@ timeout_update_label(gpointer gp)
     gtk_label_set_text(GTK_LABEL(params->label_ideal), gtmp);
     free(gtmp);
 
-    /* light the lid, if the accuracy is good */
+    /* light the led, if the accuracy is good */
     if(fabs(accuracy)<=0.02) {
 	int i;
 	int string=-1;
@@ -618,19 +598,31 @@ tuner_create()
 /* Function with side effect - modifies global array "layout".
  * Takes the layout index on input, and calculates freqs of the
  * particular tones. */
-void calc_layout(const unsigned int index, int *layout) {
-    unsigned short curr_tone=0;	/* current distance in half-notes
-				 * starting from MIN_HZ */
+void calc_layout_gui(struct tuner_params *params) {
+    unsigned short curr_note = 0; /* the note # from bottom A */
     int i;
 
-    curr_tone=layouts[index][0];
-    for(i=1;i<=MAX_STRINGS;i++) {
-	if (layouts[index][i]) {
-	    layout[i-1] = curr_tone;
-	    curr_tone += layouts[index][i];
-	}
-	/* string is absent */
-	else layout[i-1]=0;
+    memset(params->layout, 0, sizeof(params->layout));
+    memset(params->leds, 0, sizeof(params->leds));
+    memset(params->note_letters, 0, sizeof(params->note_letters));
+    curr_note=layouts[params->curr_layout][0];
+    for (i = 0; i < MAX_STRINGS; i += 1) {
+	if (layouts[params->curr_layout][i+1] == 0)
+            break;
+        params->layout[i] = curr_note;
+        curr_note += layouts[params->curr_layout][i+1];
+    }
+    
+    for (i = 0; i < MAX_STRINGS; i += 1) {
+	if (params->layout[i] == 0)
+            break;
+	
+        params->leds[i]=gtk_pixmap_new(black.pixmap,black.mask);
+	gtk_table_attach(GTK_TABLE(params->led_table), params->leds[i], 1, 2, i, i+1,
+		     OPTS, OPTS_EXP, 2, 2);
+	params->note_letters[i]=gtk_label_new(notes[(params->layout[i]+NOTES_TO_C)%NOTES_N]);
+	gtk_table_attach(GTK_TABLE(params->led_table), params->note_letters[i], 0, 1, i, i+1,
+		     OPTS, OPTS_EXP, 2, 2);
     }
 }
 
