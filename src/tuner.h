@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2005/09/05 19:08:12  alankila
+ * - abolish global variables. It's either that, or we forbid opening more than
+ *   one tuner at once
+ *
  * Revision 1.5  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -50,8 +54,8 @@
 
 extern effect_t *   tuner_create();
 
-/* frequency measurements history buffer size */
-#define FREQ_SIZE 16
+#define FREQ_SIZE 16        /* frequency measurements history buffer size */
+#define MAX_STRINGS 6	    /* max.number of strings */
 
 /* data defined in order of progressive refinements */
 struct tuner_params {
@@ -71,10 +75,9 @@ struct tuner_params {
     double	    freq;
     
     /* GUI */
-    GtkWidget	    *label_current;
-    GtkWidget	    *label_ideal;
-    GtkWidget	    *ruler;
-    char	    freq_str_buf[80];
+    GtkWidget	    *label_current, *label_ideal, *ruler, *led_table, *layout_combo, *leds[MAX_STRINGS], *note_letters[MAX_STRINGS];
+    int             curr_layout;
+    int             layout[MAX_STRINGS];
     gboolean	    quitting;
 };
 

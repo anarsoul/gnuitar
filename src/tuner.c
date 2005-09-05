@@ -57,6 +57,10 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.22  2005/09/05 19:08:11  alankila
+ * - abolish global variables. It's either that, or we forbid opening more than
+ *   one tuner at once
+ *
  * Revision 1.21  2005/09/05 11:13:19  alankila
  * - tune the table paddings a bit, fix the updated led table to vertical too
  *
@@ -207,21 +211,11 @@ unsigned short layouts[][MAX_STRINGS+1]={
     { 12+7, 5, 5, 5, 4, 5, 5 },	/* 6-string guitar */
     {    7, 5, 5, 5, 4, 0, 0 }	/* 4-string bass   */
 };
-float layout[]={0,0,0,0,0,0};	/* the final layout contains
-				 * absolute frequencies; recalculated
-				 * on each layout change and on effect init;
-				 * init with zeroes for now */
-GtkWidget* lid_table;		/* sorry for this global; I won't pass
-				 * this through the callback functions as
-				 * a param */
-GtkWidget* lids[MAX_STRINGS]={NULL,NULL,NULL,NULL,NULL,NULL};
-GtkWidget* note_letters[MAX_STRINGS]={NULL,NULL,NULL,NULL,NULL,NULL};
-unsigned short curr_layout=0;	/* index of current layout */
 
 void tuner_filter(struct effect *p, struct data_block *db);
 void tuner_done_really(struct effect *p);
 gboolean timeout_update_label(gpointer gp);
-void calc_layout(const unsigned int index);	/* recalc layout */
+void calc_layout(const unsigned int index, int *layout);
 unsigned int freq2note(double freq);
 void update_layout(GtkWidget *widget, gpointer data);
 void ignored_event(void *whatever) {
@@ -231,15 +225,13 @@ void ignored_event(void *whatever) {
 #define OPTS_EXP __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND)
 #define OPTS __GTKATTACHOPTIONS(GTK_FILL)
 void
-tuner_init(struct effect *p)
+tuner_init(effect_t *p)
 {
     struct tuner_params *params = p->params;
     GtkWidget *label;
     GtkWidget *table;
-    GtkWidget *slider;
     GtkStyle  *style;
     GList     *tuning_layouts = NULL;
-    static GtkWidget *layout_combo;
     int i;
     
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
@@ -269,13 +261,12 @@ tuner_init(struct effect *p)
 		     OPTS_EXP, OPTS, 3, 3);
     params->label_ideal = label;
 
-    slider = gtk_hruler_new();
-    gtk_ruler_set_range(GTK_RULER(slider), -0.5, 0.5, 0.0, 100);
-    gtk_signal_connect(GTK_OBJECT(slider), "motion_notify_event",
+    params->ruler = gtk_hruler_new();
+    gtk_ruler_set_range(GTK_RULER(params->ruler), -0.5, 0.5, 0.0, 100);
+    gtk_signal_connect(GTK_OBJECT(params->ruler), "motion_notify_event",
                        GTK_SIGNAL_FUNC(ignored_event), NULL);
-    gtk_table_attach(GTK_TABLE(table), slider, 0, 2, 2, 3,
+    gtk_table_attach(GTK_TABLE(table), params->ruler, 0, 2, 2, 3,
 		     OPTS_EXP, OPTS_EXP, 3, 3);
-    params->ruler = slider;
     
     gtk_container_add(GTK_CONTAINER(p->control), table);
     g_timeout_add(GUI_UPDATE_INTERVAL, timeout_update_label, p);
@@ -292,82 +283,80 @@ tuner_init(struct effect *p)
 					    &(black.mask),
                                             &style->bg[GTK_STATE_NORMAL],
                                             (gchar **)empty_xpm );
-    calc_layout(curr_layout);
+    calc_layout(params->curr_layout, params->layout);
     gtk_widget_show_all(p->control);
 
-    lid_table = gtk_table_new(2, MAX_STRINGS, FALSE);
+    params->led_table = gtk_table_new(2, MAX_STRINGS, FALSE);
 
     for(i=0;i<MAX_STRINGS;i++) {
 	/* string is absent */
-	if(!layout[i]) {
-	    lids[i]=NULL;
-	    note_letters[i]=NULL;
+	if(!params->layout[i]) {
+	    params->leds[i]=NULL;
+	    params->note_letters[i]=NULL;
 	    continue;
 	}
-	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
-	gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2, i, i+1,
+	params->leds[i]=gtk_pixmap_new(black.pixmap,black.mask);
+	gtk_table_attach(GTK_TABLE(params->led_table), params->leds[i], 1, 2, i, i+1,
 		     OPTS, OPTS_EXP, 2, 2);
-	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
-	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], 0, 1, i, i+1,
+	params->note_letters[i]=gtk_label_new(notes[(params->layout[i]+NOTES_TO_C)%NOTES_N]);
+	gtk_table_attach(GTK_TABLE(params->led_table), params->note_letters[i], 0, 1, i, i+1,
 		     OPTS, OPTS_EXP, 2, 2);
     }
 
-    gtk_table_attach(GTK_TABLE(table), lid_table, 2, 3, 0, 4,
+    gtk_table_attach(GTK_TABLE(table), params->led_table, 2, 3, 0, 4,
 		     OPTS, OPTS_EXP, 6, 0);
 
     tuning_layouts = g_list_append(tuning_layouts, LAYOUT_6GUITAR); 
     tuning_layouts = g_list_append(tuning_layouts, LAYOUT_4BASS);
-    layout_combo = gtk_combo_new();
-    gtk_combo_set_popdown_strings(GTK_COMBO(layout_combo), tuning_layouts);
-    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(layout_combo)->entry), FALSE);
-    gtk_table_attach(GTK_TABLE(table), layout_combo, 0, 2, 3, 4,
+    params->layout_combo = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(params->layout_combo), tuning_layouts);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(params->layout_combo)->entry), FALSE);
+    gtk_table_attach(GTK_TABLE(table), params->layout_combo, 0, 2, 3, 4,
 		     OPTS_EXP, OPTS, 3, 3);
-    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(layout_combo)->entry),
-		       "changed", GTK_SIGNAL_FUNC(update_layout),
-		       &layout_combo);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(params->layout_combo)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_layout), params);
 
     gtk_widget_show_all(p->control);
 }
 
 void
 update_layout(GtkWidget *widget, gpointer data) {
+    struct tuner_params *params = data;
     int i;
     const char *tmp=NULL;
-    GtkWidget* combo;
     
-    combo=*(GtkWidget**)data;
-    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(params->layout_combo)->entry));
     if(tmp == NULL)
 	return;
 
     /* does somebody know the better way to obtain an index of the gtk combo's
      * choice ??? */
     if (strcmp(tmp,LAYOUT_6GUITAR)==0)
-	curr_layout=0;
+	params->curr_layout=0;
     else if(strcmp(tmp,LAYOUT_4BASS)==0)
-	curr_layout=1;
+	params->curr_layout=1;
 
-    calc_layout(curr_layout);
+    calc_layout(params->curr_layout, params->layout);
 
     for(i=0;i<MAX_STRINGS;i++) {
-        if(lids[i]) {
-	    gtk_widget_destroy(lids[i]);
-	    gtk_widget_destroy(note_letters[i]);
+        if(params->leds[i]) {
+	    gtk_widget_destroy(params->leds[i]);
+	    gtk_widget_destroy(params->note_letters[i]);
 	}
 
 	/* string is absent */
-	if(!layout[i]) {
-	    lids[i]=NULL;
+	if(!params->layout[i]) {
+	    params->leds[i]=NULL;
 	    continue;
 	}
-	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
-	gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2, i, i+1,
+	params->leds[i]=gtk_pixmap_new(black.pixmap,black.mask);
+	gtk_table_attach(GTK_TABLE(params->led_table), params->leds[i], 1, 2, i, i+1,
 		     OPTS, OPTS_EXP, 2, 2);
-	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
-	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], 0, 1, i, i+1,
+	params->note_letters[i]=gtk_label_new(notes[(params->layout[i]+NOTES_TO_C) % NOTES_N]);
+	gtk_table_attach(GTK_TABLE(params->led_table), params->note_letters[i], 0, 1, i, i+1,
 		     OPTS, OPTS_EXP, 2, 2);
-	gtk_widget_show(lids[i]);
-	gtk_widget_show(note_letters[i]);
+	gtk_widget_show(params->leds[i]);
+	gtk_widget_show(params->note_letters[i]);
     }
 }
 
@@ -375,13 +364,13 @@ gboolean
 timeout_update_label(gpointer gp)
 {
     struct effect *p = gp;
-    struct tuner_params *params;
+    struct tuner_params *params = p->params;
+    gchar  *gtmp;
     double halfnotes;
     double accuracy;
     double ideal;
-    int note;
+    int note, note_idx;
     
-    params = p->params;
     if (params->quitting) {
 	tuner_done_really(p);
 	return FALSE;
@@ -403,14 +392,16 @@ timeout_update_label(gpointer gp)
     gtk_ruler_set_range(GTK_RULER(params->ruler), -0.5, 0.5, accuracy, 100);
     
     /* clamp to array */
-    note = (NOTES_TO_C + note) % NOTES_N;
-    if (note < 0)
-	note = 0; /* bullshit, but shouldn't trigger */
+    note_idx = (NOTES_TO_C + note) % NOTES_N;
+    if (note_idx < 0)
+	note_idx = 0; /* bullshit, but shouldn't trigger */
        	
-    sprintf(params->freq_str_buf, "%.1f Hz", params->freq);
-    gtk_label_set_text(GTK_LABEL(params->label_current), params->freq_str_buf);
-    sprintf(params->freq_str_buf, "%.1f Hz (%s)", ideal, notes[note]);
-    gtk_label_set_text(GTK_LABEL(params->label_ideal), params->freq_str_buf);
+    gtmp = g_strdup_printf("%.1f Hz", params->freq);
+    gtk_label_set_text(GTK_LABEL(params->label_current), gtmp);
+    free(gtmp);
+    gtmp = g_strdup_printf("%.1f Hz (%s)", ideal, notes[note_idx]);
+    gtk_label_set_text(GTK_LABEL(params->label_ideal), gtmp);
+    free(gtmp);
 
     /* light the lid, if the accuracy is good */
     if(fabs(accuracy)<=0.02) {
@@ -418,35 +409,33 @@ timeout_update_label(gpointer gp)
 	int string=-1;
 	/* search in array for the string's index */
 	for(i=0;i<MAX_STRINGS;i++) {
-	    if((int)ideal==(int)layout[i]) {
+	    if (note == params->layout[i]) {
 		string=i;
 		break;
 	    }
 	}
 	if(string>=0) {
-	    if(lids[string]) {
-//		gtk_container_remove(GTK_CONTAINER(lid_table),lids[string]);
-		gtk_widget_destroy(lids[string]);
+	    if(params->leds[string]) {
+		gtk_widget_destroy(params->leds[string]);
 	    }
-	    lids[string]=gtk_pixmap_new(green.pixmap,green.mask);
-    	    gtk_table_attach(GTK_TABLE(lid_table), lids[string], 1, 2,
+	    params->leds[string]=gtk_pixmap_new(green.pixmap,green.mask);
+    	    gtk_table_attach(GTK_TABLE(params->led_table), params->leds[string], 1, 2,
                              string, string+1, OPTS, OPTS, 2, 2);
 	}
     }
-    /* darken all lids */
+    /* darken all leds */
     else {
 	int i;
 	for(i=0;i<MAX_STRINGS;i++) {
-	    if(lids[i]) {
-//		gtk_container_remove(GTK_CONTAINER(lid_table),lids[i]);
-		gtk_widget_destroy(lids[i]);
-	        lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
-    		gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2,
+	    if (params->leds[i]) {
+		gtk_widget_destroy(params->leds[i]);
+	        params->leds[i]=gtk_pixmap_new(black.pixmap,black.mask);
+    		gtk_table_attach(GTK_TABLE(params->led_table), params->leds[i], 1, 2,
 			         i, i + 1, OPTS, OPTS, 2, 2);
 	    }
 	}
     }
-    gtk_widget_show_all(lid_table);
+    gtk_widget_show_all(params->led_table);
     
     return TRUE;
 }
@@ -629,16 +618,16 @@ tuner_create()
 /* Function with side effect - modifies global array "layout".
  * Takes the layout index on input, and calculates freqs of the
  * particular tones. */
-void calc_layout(const unsigned int index) {
+void calc_layout(const unsigned int index, int *layout) {
     unsigned short curr_tone=0;	/* current distance in half-notes
 				 * starting from MIN_HZ */
     int i;
 
     curr_tone=layouts[index][0];
     for(i=1;i<=MAX_STRINGS;i++) {
-	if(layouts[index][i]) {
-	    layout[i-1]=MIN_HZ*pow(2,curr_tone/(double)NOTES_N);
-	    curr_tone+=layouts[index][i];
+	if (layouts[index][i]) {
+	    layout[i-1] = curr_tone;
+	    curr_tone += layouts[index][i];
 	}
 	/* string is absent */
 	else layout[i-1]=0;
