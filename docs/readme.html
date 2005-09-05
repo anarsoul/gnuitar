@@ -207,7 +207,7 @@ The controls and description of the effects follow below.
 </p>
 <h2><a name=autowah>Autowah</a></h2>
 <ul>
-<li>period   - time to complete full up and down sweep</li>
+<li>period   - length of one cycle of effect</li>
 <li>freq.low - low frequency (the cycle starts from this freq.)</li>
 <li>freq.hi  - high frequence (the cycle stops at this freq.)</li>
 <li>mix      - mix clean sound with processed sound</li>
@@ -247,19 +247,31 @@ physical output channels if available.
 <h2><a name=tremolo>Tremolo</a></h2>
 <p>
 Tremolo sounds like when you turn the master volume on and off very quickly.
+This is done by multiplying the data with a factor that is altered sinuously.
 </p>
 <ul>
-<li>speed     - the speed of modulation</li>
-<li>amplitude - the depth of modulation</li>
+<li>period    - length of one cycle of effect</li>
+<li>amplitude - depth of modulation</li>
 </ul>
+
+<h2><a name=vibrato>Vibrato</a></h2>
+<p>
+Slows down and speeds up playback to achieve an effect like old tape. This is
+done by time-delaying the playback in a sinuous curve.
+</p>
+<ul>
+<li>period    - length of one cycle of effect</li>
+<li>amplitude - maximum time delay</li>
+</ul>
+
 
 <h2><a name=chorus>Chorus</a></h2>
 <p>
 Chorus mixes a time-delayed version of input with the original signal
 simulating several players playing the same tune.  This version can mix
-configurable number of additional chorus voices to the original signal. In each
-case, the chorus is time-delayed with the same base delay but appears in
-different modulation phase.
+configurable number of additional chorus voices to the original signal. If
+there are more voices than one, the time-delay phase angle becomes split
+equally between each voice.
 </p>
 <ul>
 <li>delay     - fixed time delay before mixing</li>
@@ -268,7 +280,7 @@ different modulation phase.
 <li>voices    - number of chorus voices to mix</li>
 <li>wet       - "wet" (processed) sound volume</li>
 <li>dry       - "dry" (clean) sound volume</li>
-<li>regen     - mixes some time-delayed processed signal back into output</li>
+<li>regen     - mixes some time-delayed processed signal back into input</li>
 </ul>
 
 <h2><a name=echo>Echo</a></h2>
@@ -364,7 +376,7 @@ of the box, try the following tricks: </p>
 <ul>
 <li>
     Mute all other strings <em>lightly</em> with your fingers. Don't press
-    the strings hard, if you have a floating bridge&mdash;this will
+    or bend the strings, if you have a floating bridge&mdash;this will
     have similar effect as pressing tremolo bar down.
 </li>
 <li>
