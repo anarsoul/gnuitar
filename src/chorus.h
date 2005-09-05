@@ -38,6 +38,7 @@ struct chorus_params {
                     regen,
                     ang;
     int             voices;
+    short           multichannel;
 };
 
 #endif

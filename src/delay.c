@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/09/05 20:07:49  alankila
+ * - multichannel chorus
+ * - add some code to synchronize output volumes regardless of voices #
+ *   based on the random walk theorem
+ *
  * Revision 1.27  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -154,7 +159,7 @@ update_delay_repeat(GtkAdjustment *adj, struct delay_params *params)
 }
 
 void
-toggle_multichannel(void *bullshit, struct delay_params *params)
+toggle_delay_multichannel(void *bullshit, struct delay_params *params)
 {
     params->multichannel = !params->multichannel;
 }
@@ -265,7 +270,7 @@ delay_init(struct effect *p)
     if (n_input_channels == 1 && n_output_channels > 1) {
         mcbutton = gtk_check_button_new_with_label("Multichannel");
         gtk_signal_connect(GTK_OBJECT(mcbutton), "toggled",
-                           GTK_SIGNAL_FUNC(toggle_multichannel), pdelay);
+                           GTK_SIGNAL_FUNC(toggle_delay_multichannel), pdelay);
         gtk_table_attach(GTK_TABLE(parmTable), mcbutton, 1, 3, 2, 3,
                          __GTKATTACHOPTIONS(GTK_EXPAND |
                                             GTK_SHRINK),

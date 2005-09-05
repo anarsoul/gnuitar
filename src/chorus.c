@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/09/05 20:07:49  alankila
+ * - multichannel chorus
+ * - add some code to synchronize output volumes regardless of voices #
+ *   based on the random walk theorem
+ *
  * Revision 1.29  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -124,6 +129,7 @@
 #include "chorus.h"
 #include "backbuf.h"
 #include "gui.h"
+#include <assert.h>
 #include <math.h>
 #ifndef _WIN32
 #    include <unistd.h>
@@ -136,7 +142,9 @@
 #define MAX_DEPTH       20
 #define MAX_BASEDELAY   50
  
-void chorus_filter(struct effect *p, struct data_block *db);
+void chorus_filter(effect_t *p, data_block_t *db);
+void chorus_filter_mono(effect_t *p, data_block_t *db);
+void chorus_filter_mc(effect_t *p, data_block_t *db);
 
 void
 update_chorus_basedelay(GtkAdjustment *adj, struct chorus_params *params)
@@ -181,6 +189,12 @@ update_chorus_regen(GtkAdjustment *adj, struct chorus_params *params)
 }
 
 void
+toggle_chorus_multichannel(void *bullshit, struct chorus_params *params)
+{
+    params->multichannel = !params->multichannel;
+}
+
+void
 chorus_init(struct effect *p)
 {
     struct chorus_params *pchorus;
@@ -213,7 +227,7 @@ chorus_init(struct effect *p)
     GtkWidget      *regen_label;
     GtkObject      *adj_regen;
 
-    GtkWidget      *button;
+    GtkWidget      *button, *mcbutton;
 
     GtkWidget      *parmTable;
 
@@ -375,6 +389,17 @@ chorus_init(struct effect *p)
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
+    
+    if (n_input_channels == 1 && n_output_channels > 1) {
+        mcbutton = gtk_check_button_new_with_label("Multichannel");
+        gtk_signal_connect(GTK_OBJECT(mcbutton), "toggled",
+                           GTK_SIGNAL_FUNC(toggle_chorus_multichannel), pchorus);
+        gtk_table_attach(GTK_TABLE(parmTable), mcbutton, 1, 9, 2, 3,
+                         __GTKATTACHOPTIONS(GTK_EXPAND |
+                                            GTK_SHRINK),
+                         __GTKATTACHOPTIONS(GTK_FILL |
+                                            GTK_SHRINK), 0, 0);
+    }
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
@@ -399,6 +424,18 @@ chorus_init(struct effect *p)
 void
 chorus_filter(struct effect *p, struct data_block *db)
 {
+    struct chorus_params *params = p->params;
+    
+    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
+        chorus_filter_mc(p, db);
+    } else {
+        chorus_filter_mono(p, db);
+    }
+}
+
+void
+chorus_filter_mono(struct effect *p, struct data_block *db)
+{
     struct chorus_params *cp;
     int             count, i, curr_channel = 0;
     double          dly, Speed, tmp_ang, Depth, BaseDelay, Dry, Wet, Rgn;
@@ -422,7 +459,7 @@ chorus_filter(struct effect *p, struct data_block *db)
         tmp_ang = cp->ang;
         for (i = 0; i < cp->voices; i += 1) {
             dly = BaseDelay + Depth * (1 + sin_lookup(tmp_ang)) / 2.0;
-            tmp += cp->history[curr_channel]->get_interpolated(cp->history[curr_channel], dly) / cp->voices;
+            tmp += cp->history[curr_channel]->get_interpolated(cp->history[curr_channel], dly) / sqrt(cp->voices);
             tmp_ang += 1.0 / cp->voices;
             if (tmp_ang >= 1.0)
                 tmp_ang -= 1.0;
@@ -437,7 +474,7 @@ chorus_filter(struct effect *p, struct data_block *db)
         CLIP_SAMPLE(rgn)
 #endif
         cp->history[curr_channel]->add(cp->history[curr_channel], rgn);
-	*s = *s * Dry / cp->voices + tmp * Wet;
+	*s = *s * Dry / sqrt(cp->voices) + tmp * Wet;
 
 	curr_channel = (curr_channel + 1) % db->channels;
         if (curr_channel == 0) {
@@ -450,6 +487,64 @@ chorus_filter(struct effect *p, struct data_block *db)
 	count--;
     }
 }
+
+/* mono to N */
+void
+chorus_filter_mc(struct effect *p, struct data_block *db)
+{
+    struct chorus_params *cp;
+    int             count, curr_channel = 0;
+    double          dly, Speed, tmp_ang, Depth, BaseDelay, Dry, Wet, Rgn;
+    DSP_SAMPLE     *outs, *ins;
+    DSP_SAMPLE      tmp, rgn;
+
+    cp = (struct chorus_params *) p->params;
+
+    assert(db->channels == 1);
+    
+    ins = db->data;
+    outs = db->data_swap;
+    db->data = outs;
+    db->data_swap = ins;
+
+    count = db->len;
+    
+    Dry = cp->dry / 100.0;
+    Wet = cp->wet / 100.0;
+    Rgn = cp->regen / 100.0;
+    Speed = 1000.0 / cp->speed / sample_rate;
+    Depth = cp->depth / 1000.0 * sample_rate;
+    BaseDelay = cp->basedelay / 1000.0 * sample_rate;
+
+    db->channels = n_output_channels;
+    db->len *= n_output_channels;
+
+    while (count) {
+        tmp_ang = cp->ang;
+
+        /* mix # voices repeatedly into output channels if need be */
+        for (curr_channel = 0; curr_channel < db->channels; curr_channel += 1) {
+            dly = BaseDelay + Depth * (1 + sin_lookup(tmp_ang)) / 2.0;
+            tmp = cp->history[0]->get_interpolated(cp->history[0], dly);
+            tmp_ang += 1.0 / cp->voices;
+            if (tmp_ang >= 1.0)
+                tmp_ang -= 1.0;
+            *outs++ = (*ins * Dry + tmp * Wet) / sqrt(2);
+        }
+        
+        dly = BaseDelay + Depth * (1 + sin_lookup(cp->ang)) / 2.0;
+        rgn = cp->history[0]->get_interpolated(cp->history[0], dly) * Rgn + *ins;
+        cp->history[0]->add(cp->history[0], rgn);
+
+        cp->ang += Speed;
+        if (cp->ang >= 1.0)
+            cp->ang -= 1.0;
+
+	ins++;
+	count--;
+    }
+}
+
 
 void
 chorus_done(struct effect *p)
@@ -478,6 +573,7 @@ chorus_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("speed", params->speed);
     SAVE_DOUBLE("regen", params->regen);
     SAVE_INT("voices", params->voices);
+    SAVE_INT("multichannel", params->voices);
 }
 
 void
@@ -492,6 +588,7 @@ chorus_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("speed", params->speed);
     LOAD_DOUBLE("regen", params->regen);
     LOAD_INT("voices", params->voices);
+    LOAD_INT("multichannel", params->voices);
 }
 
 effect_t *
