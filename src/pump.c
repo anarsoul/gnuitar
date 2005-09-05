@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2005/09/05 17:42:07  alankila
+ * - fix some small memory leaks
+ *
  * Revision 1.44  2005/09/04 20:45:01  alankila
  * - store audio driver into config
  * - make it possible to start gnuitar with invalid audio driver and enter
@@ -498,8 +501,19 @@ load_settings() {
 
     error = NULL;
     gstr = g_key_file_get_string(file, "global", "driver", &error);
-    if (error == NULL)
-        audio_driver_str = gstr;
+    if (error == NULL) {
+        /* Avoid associating allocated memory to audio_driver_str.
+         * This can probably be done better somehow... */
+        if (strcmp(gstr, "JACK") == 0)
+            audio_driver_str = "JACK";
+        if (strcmp(gstr, "ALSA") == 0)
+            audio_driver_str = "ALSA";
+        if (strcmp(gstr, "OSS") == 0)
+            audio_driver_str = "OSS";
+        if (strcmp(gstr, "MMSystem") == 0)
+            audio_driver_str = "MMSystem";
+        free(gstr);
+    }
     
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "bits", &error);

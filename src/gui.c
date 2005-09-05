@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.63  2005/09/05 17:42:07  alankila
+ * - fix some small memory leaks
+ *
  * Revision 1.62  2005/09/05 17:13:16  alankila
  * - make it possible to add effects with doubleclick
  * - when deleting effects, do not cause -1 row to become selected
@@ -553,6 +556,12 @@ selectrow_processor(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
     curr_row = row;
+    /* doubleclick highlights the window ...
+     * except I can't do this because the control widget is apparently
+     * not properly realized when add_pressed() causes selectrow. Bah.
+    if (event->type == GDK_2BUTTON_PRESS) {
+        gtk_window_present(GTK_WINDOW(effects[curr_row]->control));
+    } */
 }
 
 void
@@ -611,6 +620,8 @@ up_pressed(GtkWidget *widget, gpointer data)
         name_selected = strdup(name_selected);
         gtk_clist_set_text(GTK_CLIST(processor), curr_row-1, 0, name_selected);
         gtk_clist_set_text(GTK_CLIST(processor), curr_row, 0, name_above);
+        free(name_above);        
+        free(name_selected);
 
         gtk_clist_select_row(GTK_CLIST(processor), curr_row-1, 0);
 	gtk_clist_thaw(GTK_CLIST(processor));
@@ -638,7 +649,9 @@ down_pressed(GtkWidget * widget, gpointer data)
         name_below    = strdup(name_below);
         gtk_clist_set_text(GTK_CLIST(processor), curr_row, 0, name_below);
         gtk_clist_set_text(GTK_CLIST(processor), curr_row+1, 0, name_selected);
-	
+        free(name_selected);
+        free(name_below);
+        
         gtk_clist_select_row(GTK_CLIST(processor), curr_row+1, 0);
 	gtk_clist_thaw(GTK_CLIST(processor));
     }
@@ -695,7 +708,8 @@ add_pressed(GtkWidget *widget, gpointer data)
         my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_insert(GTK_CLIST(processor), idx, &name);
-	gtk_clist_select_row(GTK_CLIST(processor), idx, 0);
+	free(name);
+        gtk_clist_select_row(GTK_CLIST(processor), idx, 0);
     }
 }
 

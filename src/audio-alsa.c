@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/09/05 17:42:07  alankila
+ * - fix some small memory leaks
+ *
  * Revision 1.13  2005/09/04 19:30:46  fonin
  * Added casts for DSP_FLOAT
  *
@@ -415,6 +418,5 @@ audio_driver_t alsa_driver = {
     alsa_channels_cfg,
     alsa_bits_cfg
 };
-
 
 #endif /* HAVE_ALSA */
