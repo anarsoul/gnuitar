@@ -207,7 +207,7 @@ The controls and description of the effects follow below.
 </p>
 <h2><a name=autowah>Autowah</a></h2>
 <ul>
-<li>speed    - speed of wah-wah'ing</li>
+<li>period   - time to complete full up and down sweep</li>
 <li>freq.low - low frequency (the cycle starts from this freq.)</li>
 <li>freq.hi  - high frequence (the cycle stops at this freq.)</li>
 <li>mix      - mix clean sound with processed sound</li>
@@ -218,20 +218,10 @@ The controls and description of the effects follow below.
 Reverberator produces echoed "space" sound. Controls:
 </p>
 <ul>
-<li>delay  - delay time</li>
+<li>delay  - delay before repeating starts</li>
 <li>wet    - "wet" (processed) sound volume</li>
 <li>dry    - "dry" (clean) sound volume</li>
-<li>regen  - number of repeats</li>
-</ul>
-
-<h2><a name=delay>Delay</a></h2>
-<p>
-A no-frills time-delay effect.
-</p>
-<ul>
-<li>decay  - how fast the repeated sound is fading out</li>
-<li>time   - delay time between repeats</li>
-<li>repeat - number of repeats</li>
+<li>regen  - decay % between subsequent repeats</li>
 </ul>
 
 <h2><a name=distort>Distortion</a></h2>
@@ -239,7 +229,19 @@ A no-frills time-delay effect.
 <li>distort    - power of effect</li>
 <li>level      - volume in case you need to mute it quickly</li>
 <li>saturation - high-frequency "sand" in the sound</li>
-<li>lowpass    - low-band filter that can be used to change the sound feel</li>
+<li>lowpass    - lowpass filter that can be used to change the sound feel</li>
+</ul>
+
+<h2><a name=delay>Delay</a></h2>
+<p>
+A no-frills time-delay effect that can also split original signal in several
+physical output channels if available.
+</p>
+<ul>
+<li>decay  - decay % between subsequent repeats</li>
+<li>time   - delay time between repeats</li>
+<li>repeat - number of repeats</li>
+<li>multichannel (if present) - switch effect to circulate delay voices through available channels</li>
 </ul>
 
 <h2><a name=tremolo>Tremolo</a></h2>
@@ -253,27 +255,33 @@ Tremolo sounds like when you turn the master volume on and off very quickly.
 
 <h2><a name=chorus>Chorus</a></h2>
 <p>
-Chorus mixes a time-delayed version of input with
-the original signal simulating two players playing the same tune.
+Chorus mixes a time-delayed version of input with the original signal
+simulating several players playing the same tune.  This version can mix
+configurable number of additional chorus voices to the original signal. In each
+case, the chorus is time-delayed with the same base delay but appears in
+different modulation phase.
 </p>
 <ul>
+<li>delay     - fixed time delay before mixing</li>
 <li>depth     - the depth of modulation</li>
-<li>speed     - the speed of modulation</li>
+<li>period    - the length of modulation cycle</li>
+<li>voices    - number of chorus voices to mix</li>
 <li>wet       - "wet" (processed) sound volume</li>
 <li>dry       - "dry" (clean) sound volume</li>
-<li>regen     - mixes a time-delayed signal with the original to add more voices</li>
+<li>regen     - mixes some time-delayed processed signal back into output</li>
 </ul>
 
 <h2><a name=echo>Echo</a></h2>
 
-<p>Another reverberation effect, but not like the others.  Echo simulates a
-large hall echo using prime number delays to avoid superimposing any repeating
-voices over each other.  </p>
+<p>
+Another reverberation effect, but not like the others.  Echo simulates a
+large hall echo using varying length of delays in its voices.
+</p>
 
 <ul>
-<li>decay     - this controls how the repeated sound is fading out</li>
-<li>count     - number of repeats</li>
-<li>size      - controls delay time</li>
+<li>decay     - decay % between subsequent repeats</li>
+<li>voices    - number of independent echo voices</li>
+<li>delay     - sets the length of maximum echo delay</li>
 </ul>
 
 <h2><a name=distort2>Overdrive</a></h2>
@@ -282,9 +290,9 @@ voices over each other.  </p>
 overdrive pedals such as Ibanez TS9.</p>
 
 <ul>
-<li>drive      - power of effect</li>
-<li>clip       - changes tone from smooth fuzz to heavier crunch</li>
-<li>lowpass    - low-band filter that can be used to change the sound feel</li>
+<li>drive  - how much amplification</li>
+<li>clip   - changes tone from TS9-type fuzz to less powerful distortion</li>
+<li>treble - lowpass filter for tone control</li>
 </ul>
 
 <h2><a name=noise>Noise Gate</a></h2>
@@ -324,25 +332,28 @@ overdrive pedals such as Ibanez TS9.</p>
 
 <h2><a name=tuner>Tuner</a></h2>
 
-<p> This "effect" opens a window for tuning your guitar. The display contains
-four pieces of information: </p>
+<p>
+This is a simple general-purpose instrument tuner. The display contains:
+</p>
 
 <ul>
 <li>the current detected frequency of the sound</li>
 <li>the ideal frequency of the sound</li>
 <li>the note closest to the measured frequency</li>
-<li>an indicator that shows how the two frequencies are related</li>
+<li>an indicator that shows how the two frequencies are matched</li>
+<li>list of typical guitar tunings, and indicators that light up when
+    frequency matches their pretabulated frequencies.</li>
 </ul>
 
 <h3>How to tune</h3>
 
 <p>In nutshell: if the indicator veers to left, tune up; if it veers to right, tune down.</p>
 
-<p> Tuner is completely agnostic to the desired tuning. All it can say is
-how well the string oscillates in tune with one of the frequencies that belong
-to the scale. Normally the strings are tuned to notes
-<strong>E A D G H E</strong>, with the low <strong>E</strong> being approximately 83 Hz. You need to remember
-those notes, because the tuner doesn't assume you want them. </p>
+<p>
+Tuner is generally agnostic to the desired tuning. Some indicators are provided
+that match some of the most typical guitar tunings, but whether you use them
+or not is up to you.
+</p>
 
 <h3>Tricks and tips</h3>
 
@@ -358,24 +369,25 @@ of the box, try the following tricks: </p>
 </li>
 <li>
     Pick the string normally above the pickups. The tuner tends to find the
-    frequency with the most amplitude. If you pick the strings in an unusual
+    frequency component with the most amplitude. If you pick the strings in an unusual
     way, it may find some high-order harmonics instead (or even worse,
-    oscillate between that and the base frequency).
+    oscillate between some upper harmonic and the base frequency).
 </li>
 <li>
     Try different pickups if tuner has difficulties with particular pickups.
 </li>
 </ul>
 
-<p> You can also use the tuner to fix your guitar's intonation (the length of
+<p>You can also use the tuner to fix your guitar's intonation (the length of
 the string). You may need to check intonation whenever you change your string
 make or gauge. First, tune your guitar as perfectly as possible, then pick all
 the strings at the 12th fret.  You should see the tuner report double the
-frequency but the accuracy indicator should stay centered. If the indicator moves right, you need to make the string longer. If it moves left, you
-need to make it shorter.  How you do that depends on the guitar, but most
-often there's some screws to turn which move some string guides back and forth
-across the bridge. Typically the thinnest strings (the 3th and 6th) are the
-shortest, and the thickest strings (1st and 4th) are the longest. </p>
+frequency but the accuracy indicator should stay centered. Compare this
+frequency with the harmonic 12th frequency -- they should be the same.
+However, if the indicator of fretted 12th is right to the harmonic, you need to
+make the string longer. If it is to left, you need to make the string shorter.
+As a general guideline, the thinnest strings are the shortest, and the thickest
+strings the longest.</p>
 
 <h1><a name=bugs>Bugs</a></h1>
 
