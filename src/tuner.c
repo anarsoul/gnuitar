@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.21  2005/09/05 11:13:19  alankila
+ * - tune the table paddings a bit, fix the updated led table to vertical too
+ *
  * Revision 1.20  2005/09/05 08:36:12  fonin
  * Indicators turned vertically.
  *
@@ -180,7 +183,7 @@ static char * empty_xpm[] = {	/* empty black light */
 static char * green_xpm[] = {	/* green light */
 "7 7 4 1",
 " 	c None",
-".	c #648356",
+".	c #64A356",
 "+	c #CFD9CB",
 "@	c #77936B",
 " +@.@+ ",
@@ -225,7 +228,8 @@ void ignored_event(void *whatever) {
     return;
 }
 
-#define OPTS __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND)
+#define OPTS_EXP __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND)
+#define OPTS __GTKATTACHOPTIONS(GTK_FILL)
 void
 tuner_init(struct effect *p)
 {
@@ -243,26 +247,26 @@ tuner_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
                        GTK_SIGNAL_FUNC(delete_event), p);
     
-    table = gtk_table_new(3, 5, FALSE);
+    table = gtk_table_new(3, 4, FALSE);
  
-    label = gtk_label_new("Current: ");
+    label = gtk_label_new("Current:");
     gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 0, 1, 0, 1,
-		     OPTS, OPTS, 2, 2);
-    label = gtk_label_new("Ideal: ");
+		     OPTS_EXP, OPTS, 3, 3);
+    label = gtk_label_new("Ideal:");
     gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 0, 1, 1, 2,
-		     OPTS, OPTS, 2, 2);
+		     OPTS_EXP, OPTS, 3, 3);
     
     label = gtk_label_new("");
     gtk_misc_set_alignment(GTK_MISC(label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 1, 2, 0, 1,
-		     OPTS, OPTS, 2, 2);
+		     OPTS_EXP, OPTS, 3, 3);
     params->label_current = label;
     label = gtk_label_new("");
     gtk_misc_set_alignment(GTK_MISC(label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 1, 2, 1, 2,
-		     OPTS, OPTS, 2, 2);
+		     OPTS_EXP, OPTS, 3, 3);
     params->label_ideal = label;
 
     slider = gtk_hruler_new();
@@ -270,7 +274,7 @@ tuner_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(slider), "motion_notify_event",
                        GTK_SIGNAL_FUNC(ignored_event), NULL);
     gtk_table_attach(GTK_TABLE(table), slider, 0, 2, 2, 3,
-		     OPTS, OPTS, 2, 2);
+		     OPTS_EXP, OPTS_EXP, 3, 3);
     params->ruler = slider;
     
     gtk_container_add(GTK_CONTAINER(p->control), table);
@@ -302,22 +306,22 @@ tuner_init(struct effect *p)
 	}
 	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
 	gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2, i, i+1,
-		     OPTS, OPTS, 2, 2);
+		     OPTS, OPTS_EXP, 2, 2);
 	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
 	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], 0, 1, i, i+1,
-		     OPTS, OPTS, 2, 2);
+		     OPTS, OPTS_EXP, 2, 2);
     }
 
-    gtk_table_attach(GTK_TABLE(table), lid_table, 2, 3, 0, 5,
-		     OPTS, OPTS, 10, 20);
+    gtk_table_attach(GTK_TABLE(table), lid_table, 2, 3, 0, 4,
+		     OPTS, OPTS_EXP, 6, 0);
 
     tuning_layouts = g_list_append(tuning_layouts, LAYOUT_6GUITAR); 
     tuning_layouts = g_list_append(tuning_layouts, LAYOUT_4BASS);
     layout_combo = gtk_combo_new();
     gtk_combo_set_popdown_strings(GTK_COMBO(layout_combo), tuning_layouts);
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(layout_combo)->entry), FALSE);
-    gtk_table_attach(GTK_TABLE(table), layout_combo, 0, 2, 4, 5,
-		     OPTS, OPTS, 2, 2);
+    gtk_table_attach(GTK_TABLE(table), layout_combo, 0, 2, 3, 4,
+		     OPTS_EXP, OPTS, 3, 3);
     gtk_signal_connect(GTK_OBJECT(GTK_COMBO(layout_combo)->entry),
 		       "changed", GTK_SIGNAL_FUNC(update_layout),
 		       &layout_combo);
@@ -358,10 +362,10 @@ update_layout(GtkWidget *widget, gpointer data) {
 	}
 	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
 	gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2, i, i+1,
-		     OPTS, OPTS, 2, 2);
+		     OPTS, OPTS_EXP, 2, 2);
 	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
 	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], 0, 1, i, i+1,
-		     OPTS, OPTS, 2, 2);
+		     OPTS, OPTS_EXP, 2, 2);
 	gtk_widget_show(lids[i]);
 	gtk_widget_show(note_letters[i]);
     }
@@ -409,7 +413,7 @@ timeout_update_label(gpointer gp)
     gtk_label_set_text(GTK_LABEL(params->label_ideal), params->freq_str_buf);
 
     /* light the lid, if the accuracy is good */
-    if(fabs(accuracy)<=0.01) {
+    if(fabs(accuracy)<=0.02) {
 	int i;
 	int string=-1;
 	/* search in array for the string's index */
@@ -425,8 +429,8 @@ timeout_update_label(gpointer gp)
 		gtk_widget_destroy(lids[string]);
 	    }
 	    lids[string]=gtk_pixmap_new(green.pixmap,green.mask);
-    	    gtk_table_attach(GTK_TABLE(lid_table), lids[string], string,
-			     string+1, 4, 5, OPTS, OPTS, 2, 2);
+    	    gtk_table_attach(GTK_TABLE(lid_table), lids[string], 1, 2,
+                             string, string+1, OPTS, OPTS, 2, 2);
 	}
     }
     /* darken all lids */
@@ -437,8 +441,8 @@ timeout_update_label(gpointer gp)
 //		gtk_container_remove(GTK_CONTAINER(lid_table),lids[i]);
 		gtk_widget_destroy(lids[i]);
 	        lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
-    		gtk_table_attach(GTK_TABLE(lid_table), lids[i], i,
-			     i+1, 4, 5, OPTS, OPTS, 2, 2);
+    		gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2,
+			         i, i + 1, OPTS, OPTS, 2, 2);
 	    }
 	}
     }
@@ -581,19 +585,19 @@ tuner_filter(struct effect *p, struct data_block *db)
     return;
 }
 
+/* this method is asynchronous because of timer that needs to cancel itself */
 void
-tuner_done(struct effect *p)
+tuner_done(effect_t *p)
 {
-    struct tuner_params *params;
-    params = p->params;
+    struct tuner_params *params = p->params;
+
     params->quitting = 1;
     return;
 }
 
-void tuner_done_really(struct effect *p) {
-    struct tuner_params *params;
+void tuner_done_really(effect_t *p) {
+    struct tuner_params *params = p->params;
     
-    params = p->params;
     del_Backbuf(params->history);
     free(p->params);
     gtk_widget_destroy(p->control);
