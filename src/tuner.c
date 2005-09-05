@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.20  2005/09/05 08:36:12  fonin
+ * Indicators turned vertically.
+ *
  * Revision 1.19  2005/09/04 23:17:07  alankila
  * - gtk+ ui fixes
  *
@@ -240,7 +243,7 @@ tuner_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
                        GTK_SIGNAL_FUNC(delete_event), p);
     
-    table = gtk_table_new(2, 5, FALSE);
+    table = gtk_table_new(3, 5, FALSE);
  
     label = gtk_label_new("Current: ");
     gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
@@ -288,7 +291,7 @@ tuner_init(struct effect *p)
     calc_layout(curr_layout);
     gtk_widget_show_all(p->control);
 
-    lid_table = gtk_table_new(MAX_STRINGS, 2, FALSE);
+    lid_table = gtk_table_new(2, MAX_STRINGS, FALSE);
 
     for(i=0;i<MAX_STRINGS;i++) {
 	/* string is absent */
@@ -298,14 +301,14 @@ tuner_init(struct effect *p)
 	    continue;
 	}
 	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
-	gtk_table_attach(GTK_TABLE(lid_table), lids[i], i, i+1, 1, 2,
+	gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2, i, i+1,
 		     OPTS, OPTS, 2, 2);
 	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
-	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], i, i+1, 0, 1,
+	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], 0, 1, i, i+1,
 		     OPTS, OPTS, 2, 2);
     }
 
-    gtk_table_attach(GTK_TABLE(table), lid_table, 0, 2, 3, 4,
+    gtk_table_attach(GTK_TABLE(table), lid_table, 2, 3, 0, 5,
 		     OPTS, OPTS, 10, 20);
 
     tuning_layouts = g_list_append(tuning_layouts, LAYOUT_6GUITAR); 
@@ -354,10 +357,10 @@ update_layout(GtkWidget *widget, gpointer data) {
 	    continue;
 	}
 	lids[i]=gtk_pixmap_new(black.pixmap,black.mask);
-	gtk_table_attach(GTK_TABLE(lid_table), lids[i], i, i+1, 4, 5,
+	gtk_table_attach(GTK_TABLE(lid_table), lids[i], 1, 2, i, i+1,
 		     OPTS, OPTS, 2, 2);
 	note_letters[i]=gtk_label_new(notes[freq2note(layout[i])]);
-	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], i, i+1, 3, 4,
+	gtk_table_attach(GTK_TABLE(lid_table), note_letters[i], 0, 1, i, i+1,
 		     OPTS, OPTS, 2, 2);
 	gtk_widget_show(lids[i]);
 	gtk_widget_show(note_letters[i]);
