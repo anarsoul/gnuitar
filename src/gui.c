@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.62  2005/09/05 17:13:16  alankila
+ * - make it possible to add effects with doubleclick
+ * - when deleting effects, do not cause -1 row to become selected
+ *
  * Revision 1.61  2005/09/04 23:27:38  alankila
  * - in case audio driver init fails, set audio_driver to null, user needs
  *   to go to options to fix it.
@@ -283,6 +287,7 @@ extern short dsound;
 
 #define VU_UPDATE_INTERVAL 25.0    /* ms */
 
+void            add_pressed(GtkWidget *, gpointer);
 void            bank_start_save(GtkWidget *, gpointer);
 void            bank_start_load(GtkWidget *, gpointer);
 void            sample_dlg(GtkWidget *, gpointer);
@@ -544,20 +549,24 @@ delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 }
 
 void
-selectrow_processor(GtkWidget * widget, gint row, gint col,
-		    GdkEventButton * event, gpointer data)
+selectrow_processor(GtkWidget *widget, gint row, gint col,
+		    GdkEventButton *event, gpointer data)
 {
     curr_row = row;
 }
 
 void
-selectrow_effects(GtkWidget * widget, gint row, gint col,
-		  GdkEventButton * event, gpointer data)
+selectrow_effects(GtkWidget *widget, gint row, gint col,
+		  GdkEventButton *event, gpointer data)
 {
     effects_row = row;
+    /* doubleclick */
+    if (event->type == GDK_2BUTTON_PRESS) {
+        add_pressed(NULL, data);
+    }
 }
 
-void rowmove_processor(GtkWidget * widget, gint start, gint end, gpointer data)
+void rowmove_processor(GtkWidget *widget, gint start, gint end, gpointer data)
 {
     effect_t   *swap;
     int         i;
@@ -650,7 +659,7 @@ del_pressed(GtkWidget *widget, gpointer data)
 
 	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row);
-	if (curr_row == n - 1)
+	if (curr_row == n - 1 && curr_row > 0)
 	    curr_row--;
 	gtk_clist_select_row(GTK_CLIST(processor), curr_row, 0);
 	gtk_clist_thaw(GTK_CLIST(processor));
@@ -687,7 +696,6 @@ add_pressed(GtkWidget *widget, gpointer data)
 
 	gtk_clist_insert(GTK_CLIST(processor), idx, &name);
 	gtk_clist_select_row(GTK_CLIST(processor), idx, 0);
-
     }
 }
 
@@ -1550,7 +1558,7 @@ init_gui(void)
     gtk_signal_connect(GTK_OBJECT(processor), "row_move",
 		       GTK_SIGNAL_FUNC(rowmove_processor), NULL);
     gtk_signal_connect(GTK_OBJECT(known_effects), "select_row",
-		       GTK_SIGNAL_FUNC(selectrow_effects), NULL);
+		       GTK_SIGNAL_FUNC(selectrow_effects), known_effects);
     gtk_signal_connect(GTK_OBJECT(adj_master), "value_changed",
 		       GTK_SIGNAL_FUNC(update_master_volume), NULL);
     gtk_widget_show_all(mainWnd);
