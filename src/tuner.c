@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.27  2005/09/06 09:51:50  fonin
+ * - added layout for 6-string octave down (mine)
+ *
  * Revision 1.26  2005/09/06 01:14:28  alankila
  * - fix dumb copypaste problem
  *
@@ -222,12 +225,14 @@ const unsigned short layouts[][MAX_STRINGS+1]={
     { 24+4, 5, 5, 5, 4, 5, 0 },
     { 24+3, 5, 5, 5, 4, 5, 0 },
     { 24+2, 5, 5, 5, 4, 5, 0 },
+    { 12+4, 5, 5, 5, 4, 5, 0 },
     { 12+4, 5, 5, 5, 0, 0, 0 }
 };
 const char *layout_names[] = {
     "6-str. guitar E A D G H E",
     "6-str. guitar halfnote down",
     "6-str. guitar fullnote down",
+    "6-str. guitar octave down",
     "4-str. bass   E A D G"
 };
 
