@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.25  2005/09/06 01:11:15  alankila
+ * - add some new layouts
+ *
  * Revision 1.24  2005/09/06 01:01:56  alankila
  * - simplify layout specification a bit
  *
@@ -165,8 +168,6 @@
 #define NOTES_N	    12		/* the note scale */
 #define NOTES_TO_C  9		/* how many notes to C sound from MIN_HZ */
 #define MAX_STRINGS 6		/* max.number of strings */
-#define LAYOUT_6GUITAR	"6-string guitar E A D G H E"
-#define LAYOUT_4BASS	"4-string bass E A D G"
 const char *notes[] = {
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"
 };
@@ -214,9 +215,17 @@ GtkPixmap green,black;
  * that defines MIN_HZ. The subsequent distances are from 1st tone to 2nd
  * and so on. For now, we assume all instruments have 6 strings.
  */
-unsigned short layouts[][MAX_STRINGS+1]={
-    { 24+4, 5, 5, 5, 4, 5, 0 },	/* 6-string guitar */
-    { 12+4, 5, 5, 5, 0, 0, 0 }	/* 4-string bass   */
+const unsigned short layouts[][MAX_STRINGS+1]={
+    { 24+4, 5, 5, 5, 4, 5, 0 },
+    { 24+3, 5, 5, 5, 4, 5, 0 },
+    { 24+2, 5, 5, 5, 4, 5, 0 },
+    { 12+4, 5, 5, 5, 0, 0, 0 }
+};
+const char *layout_names[] = {
+    "6-str. guitar E A D G H E",
+    "6-str. guitar halfnote down",
+    "6-str. guitar fullnote down",
+    "4-str. bass   E A D G H E"
 };
 
 void tuner_filter(effect_t *, data_block_t *);
@@ -235,10 +244,10 @@ void
 tuner_init(effect_t *p)
 {
     struct tuner_params *params = p->params;
-    GtkWidget *label;
-    GtkWidget *table;
-    GtkStyle  *style;
-    GList     *tuning_layouts = NULL;
+    GtkWidget  *label, *table;
+    GtkStyle   *style;
+    GList      *tuning_layouts = NULL;
+    int		i;
     
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     gtk_widget_realize(p->control);
@@ -297,8 +306,8 @@ tuner_init(effect_t *p)
     gtk_table_attach(GTK_TABLE(table), params->led_table, 2, 3, 0, 4,
 		     OPTS, OPTS_EXP, 6, 0);
 
-    tuning_layouts = g_list_append(tuning_layouts, LAYOUT_6GUITAR); 
-    tuning_layouts = g_list_append(tuning_layouts, LAYOUT_4BASS);
+    for (i = 0; layout_names[i] != NULL; i += 1)
+	tuning_layouts = g_list_append(tuning_layouts, (gchar *) layout_names[i]); 
     params->layout_combo = gtk_combo_new();
     gtk_combo_set_popdown_strings(GTK_COMBO(params->layout_combo), tuning_layouts);
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(params->layout_combo)->entry), FALSE);
@@ -320,12 +329,12 @@ update_layout(GtkWidget *widget, gpointer data) {
     if(tmp == NULL)
 	return;
 
-    /* does somebody know the better way to obtain an index of the gtk combo's
-     * choice ??? */
-    if (strcmp(tmp,LAYOUT_6GUITAR)==0)
-	params->curr_layout=0;
-    else if(strcmp(tmp,LAYOUT_4BASS)==0)
-	params->curr_layout=1;
+    for (i = 0; layout_names[i] != NULL; i += 1) {
+	if (strcmp(tmp, layout_names[i]) == 0) {
+	    params->curr_layout = i;
+	    break;
+	}
+    }
 
     for(i=0;i<MAX_STRINGS;i++) {
         if (params->leds[i] == NULL)
