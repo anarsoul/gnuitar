@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2005/09/06 23:21:40  alankila
+ * - tabularize pow, set some constants, do crossmixing, better defaults
+ *
  * Revision 1.22  2005/09/06 14:54:32  alankila
  * - set button states at loadup
  * - make echo multichannel aware. Echo currently can do almost everything
@@ -107,6 +110,10 @@
 #else
 #    include <io.h>
 #endif
+
+#define ECHO_FIRST_PRIME                    20
+#define ECHO_NEXT_PRIME_DISTANCE_FACTOR	    1.6
+#define ECHO_CROSSMIX_ATTN                  2.0
 
 void echo_filter(effect_t *p, data_block_t *db);
 void echo_filter_mc(effect_t *p, data_block_t *db);
@@ -290,6 +297,8 @@ echo_filter_mono(effect_t *p, data_block_t *db)
     DSP_SAMPLE          *s, tmp;
     double              in, out, echo_samples, echo_decay;
     struct echo_params  *params;
+    int                 delay_lookup[MAX_ECHO_COUNT];
+    float               decay_lookup[MAX_ECHO_COUNT];
 
     s = db->data;
     count = db->len;
@@ -299,15 +308,24 @@ echo_filter_mono(effect_t *p, data_block_t *db)
     echo_samples = params->echo_size / 1000.0 * sample_rate;
     echo_decay = params->echo_decay / 100.0;
     
+    for (i = 0; i < params->echoes; i += 1) {
+	delay_lookup[i]   = echo_samples * params->size_factor[i];
+	decay_lookup[i]   = pow(echo_decay, params->decay_factor[i]);
+    }
     while (count) {
         /* mix current input into the various echo buffers at their
          * expected delays */
         in = *s;
         out = in;
         for (i = 0; i < params->echoes; i += 1) {
-            tmp = params->history[curr_channel][i]->get(params->history[curr_channel][i], echo_samples * params->size_factor[i]);
-            tmp *= pow(echo_decay, params->decay_factor[i]);
+	    tmp = params->history[curr_channel][i]->get(params->history[curr_channel][i], delay_lookup[i]) * decay_lookup[i];
             out += tmp;
+
+	    /* mix extra history from previous buffer to make
+	     * the echo pattern more complicated */
+	    if (i > 1)
+                tmp += params->history[curr_channel][i-1]->get(params->history[curr_channel][i-1], delay_lookup[i-1]) * decay_lookup[i-1] / ECHO_CROSSMIX_ATTN;
+
             params->history[curr_channel][i]->add(params->history[curr_channel][i], in + tmp);
         }
         *s = out;
@@ -325,6 +343,8 @@ echo_filter_mc(effect_t *p, data_block_t *db)
     DSP_SAMPLE          *ins, *outs, tmp;
     double              in, out, echo_samples, echo_decay;
     struct echo_params  *params;
+    int                 delay_lookup[MAX_ECHO_COUNT];
+    float               decay_lookup[MAX_ECHO_COUNT];
 
     assert(db->channels == 1);
     ins = db->data;
@@ -341,18 +361,26 @@ echo_filter_mc(effect_t *p, data_block_t *db)
     db->channels = n_output_channels;
     db->len *= n_output_channels;
     
+    for (i = 0; i < params->echoes; i += 1) {
+	delay_lookup[i]   = echo_samples * params->size_factor[i];
+	decay_lookup[i]   = pow(echo_decay, params->decay_factor[i]);
+    }
+    
     while (count) {
-        /* echo buffers are equally divided according to all output channels */
+        /* echo buffers are equally divided with all output channels.
+	 * otherwise the algorithm is the same. */
         in = *ins++;
         for (curr_channel = 0; curr_channel < db->channels; curr_channel += 1) {
             out = in;
             
-            for (i = 0; i < params->echoes; i += 1) {
-                if (i % db->channels != curr_channel)
-                    continue;
-                tmp = params->history[0][i]->get(params->history[0][i], echo_samples * params->size_factor[i]);
-                tmp *= pow(echo_decay, params->decay_factor[i]);
+	    /* this for loop distributes channels equally between voices */
+            for (i = curr_channel; i < params->echoes; i += db->channels) {
+                tmp = params->history[0][i]->get(params->history[0][i], delay_lookup[i]) * decay_lookup[i];
                 out += tmp;
+		
+                if (i > 1)
+                    tmp += params->history[0][i-1]->get(params->history[0][i-1], delay_lookup[i-1]) * decay_lookup[i-1] / ECHO_CROSSMIX_ATTN;
+                
                 params->history[0][i]->add(params->history[0][i], in + tmp);
             }
 
@@ -425,12 +453,12 @@ echo_create()
     params->echoes = MAX_ECHO_COUNT;
 
     /* find some primes to base echo times on */
-    k = 50;
+    k = ECHO_FIRST_PRIME;
     for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
 	while (! is_prime(k))
 	    k += 1;
         params->primes[i] = k;
-        k *= 1.3;
+        k *= ECHO_NEXT_PRIME_DISTANCE_FACTOR;
     }
     /* scale primes such that largest value is 1.0 in both */
     for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
