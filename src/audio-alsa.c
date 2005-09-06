@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/09/06 23:25:38  alankila
+ * - remove overrun/underrun indicators in order to not potentially retrigger
+ *   an overrun/underrun with text scrolling in terminal
+ *
  * Revision 1.14  2005/09/05 17:42:07  alankila
  * - fix some small memory leaks
  *
@@ -145,7 +149,7 @@ alsa_audio_thread(void *V)
         while ((inframes = snd_pcm_readi(capture_handle, rdbuf, frames)) < 0) {
             if (inframes == -EAGAIN)
                 continue;
-            fprintf(stderr, "Input buffer overrun\n");
+            //fprintf(stderr, "Input buffer overrun\n");
             restarting = 1;
             snd_pcm_prepare(capture_handle);
         }
@@ -177,7 +181,7 @@ alsa_audio_thread(void *V)
         while ((outframes = snd_pcm_writei(playback_handle, rdbuf, inframes)) < 0) {
             if (outframes == -EAGAIN)
                 continue;
-            fprintf(stderr, "Output buffer underrun\n");
+            //fprintf(stderr, "Output buffer underrun\n");
             restarting = 1;
             snd_pcm_prepare(playback_handle);
         }
