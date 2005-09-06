@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.26  2005/09/06 01:14:28  alankila
+ * - fix dumb copypaste problem
+ *
  * Revision 1.25  2005/09/06 01:11:15  alankila
  * - add some new layouts
  *
@@ -225,7 +228,7 @@ const char *layout_names[] = {
     "6-str. guitar E A D G H E",
     "6-str. guitar halfnote down",
     "6-str. guitar fullnote down",
-    "4-str. bass   E A D G H E"
+    "4-str. bass   E A D G"
 };
 
 void tuner_filter(effect_t *, data_block_t *);
