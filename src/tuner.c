@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.24  2005/09/06 01:01:56  alankila
+ * - simplify layout specification a bit
+ *
  * Revision 1.23  2005/09/05 19:30:07  alankila
  * - remove some code duplication
  * - to make bass tuning possible, the lowest measurable frequency need to be
@@ -207,14 +210,13 @@ GtkPixmap green,black;
 
 /* Tuner layouts
  * The format is the following: the values are distances between tones
- * measured in half-notes. First distance is from MIN_HZ; the subsequental
- * distances are from 1st tone to 2nd and so on.
- * For now, we assume all instruments have 6 strings; unused strings
- * are replaced with zeroes.
+ * measured in half-notes. First distance is from the C in the octave
+ * that defines MIN_HZ. The subsequent distances are from 1st tone to 2nd
+ * and so on. For now, we assume all instruments have 6 strings.
  */
 unsigned short layouts[][MAX_STRINGS+1]={
-    { 12+7, 5, 5, 5, 4, 5, 5 },	/* 6-string guitar */
-    {    7, 5, 5, 5, 4, 0, 0 }	/* 4-string bass   */
+    { 24+4, 5, 5, 5, 4, 5, 0 },	/* 6-string guitar */
+    { 12+4, 5, 5, 5, 0, 0, 0 }	/* 4-string bass   */
 };
 
 void tuner_filter(effect_t *, data_block_t *);
@@ -389,7 +391,7 @@ timeout_update_label(gpointer gp)
 	int string=-1;
 	/* search in array for the string's index */
 	for(i=0;i<MAX_STRINGS;i++) {
-	    if (note == params->layout[i]) {
+	    if (NOTES_TO_C + note == params->layout[i]) {
 		string=i;
 		break;
 	    }
@@ -605,11 +607,11 @@ void calc_layout_gui(struct tuner_params *params) {
     memset(params->layout, 0, sizeof(params->layout));
     memset(params->leds, 0, sizeof(params->leds));
     memset(params->note_letters, 0, sizeof(params->note_letters));
-    curr_note=layouts[params->curr_layout][0];
+    curr_note = layouts[params->curr_layout][0];
     for (i = 0; i < MAX_STRINGS; i += 1) {
+        params->layout[i] = curr_note;
 	if (layouts[params->curr_layout][i+1] == 0)
             break;
-        params->layout[i] = curr_note;
         curr_note += layouts[params->curr_layout][i+1];
     }
     
@@ -620,7 +622,7 @@ void calc_layout_gui(struct tuner_params *params) {
         params->leds[i]=gtk_pixmap_new(black.pixmap,black.mask);
 	gtk_table_attach(GTK_TABLE(params->led_table), params->leds[i], 1, 2, i, i+1,
 		     OPTS, OPTS_EXP, 2, 2);
-	params->note_letters[i]=gtk_label_new(notes[(params->layout[i]+NOTES_TO_C)%NOTES_N]);
+	params->note_letters[i]=gtk_label_new(notes[params->layout[i]%NOTES_N]);
 	gtk_table_attach(GTK_TABLE(params->led_table), params->note_letters[i], 0, 1, i, i+1,
 		     OPTS, OPTS_EXP, 2, 2);
     }
