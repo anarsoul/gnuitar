@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2005/09/06 14:54:32  alankila
+ * - set button states at loadup
+ * - make echo multichannel aware. Echo currently can do almost everything
+ *   reverb can do, so we could remove reverb.
+ *
  * Revision 1.21  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -95,6 +100,7 @@
 #include "echo.h"
 #include "gui.h"
 #include <math.h>
+#include <assert.h>
 #include <stdlib.h>
 #ifndef _WIN32
 #    include <unistd.h>
@@ -102,25 +108,32 @@
 #    include <io.h>
 #endif
 
-void
-                echo_filter(struct effect *p, struct data_block *db);
+void echo_filter(effect_t *p, data_block_t *db);
+void echo_filter_mc(effect_t *p, data_block_t *db);
+void echo_filter_mono(effect_t *p, data_block_t *db);
 
 void
-update_echo_decay(GtkAdjustment * adj, struct echo_params *params)
+update_echo_decay(GtkAdjustment *adj, struct echo_params *params)
 {
     params->echo_decay = adj->value;
 }
 
 void
-update_echo_count(GtkAdjustment * adj, struct echo_params *params)
+update_echo_count(GtkAdjustment *adj, struct echo_params *params)
 {
     params->echoes = adj->value;
 }
 
 void
-update_echo_size(GtkAdjustment * adj, struct echo_params *params)
+update_echo_size(GtkAdjustment *adj, struct echo_params *params)
 {
     params->echo_size = adj->value;
+}
+
+void
+toggle_echo_multichannel(void *bullshit, struct echo_params *params)
+{
+    params->multichannel = !params->multichannel;
 }
 
 int
@@ -152,7 +165,7 @@ echo_init(struct effect *p)
     GtkWidget      *size_label;
     GtkObject      *adj_size;
 
-    GtkWidget      *button;
+    GtkWidget      *button, *mcbutton;
     GtkWidget      *parmTable;
 
     params = p->params;
@@ -230,18 +243,27 @@ echo_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
+    if (n_output_channels > 1) {
+        mcbutton = gtk_check_button_new_with_label("Multichannel");
+        if (params->multichannel)
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mcbutton), TRUE);
+        gtk_signal_connect(GTK_OBJECT(mcbutton), "toggled",
+                           GTK_SIGNAL_FUNC(toggle_echo_multichannel), params);
 
+        gtk_table_attach(GTK_TABLE(parmTable), mcbutton, 1, 3, 2, 3,
+                         __GTKATTACHOPTIONS(GTK_SHRINK),
+                         __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
+    }
+    
     button = gtk_check_button_new_with_label("On");
+    if (p->toggle == 1)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
-    if (p->toggle == 1) {
-	p->toggle = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
-    }
 
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Echo"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
@@ -251,7 +273,18 @@ echo_init(struct effect *p)
 }
 
 void
-echo_filter(struct effect *p, struct data_block *db)
+echo_filter(effect_t *p, data_block_t *db)
+{
+    struct echo_params *params = p->params;
+    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
+        echo_filter_mc(p, db);
+    } else {
+        echo_filter_mono(p, db);
+    }
+}
+    
+void
+echo_filter_mono(effect_t *p, data_block_t *db)
 {
     int                 i, count, curr_channel = 0;
     DSP_SAMPLE          *s, tmp;
@@ -270,7 +303,7 @@ echo_filter(struct effect *p, struct data_block *db)
         /* mix current input into the various echo buffers at their
          * expected delays */
         in = *s;
-        out = *s;
+        out = in;
         for (i = 0; i < params->echoes; i += 1) {
             tmp = params->history[curr_channel][i]->get(params->history[curr_channel][i], echo_samples * params->size_factor[i]);
             tmp *= pow(echo_decay, params->decay_factor[i]);
@@ -281,6 +314,51 @@ echo_filter(struct effect *p, struct data_block *db)
         
         curr_channel = (curr_channel + 1) % db->channels; 
         s++;
+        count--;
+    }
+}
+
+void
+echo_filter_mc(effect_t *p, data_block_t *db)
+{
+    int                 i, count, curr_channel = 0;
+    DSP_SAMPLE          *ins, *outs, tmp;
+    double              in, out, echo_samples, echo_decay;
+    struct echo_params  *params;
+
+    assert(db->channels == 1);
+    ins = db->data;
+    outs = db->data_swap;
+    db->data = outs;
+    db->data_swap = ins;
+    
+    count = db->len;
+    
+    params = p->params;
+    echo_samples = params->echo_size / 1000.0 * sample_rate;
+    echo_decay = params->echo_decay / 100.0;
+    
+    db->channels = n_output_channels;
+    db->len *= n_output_channels;
+    
+    while (count) {
+        /* echo buffers are equally divided according to all output channels */
+        in = *ins++;
+        for (curr_channel = 0; curr_channel < db->channels; curr_channel += 1) {
+            out = in;
+            
+            for (i = 0; i < params->echoes; i += 1) {
+                if (i % db->channels != curr_channel)
+                    continue;
+                tmp = params->history[0][i]->get(params->history[0][i], echo_samples * params->size_factor[i]);
+                tmp *= pow(echo_decay, params->decay_factor[i]);
+                out += tmp;
+                params->history[0][i]->add(params->history[0][i], in + tmp);
+            }
+
+            *outs++ = out;
+        }
+        
         count--;
     }
 }
@@ -309,7 +387,8 @@ echo_save(struct effect *p, SAVE_ARGS)
 
     SAVE_DOUBLE("echo_size", params->echo_size);
     SAVE_DOUBLE("echo_decay", params->echo_decay);
-    SAVE_DOUBLE("echoes", params->echoes);
+    SAVE_INT("echoes", params->echoes);
+    SAVE_INT("multichannel", params->multichannel);
 }
 
 void
@@ -319,7 +398,8 @@ echo_load(struct effect *p, LOAD_ARGS)
 
     LOAD_DOUBLE("echo_size", params->echo_size);
     LOAD_DOUBLE("echo_decay", params->echo_decay);
-    LOAD_DOUBLE("echoes", params->echoes);
+    LOAD_INT("echoes", params->echoes);
+    LOAD_INT("multichannel", params->multichannel);
 }
 
 effect_t *
@@ -339,25 +419,22 @@ echo_create()
     p->proc_done = echo_done;
 
     params = p->params;
-
-    params->echo_size = MAX_ECHO_LENGTH / 2;
-    params->echo_decay = 50.0;      /* 50 % */
+    params->multichannel = 0;
+    params->echo_size = 200;
+    params->echo_decay = 30.0;
     params->echoes = MAX_ECHO_COUNT;
 
     /* find some primes to base echo times on */
-    k = 10;
+    k = 50;
     for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
-	while (! is_prime(k))
-	    k += 1;
-        k += 1;
 	while (! is_prime(k))
 	    k += 1;
         params->primes[i] = k;
-        k += 1;
+        k *= 1.3;
     }
     /* scale primes such that largest value is 1.0 in both */
     for (i = 0; i < MAX_ECHO_COUNT; i += 1) {
-        params->size_factor[i] = params->primes[i] / params->primes[MAX_ECHO_COUNT-1];
+        params->size_factor[i] = params->primes[i] / params->primes[0];
         params->decay_factor[i] = params->primes[i] / params->primes[0];
     }
     /* build history buffers, one per channel per echo */

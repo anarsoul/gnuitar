@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2005/09/06 14:54:31  alankila
+ * - set button states at loadup
+ * - make echo multichannel aware. Echo currently can do almost everything
+ *   reverb can do, so we could remove reverb.
+ *
  * Revision 1.30  2005/09/05 20:07:49  alankila
  * - multichannel chorus
  * - add some code to synchronize output volumes regardless of voices #
@@ -392,6 +397,8 @@ chorus_init(struct effect *p)
     
     if (n_input_channels == 1 && n_output_channels > 1) {
         mcbutton = gtk_check_button_new_with_label("Multichannel");
+        if (pchorus->multichannel)
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mcbutton), TRUE);
         gtk_signal_connect(GTK_OBJECT(mcbutton), "toggled",
                            GTK_SIGNAL_FUNC(toggle_chorus_multichannel), pchorus);
         gtk_table_attach(GTK_TABLE(parmTable), mcbutton, 1, 9, 2, 3,
@@ -402,6 +409,8 @@ chorus_init(struct effect *p)
     }
 
     button = gtk_check_button_new_with_label("On");
+    if (p->toggle == 1)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
@@ -410,10 +419,6 @@ chorus_init(struct effect *p)
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
-    if (p->toggle == 1) {
-	p->toggle = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
-    }
 
     gtk_window_set_title(GTK_WINDOW(p->control), "Chorus");
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);

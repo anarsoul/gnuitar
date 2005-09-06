@@ -26,8 +26,8 @@
 #include "pump.h"
 #include "backbuf.h"
 
-#define MAX_ECHO_COUNT  20
-#define MAX_ECHO_LENGTH 2000 /* ms */
+#define MAX_ECHO_COUNT  10
+#define MAX_ECHO_LENGTH 500 /* ms */
 
 extern effect_t *   echo_create();
 
@@ -39,6 +39,7 @@ struct echo_params {
     double          echo_size,
                     echo_decay;
     int             echoes;
+    short           multichannel;
 };
 
 #endif
