@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.48  2005/09/07 11:08:12  alankila
+ * - oddly enough, the original equation was right all along. The problem that
+ *   I was trying to repair by ear was probably in the filtering and too low
+ *   upsampling of the original code. My month of work finally boils down to
+ *   adding a new exponential function that makes the clipping more interesting
+ *   and simulating the capacitor left out in the original.
+ *
  * Revision 1.47  2005/09/04 23:17:07  alankila
  * - gtk+ ui fixes
  *
@@ -310,23 +317,30 @@
 void            distort2_filter(struct effect *p, struct data_block *db);
 
 void
-update_distort2_drive(GtkAdjustment * adj, struct distort2_params *params)
+update_distort2_drive(GtkAdjustment *adj, struct distort2_params *params)
 {
     params->drive = adj->value;
 
 }
 
 void
-update_distort2_mUt(GtkAdjustment * adj, struct distort2_params *params)
+update_distort2_mUt(GtkAdjustment *adj, struct distort2_params *params)
 {
     params->clip = adj->value;
 }
 
 void
-update_distort2_treble(GtkAdjustment * adj, struct distort2_params *params)
+update_distort2_treble(GtkAdjustment *adj, struct distort2_params *params)
 {
     params->noisegate = adj->value;
 }
+
+/*
+void
+toggle_distort2_mode(GtkAdjustment *adj, struct distort2_params *params)
+{
+    params->mode = !params->mode;
+}*/
 
 void
 distort2_init(struct effect *p)
@@ -345,7 +359,7 @@ distort2_init(struct effect *p)
     GtkWidget      *treble_label;
     GtkObject      *adj_treble;
 
-    GtkWidget      *button;
+    GtkWidget      *button/*, *modebutton*/;
 
     GtkWidget      *parmTable;
 
@@ -421,7 +435,21 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
 
+    /*
+    modebutton = gtk_check_button_new_with_label("Mode");
+    if (pdistort->mode)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(modebutton), TRUE);
+    gtk_signal_connect(GTK_OBJECT(modebutton), "toggled",
+		       GTK_SIGNAL_FUNC(toggle_distort2_mode), pdistort);
+
+    gtk_table_attach(GTK_TABLE(parmTable), modebutton, 1, 2, 3, 4,
+		     __GTKATTACHOPTIONS(GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
+    */
     button = gtk_check_button_new_with_label("On");
+    if (p->toggle == 1)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
@@ -429,10 +457,6 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
-    if (p->toggle == 1) {
-	p->toggle = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
-    }
 
     gtk_window_set_title(GTK_WINDOW(p->control),
 			 (gchar *) ("Overdrive"));
@@ -448,18 +472,15 @@ distort2_filter(struct effect *p, struct data_block *db)
     int			i,count,bailout;
     int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
-    struct distort2_params *dp;
-    static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4,mUt,Is;
+    struct distort2_params *dp = p->params;
+    static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4;
     static double upsample [UPSAMPLE];
-    
-    dp = (struct distort2_params *) p->params;
-
     double DRIVE = DRIVE_STATIC + dp->drive / 100.0 * DRIVE_LOG;
-    mUt = (30.0 + dp->clip) * 1e-3;
+    double mUt = (30.0 + dp->clip) * 1e-3;
     /* correct Is with mUt to approximately keep drive the
      * same. Original parameters said Is is 10e-12 and mUt 30e-3.
      * If mUt grows, Is must shrink. 0.40 is experimental */
-    Is = 10e-12 * exp(0.40/30e-3 - 0.40/mUt);
+    double Is = 10e-12 * exp(0.40/30e-3 - 0.40/mUt);
     count = db->len;
     s = db->data;
 
@@ -513,7 +534,8 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    /* first compute the linear rc filter current output */
 	    x2 = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
 	    dp->lyf[curr_channel] = x2;
-	    x1 = (x-x2) / RC_FEEDBACK_R;
+
+            x1 = (x - x2) / RC_FEEDBACK_R;
             
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
@@ -522,10 +544,10 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    do {
 		/* f(y) = 0 , y= ? */
                 /* e^3 ~ 20 */
-		e1 = exp(  (x2 - y) / mUt); e2 = 1.0 / e1;
-		e3 = exp(3*(x2 - y) / mUt); e4 = 1.0 / e3;
+		e1 = exp(  (x - y) / mUt); e2 = 1.0 / e1;
+		e3 = exp(3*(x - y) / mUt); e4 = 1.0 / e3;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
-		f = x1 + (x2 - y) / DRIVE + Is * (e1 - e2 + (e3 - e4)/20);
+		f = x1 + (x - y) / DRIVE + Is * (e1 - e2 + (e3 - e4)/20);
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
@@ -538,8 +560,8 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    }
 	    while (fabs(dx) > EFFECT_PRECISION && --bailout);
 	    /* when dx gets very small, we found a solution. */
-
-	    /* we can get NaN after all, let's check for this */
+	    
+            /* we can get NaN after all, let's check for this */
 	    if(isnan(y))
                 y=0.0;
             /* the real limits are -1.0 to +1.0 but we allow for some headroom */
