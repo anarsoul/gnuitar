@@ -5,7 +5,7 @@ TODO:
     fragment sizes (for low-end computers)
 + в write/load процедурах делать не sizeof(тип), а sizeof(переменная)
 + disclaimer and copyright update in each source
-+ LGPL notice everywhere
++ GPL notice everywhere
 + icon for the program
 + перед релизом марафет в исходниках - dos2unix, indent и вручную все проверить.
 + win32 - при нажатии на write track, а затем cancel, чекбокс остается
