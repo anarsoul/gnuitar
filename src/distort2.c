@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.50  2005/09/08 19:31:48  alankila
+ * - fix one C++ declaration, tune clip % a bit
+ *
  * Revision 1.49  2005/09/08 07:58:29  alankila
  * - tubescreamy defaults
  * - flipped clip % slider
@@ -479,8 +482,8 @@ distort2_filter(struct effect *p, struct data_block *db)
     double mUt = (30.0 + 100 - dp->clip) * 1e-3;
     /* correct Is with mUt to approximately keep drive the
      * same. Original parameters said Is is 10e-12 and mUt 30e-3.
-     * If mUt grows, Is must shrink. 0.40 is experimental */
-    double Is = 10e-12 * exp(0.40/30e-3 - 0.40/mUt);
+     * If mUt grows, Is must shrink. 0.39 is experimental */
+    double Is = 10e-12 * exp(0.39/30e-3 - 0.39/mUt);
     count = db->len;
     s = db->data;
 
@@ -595,9 +598,9 @@ distort2_filter(struct effect *p, struct data_block *db)
         db->data_swap[i] = db->data[i];
     RC_highpass(db, &(dp->treble_hipass));
 
-    double treblefactor = dp->treble / 6.0;
+    y = dp->treble / 6.0;
     for (i = 0; i < db->len; i += 1)
-        db->data[i] = db->data_swap[i] + db->data[i] * treblefactor;
+        db->data[i] = db->data_swap[i] + db->data[i] * y;
 }
 
 void
