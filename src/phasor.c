@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2005/09/09 20:22:17  alankila
+ * - phasor reimplemented according to a popular algorithm that simulates
+ *   high-impedance isolated varying capacitors
+ *
  * Revision 1.24  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -116,48 +120,31 @@
 void            phasor_filter(struct effect *p, struct data_block *db);
 
 void
-update_phasor_speed(GtkAdjustment * adj, struct phasor_params *params)
+update_phasor_speed(GtkAdjustment *adj, struct phasor_params *params)
 {
     params->sweep_time = adj->value;
 }
 
 void
-update_phasor_freq_low(GtkAdjustment * adj, struct phasor_params *params)
+update_phasor_depth(GtkAdjustment *adj, struct phasor_params *params)
 {
-    params->freq_low = adj->value;
-}
-
-void
-update_phasor_freq_high(GtkAdjustment * adj, struct phasor_params *params)
-{
-    params->freq_high = adj->value;
-}
-
-void
-toggle_bandpass(void *bullshit, struct effect *p)
-{
-    struct phasor_params *params = p->params;
-    params->bandpass = !params->bandpass;
+    params->depth = adj->value;
 }
 
 void
 phasor_init(struct effect *p)
 {
     struct phasor_params *pphasor;
-    GtkWidget      *freq_low;
-    GtkWidget      *freq_low_label;
-    GtkObject      *adj_freq_low;
 
-    GtkWidget      *freq_high;
-    GtkWidget      *freq_high_label;
-    GtkObject      *adj_freq_high;
+    GtkWidget      *depth;
+    GtkWidget      *depth_label;
+    GtkObject      *adj_depth;
 
     GtkWidget      *speed;
     GtkWidget      *speed_label;
     GtkObject      *adj_speed;
 
     GtkWidget      *button;
-    GtkWidget      *bandpass;
     GtkWidget      *parmTable;
     pphasor = p->params;
 
@@ -169,10 +156,10 @@ phasor_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
 
-    parmTable = gtk_table_new(4, 8, FALSE);
+    parmTable = gtk_table_new(2, 3, FALSE);
 
 
-    adj_speed = gtk_adjustment_new(pphasor->sweep_time, 20.0, 2000,
+    adj_speed = gtk_adjustment_new(pphasor->sweep_time, 25.0, 2000,
 				   1.0, 10.0, 0.0);
     speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
@@ -195,46 +182,23 @@ phasor_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_freq_low =
-	gtk_adjustment_new(pphasor->freq_low, 100.0, 2500.0, 1.0, 1.0,
-			   1.0);
-    freq_low_label = gtk_label_new("Freq.low\nHz");
-    gtk_table_attach(GTK_TABLE(parmTable), freq_low_label, 3, 4, 0, 1,
+    adj_depth =
+	gtk_adjustment_new(pphasor->depth, 0.0, 100.0, 1.0, 5.0,
+			   0.0);
+    depth_label = gtk_label_new("Depth\n%");
+    gtk_table_attach(GTK_TABLE(parmTable), depth_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    gtk_signal_connect(GTK_OBJECT(adj_freq_low), "value_changed",
-		       GTK_SIGNAL_FUNC(update_phasor_freq_low), pphasor);
+    gtk_signal_connect(GTK_OBJECT(adj_depth), "value_changed",
+		       GTK_SIGNAL_FUNC(update_phasor_depth), pphasor);
 
-    freq_low = gtk_vscale_new(GTK_ADJUSTMENT(adj_freq_low));
+    depth = gtk_vscale_new(GTK_ADJUSTMENT(adj_depth));
 
-    gtk_table_attach(GTK_TABLE(parmTable), freq_low, 3, 4, 1, 2,
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-
-
-    adj_freq_high =
-	gtk_adjustment_new(pphasor->freq_high, 250.0, 5000.0, 1.0, 1.0,
-			   1.0);
-    freq_high_label = gtk_label_new("Freq.high\nHz");
-    gtk_table_attach(GTK_TABLE(parmTable), freq_high_label, 5, 6, 0, 1,
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-
-
-    gtk_signal_connect(GTK_OBJECT(adj_freq_high), "value_changed",
-		       GTK_SIGNAL_FUNC(update_phasor_freq_high), pphasor);
-
-    freq_high = gtk_vscale_new(GTK_ADJUSTMENT(adj_freq_high));
-
-    gtk_table_attach(GTK_TABLE(parmTable), freq_high, 5, 6, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), depth, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
@@ -242,32 +206,16 @@ phasor_init(struct effect *p)
 
 
     button = gtk_check_button_new_with_label("On");
+    if (p->toggle == 1)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 2, 2, 3,
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-    if (p->toggle == 1) {
-	p->toggle = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
-    }
-
-    bandpass = gtk_check_button_new_with_label("Bandpass");
-    gtk_signal_connect(GTK_OBJECT(bandpass), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_bandpass), p);
-
-    gtk_table_attach(GTK_TABLE(parmTable), bandpass, 3, 6, 2, 3,
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-    if (pphasor->bandpass == 1) {
-	pphasor->bandpass = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(bandpass), TRUE);
-    }
 
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Phasor"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
@@ -279,24 +227,36 @@ void
 phasor_filter(struct effect *p, struct data_block *db)
 {
     struct phasor_params *pp;
-    double          freq;
+    DSP_SAMPLE     *s, tmp;
+    int             count, curr_channel = 0, i;
+    float           delay;
 
     pp = (struct phasor_params *) p->params;
-
-    if (pp->f > 1.0 && pp->dir > 0) {
-        pp->dir = -1;
-    }
-    if (pp->f < 0.0 && pp->dir < 0) {
-        pp->dir = 1;
-    }
-    freq = pp->freq_low * pow(2, log(pp->freq_high / pp->freq_low)/log(2) * pp->f);
-
-    LC_filter(db, 1, freq, &pp->fd1);
-    RC_set_freq(freq, &pp->fd2);
-    if (pp->bandpass)
-	RC_bandpass(db, &pp->fd2);
+    count = db->len;
+    s = db->data;
     
-    pp->f += pp->dir * 1000.0 / pp->sweep_time * db->len / (sample_rate * db->channels) * 2;
+    while (count) {
+        delay = (sin_lookup(pp->f) + 1) / 2;
+        delay *= pp->depth / 100.0;
+        for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
+            set_allpass_biquad(delay, &(pp->allpass[i]));
+
+        tmp = *s;
+        for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
+            tmp = do_biquad(tmp, &(pp->allpass[i]), curr_channel);
+        *s = tmp;
+
+        curr_channel = (curr_channel + 1) % db->channels;
+        if (curr_channel == 0) { 
+            pp->f += 1000.0 / pp->sweep_time / sample_rate * 2 * M_PI;
+            if (pp->f >= 1.0)
+                pp->f -= 1.0;
+        }
+        
+        *s++;
+        count--;
+    }
+
 }
 
 void
@@ -313,8 +273,7 @@ phasor_save(struct effect *p, SAVE_ARGS)
     struct phasor_params *params = p->params;
 
     SAVE_DOUBLE("sweep_time", params->sweep_time);
-    SAVE_DOUBLE("freq_low", params->freq_low);
-    SAVE_DOUBLE("freq_high", params->freq_low);
+    SAVE_DOUBLE("depth", params->depth);
 }
 
 void
@@ -323,8 +282,7 @@ phasor_load(struct effect *p, LOAD_ARGS)
     struct phasor_params *params = p->params;
 
     LOAD_DOUBLE("sweep_time", params->sweep_time);
-    LOAD_DOUBLE("freq_low", params->freq_low);
-    LOAD_DOUBLE("freq_high", params->freq_low);
+    LOAD_DOUBLE("depth", params->depth);
 }
 
 effect_t *
@@ -332,6 +290,7 @@ phasor_create()
 {
     effect_t           *p;
     struct phasor_params *pphasor;
+    int                 i;
 
     p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct phasor_params));
@@ -344,14 +303,11 @@ phasor_create()
     pphasor = p->params;
 
     pphasor->sweep_time = 1000.0;
-    pphasor->freq_low = 300.0;
-    pphasor->freq_high = 2500.0;
+    pphasor->depth = 50.0;
     pphasor->f = 0;
-    pphasor->dir = 1;
-    pphasor->bandpass = 0;
 
-    RC_setup(10, 1.5, &pphasor->fd1);
-    RC_setup(10, 1.5, &pphasor->fd2);
-
+    for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
+        pphasor->allpass[i].mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
+    
     return p;
 }

@@ -24,14 +24,16 @@
 #define _PHASOR_H_ 1
 
 #include "pump.h"
-#include "rcfilter.h"
+#include "biquad.h"
+
+#define MAX_PHASOR_FILTERS  8
+#define PHASOR_RECALC_INTERVAL  32
 
 extern effect_t *   phasor_create();
 
 struct phasor_params {
-    float           freq_low, freq_high, sweep_time, f;
-    short           bandpass, dir;
-    struct filter_data fd1, fd2;
+    float           depth, sweep_time, f;
+    Biquad_t        allpass[MAX_PHASOR_FILTERS];
 };
 
 #endif

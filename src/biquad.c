@@ -19,6 +19,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.9  2005/09/09 20:22:17  alankila
+ * - phasor reimplemented according to a popular algorithm that simulates
+ *   high-impedance isolated varying capacitors
+ *
  * Revision 1.8  2005/08/14 23:31:22  alankila
  * revert earlier "fix" that does * sizeof(double). It was a brainfart.
  *
@@ -59,7 +63,7 @@
 #endif
 
 void
-set_peq_biquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
+set_peq_biquad(double Fs, double Fc, double BW, double G, Biquad_t *f)
 {
     double          k,
                     om,
@@ -77,9 +81,19 @@ set_peq_biquad(double Fs, double Fc, double BW, double G, struct Biquad *f)
     f->b2 = -(1 - fi / k) / x;
 }
 
+/* delay can vary from 0 to 1 */
 void
-set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass,
-                    struct Biquad *f)
+set_allpass_biquad(double delay, Biquad_t *f)
+{
+    delay = ((exp(delay) - 1) / (exp(1) - 1));// - 0.5) * 2;
+    f->a0 = delay;
+    f->a1 = 1.0;
+    f->b1 = -delay;
+    f->a2 = f->b2 = 0;
+}
+
+void
+set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t *f)
 {
     double          x,
                     y,
@@ -156,10 +170,10 @@ set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass,
 #if defined(__GNUC__)
 /* check if the compiler is not Visual C so we must declare the fuction here */
 __inline double
-do_biquad(double x, struct Biquad *f, int channel)
+do_biquad(double x, Biquad_t *f, int channel)
 #else
 double
-do_biquad(double x, struct Biquad *f, int channel)
+do_biquad(double x, Biquad_t *f, int channel)
 #endif
 {
     double          y,

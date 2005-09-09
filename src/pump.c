@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.46  2005/09/09 20:22:17  alankila
+ * - phasor reimplemented according to a popular algorithm that simulates
+ *   high-impedance isolated varying capacitors
+ *
  * Revision 1.45  2005/09/05 17:42:07  alankila
  * - fix some small memory leaks
  *
@@ -456,9 +460,9 @@ struct effect_creator effect_list[] = {
     {"Delay", delay_create},
     {"Reverb", reverb_create},
     {"Tremolo", vibrato_create},
-    {"Chorus", chorus_create},
+    {"Chorus / Flanger", chorus_create},
     {"Echo", echo_create},
-    {"Phasor", phasor_create},
+    {"Phaser", phasor_create},
     {"Vibrato", tremolo_create},
     {"Sustain", sustain_create},
     {"Overdrive", distort2_create},

@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.8  2005/09/09 20:22:17  alankila
+ * - phasor reimplemented according to a popular algorithm that simulates
+ *   high-impedance isolated varying capacitors
+ *
  * Revision 1.7  2005/08/14 23:31:22  alankila
  * revert earlier "fix" that does * sizeof(double). It was a brainfart.
  *
@@ -63,18 +67,20 @@ struct Biquad {
 				 * alocated by the caller, 4 * number of
 				 * channels */
 };
+typedef struct Biquad Biquad_t;
 
 /*
  * Sampling rate, Center frequency, Bandwidth, Gain (decibels) 
  */
 extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
-			       struct Biquad *f);
+			       Biquad_t *f);
+extern void     set_allpass_biquad(double delay, Biquad_t *f);
 
 /*
  * Sampling rate, Center frequency, Ripple %, Lowpass?
  */
 extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
-			              int lowpass, struct Biquad *f);
+			              int lowpass, Biquad_t *f);
 
 /*
  * computes one sample ; because inline declared, this will be compiled in 
@@ -85,7 +91,7 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
 __inline double
-do_biquad(double x, struct Biquad *f, int channel)
+do_biquad(double x, Biquad_t *f, int channel)
 {				
 				 
     double          y,
@@ -104,10 +110,10 @@ do_biquad(double x, struct Biquad *f, int channel)
     return y;
 }
 #elif defined(__GNUC__)
-extern __inline double do_biquad(double x, struct Biquad *f, int channel);
+extern __inline double do_biquad(double x, Biquad_t *f, int channel);
 #else
 /* otherwise declare a standard function */
-extern double do_biquad(double x, struct Biquad *f, int channel);
+extern double do_biquad(double x, Biquad_t *f, int channel);
 #endif
 
 
