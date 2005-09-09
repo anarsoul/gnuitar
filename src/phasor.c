@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2005/09/09 20:52:20  alankila
+ * - add dry/wet % for comb effect
+ *
  * Revision 1.25  2005/09/09 20:22:17  alankila
  * - phasor reimplemented according to a popular algorithm that simulates
  *   high-impedance isolated varying capacitors
@@ -132,17 +135,27 @@ update_phasor_depth(GtkAdjustment *adj, struct phasor_params *params)
 }
 
 void
+update_phasor_drywet(GtkAdjustment *adj, struct phasor_params *params)
+{
+    params->drywet = adj->value;
+}
+
+void
 phasor_init(struct effect *p)
 {
     struct phasor_params *pphasor;
+
+    GtkWidget      *speed;
+    GtkWidget      *speed_label;
+    GtkObject      *adj_speed;
 
     GtkWidget      *depth;
     GtkWidget      *depth_label;
     GtkObject      *adj_depth;
 
-    GtkWidget      *speed;
-    GtkWidget      *speed_label;
-    GtkObject      *adj_speed;
+    GtkWidget      *drywet;
+    GtkWidget      *drywet_label;
+    GtkObject      *adj_drywet;
 
     GtkWidget      *button;
     GtkWidget      *parmTable;
@@ -156,7 +169,7 @@ phasor_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
 
-    parmTable = gtk_table_new(2, 3, FALSE);
+    parmTable = gtk_table_new(3, 3, FALSE);
 
 
     adj_speed = gtk_adjustment_new(pphasor->sweep_time, 25.0, 2000,
@@ -165,8 +178,7 @@ phasor_init(struct effect *p)
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
@@ -183,14 +195,12 @@ phasor_init(struct effect *p)
 
 
     adj_depth =
-	gtk_adjustment_new(pphasor->depth, 0.0, 100.0, 1.0, 5.0,
-			   0.0);
+	gtk_adjustment_new(pphasor->depth, 0.0, 100.0, 1.0, 5.0, 0.0);
     depth_label = gtk_label_new("Depth\n%");
     gtk_table_attach(GTK_TABLE(parmTable), depth_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     (GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
 
     gtk_signal_connect(GTK_OBJECT(adj_depth), "value_changed",
@@ -199,6 +209,27 @@ phasor_init(struct effect *p)
     depth = gtk_vscale_new(GTK_ADJUSTMENT(adj_depth));
 
     gtk_table_attach(GTK_TABLE(parmTable), depth, 1, 2, 1, 2,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    adj_drywet =
+	gtk_adjustment_new(pphasor->drywet, 0.0, 100.0, 1.0, 5.0,
+			   0.0);
+    drywet_label = gtk_label_new("Dry/Wet\n%");
+    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 2, 3, 0, 1,
+		     __GTKATTACHOPTIONS
+		     (GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
+
+
+    gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
+		       GTK_SIGNAL_FUNC(update_phasor_drywet), pphasor);
+
+    drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
+
+    gtk_table_attach(GTK_TABLE(parmTable), drywet, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
@@ -213,9 +244,8 @@ phasor_init(struct effect *p)
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+		     (GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Phasor"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
@@ -229,30 +259,33 @@ phasor_filter(struct effect *p, struct data_block *db)
     struct phasor_params *pp;
     DSP_SAMPLE     *s, tmp;
     int             count, curr_channel = 0, i;
-    float           delay;
+    double          delay, Dry, Wet;
 
     pp = (struct phasor_params *) p->params;
     count = db->len;
     s = db->data;
+
+    Dry = 1 - pp->drywet / 100.0;
+    Wet =     pp->drywet / 100.0;
     
     while (count) {
-        delay = (sin_lookup(pp->f) + 1) / 2;
-        delay *= pp->depth / 100.0;
-        for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-            set_allpass_biquad(delay, &(pp->allpass[i]));
-
-        tmp = *s;
-        for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-            tmp = do_biquad(tmp, &(pp->allpass[i]), curr_channel);
-        *s = tmp;
-
-        curr_channel = (curr_channel + 1) % db->channels;
         if (curr_channel == 0) { 
             pp->f += 1000.0 / pp->sweep_time / sample_rate * 2 * M_PI;
             if (pp->f >= 1.0)
                 pp->f -= 1.0;
+            delay = (sin_lookup(pp->f) + 1) / 2;
+            delay *= pp->depth / 100.0;
+            for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
+                set_allpass_biquad(delay, &(pp->allpass[i]));
+
         }
         
+        tmp = *s;
+        for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
+            tmp = do_biquad(tmp, &(pp->allpass[i]), curr_channel);
+        *s = *s * Dry + tmp * Wet;
+
+        curr_channel = (curr_channel + 1) % db->channels;
         *s++;
         count--;
     }
@@ -274,6 +307,7 @@ phasor_save(struct effect *p, SAVE_ARGS)
 
     SAVE_DOUBLE("sweep_time", params->sweep_time);
     SAVE_DOUBLE("depth", params->depth);
+    SAVE_DOUBLE("drywet", params->drywet);
 }
 
 void
@@ -283,6 +317,7 @@ phasor_load(struct effect *p, LOAD_ARGS)
 
     LOAD_DOUBLE("sweep_time", params->sweep_time);
     LOAD_DOUBLE("depth", params->depth);
+    LOAD_DOUBLE("drywet", params->drywet);
 }
 
 effect_t *
@@ -303,7 +338,8 @@ phasor_create()
     pphasor = p->params;
 
     pphasor->sweep_time = 1000.0;
-    pphasor->depth = 50.0;
+    pphasor->depth = 100.0;
+    pphasor->drywet = 50.0;
     pphasor->f = 0;
 
     for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)

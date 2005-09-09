@@ -26,13 +26,12 @@
 #include "pump.h"
 #include "biquad.h"
 
-#define MAX_PHASOR_FILTERS  8
-#define PHASOR_RECALC_INTERVAL  32
+#define MAX_PHASOR_FILTERS  16
 
 extern effect_t *   phasor_create();
 
 struct phasor_params {
-    float           depth, sweep_time, f;
+    double          depth, sweep_time, drywet, f;
     Biquad_t        allpass[MAX_PHASOR_FILTERS];
 };
 
