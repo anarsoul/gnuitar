@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2005/09/09 20:57:20  alankila
+ * - merge dry/wet sliders together
+ *
  * Revision 1.31  2005/09/06 14:54:31  alankila
  * - set button states at loadup
  * - make echo multichannel aware. Echo currently can do almost everything
@@ -176,15 +179,9 @@ update_chorus_voices(GtkAdjustment *adj, struct chorus_params *params)
 }
 
 void
-update_chorus_wet(GtkAdjustment *adj, struct chorus_params *params)
+update_chorus_drywet(GtkAdjustment *adj, struct chorus_params *params)
 {
-    params->wet = adj->value;
-}
-
-void
-update_chorus_dry(GtkAdjustment *adj, struct chorus_params *params)
-{
-    params->dry = adj->value;
+    params->drywet = adj->value;
 }
 
 void
@@ -220,13 +217,9 @@ chorus_init(struct effect *p)
     GtkWidget      *voices_label;
     GtkObject      *adj_voices;
 
-    GtkWidget      *wet;
-    GtkWidget      *wet_label;
-    GtkObject      *adj_wet;
-
-    GtkWidget      *dry;
-    GtkWidget      *dry_label;
-    GtkObject      *adj_dry;
+    GtkWidget      *drywet;
+    GtkWidget      *drywet_label;
+    GtkObject      *adj_drywet;
 
     GtkWidget      *regen;
     GtkWidget      *regen_label;
@@ -333,43 +326,22 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
 
-    adj_wet = gtk_adjustment_new(pchorus->wet, 0.0, 100.0, 1.0, 1.0, 0.0);
-    wet_label = gtk_label_new("Wet\n%");
-    gtk_label_set_justify(GTK_LABEL(wet_label), GTK_JUSTIFY_CENTER);
-    gtk_table_attach(GTK_TABLE(parmTable), wet_label, 5, 6, 0, 1,
+    adj_drywet = gtk_adjustment_new(pchorus->drywet, 0.0, 100.0, 1.0, 1.0, 0.0);
+    drywet_label = gtk_label_new("Dry/Wet\n%");
+    gtk_label_set_justify(GTK_LABEL(drywet_label), GTK_JUSTIFY_CENTER);
+    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 5, 6, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 3, 0);
 
 
-    gtk_signal_connect(GTK_OBJECT(adj_wet), "value_changed",
-		       GTK_SIGNAL_FUNC(update_chorus_wet), pchorus);
+    gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
+		       GTK_SIGNAL_FUNC(update_chorus_drywet), pchorus);
 
-    wet = gtk_vscale_new(GTK_ADJUSTMENT(adj_wet));
+    drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
 
-    gtk_table_attach(GTK_TABLE(parmTable), wet, 5, 6, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 3, 0);
-
-    adj_dry = gtk_adjustment_new(pchorus->dry, 0.0, 100.0, 1.0, 1.0, 0.0);
-    dry_label = gtk_label_new("Dry\n%");
-    gtk_label_set_justify(GTK_LABEL(dry_label), GTK_JUSTIFY_CENTER);
-    gtk_table_attach(GTK_TABLE(parmTable), dry_label, 7, 8, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-
-
-    gtk_signal_connect(GTK_OBJECT(adj_dry), "value_changed",
-		       GTK_SIGNAL_FUNC(update_chorus_dry), pchorus);
-
-    dry = gtk_vscale_new(GTK_ADJUSTMENT(adj_dry));
-
-    gtk_table_attach(GTK_TABLE(parmTable), dry, 7, 8, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), drywet, 5, 6, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -378,7 +350,7 @@ chorus_init(struct effect *p)
     adj_regen = gtk_adjustment_new(pchorus->regen, 0.0, 100.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("Regen\n%");
     gtk_label_set_justify(GTK_LABEL(regen_label), GTK_JUSTIFY_CENTER);
-    gtk_table_attach(GTK_TABLE(parmTable), regen_label, 8, 9, 0, 1,
+    gtk_table_attach(GTK_TABLE(parmTable), regen_label, 7, 8, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
@@ -389,19 +361,19 @@ chorus_init(struct effect *p)
 
     regen = gtk_vscale_new(GTK_ADJUSTMENT(adj_regen));
 
-    gtk_table_attach(GTK_TABLE(parmTable), regen, 8, 9, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), regen, 7, 8, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
     
     if (n_input_channels == 1 && n_output_channels > 1) {
-        mcbutton = gtk_check_button_new_with_label("Multichannel");
+        mcbutton = gtk_check_button_new_with_label("Multichannel flange");
         if (pchorus->multichannel)
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mcbutton), TRUE);
         gtk_signal_connect(GTK_OBJECT(mcbutton), "toggled",
                            GTK_SIGNAL_FUNC(toggle_chorus_multichannel), pchorus);
-        gtk_table_attach(GTK_TABLE(parmTable), mcbutton, 1, 9, 2, 3,
+        gtk_table_attach(GTK_TABLE(parmTable), mcbutton, 1, 8, 2, 3,
                          __GTKATTACHOPTIONS(GTK_EXPAND |
                                             GTK_SHRINK),
                          __GTKATTACHOPTIONS(GTK_FILL |
@@ -452,8 +424,8 @@ chorus_filter_mono(struct effect *p, struct data_block *db)
     s = db->data;
     count = db->len;
 
-    Dry = cp->dry / 100.0;
-    Wet = cp->wet / 100.0;
+    Dry = 1 - cp->drywet / 100.0;
+    Wet =     cp->drywet / 100.0;
     Rgn = cp->regen / 100.0;
     Speed = 1000.0 / cp->speed / sample_rate;
     Depth = cp->depth / 1000.0 * sample_rate;
@@ -514,8 +486,8 @@ chorus_filter_mc(struct effect *p, struct data_block *db)
 
     count = db->len;
     
-    Dry = cp->dry / 100.0;
-    Wet = cp->wet / 100.0;
+    Dry = 1 - cp->drywet / 100.0;
+    Wet =     cp->drywet / 100.0;
     Rgn = cp->regen / 100.0;
     Speed = 1000.0 / cp->speed / sample_rate;
     Depth = cp->depth / 1000.0 * sample_rate;
@@ -571,8 +543,7 @@ chorus_save(struct effect *p, SAVE_ARGS)
 {
     struct chorus_params *params = p->params;
 
-    SAVE_DOUBLE("wet", params->wet);
-    SAVE_DOUBLE("dry", params->dry);
+    SAVE_DOUBLE("drywet", params->drywet);
     SAVE_DOUBLE("basedelay", params->basedelay);
     SAVE_DOUBLE("depth", params->depth);
     SAVE_DOUBLE("speed", params->speed);
@@ -586,8 +557,7 @@ chorus_load(struct effect *p, LOAD_ARGS)
 {
     struct chorus_params *params = p->params;
 
-    LOAD_DOUBLE("wet", params->wet);
-    LOAD_DOUBLE("dry", params->dry);
+    LOAD_DOUBLE("drywet", params->drywet);
     LOAD_DOUBLE("basedelay", params->basedelay);
     LOAD_DOUBLE("depth", params->depth);
     LOAD_DOUBLE("speed", params->speed);
@@ -621,8 +591,7 @@ chorus_create()
     cp->basedelay = 3.5;
     cp->voices = 3;
     cp->speed = 1000;
-    cp->wet = 50;
-    cp->dry = 50;
+    cp->drywet = 50;
     cp->regen = 0;
 
     return p;

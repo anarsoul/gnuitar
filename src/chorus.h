@@ -30,8 +30,7 @@ extern effect_t *   chorus_create();
 
 struct chorus_params {
     Backbuf_t      *history[MAX_CHANNELS];
-    float           wet,
-                    dry,
+    float           drywet,
                     basedelay,
                     depth,
                     speed,
