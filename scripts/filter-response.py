@@ -251,13 +251,20 @@ def make_filter(type, samplerate, center_frequency, bandwidth, db_gain):
 
     return BiquadFilter(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0)
 
+def make_allpass(delay):
+    if delay > 1.0 or delay < -1.0:
+	raise RuntimeError, "invalid arguments"
+
+    return BiquadFilter(delay, 1.0, 0.0, delay, 0.0)
+
 def main():
     # frequency is actually fairly irrelevant, but you can compare the
     # performance of some of the filters near 20 kHz using 44.1 kHz sampling
     # frequency if you like.
     sampling_rate_hz = 48000.0
 
-    filter = make_rc_lopass(sampling_rate_hz, 220, 0.22e-6)
+    filter = make_allpass(0.9)
+    #filter = make_rc_lopass(sampling_rate_hz, 220, 0.22e-6)
     #filter = make_filter('PEQ', sampling_rate_hz, 10000, 0.5, -10.0)
     #filter = make_chebyshev_1(sampling_rate_hz, 7000.0, 1.0, True)
 
