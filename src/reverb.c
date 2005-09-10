@@ -129,7 +129,7 @@ reverb_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_regen = gtk_adjustment_new(preverb->regen, 0.0, 90.0, 1.0, 1.0, 0.0);
+    adj_regen = gtk_adjustment_new(preverb->regen, 0.0, 40.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("regen\n%");
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -254,7 +254,7 @@ reverb_filter(struct effect *p, struct data_block *db)
         mono += comb_filter(a, 0.715, 5399, params->comb[c]);
         mono += comb_filter(a, 0.697, 5801, params->comb[c]);
         
-        mono /= 7.0;
+        mono /= 4.0;
         
         params->history[c]->add(params->history[c], mono);
         
@@ -331,8 +331,8 @@ reverb_create()
         dr->ap[i][2] = new_Backbuf(2048);
         dr->comb[i] = new_Backbuf(8192);
     }
-    dr->delay  = 100;    /* ms */
+    dr->delay  = 200;    /* ms */
     dr->drywet = 50.0;
-    dr->regen  = 30.0;
+    dr->regen  = 25.0;
     return p;
 }
