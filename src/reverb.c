@@ -178,8 +178,11 @@ allpass_filter(double input, double factor, int delay, Backbuf_t *history)
 {
     double tmp, output;
 
-    tmp = input - factor * history->get(history, delay);
-    output = history->get(history, delay) + factor * tmp;
+    // delay - 1 because 0th is already the previous, so someone asking
+    // for the previous sample is really asking for the 0th sample until
+    // add() is performed
+    tmp = input - factor * history->get(history, delay - 1);
+    output = history->get(history, delay - 1) + factor * tmp;
     history->add(history, tmp);
     return output;
 }
@@ -188,8 +191,8 @@ double
 comb_filter(double input, double factor, int delay, Backbuf_t *history)
 {
     double output;
+    history->add(history, input); // 0th is current, -1 is previous
     output = input + factor * history->get(history, delay);
-    history->add(history, input);
     return output;
 }
 
@@ -331,8 +334,8 @@ reverb_create()
         dr->ap[i][2] = new_Backbuf(2048);
         dr->comb[i] = new_Backbuf(8192);
     }
-    dr->delay  = 200;    /* ms */
+    dr->delay  = 150;    /* ms */
     dr->drywet = 50.0;
-    dr->regen  = 25.0;
+    dr->regen  = 15.0;
     return p;
 }
