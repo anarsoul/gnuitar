@@ -58,10 +58,14 @@ running complicated effect setups.
 to free more resourcess. Avoid anything that can cause lots of disk I/O
 or sudden bursts of CPU usage.</p>
 
-<p>GNUitar runs with increased priority; this may cause hang-ups
-and delayed system response on low-end machines. Therefore you
-should take care to save all important data in other applications,
-before you launch GNUitar. </p>
+<p>
+GNUitar runs with increased priority if available; this may cause hang-ups
+and delayed system response on low-end machines <strong>potentially making the
+computer unusable</strong>. Therefore you should take care to save all
+important data in other applications before launching GNUitar.
+This situation probably does not occur in practice, but with elevated task
+priorities the consequences for misbehaviour become greater.
+</p>
 
 <h2><a name=perf_unix>Performance - UNIX notes</a></h2>
 
@@ -78,7 +82,7 @@ GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA!
 <p>Windows have complex problems with latency when processing audio in real time,
 mostly because of its non-uniform drivers architecture. 
 GNUitar latency on Windows is much higher than on Linux. The real latency
-is very depend on sound board driver.
+depends mostly on the soundcard's driver.
 </p>
 
 <p>GNUitar for Windows has two playback methods:</p>
@@ -110,29 +114,29 @@ I had 100ms up to ~400ms on Pentium III/850/ISA AWE64/VXD/MME playback,
 and ~60ms on Pentium MMX/166/Yamaha OPL3/WDM/MME playback laptop.
 Try to start/stop sound few times, if the initial latency is bad.
 </p>
-<p>The kind of bus (PCI/ISA) of the sound card does not affect
-the latency very much, the deal is with OS and its architecture.
-So do not through away your old ISA Sound Blaster and replace it with
-modern sound card, first try it on Linux !
+<p>The kind of bus (PCI Express/PCI/ISA) of the sound card does not affect
+the latency that much, it's most often a software issue. Old soundcards that
+are unusable in Windows are likely to work just fine in Linux.
 </p>
 
 <h2><a name=latency_control>How To Control Latency</h2>
-<p>The latency can be controlled with a high degree from the GNUitar interface.
-There is a settings dialog that can be called from the
-<i>Options->Sampling Parameters</i> menu (or by <i>Ctrl-P</i>).
-There is an option called "Fragment Size". The greater is the fragment size,
-the greater is the latency, BUT... You might want to increase fragment size
-on low-end computers, to decrease the system load and number of buffer overruns
-(drops). The buffer overrun is the immediate result of the bad performance.
-Buffer overruns have a hearable effect of a scratches, sometimes
-periodic (ten overruns per second produce a 10 Hz tone).
+<p>The latency can be controlled to a high degree in the Options dialog.
+It can be invoked from the
+<i>Options->Sampling Parameters</i> menu (or by <i>Ctrl-P</i>). You will
+need to stop playback before entering this dialog.
+There is an option called "Fragment Size". The lower the fragment size is,
+the better is the latency, but this is not a free lunch. If the latency
+is too low, the CPU drain from constantly attending to the soundcard
+leaves no time for anything else! You may need to increase the
+fragment size on low-end computers. Try increasing this value if you hear
+repeated scratches from the speakers.
 </p>
 <p>General notes on how to achieve the best performance:
 </p>
 <ul>
-<li>The lower is the sampling rate, the better is the latency. Drawback is
-the sound quality.</li>
-<li>The lower is the fragment size, the better is the latency. Drawback is the
+<li>The lower the sampling rate, the less there is CPU load. Drawback is
+the lower sound quality.</li>
+<li>The lower the fragment size, the better is the latency. Drawback is the
 higher system load.</li>
 <li>The hearable periodic scratches (DirectSound output) can be fixed
 by decreasing the overrun threshold (sampling params dialog).</li>
@@ -172,7 +176,7 @@ you can change current sound by one mouse/keyboard click.
 </p>
 
 <p>Big "START/STOP" button is used to start/stop playback.
-You may want to press it few times if you experience buffer overruns
+You may want to try pressing it a few times if you experience buffer overruns
 or broken sound output.
 </p>
 
@@ -180,26 +184,20 @@ or broken sound output.
 check-box "Write track" at the bottom of program window, enter 
 filename and play. Don't forget that continuous track write 
 can fill out your hard drive.
-The track file format is raw data, word length, signed
-(the sampling rate and mono/stereo are controlled from the sampling parameters
-dialog). You can convert it with SoX program like this:
+The track file format is wav data on Windows and Linux.
+</p>
+<p>Linux wav writing depends on libsndfile. However, if you do not have sndfile, then the data is raw 16-bit signed data, with the sampling rate and channels
+as defined in the sampling parameters dialog. You can convert it with <a href="http://sox.sourceforge.net/">sox</a> like this:
 </p>
 <pre>
     sox -w -s -c 1 -r 44100 track.raw track.wav, 
 </pre>
 <p>
-and then to MP3:
+and then to <a href="http://www.vorbis.com/">ogg vorbis</a>:
 </p>
 <pre>
-    bladeenc track.wav
+    oggenc track.wav
 </pre>
-<p>
-Sox is available at <a href=http://home.sprynet.com/~cbagwell/sox.html target=top>
-    http://home.sprynet.com/~cbagwell/sox.html</a>, 
-and Bladeenc is at <a href=http://home8.swipnet.se/~w-82625 target=top>http://home8.swipnet.se/~w-82625</a>.</p>
-
-<p>Windows users can write track directly to .wav file
-(currently it is not available on UNIX).</p>
 
 <h1><a name=effects>Effects</a></h1>
 <p>
@@ -211,17 +209,6 @@ The controls and description of the effects follow below.
 <li>freq.low - low frequency (the cycle starts from this freq.)</li>
 <li>freq.hi  - high frequence (the cycle stops at this freq.)</li>
 <li>mix      - mix clean sound with processed sound</li>
-</ul>
-
-<h2><a name=reverb>Reverberator</a></h2>
-<p>
-Reverberator produces echoed "space" sound. Controls:
-</p>
-<ul>
-<li>delay  - delay before repeating starts</li>
-<li>wet    - "wet" (processed) sound volume</li>
-<li>dry    - "dry" (clean) sound volume</li>
-<li>regen  - decay % between subsequent repeats</li>
 </ul>
 
 <h2><a name=distort>Distortion</a></h2>
@@ -244,6 +231,17 @@ physical output channels if available.
 <li>multichannel (if present) - switch effect to circulate delay voices through available channels</li>
 </ul>
 
+<h2><a name=reverb>Reverberator</a></h2>
+<p>
+Reverberator produces echoed "space" sound. Controls:
+</p>
+<ul>
+<li>delay  - delay before repeating starts</li>
+<li>wet    - "wet" (processed) sound volume</li>
+<li>dry    - "dry" (clean) sound volume</li>
+<li>regen  - decay % between subsequent repeats</li>
+</ul>
+
 <h2><a name=tremolo>Tremolo</a></h2>
 <p>
 Tremolo sounds like when you turn the master volume on and off very quickly.
@@ -254,33 +252,30 @@ This is done by multiplying the data with a factor that is altered sinuously.
 <li>amplitude - depth of modulation</li>
 </ul>
 
-<h2><a name=vibrato>Vibrato</a></h2>
+<h2><a name=chorus>Chorus / Flanger</a></h2>
 <p>
-Slows down and speeds up playback to achieve an effect like old tape. This is
-done by time-delaying the playback in a sinuous curve.
+Chorus mixes a time-delayed versions of input with the original signal
+simulating several players playing the same tune. Variations of this
+concept also produce flanger and vibrato effects.
 </p>
-<ul>
-<li>period    - length of one cycle of effect</li>
-<li>amplitude - maximum time delay</li>
-</ul>
-
-
-<h2><a name=chorus>Chorus</a></h2>
 <p>
-Chorus mixes a time-delayed version of input with the original signal
-simulating several players playing the same tune.  This version can mix
-configurable number of additional chorus voices to the original signal. If
-there are more voices than one, the time-delay phase angle becomes split
-equally between each voice.
+<strong>Flanger</strong> With just 1 voice and low delay time, the effect becomes a flanger.
+However, by adding more voices and increasing the delay, the sound again
+turns choruslike.
+If the multichannel mode is available and enabled, the effect distributes one
+voice per output channel.
+</p>
+<p>
+<strong>Vibrato</strong> If dry/wet at 100% (fully wet) and 1 voice, this effect
+is a vibrato.
 </p>
 <ul>
 <li>delay     - fixed time delay before mixing</li>
 <li>depth     - the depth of modulation</li>
 <li>period    - the length of modulation cycle</li>
 <li>voices    - number of chorus voices to mix</li>
-<li>wet       - "wet" (processed) sound volume</li>
-<li>dry       - "dry" (clean) sound volume</li>
-<li>regen     - mixes some time-delayed processed signal back into input</li>
+<li>dry/wet   - dry vs. wet mixing ratio</li>
+<li>regen     - feedbacks some of the output back to input</li>
 </ul>
 
 <h2><a name=echo>Echo</a></h2>
@@ -296,18 +291,46 @@ large hall echo using varying length of delays in its voices.
 <li>delay     - sets the length of maximum echo delay</li>
 </ul>
 
+<h2><a name=phaser>Phaser</a></h2>
+
+<p>
+Phaser operates by selectively delaying the high frequency components of a
+signal as they pass through this effect. If the dry/wet ratio is at 50 %, the
+delayed components strongly interfere with the original, producing the
+phaserlike sound. However, if dry/wet ratio is at 100%, this effect becomes
+a sweet-sounding frequency-selective vibrato.
+</p>
+
+<ul>
+<li>period    - length of the modulation cycle</li>
+<li>depth     - an unitless measure of effect strength</li>
+<li>dry/wet   - the dry vs. wet mixing ratio</li>
+</ul>
+
+<h2><a name=vibrato>Vibrato</a></h2>
+<p>
+Slows down and speeds up playback to achieve an effect like old tape. This is
+done by time-delaying the playback in a long sinuous curve.
+</p>
+<ul>
+<li>period    - length of one cycle of effect</li>
+<li>amplitude - maximum time delay</li>
+</ul>
+
+
 <h2><a name=distort2>Overdrive</a></h2>
 
 <p>Another cool distortion. Emulates the distortion circuits in many popular
-overdrive pedals such as Ibanez TS9.</p>
+overdrive pedals such as Ibanez TS9.
+</p>
 
 <ul>
 <li>drive  - how much amplification</li>
 <li>clip   - changes tone from TS9-type fuzz to less powerful distortion</li>
-<li>treble - lowpass filter for tone control</li>
+<li>treble - tone control</li>
 </ul>
 
-<h2><a name=noise>Noise Gate</a></h2>
+<h2><a name=noise>Noise gate</a></h2>
 
 <p>Simple noise reduction effect.</p>
 
@@ -341,6 +364,14 @@ overdrive pedals such as Ibanez TS9.</p>
 		   affects fading signal). Should not be larger than
 		   the threshold.</li>
 </ul>
+
+<h2><a name="eqbank">Equalizer bank</a></h2>
+
+<p>
+A no-frills equalizer effect with plenty of sliders for finegrained
+control of the frequency response. Equalizers are rumoured to be especially
+useful before and after distortion effects.
+</p>
 
 <h2><a name=tuner>Tuner</a></h2>
 
