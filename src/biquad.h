@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.9  2005/09/10 10:53:38  alankila
+ * - remove the need to reserve biquad's mem in caller's side
+ *
  * Revision 1.8  2005/09/09 20:22:17  alankila
  * - phasor reimplemented according to a popular algorithm that simulates
  *   high-impedance isolated varying capacitors
@@ -56,16 +59,11 @@
 #ifndef _BIQUAD_H_
 #define _BIQUAD_H_ 1
 
+#include "pump.h"
 
 struct Biquad {
-    double          a0,
-                    a1,
-                    a2,
-                    b1,
-                    b2;		/* coefficients */
-    double         *mem;	/* memory for the filter , must be
-				 * alocated by the caller, 4 * number of
-				 * channels */
+    double          a0, a1, a2, b1, b2;
+    double          mem[MAX_CHANNELS][4];
 };
 typedef struct Biquad Biquad_t;
 
@@ -91,29 +89,27 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
 __inline double
-do_biquad(double x, Biquad_t *f, int channel)
+do_biquad(double x, Biquad_t *f, int c)
 {				
 				 
-    double          y,
-                   *mem;
-    mem = f->mem + (channel << 2);
-    y = x * f->a0 + mem[0] * f->a1 + mem[1] * f->a2 + mem[2] * f->b1 +
-	mem[3] * f->b2;
-    if(isnan(y))
-	y=0;
+    double          y;
     if(isnan(x))
 	x=0;
-    mem[1] = mem[0];
-    mem[0] = x;
-    mem[3] = mem[2];
-    mem[2] = y;
+    y = x * f->a0 + f->mem[c][0] * f->a1 + f->mem[c][1] * f->a2
+        + f->mem[c][2] * f->b1 + f->mem[c][3] * f->b2;
+    if(isnan(y))
+	y=0;
+    f->mem[c][1] = f->mem[c][0];
+    f->mem[c][0] = x;
+    f->mem[c][3] = f->mem[c][2];
+    f->mem[c][2] = y;
     return y;
 }
 #elif defined(__GNUC__)
-extern __inline double do_biquad(double x, Biquad_t *f, int channel);
+extern __inline double do_biquad(double x, Biquad_t *f, int c);
 #else
 /* otherwise declare a standard function */
-extern double do_biquad(double x, Biquad_t *f, int channel);
+extern double do_biquad(double x, Biquad_t *f, int c);
 #endif
 
 

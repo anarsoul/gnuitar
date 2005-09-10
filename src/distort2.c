@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.51  2005/09/10 10:53:38  alankila
+ * - remove the need to reserve biquad's mem in caller's side
+ *
  * Revision 1.50  2005/09/08 19:31:48  alankila
  * - fix one C++ declaration, tune clip % a bit
  *
@@ -609,7 +612,6 @@ distort2_done(struct effect *p)
     struct distort2_params *ap;
 
     ap = (struct distort2_params *) p->params;
-    free(ap->cheb.mem);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -672,8 +674,6 @@ distort2_create()
     ap->c0 = Ts1 / (Ts1 + RC);
     ap->d1 = RC / (Ts1 + RC);
 
-    ap->cheb.mem  = calloc(MAX_CHANNELS, sizeof(double) * 4);
-    
     /* a lowpass Chebyshev filter for downsampling */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/3, 0.5, 1, &ap->cheb );
 

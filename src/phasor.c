@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/09/10 10:53:38  alankila
+ * - remove the need to reserve biquad's mem in caller's side
+ *
  * Revision 1.26  2005/09/09 20:52:20  alankila
  * - add dry/wet % for comb effect
  *
@@ -325,7 +328,6 @@ phasor_create()
 {
     effect_t           *p;
     struct phasor_params *pphasor;
-    int                 i;
 
     p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct phasor_params));
@@ -342,8 +344,5 @@ phasor_create()
     pphasor->drywet = 50.0;
     pphasor->f = 0;
 
-    for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-        pphasor->allpass[i].mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
-    
     return p;
 }

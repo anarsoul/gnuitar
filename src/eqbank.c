@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.25  2005/09/10 10:53:38  alankila
+ * - remove the need to reserve biquad's mem in caller's side
+ *
  * Revision 1.24  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -306,19 +309,11 @@ eqbank_filter(struct effect *p, struct data_block *db)
 void
 eqbank_done(struct effect *p)
 {
-    struct eqbank_params *ep;
-    unsigned int i;
-
-    ep = (struct eqbank_params *) p->params;
+    struct eqbank_params *ep = p->params;
 	
-    for (i = 0; i < FB_NB; i++) 
-    	free(ep->filters[i].mem);
-
     free(ep->filters);
     free(ep->boosts);
-
     gtk_widget_destroy(p->control);
-
     free(p->params);
     free(p);
 }
@@ -376,11 +371,8 @@ eqbank_create()
     peq = p->params;
     peq->filters = calloc(FB_NB, sizeof(peq->filters[0]));
     peq->boosts  = calloc(FB_NB, sizeof(peq->boosts[0]));
-    for (i = 0; i < FB_NB; i++) {
-    	peq->filters[i].mem = calloc(MAX_CHANNELS, sizeof(double) * 4);
-	peq->boosts[i] = 0;
+    for (i = 0; i < FB_NB; i++)
 	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], peq->boosts[i], &peq->filters[i]);
-    }
     peq->volume=0;
 
     return p;
