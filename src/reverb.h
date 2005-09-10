@@ -35,9 +35,10 @@ struct reverbBuffer {
 };
 
 struct reverb_params {
-    Backbuf_t       *history[MAX_CHANNELS];
-    int             dry,
-                    wet,
+    Backbuf_t      *history[MAX_CHANNELS];
+    Backbuf_t      *ap[MAX_CHANNELS][3];
+    Backbuf_t      *comb[MAX_CHANNELS];
+    double          drywet,
                     regen,
                     delay;
 };

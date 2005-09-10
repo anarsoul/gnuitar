@@ -32,36 +32,26 @@
 #include "reverb.h"
 #include "gui.h"
 
-/* 1 second at max sample rate */
-#define MAX_REVERB_SIZE  MAX_SAMPLE_RATE
+#define MAX_REVERB_SIZE  300 /* ms */
 
 void            reverb_filter(struct effect *p, struct data_block *db);
 
 void
-update_reverb_wet(GtkAdjustment * adj, struct reverb_params *params)
+update_reverb_drywet(GtkAdjustment *adj, struct reverb_params *params)
 {
-    params->wet = (int) adj->value;
+    params->drywet = adj->value;
 }
 
 void
-update_reverb_dry(GtkAdjustment * adj, struct reverb_params *params)
+update_reverb_delay(GtkAdjustment *adj, struct reverb_params *params)
 {
-    params->dry = (int) adj->value;
-}
-
-void
-update_reverb_delay(GtkAdjustment * adj, struct reverb_params *params)
-{
-    int             i;
     params->delay = adj->value;
-    for (i = 0; i < MAX_CHANNELS; i += 1)
-        params->history[i]->clear(params->history[i]);
 }
 
 void
-update_reverb_regen(GtkAdjustment * adj, struct reverb_params *params)
+update_reverb_regen(GtkAdjustment *adj, struct reverb_params *params)
 {
-    params->regen = (int) adj->value;
+    params->regen = adj->value;
 }
 
 void
@@ -69,13 +59,9 @@ reverb_init(struct effect *p)
 {
     struct reverb_params *preverb;
 
-    GtkWidget      *wet;
-    GtkWidget      *wet_label;
-    GtkObject      *adj_wet;
-
-    GtkWidget      *dry;
-    GtkWidget      *dry_label;
-    GtkObject      *adj_dry;
+    GtkWidget      *drywet;
+    GtkWidget      *drywet_label;
+    GtkObject      *adj_drywet;
 
     GtkWidget      *delay;
     GtkWidget      *delay_label;
@@ -101,7 +87,7 @@ reverb_init(struct effect *p)
 
     parmTable = gtk_table_new(4, 3, FALSE);
 
-    adj_delay = gtk_adjustment_new(preverb->delay, 1.0, 1000.0, 1.0, 1.0, 0.0);
+    adj_delay = gtk_adjustment_new(preverb->delay, 1.0, MAX_REVERB_SIZE, 1.0, 1.0, 0.0);
     delay_label = gtk_label_new("delay\nms");
     gtk_table_attach(GTK_TABLE(parmTable), delay_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -122,52 +108,28 @@ reverb_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-
-    adj_wet =
-	gtk_adjustment_new(preverb->wet, 0.0, 100.0, 1.0, 1.0, 0.0);
-    wet_label = gtk_label_new("wet\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), wet_label, 1, 2, 0, 1,
+    adj_drywet = gtk_adjustment_new(preverb->drywet, 0.0, 100.0, 1.0, 1.0, 0.0);
+    drywet_label = gtk_label_new("Dry/Wet\n%");
+    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_SHRINK), 0, 0);
 
 
-    gtk_signal_connect(GTK_OBJECT(adj_wet), "value_changed",
-		       GTK_SIGNAL_FUNC(update_reverb_wet), preverb);
+    gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
+		       GTK_SIGNAL_FUNC(update_reverb_drywet), preverb);
 
-    wet = gtk_vscale_new(GTK_ADJUSTMENT(adj_wet));
+    drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
 
-    gtk_table_attach(GTK_TABLE(parmTable), wet, 1, 2, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), drywet, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_dry =
-	gtk_adjustment_new(preverb->dry, 0.0, 100.0, 1.0, 1.0, 0.0);
-    dry_label = gtk_label_new("dry\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), dry_label, 2, 3, 0, 1,
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_SHRINK), 0, 0);
-
-
-    gtk_signal_connect(GTK_OBJECT(adj_dry), "value_changed",
-		       GTK_SIGNAL_FUNC(update_reverb_dry), preverb);
-
-    dry = gtk_vscale_new(GTK_ADJUSTMENT(adj_dry));
-
-    gtk_table_attach(GTK_TABLE(parmTable), dry, 2, 3, 1, 2,
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS
-		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-
-
-    adj_regen = gtk_adjustment_new(preverb->regen, 0.0, 95.0, 1.0, 1.0, 0.0);
+    adj_regen = gtk_adjustment_new(preverb->regen, 0.0, 90.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("regen\n%");
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -209,57 +171,98 @@ reverb_init(struct effect *p)
 
 }
 
+/* backbuf-based allpass filter for longer than 1 or 2 sample delays.
+ * This */
+double
+allpass_filter(double input, double factor, int delay, Backbuf_t *history)
+{
+    double tmp, output;
+
+    tmp = input - factor * history->get(history, delay);
+    output = history->get(history, delay) + factor * tmp;
+    history->add(history, tmp);
+    return output;
+}
+
+double
+comb_filter(double input, double factor, int delay, Backbuf_t *history)
+{
+    double output;
+    output = input + factor * history->get(history, delay);
+    history->add(history, input);
+    return output;
+}
+
 void
 reverb_filter(struct effect *p, struct data_block *db)
 {
-    struct reverb_params *dr;
+    struct reverb_params *params = p->params;
     DSP_SAMPLE     *s;
-    int             dd,
-                    count,
-                    curr_channel = 0;
-    double          tmp, tot, Dry, Wet, Rgn;
-    dr = (struct reverb_params *) p->params;
+    int             count,
+                    c = 0; /* curr_channel */
+    double          input, a, mono, Dry, Wet, Rgn, Delay;
 
     s = db->data;
     count = db->len;
 
-    /*
-     * get delay 
+    Delay = params->delay / 1000.0 * sample_rate;
+    Dry = 1 - params->drywet / 100.0;
+    Wet =     params->drywet / 100.0;
+    Rgn = params->regen / 100.0;
+    
+    /* This is a John Chowning reverberator, explained here:
+     * http://www-ccrma.stanford.edu/~jos/waveguide/Schroeder_Reverberator_called_JCRev.html
+     *
+     * Signal block diagram is as follows:
+     *
+     * input--[ ap(0.7, 1051) ]--[ ap(0.7, 337)]--[ ap(0.7, 113) ]--a
+     *
+     *    +--[ comb(0.742, 4799) ]--+
+     *    |                         |
+     *    +--[ comb(0.733, 4999) ]--+
+     * a--+                        (+)--mono
+     *    +--[ comb(0.715, 5399) ]--+
+     *    |                         |
+     *    +--[ comb(0.697, 5801) ]--+
+     * 
+     * In case multichannel output is desired, the output is further processed
+     * with:
+     *
+     *       +--[ delay(0.046 * sample_rate) ]--ch1
+     *       |                                  
+     *       +--[ delay(0.057 * sample_rate) ]--ch2
+     * mono--+
+     *       +--[ delay(0.041 * sample_rate) ]--ch3
+     *       |
+     *       +--[ delay(0.054 * sample_rate) ]--ch4
+     *
+     * For stereo output, the channels 1, 2 and 3, 4 are averaged.
      */
-    dd = dr->delay * sample_rate / 1000.0;
-    if (dd < 1)
-        dd = 1;
-    if (dd > MAX_REVERB_SIZE)
-        dd = MAX_REVERB_SIZE;
-
-    /*
-     * get parms 
-     */
-    Dry = dr->dry / 100.0;
-    Wet = dr->wet / 100.0;
-    Rgn = dr->regen / 100.0;
 
     while (count) {
-	/* the old sample * Rgn */
-        tmp = dr->history[curr_channel]->get(dr->history[curr_channel], dd)
-                * Rgn;
-        /* mix with original and write to backbuf */
-        tot = tmp + *s;
-#ifdef CLIP_EVERYWHERE
-        CLIP_SAMPLE(tot)
-#endif
-        dr->history[curr_channel]->add(dr->history[curr_channel], tot);
+        input = *s;
 
-        /* mix reverb with output with proportions as given by wet & dry % */
-        tot = ((double) *s) * Dry + tmp * Wet;
-#ifdef CLIP_EVERYWHERE
-        CLIP_SAMPLE(tot)
-#endif
-	*s = tot;
+        /* change from original: infinite reverb through history */
+        input += params->history[c]->get(params->history[c], Delay) * Rgn;
         
-        curr_channel = (curr_channel + 1) % db->channels;
-	s++;
-	count--;
+        a = allpass_filter(input, 0.7, 1051, params->ap[c][0]);
+        a = allpass_filter(a,     0.7,  337, params->ap[c][1]);
+        a = allpass_filter(a,     0.7,  113, params->ap[c][2]);
+        
+        mono  = comb_filter(a, 0.742, 4799, params->comb[c]);
+        mono += comb_filter(a, 0.733, 4999, params->comb[c]);
+        mono += comb_filter(a, 0.715, 5399, params->comb[c]);
+        mono += comb_filter(a, 0.697, 5801, params->comb[c]);
+        
+        mono /= 7.0;
+        
+        params->history[c]->add(params->history[c], mono);
+        
+        *s = *s * Dry + mono * Wet;
+
+        c = (c + 1) % db->channels;
+        s++;
+        count--;
     }
 }
 
@@ -271,8 +274,13 @@ reverb_done(struct effect *p)
     
     dr = (struct reverb_params *) p->params;
 
-    for (i = 0; i < MAX_CHANNELS; i += 1)
-        del_Backbuf(dr->history[i]);
+    for (i = 0; i < MAX_CHANNELS; i += 1) {
+        free(dr->history[i]);
+        del_Backbuf(dr->ap[i][0]);
+        del_Backbuf(dr->ap[i][1]);
+        del_Backbuf(dr->ap[i][2]);
+        del_Backbuf(dr->comb[i]);
+    }
     
     free(p->params);
     gtk_widget_destroy(p->control);
@@ -284,8 +292,7 @@ reverb_save(struct effect *p, SAVE_ARGS)
 {
     struct reverb_params *params = p->params;
 
-    SAVE_DOUBLE("dry", params->dry);
-    SAVE_DOUBLE("wet", params->wet);
+    SAVE_DOUBLE("drywet", params->drywet);
     SAVE_DOUBLE("regen", params->regen);
     SAVE_DOUBLE("delay", params->delay);
 }
@@ -295,8 +302,7 @@ reverb_load(struct effect *p, LOAD_ARGS)
 {
     struct reverb_params *params = p->params;
 
-    LOAD_DOUBLE("dry", params->dry);
-    LOAD_DOUBLE("wet", params->wet);
+    LOAD_DOUBLE("drywet", params->drywet);
     LOAD_DOUBLE("regen", params->regen);
     LOAD_DOUBLE("delay", params->delay);
 }
@@ -318,12 +324,15 @@ reverb_create()
     p->proc_load = reverb_load;
     p->proc_save = reverb_save;
     dr = (struct reverb_params *) p->params;
-    for (i = 0; i < MAX_CHANNELS; i += 1)
-        dr->history[i] = new_Backbuf(MAX_REVERB_SIZE); /* 1 second memory */
-
-    dr->delay = 100;    /* ms */
-    dr->wet   = 50.0;
-    dr->dry   = 50.0;
-    dr->regen = 30.0;
+    for (i = 0; i < MAX_CHANNELS; i += 1) {
+        dr->history[i] = new_Backbuf(MAX_REVERB_SIZE / 1000.0 * MAX_SAMPLE_RATE);
+        dr->ap[i][0] = new_Backbuf(2048);
+        dr->ap[i][1] = new_Backbuf(2048);
+        dr->ap[i][2] = new_Backbuf(2048);
+        dr->comb[i] = new_Backbuf(8192);
+    }
+    dr->delay  = 100;    /* ms */
+    dr->drywet = 50.0;
+    dr->regen  = 30.0;
     return p;
 }
