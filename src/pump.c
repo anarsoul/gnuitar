@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.47  2005/09/11 12:54:14  alankila
+ * - add a tentative pitch shift effect
+ *
  * Revision 1.46  2005/09/09 20:22:17  alankila
  * - phasor reimplemented according to a popular algorithm that simulates
  *   high-impedance isolated varying capacitors
@@ -237,6 +240,7 @@
 #include "tracker.h"
 #include "noise.h"
 #include "eqbank.h"
+#include "pitch.h"
 #include "tuner.h"
 #include "utils.h"
 
@@ -468,6 +472,7 @@ struct effect_creator effect_list[] = {
     {"Overdrive", distort2_create},
     {"Noise gate", noise_create},
     {"Eq bank", eqbank_create},
+    {"Pitch shift", pitch_create},
     {"Tuner", tuner_create},
     {NULL, NULL}
 };
