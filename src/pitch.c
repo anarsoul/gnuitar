@@ -197,7 +197,7 @@ pitch_filter(effect_t *p, data_block_t *db)
         for (i = 0; i < PITCH_PHASES; i += 1) {
             /* repeatedly weigh pieces of "accelerated" history through
              * a windowing function */
-            tmp += sin_lookup(phase_tmp / 2.0) *
+            tmp += sin_lookup(phase_tmp) *
                 params->history[c]->get_interpolated(params->history[c], 
                         depth * (dir ? phase_tmp : 1 - phase_tmp));
             phase_tmp += 1.0 / PITCH_PHASES;
