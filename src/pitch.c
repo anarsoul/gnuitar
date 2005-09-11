@@ -33,7 +33,7 @@
 
 #define PITCH_PHASES                3
 #define PITCH_MODULATION_FREQUENCY  6 /* Hz */
-#define PITCH_BUFFER_SIZE           (2 * MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY)
+#define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY)
 
 void
 update_pitch_halfnote(GtkAdjustment *adj, struct pitch_params *params)
@@ -197,7 +197,7 @@ pitch_filter(effect_t *p, data_block_t *db)
         for (i = 0; i < PITCH_PHASES; i += 1) {
             /* repeatedly weigh pieces of "accelerated" history through
              * a windowing function */
-            tmp += sin_lookup(phase_tmp) *
+            tmp += sin_lookup(phase_tmp / 2) *
                 params->history[c]->get_interpolated(params->history[c], 
                         depth * (dir ? phase_tmp : 1 - phase_tmp));
             phase_tmp += 1.0 / PITCH_PHASES;
@@ -205,8 +205,11 @@ pitch_filter(effect_t *p, data_block_t *db)
                 phase_tmp -= 1.0;
         }
         tmp /= sqrt(PITCH_PHASES);
-        
-        *s = *s * Dry + tmp * Wet;
+
+        /* we take the sample midpoint between accelerated history in order
+         * to reduce phase decorrelation effects, but this gives awful
+         * latency to contend with */    
+        *s = params->history[c]->get(params->history[c], depth / 2) * Dry + tmp * Wet;
         c = (c + 1) % db->channels;
         if (c == 0) {
             params->phase += phase_inc;
