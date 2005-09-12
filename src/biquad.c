@@ -19,6 +19,14 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.12  2005/09/12 22:01:56  alankila
+ * - swap a0/b0 around to better coincide with available literature
+ * - optimize x1 and x2 terms off chebyshev as they are defined as:
+ *       x2 = x0
+ *       x1 = 2 * x0
+ *   and only used once.
+ * - introduce a0 into the chebyshev to resemble each other more
+ *
  * Revision 1.11  2005/09/12 08:26:51  alankila
  * - flip the signs of b1 and b2 (but not b0) because the mathematical
  *   difference equation is usually written that way.
@@ -73,36 +81,36 @@
 void
 set_peq_biquad(double Fs, double Fc, double BW, double G, Biquad_t *f)
 {
-    double          k,
-                    om,
-                    b0;
-    double          fi;
+    double          k, om, alpha, a0;
+    
     k = pow(10, G / 40);	/* relative gain */
     BW = BW / (Fc - BW / 2);	/* bandwidth in octaves */
     om = 2 * M_PI * Fc / Fs;	/* normalized frequency in radians */
-    fi = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);	/* stuff */
-    b0 = 1 + fi / k;
-    f->a0 = (1 + fi * k) / b0;
-    f->a1 = -2 * cos(om) / b0;
-    f->a2 = (1 - fi * k) / b0;
-    f->b1 = f->a1;
-    f->b2 = (1 - fi / k) / b0;
+    alpha = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);
+    
+    a0 = 1 + alpha / k;
+    f->b0 = (1 + alpha * k) / a0;
+    f->b1 = -2 * cos(om)    / a0;
+    f->b2 = (1 - alpha * k) / a0;
+    f->a1 = f->b1;
+    f->a2 = (1 - alpha / k) / a0;
 }
 
 /* band pass filter */
 void
 set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
 {
-    double om, fi, b0;
-    om = 2 * M_PI * Fc / Fs;
-    fi = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);
-    b0 = 1 + fi;
+    double om, alpha, a0;
     
-    f->a0 = fi           / b0;
-    f->a1 = 0;
-    f->a2 = -f->a0;
-    f->b1 = -2 * cos(om) / b0;
-    f->b2 = (1 - fi)     / b0;
+    om = 2 * M_PI * Fc / Fs;
+    alpha = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);
+    
+    a0 = 1 + alpha;
+    f->b0 = alpha        / a0;
+    f->b1 = 0;
+    f->b2 = -f->b0;
+    f->a1 = -2 * cos(om) / a0;
+    f->a2 = (1 - alpha)  / a0;
 }
 
 /* allpass filter, really 1st order as a2 = b2 = 0,
@@ -111,40 +119,23 @@ set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
 void
 set_allpass_biquad(double delay, Biquad_t *f)
 {
-    delay = ((exp(delay) - 1) / (exp(1) - 1));// - 0.5) * 2;
-    f->a0 = delay;
-    f->a1 = 1.0;
-    f->b1 = delay;
+    delay = ((exp(delay) - 1) / (exp(1) - 1));
+    
+    f->b0 = delay;
+    f->b1 = 1.0;
+    f->a1 = delay;
     f->a2 = f->b2 = 0;
 }
 
 void
 set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t *f)
 {
-    double          x,
-                    y,
-                    z,
-                    c,
-                    v,
-                    t,
-                    r,
-                    om,
-                    m,
-                    x0,
-                    x1,
-                    x2,
-                    y1p,
-                    y2,
-                    k,
-                    d,
-                    tt,
-                    tt2;
-    // x=-cos(M_PI/4+M_PI/2);
-    // y=sin(M_PI/4+M_PI/2);
-    // c=-0.99915455413031497832540334286332;
-    // v=0.041111761828599317357934264608497;
+    double          x, y, z, c, v, t, r, om, m, x0, y1p, y2, k, d, tt, tt2, a0;
+    
+    om = 2 * M_PI * Fc / Fs;
+    
     c = -cos(M_PI / 4);
-    v = sin(M_PI / 4);
+    v =  sin(M_PI / 4);
     if (ripple > 0) {
         t = 100.0 / (100.0 - ripple);
         x = sqrt(t * t - 1);
@@ -160,36 +151,26 @@ set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t
     }
     tt = 2 * tan(0.5);
     tt2 = tt * tt;
-    om = 2 * M_PI * Fc / Fs;
     m = c * c + v * v;
     d = 4 - 4 * c * tt + m * tt2;
     x0 = tt2 / d;
-    x1 = x0 * 2;
-    x2 = x0;
     y1p = (8 - 2 * m * tt2) / d;
     y2 = (-4 - 4 * c * tt - m * tt2) / d;
     if (lowpass)
         k = sin(0.5 - om / 2) / sin(0.5 + om / 2);
     else
         k = -cos(om / 2 + 0.5) / cos(om / 2 - 0.5);
-    d = 1 + k * (y1p - y2 * k);
-    f->a0 = (x0 - k * (x1 - x2 * k)) / d;
-    // coeff[1]=(k*(-2*(x0+x2)+x1*k)+x1)/d;
-    f->a1 = 2 * f->a0;
-    f->a2 = f->a0;
-    // coeff[2]=(k*(x0*k-x1)+x2)/d;
-    f->b1 = -(k * (2 + y1p * k - 2 * y2) + y1p) / d;
-    f->b2 = -(-k * (k + y1p) + y2) / d;
+    
+    a0 = 1 + k * (y1p - y2 * k);
+    f->b0 = (x0 - k * (2 - k) * x0)             / a0;
+    f->b1 = 2 * f->b0;
+    f->b2 =     f->b0;
+    f->a1 = -(k * (2 + y1p * k - 2 * y2) + y1p) / a0;
+    f->a2 = -(-k * (k + y1p) + y2)              / a0;
     if (!lowpass) {
-        f->a1 = -f->a1;
         f->b1 = -f->b1;
-        // t=(1-coeff[0]+coeff[1]-coeff[2])/(coeff[3]-coeff[4]);
+        f->a1 = -f->a1;
     }
-    // else
-    // t=(1-coeff[0]-coeff[1]-coeff[2])/(coeff[3]+coeff[4]);
-
-    // for (i=0;i<5;i++)
-    // coeff[i]*=t;
 }
 
 #if !defined(_MSC_VER)
@@ -205,8 +186,8 @@ do_biquad(double x, Biquad_t *f, int c)
     double          y;
     if(isnan(x))
 	x=0;
-    y = x * f->a0 + f->mem[c][0] * f->a1 + f->mem[c][1] * f->a2
-        - f->mem[c][2] * f->b1 - f->mem[c][3] * f->b2;
+    y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
+        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2;
     if(isnan(y))
 	y=0;
     f->mem[c][1] = f->mem[c][0];

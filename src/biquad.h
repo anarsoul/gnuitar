@@ -18,6 +18,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.12  2005/09/12 22:01:56  alankila
+ * - swap a0/b0 around to better coincide with available literature
+ * - optimize x1 and x2 terms off chebyshev as they are defined as:
+ *       x2 = x0
+ *       x1 = 2 * x0
+ *   and only used once.
+ * - introduce a0 into the chebyshev to resemble each other more
+ *
  * Revision 1.11  2005/09/12 09:42:25  fonin
  * - MSVC compatibility fixes
  *
@@ -69,7 +77,7 @@
 #include "pump.h"
 
 struct Biquad {
-    double          a0, a1, a2, b1, b2;
+    double          b0, b1, b2, a1, a2;
     double          mem[MAX_CHANNELS][4];
 };
 typedef struct Biquad Biquad_t;
@@ -105,8 +113,8 @@ do_biquad(double x, Biquad_t *f, int c)
     double          y;
     if(isnan(x))
 	x=0;
-    y = x * f->a0 + f->mem[c][0] * f->a1 + f->mem[c][1] * f->a2
-        - f->mem[c][2] * f->b1 - f->mem[c][3] * f->b2;
+    y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
+        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2;
     if(isnan(y))
 	y=0;
     f->mem[c][1] = f->mem[c][0];
