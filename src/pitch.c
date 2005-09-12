@@ -13,12 +13,15 @@
  * function that in this case is simply sin(x) over 0 <= x <= pi.
  *
  * To control phase effects, some number of these fragments is required, and
- * the optimum seems to be 3.
+ * the optimum is 3 without my gain compensation technique, however, with
+ * a gain compensation we can do with just 2. This reduces the worst phase
+ * cancellation type of artifacts that might mute certain frequencies
+ * in the audio spectrum, but introduces inaccuracies in overall signal volume
+ * and some phase shifting which manifests in a vibratolike sound.
  *
- * When shifting up, the algorithm produces echoing artifacts. These echoes
- * would be reduced by increasing the modulation frequency, but this cuts
- * into the bass. An alternative solution might be found with a different
- * windowing function.
+ * I have also improved the algorithm to make latency a central tunable,
+ * which makes this effect considerably more useful. It seems that you must
+ * trade small latency for low-frequency accuracy and the "vibrato" reduction.
  *
  * $Id$
  */
@@ -33,7 +36,7 @@
 #include <stdlib.h>
 
 #define PITCH_PHASES                2
-#define PITCH_MODULATION_FREQUENCY_MIN  2 /* Hz */
+#define PITCH_MODULATION_FREQUENCY_MIN  1 /* Hz */
 #define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY_MIN)
 #define PITCH_GAIN_CORRECTION_HISTORY    512
 #define PITCH_GAIN_CORRECTION_FACTOR     (31 / 32.0)
@@ -56,6 +59,12 @@ update_pitch_drywet(GtkAdjustment *adj, struct pitch_params *params)
     params->drywet = adj->value;
 }
 
+void
+update_pitch_buffer(GtkAdjustment *adj, struct pitch_params *params)
+{
+    params->buffer = adj->value;
+}
+
 
 void
 pitch_init(struct effect *p)
@@ -74,6 +83,10 @@ pitch_init(struct effect *p)
     GtkWidget      *drywet;
     GtkObject      *adj_drywet;
 
+    GtkWidget      *buffer_label;
+    GtkWidget      *buffer;
+    GtkObject      *adj_buffer;
+
     GtkWidget      *parmTable, *button;
     
     /*
@@ -87,7 +100,7 @@ pitch_init(struct effect *p)
 
     adj_halfnote = gtk_adjustment_new(params->halfnote, -12.0,
                                12.0, 1.0, 1.0, 0.0);
-    halfnote_label = gtk_label_new("Halfnotes");
+    halfnote_label = gtk_label_new("Pitch\n(halfnotes)");
     gtk_table_attach(GTK_TABLE(parmTable), halfnote_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -108,7 +121,7 @@ pitch_init(struct effect *p)
 
     adj_finetune = gtk_adjustment_new(params->finetune,
 				     -0.5, 0.5, 0.1, 0.1, 0.0);
-    finetune_label = gtk_label_new("Finetune");
+    finetune_label = gtk_label_new("Finetune\n(halfnotes)");
     gtk_table_attach(GTK_TABLE(parmTable), finetune_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -127,10 +140,30 @@ pitch_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
+    adj_buffer = gtk_adjustment_new(params->buffer,
+				     2.0, 14.0, 1.0, 1.0, 0.0);
+    buffer_label = gtk_label_new("Latency\n(Hz)");
+    gtk_table_attach(GTK_TABLE(parmTable), buffer_label, 2, 3, 0, 1,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL |
+					GTK_SHRINK), 0, 0);
+
+
+    gtk_signal_connect(GTK_OBJECT(adj_buffer), "value_changed",
+		       GTK_SIGNAL_FUNC(update_pitch_buffer), params);
+
+    buffer = gtk_vscale_new(GTK_ADJUSTMENT(adj_buffer));
+    gtk_table_attach(GTK_TABLE(parmTable), buffer, 2, 3, 1, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK), 0, 0);
+
     adj_drywet = gtk_adjustment_new(params->drywet,
 				     0, 100.0, 1.0, 1.0, 0.0);
-    drywet_label = gtk_label_new("Dry / Wet");
-    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 2, 3, 0, 1,
+    drywet_label = gtk_label_new("Dry / Wet\n(%)");
+    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
@@ -141,7 +174,7 @@ pitch_init(struct effect *p)
 		       GTK_SIGNAL_FUNC(update_pitch_drywet), params);
 
     drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
-    gtk_table_attach(GTK_TABLE(parmTable), drywet, 2, 3, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), drywet, 3, 4, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -185,7 +218,7 @@ pitch_filter(effect_t *p, data_block_t *db)
 
     /* this gives 4 for -12 tuning and 8 for +12 tuning and sensible values
      * in between otherwise */
-    pitch_modulation_frequency = fabs(depth) * 8;
+    pitch_modulation_frequency = fabs(depth) * params->buffer;
 
     if (pitch_modulation_frequency < PITCH_MODULATION_FREQUENCY_MIN) {
         pitch_modulation_frequency = PITCH_MODULATION_FREQUENCY_MIN;
@@ -283,6 +316,7 @@ pitch_save(effect_t *p, SAVE_ARGS)
 
     SAVE_INT("halfnote", params->halfnote);
     SAVE_DOUBLE("finetune", params->finetune);
+    SAVE_DOUBLE("buffer", params->buffer);
     SAVE_DOUBLE("drywet", params->drywet);
 }
 
@@ -293,6 +327,7 @@ pitch_load(effect_t *p, LOAD_ARGS)
     
     LOAD_INT("halfnote", params->halfnote);
     LOAD_DOUBLE("finetune", params->finetune);
+    LOAD_DOUBLE("buffer", params->buffer);
     LOAD_DOUBLE("drywet", params->drywet);
 }
 
@@ -317,5 +352,6 @@ pitch_create()
         params->history[i] = new_Backbuf(PITCH_BUFFER_SIZE);
     }
     params->drywet = 50;
+    params->buffer = 8;
     return p;
 }

@@ -22,7 +22,7 @@ struct pitch_params {
     
     /* user tunables */
     int             halfnote;
-    double          finetune, drywet;
+    double          finetune, drywet, buffer;
     
     /* current modulation phase */
     double          phase;
