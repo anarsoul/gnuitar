@@ -161,8 +161,6 @@ def make_chebyshev_1(Fs, Fc, ripple, lowpass):
     m = c * c + v * v;
     d = 4.0 - 4.0 * c * tt + m * tt2;
     x0 = tt2 / d;
-    x1 = x0 * 2;
-    x2 = x0;
     y1p = (8 - 2 * m * tt2) / d;
     y2 = (-4 - 4 * c * tt - m * tt2) / d;
 
@@ -170,13 +168,13 @@ def make_chebyshev_1(Fs, Fc, ripple, lowpass):
 	k = math.sin(0.5 - om / 2.0) / math.sin(0.5 + om / 2.0);
     else:
 	k = -math.cos(om / 2 + 0.5) / math.cos(om / 2 - 0.5);
-    d = 1.0 + k * (y1p - y2 * k);
     
-    b0 = (x0 - k * (x1 - x2 * k)) / d;
+    a0 = 1.0 + k * (y1p - y2 * k);
+    b0 = (x0 - k * (2 - k) * x0)               / a0;
     b1 = 2.0 * b0;
-    b2 = b0;
-    a1 = -(k * (2.0 + y1p * k - 2 * y2) + y1p) / d;
-    a2 = -(-k * (k + y1p) + y2) / d;
+    b2 =       b0;
+    a1 = -(k * (2.0 + y1p * k - 2 * y2) + y1p) / a0;
+    a2 = -(-k * (k + y1p) + y2)                / a0;
 
     if not lowpass:
 	b1 = -b1;
@@ -259,10 +257,10 @@ def main():
     # frequency if you like.
     sampling_rate_hz = 48000.0
 
-    filter = make_allpass(float(sys.argv[1]))
+    #filter = make_allpass(float(sys.argv[1]))
     #filter = make_rc_lopass(sampling_rate_hz, 4700, 47e-9)
     #filter = make_filter('HSH', sampling_rate_hz, 1000, 0.5, -10.0)
-    #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 3.0, False)
+    filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 0.0, False)
 
     for dp in range(301):
         freq_hz = 20*math.pow(2, math.log(20000./20.)/math.log(2) * dp / 300.)
