@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.10  2005/09/12 08:26:51  alankila
+ * - flip the signs of b1 and b2 (but not b0) because the mathematical
+ *   difference equation is usually written that way.
+ *
  * Revision 1.9  2005/09/10 10:53:38  alankila
  * - remove the need to reserve biquad's mem in caller's side
  *
@@ -72,6 +76,8 @@ typedef struct Biquad Biquad_t;
  */
 extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
 			       Biquad_t *f);
+extern void     set_bpf_biquad(double Fs, double Fc, double BW,
+			       Biquad_t *f);
 extern void     set_allpass_biquad(double delay, Biquad_t *f);
 
 /*
@@ -96,7 +102,7 @@ do_biquad(double x, Biquad_t *f, int c)
     if(isnan(x))
 	x=0;
     y = x * f->a0 + f->mem[c][0] * f->a1 + f->mem[c][1] * f->a2
-        + f->mem[c][2] * f->b1 + f->mem[c][3] * f->b2;
+        - f->mem[c][2] * f->b1 - f->mem[c][3] * f->b2;
     if(isnan(y))
 	y=0;
     f->mem[c][1] = f->mem[c][0];

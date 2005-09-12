@@ -19,6 +19,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.11  2005/09/12 08:26:51  alankila
+ * - flip the signs of b1 and b2 (but not b0) because the mathematical
+ *   difference equation is usually written that way.
+ *
  * Revision 1.10  2005/09/10 10:53:38  alankila
  * - remove the need to reserve biquad's mem in caller's side
  *
@@ -65,33 +69,52 @@
 #   include "utils.h"
 #endif
 
+/* peaking band equalizer */
 void
 set_peq_biquad(double Fs, double Fc, double BW, double G, Biquad_t *f)
 {
     double          k,
                     om,
-                    x;
+                    b0;
     double          fi;
     k = pow(10, G / 40);	/* relative gain */
     BW = BW / (Fc - BW / 2);	/* bandwidth in octaves */
     om = 2 * M_PI * Fc / Fs;	/* normalized frequency in radians */
     fi = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);	/* stuff */
-    x = 1 + fi / k;		/* b0 */
-    f->a0 = (1 + fi * k) / x;
-    f->a1 = -2 * cos(om) / x;
-    f->a2 = (1 - fi * k) / x;
-    f->b1 = -f->a1;
-    f->b2 = -(1 - fi / k) / x;
+    b0 = 1 + fi / k;
+    f->a0 = (1 + fi * k) / b0;
+    f->a1 = -2 * cos(om) / b0;
+    f->a2 = (1 - fi * k) / b0;
+    f->b1 = f->a1;
+    f->b2 = (1 - fi / k) / b0;
 }
 
-/* delay can vary from 0 to 1 */
+/* band pass filter */
+void
+set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
+{
+    double om, fi, b0;
+    om = 2 * M_PI * Fc / Fs;
+    fi = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);
+    b0 = 1 + fi;
+    
+    f->a0 = fi           / b0;
+    f->a1 = 0;
+    f->a2 = -f->a0;
+    f->b1 = -2 * cos(om) / b0;
+    f->b2 = (1 - fi)     / b0;
+}
+
+/* allpass filter, really 1st order as a2 = b2 = 0,
+ * delay can vary from 0 to 1.
+ */
 void
 set_allpass_biquad(double delay, Biquad_t *f)
 {
     delay = ((exp(delay) - 1) / (exp(1) - 1));// - 0.5) * 2;
     f->a0 = delay;
     f->a1 = 1.0;
-    f->b1 = -delay;
+    f->b1 = delay;
     f->a2 = f->b2 = 0;
 }
 
@@ -155,8 +178,8 @@ set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t
     f->a1 = 2 * f->a0;
     f->a2 = f->a0;
     // coeff[2]=(k*(x0*k-x1)+x2)/d;
-    f->b1 = (k * (2 + y1p * k - 2 * y2) + y1p) / d;
-    f->b2 = (-k * (k + y1p) + y2) / d;
+    f->b1 = -(k * (2 + y1p * k - 2 * y2) + y1p) / d;
+    f->b2 = -(-k * (k + y1p) + y2) / d;
     if (!lowpass) {
         f->a1 = -f->a1;
         f->b1 = -f->b1;
@@ -183,7 +206,7 @@ do_biquad(double x, Biquad_t *f, int c)
     if(isnan(x))
 	x=0;
     y = x * f->a0 + f->mem[c][0] * f->a1 + f->mem[c][1] * f->a2
-        + f->mem[c][2] * f->b1 + f->mem[c][3] * f->b2;
+        - f->mem[c][2] * f->b1 - f->mem[c][3] * f->b2;
     if(isnan(y))
 	y=0;
     f->mem[c][1] = f->mem[c][0];
