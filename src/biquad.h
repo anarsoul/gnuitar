@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.11  2005/09/12 09:42:25  fonin
+ * - MSVC compatibility fixes
+ *
  * Revision 1.10  2005/09/12 08:26:51  alankila
  * - flip the signs of b1 and b2 (but not b0) because the mathematical
  *   difference equation is usually written that way.
@@ -92,6 +95,7 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
  */
 
 #if defined(_MSC_VER)
+#include "utils.h"      /* for isnan() */
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
 __inline double

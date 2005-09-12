@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/09/12 09:42:25  fonin
+ * - MSVC compatibility fixes
+ *
  * Revision 1.27  2005/09/10 10:53:38  alankila
  * - remove the need to reserve biquad's mem in caller's side
  *
@@ -121,6 +124,7 @@
 #    include <unistd.h>
 #else
 #    include <io.h>
+#    include "utils.h"		/* for M_PI */
 #endif
 
 void            phasor_filter(struct effect *p, struct data_block *db);

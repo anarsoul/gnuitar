@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.64  2005/09/12 09:42:25  fonin
+ * - MSVC compatibility fixes
+ *
  * Revision 1.63  2005/09/05 17:42:07  alankila
  * - fix some small memory leaks
  *
@@ -529,7 +532,7 @@ delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 {
     struct effect  *p = data;
     int             i;
-    
+
     my_lock_mutex(effectlist_lock);
     for (i = 0; i < n; i++) {
         if (effects[i] == p)
@@ -579,10 +582,10 @@ void rowmove_processor(GtkWidget *widget, gint start, gint end, gpointer data)
 {
     effect_t   *swap;
     int         i;
-    
+
     assert(start >= 0);
     assert(end <= n);
- 
+
     my_lock_mutex(effectlist_lock);
     if (start < end) {
         swap = effects[start];
@@ -604,7 +607,7 @@ up_pressed(GtkWidget *widget, gpointer data)
 {
     effect_t       *swap;
     gchar          *name_above, *name_selected;
-    
+
     if (curr_row > 0 && curr_row < n) {
 	swap = effects[curr_row - 1];
 
@@ -620,7 +623,7 @@ up_pressed(GtkWidget *widget, gpointer data)
         name_selected = strdup(name_selected);
         gtk_clist_set_text(GTK_CLIST(processor), curr_row-1, 0, name_selected);
         gtk_clist_set_text(GTK_CLIST(processor), curr_row, 0, name_above);
-        free(name_above);        
+        free(name_above);
         free(name_selected);
 
         gtk_clist_select_row(GTK_CLIST(processor), curr_row-1, 0);
@@ -651,7 +654,7 @@ down_pressed(GtkWidget * widget, gpointer data)
         gtk_clist_set_text(GTK_CLIST(processor), curr_row+1, 0, name_selected);
         free(name_selected);
         free(name_below);
-        
+
         gtk_clist_select_row(GTK_CLIST(processor), curr_row+1, 0);
 	gtk_clist_thaw(GTK_CLIST(processor));
     }
@@ -686,14 +689,14 @@ add_pressed(GtkWidget *widget, gpointer data)
     effect_t       *tmp_effect;
     gchar          *name;
     GtkWidget      *known_effects = data;
-    
+
     if (n < MAX_EFFECTS && effects_row >= 0) {
 	tmp_effect = effect_list[effects_row].create_f();
 	tmp_effect->proc_init(tmp_effect);
 
         gtk_clist_get_text(GTK_CLIST(known_effects), effects_row, 0, &name);
         name = strdup(name);
-        
+
 	my_lock_mutex(effectlist_lock);
 	if (curr_row >= 0 && curr_row < n) {
 	    idx = curr_row + 1;
@@ -984,7 +987,7 @@ update_driver(GtkWidget * widget, gpointer data)
 {
     const char *tmp=NULL;
     sample_params *sp = (sample_params *) data;
-    
+
     tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->driver)->entry));
     if(tmp == NULL)
 	return;
@@ -1066,7 +1069,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
 			 "Sampling Parameters");
 
     gtk_container_set_border_width(GTK_CONTAINER(sparams.dialog), 5);
-    
+
     group = gtk_frame_new("Sampling Parameters");
     vpack = gtk_vbox_new(FALSE, 10);
     gtk_box_pack_start(GTK_BOX(vpack), group, TRUE, TRUE, 0);
@@ -1074,9 +1077,9 @@ sample_dlg(GtkWidget *widget, gpointer data)
 
     sp_table = gtk_table_new(4, 4, FALSE);
     gtk_container_add(GTK_CONTAINER(group), sp_table);
-    
+
 #define TBLOPT  __GTKATTACHOPTIONS(GTK_FILL|GTK_EXPAND|GTK_SHRINK)
-    
+
     rate_label = gtk_label_new("Sampling rate:");
     gtk_misc_set_alignment(GTK_MISC(rate_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), rate_label, 0, 1, 0, 1,
@@ -1102,7 +1105,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
                      TBLOPT, TBLOPT, 3, 3);
     sparams.channels = gtk_combo_new();
 
-    if (audio_driver) { 
+    if (audio_driver) {
         for (i = 0; audio_driver->channels[i].in != 0; i += 1) {
             gtmp = g_strdup_printf("%d in - %d out", audio_driver->channels[i].in, audio_driver->channels[i].out);
             channels_list = g_list_append(channels_list, gtmp);
@@ -1123,7 +1126,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
                      TBLOPT, TBLOPT, 3, 3);
     sparams.bits = gtk_combo_new();
 
-    if (audio_driver) { 
+    if (audio_driver) {
         for (i = 0; audio_driver->bits[i] != 0; i += 1) {
             gtmp = g_strdup_printf("%d", audio_driver->bits[i]);
             bits_list = g_list_append(bits_list, gtmp);
@@ -1170,7 +1173,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
 
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.driver), drivers_list);
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry), audio_driver_str);
-    
+
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
 			   FALSE);
     gtk_table_attach(GTK_TABLE(sp_table), sparams.driver, 1, 2, 2, 3,
@@ -1285,7 +1288,7 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
 void update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
 {
     sample_params  *sp = data;
-    
+
     update_sampling_params(dialog, data);
     gtk_widget_destroy(GTK_WIDGET(sp->dialog));
 }
@@ -1320,7 +1323,7 @@ start_stop(GtkWidget *widget, gpointer data)
             WaitForSingleObject(audio_thread,INFINITE);
             state = STATE_PAUSE;
 	    audio_thread =
-		CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->thread, 0,
+		CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->audio_proc, 0,
 		     0, &thread_id);
 
             /*
@@ -1501,7 +1504,7 @@ init_gui(void)
     pango_font_description_set_weight(style->font_desc,PANGO_WEIGHT_NORMAL);
 #endif
     gtk_clist_set_reorderable(GTK_CLIST(processor), TRUE);
-    
+
     bank_switch = gtk_button_new_with_label("SWITCH");
     gtk_tooltips_set_tip(tooltips,bank_switch,"Use this button to switch between presets",NULL);
     up = gtk_button_new_with_label("Up");
@@ -1599,4 +1602,5 @@ init_gui(void)
     gdk_window_set_icon(mainWnd->window, mainWnd->window, app_icon, mask);
 #endif
 }
+
 

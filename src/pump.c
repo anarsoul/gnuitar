@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.48  2005/09/12 09:42:25  fonin
+ * - MSVC compatibility fixes
+ *
  * Revision 1.47  2005/09/11 12:54:14  alankila
  * - add a tentative pitch shift effect
  *
@@ -224,7 +227,7 @@
 #include "pump.h"
 #include "main.h"
 #include "gui.h"
-#include <glib12-compat.h>
+#include "glib12-compat.h"
 
 #include "autowah.h"
 #include "phasor.h"

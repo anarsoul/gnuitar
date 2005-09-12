@@ -26,6 +26,9 @@
 #include <gtk/gtk.h>
 #include <sys/types.h>
 #include <stdio.h>
+#ifdef _WIN32
+#  include <windows.h>      /* for DWORD */
+#endif
 
 #include "glib12-compat.h"
 
@@ -154,3 +157,4 @@ extern void     load_settings(void);
 extern void     save_settings(void);
 
 #endif
+

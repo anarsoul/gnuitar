@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.48  2005/09/12 09:42:25  fonin
+ * - MSVC compatibility fixes
+ *
  * Revision 1.47  2005/09/04 23:28:32  alankila
  * - in case audio driver opening fails, set driver to invalid
  *
@@ -321,7 +324,7 @@ main(int argc, char **argv)
      * create audio thread
      */
     audio_thread =
-	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->thread, 0,
+	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->audio_proc, 0,
 		     0, &thread_id);
     if (!audio_thread) {
 	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
@@ -374,4 +377,5 @@ main(int argc, char **argv)
 
     return ERR_NOERROR;
 }
+
 

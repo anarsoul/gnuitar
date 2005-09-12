@@ -22,6 +22,7 @@
 /* glib/gfileutils.h */
 #define G_FILE_ERROR g_file_error_quark ()
 
+#ifndef _WIN32
 typedef enum
 {
   G_FILE_ERROR_EXIST,
@@ -50,6 +51,7 @@ typedef enum
   G_FILE_ERROR_NOSYS,
   G_FILE_ERROR_FAILED
 } GFileError;
+#endif
 
 #define g_open open
 
@@ -65,6 +67,7 @@ typedef enum
 #define G_GNUC_MALLOC
 #endif
 
+#ifndef _WIN32
 /* glib/gstrfuncs.c */
 /* Functions like the ones in <ctype.h> that are not affected by locale. */
 typedef enum {
@@ -90,6 +93,7 @@ struct _GError
   gint         code;
   gchar       *message;
 };
+#endif
 
 GError*  g_error_new           (GQuark         domain,
                                 gint           code,
@@ -272,3 +276,4 @@ void      g_key_file_set_double             (GKeyFile             *,
 					     gdouble		   );
 
 #endif
+
