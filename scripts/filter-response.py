@@ -24,14 +24,14 @@
 import sys, math
 
 class BiquadFilter(object):
-    __slots__ = ['a0', 'a1', 'a2', 'b1', 'b2', 'x1', 'x2', 'y1', 'y2']
+    __slots__ = ['b0', 'b1', 'b2', 'a1', 'a2', 'x1', 'x2', 'y1', 'y2']
 
-    def __init__(self, a0, a1, a2, b1, b2):
-        self.a0 = a0
-        self.a1 = a1
-        self.a2 = a2
+    def __init__(self, b0, b1, b2, a1, a2):
+        self.b0 = b0
         self.b1 = b1
         self.b2 = b2
+        self.a1 = a1
+        self.a2 = a2
 
         self.x1 = 0.0
         self.x2 = 0.0
@@ -39,7 +39,7 @@ class BiquadFilter(object):
         self.y2 = 0.0
     
     def filter(self, x0):
-        y0 = self.a0*x0 + self.a1*self.x1 + self.a2*self.x2 - self.b1*self.y1 - self.b2*self.y2
+        y0 = self.b0*x0 + self.b1*self.x1 + self.b2*self.x2 - self.a1*self.y1 - self.a2*self.y2
 
         self.x2 = self.x1
         self.x1 = x0
@@ -52,13 +52,14 @@ class BiquadFilter(object):
     # mag and phi code comes from
     # http://www.yohng.com/dsp/cfsmp.c
     # it's nearly verbatim with only minor prologue to adapt C to Python
+    # observe that this code uses swaps b and a around!
     def mag(self, rate, f):
-        a0 = self.a0
-        a1 = self.a1
-        a2 = self.a2
+        a0 = self.b0
+        a1 = self.b1
+        a2 = self.b2
         b0 = 1.0
-        b1 = self.b1
-        b2 = self.b2
+        b1 = self.a1
+        b2 = self.a2
         a3 = a4 = a5 = b3 = b4 = b5 = 0.0
 
         sin = math.sin
@@ -80,12 +81,12 @@ class BiquadFilter(object):
               2*b1*b5*cos((8*f*C_PI)/rate) + 2*b0*b5*cos((10*f*C_PI)/rate)))
 
     def phi(self, rate, f):
-        a0 = self.a0
-        a1 = self.a1
-        a2 = self.a2
+        a0 = self.b0
+        a1 = self.b1
+        a2 = self.b2
         b0 = 1.0
-        b1 = self.b1
-        b2 = self.b2
+        b1 = self.a1
+        b2 = self.a2
         a3 = a4 = a5 = b3 = b4 = b5 = 0.0
         
         sin = math.sin
@@ -171,17 +172,17 @@ def make_chebyshev_1(Fs, Fc, ripple, lowpass):
 	k = -math.cos(om / 2 + 0.5) / math.cos(om / 2 - 0.5);
     d = 1.0 + k * (y1p - y2 * k);
     
-    a0 = (x0 - k * (x1 - x2 * k)) / d;
-    a1 = 2.0 * a0;
-    a2 = a0;
-    b1 = -(k * (2.0 + y1p * k - 2 * y2) + y1p) / d;
-    b2 = -(-k * (k + y1p) + y2) / d;
+    b0 = (x0 - k * (x1 - x2 * k)) / d;
+    b1 = 2.0 * b0;
+    b2 = b0;
+    a1 = -(k * (2.0 + y1p * k - 2 * y2) + y1p) / d;
+    a2 = -(-k * (k + y1p) + y2) / d;
 
     if not lowpass:
-	a1 = -a1;
 	b1 = -b1;
+	a1 = -a1;
 
-    return BiquadFilter(a0, a1, a2, b1, b2)
+    return BiquadFilter(b0, b1, b2, a1, a2)
 
 # from biquad.c attributed to Tom St Denis
 def make_filter(type, samplerate, center_frequency, bandwidth, db_gain):
@@ -193,58 +194,58 @@ def make_filter(type, samplerate, center_frequency, bandwidth, db_gain):
     beta = math.sqrt(A + A);
 
     if type == 'LPF':
-        a0 = (1 - cs) / 2;
-        a1 = 1 - cs;
-        a2 = (1 - cs) / 2;
-        b0 = 1 + alpha;
-        b1 = -2 * cs;
-        b2 = 1 - alpha;
+        b0 = (1 - cs) / 2;
+        b1 = 1 - cs;
+        b2 = (1 - cs) / 2;
+        a0 = 1 + alpha;
+        a1 = -2 * cs;
+        a2 = 1 - alpha;
     elif type == 'HPF':
-        a0 = (1 + cs) / 2;
-        a1 = -(1 + cs);
-        a2 = (1 + cs) / 2;
-        b0 = 1 + alpha;
-        b1 = -2 * cs;
-        b2 = 1 - alpha;
+        b0 = (1 + cs) / 2;
+        b1 = -(1 + cs);
+        b2 = (1 + cs) / 2;
+        a0 = 1 + alpha;
+        a1 = -2 * cs;
+        a2 = 1 - alpha;
     elif type == 'BPF':
-        a0 = alpha;
-        a1 = 0;
-        a2 = -alpha;
-        b0 = 1 + alpha;
-        b1 = -2 * cs;
-        b2 = 1 - alpha;
+        b0 = alpha;
+        b1 = 0;
+        b2 = -alpha;
+        a0 = 1 + alpha;
+        a1 = -2 * cs;
+        a2 = 1 - alpha;
     elif type == 'NOTCH':
-        a0 = 1;
-        a1 = -2 * cs;
-        a2 = 1;
-        b0 = 1 + alpha;
+        b0 = 1;
         b1 = -2 * cs;
-        b2 = 1 - alpha;
+        b2 = 1;
+        a0 = 1 + alpha;
+        a1 = -2 * cs;
+        a2 = 1 - alpha;
     elif type == 'PEQ':
-        a0 = 1 + (alpha * A);
-        a1 = -2 * cs;
-        a2 = 1 - (alpha * A);
-        b0 = 1 + (alpha / A);
+        b0 = 1 + (alpha * A);
         b1 = -2 * cs;
-        b2 = 1 - (alpha / A);
+        b2 = 1 - (alpha * A);
+        a0 = 1 + (alpha / A);
+        a1 = -2 * cs;
+        a2 = 1 - (alpha / A);
     elif type == 'LSH':
-        a0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
-        a1 = 2 * A * ((A - 1) - (A + 1) * cs);
-        a2 = A * ((A + 1) - (A - 1) * cs - beta * sn);
-        b0 = (A + 1) + (A - 1) * cs + beta * sn;
-        b1 = -2 * ((A - 1) + (A + 1) * cs);
-        b2 = (A + 1) + (A - 1) * cs - beta * sn;
+        b0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
+        b1 = 2 * A * ((A - 1) - (A + 1) * cs);
+        b2 = A * ((A + 1) - (A - 1) * cs - beta * sn);
+        a0 = (A + 1) + (A - 1) * cs + beta * sn;
+        a1 = -2 * ((A - 1) + (A + 1) * cs);
+        a2 = (A + 1) + (A - 1) * cs - beta * sn;
     elif type == 'HSH':
-        a0 = A * ((A + 1) + (A - 1) * cs + beta * sn);
-        a1 = -2 * A * ((A - 1) + (A + 1) * cs);
-        a2 = A * ((A + 1) + (A - 1) * cs - beta * sn);
-        b0 = (A + 1) - (A - 1) * cs + beta * sn;
-        b1 = 2 * ((A - 1) - (A + 1) * cs);
-        b2 = (A + 1) - (A - 1) * cs - beta * sn;
+        b0 = A * ((A + 1) + (A - 1) * cs + beta * sn);
+        b1 = -2 * A * ((A - 1) + (A + 1) * cs);
+        b2 = A * ((A + 1) + (A - 1) * cs - beta * sn);
+        a0 = (A + 1) - (A - 1) * cs + beta * sn;
+        a1 = 2 * ((A - 1) - (A + 1) * cs);
+        a2 = (A + 1) - (A - 1) * cs - beta * sn;
     else:
         raise RuntimeError, "Unknown filter type. Pick one from LPF, HPF, BPF, PEQ, NOTCH, LSH, HSH"
 
-    return BiquadFilter(a0 / b0, a1 / b0, a2 / b0, b1 / b0, b2 / b0)
+    return BiquadFilter(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0)
 
 def make_allpass(delay):
     if delay > 1.0 or delay < -1.0:
@@ -258,10 +259,10 @@ def main():
     # frequency if you like.
     sampling_rate_hz = 48000.0
 
-    #filter = make_allpass(float(sys.argv[1]))
-    #filter = make_rc_lopass(sampling_rate_hz, 220, 0.22e-6)
-    filter = make_filter('HSH', sampling_rate_hz, 1000, 0.5, -10.0)
-    #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 3.0, True)
+    filter = make_allpass(float(sys.argv[1]))
+    #filter = make_rc_lopass(sampling_rate_hz, 4700, 47e-9)
+    #filter = make_filter('HSH', sampling_rate_hz, 1000, 0.5, -10.0)
+    #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 3.0, False)
 
     for dp in range(301):
         freq_hz = 20*math.pow(2, math.log(20000./20.)/math.log(2) * dp / 300.)
