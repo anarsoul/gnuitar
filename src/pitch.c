@@ -26,14 +26,17 @@
 #include "pitch.h"
 #include "glib12-compat.h"
 #include "gui.h"
+#include <assert.h>
 #include <math.h>
 #include <string.h>
 #include <gtk/gtk.h>
 #include <stdlib.h>
 
-#define PITCH_PHASES                3
-#define PITCH_MODULATION_FREQUENCY  6 /* Hz */
-#define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY)
+#define PITCH_PHASES                2
+#define PITCH_MODULATION_FREQUENCY_MIN  2 /* Hz */
+#define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY_MIN)
+#define PITCH_GAIN_CORRECTION_HISTORY    512
+#define PITCH_GAIN_CORRECTION_FACTOR     (31 / 32.0)
 
 void
 update_pitch_halfnote(GtkAdjustment *adj, struct pitch_params *params)
@@ -166,10 +169,10 @@ void
 pitch_filter(effect_t *p, data_block_t *db)
 {
     struct pitch_params *params = p->params;
-    DSP_SAMPLE     *s, tmp;
-    double          phase_inc, phase_tmp, Dry, Wet;
+    DSP_SAMPLE     *s, tmp, tmp2;
+    double          pitch_modulation_frequency, phase_inc, phase_tmp, phase_idx_d, Dry, Wet, gain;
     double          depth = 0;
-    int             count, c = 0, dir = 0, i;
+    int             count, c = 0, dir = 0, i, phase_idx, phase_idx2;
 
     s = db->data;
     count = db->len;
@@ -179,7 +182,16 @@ pitch_filter(effect_t *p, data_block_t *db)
        depth = -0.5;
     if (depth > 1.0)
        depth = 1.0;
-    depth = depth * sample_rate / PITCH_MODULATION_FREQUENCY;
+
+    /* this gives 4 for -12 tuning and 8 for +12 tuning and sensible values
+     * in between otherwise */
+    pitch_modulation_frequency = fabs(depth) * 8;
+
+    if (pitch_modulation_frequency < PITCH_MODULATION_FREQUENCY_MIN) {
+        pitch_modulation_frequency = PITCH_MODULATION_FREQUENCY_MIN;
+    }
+    
+    depth = depth * sample_rate / pitch_modulation_frequency;
     if (depth < 0) {
         depth = -depth;
         dir = 1;
@@ -188,7 +200,7 @@ pitch_filter(effect_t *p, data_block_t *db)
     Dry = 1 - params->drywet / 100.0;
     Wet =     params->drywet / 100.0;
  
-    phase_inc = (double) PITCH_MODULATION_FREQUENCY / sample_rate;
+    phase_inc = (double) pitch_modulation_frequency / sample_rate;
     while (count) {
         params->history[c]->add(params->history[c], *s);
 
@@ -206,10 +218,44 @@ pitch_filter(effect_t *p, data_block_t *db)
         }
         tmp /= sqrt(PITCH_PHASES);
 
+        phase_idx_d = phase_tmp * PITCH_GAIN_CORRECTION_RESOLUTION;
+        phase_idx = phase_idx_d;
+        assert(phase_idx >= 0 && phase_idx < PITCH_GAIN_CORRECTION_RESOLUTION);
+        
+        /* support variables for linear interpolation */
+        phase_idx2 = (phase_idx + 1) % PITCH_GAIN_CORRECTION_RESOLUTION;
+        phase_idx_d -= phase_idx;
+        
+        params->output[phase_idx] += pow(tmp, 2);
+        
         /* we take the sample midpoint between accelerated history in order
          * to reduce phase decorrelation effects, but this gives awful
-         * latency to contend with */    
-        *s = params->history[c]->get(params->history[c], depth / 2) * Dry + tmp * Wet;
+         * latency also for the dry signal -- but reduces the echo effect */    
+        tmp2 = params->history[c]->get(params->history[c], depth / 2);
+        params->input[phase_idx] += pow(tmp2, 2);
+
+        params->inout_n[phase_idx] += 1;
+
+        if (params->inout_n[phase_idx] >= PITCH_GAIN_CORRECTION_HISTORY) {
+            params->inout_n[phase_idx] *= PITCH_GAIN_CORRECTION_FACTOR;
+            params->input[phase_idx]   *= PITCH_GAIN_CORRECTION_FACTOR;
+            params->output[phase_idx]  *= PITCH_GAIN_CORRECTION_FACTOR;
+        }
+        
+        /* correct attenuation due to phase mismatches. */
+        gain = sqrt((params->input[phase_idx ] * (1 - phase_idx_d) +
+                     params->input[phase_idx2] * phase_idx_d)
+                  / (params->output[phase_idx ] * (1 - phase_idx_d) +
+                     params->output[phase_idx2] * phase_idx_d));
+        
+        /* prevent gain from going out of control */
+        if (gain > 2.0)
+            gain = 2.0;
+        if (gain < 0.5)
+            gain = 0.5;
+        
+        *s = tmp2 * Dry + tmp * Wet;
+        
         c = (c + 1) % db->channels;
         if (c == 0) {
             params->phase += phase_inc;
