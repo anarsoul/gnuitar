@@ -9,6 +9,8 @@
 #
 # you can view the plot in gnuplot with the following commands in gnuplot:
 #
+#   set logscale x
+#   set xrange [20:20000]
 #   plot "output.txt" using ($1):($2) smooth bezier
 #   plot "output.txt" using ($1):($3) smooth bezier
 #
@@ -18,15 +20,8 @@
 # The bandwidth of many filters is thought to be where the output has dropped
 # 3 dB, but for PEQ you should consider bandwidth as the frequency difference
 # where the output has diminished to half the peak frequency.
-#
-# IMPORTANT:
-#
-# The sign of b1 and b2 is flipped in this implementation compared to
-# gnuitar/src/biquad.c. So this needs to be accounted for if code is moved
-# between Python and C.
-#
 
-import math
+import sys, math
 
 class BiquadFilter(object):
     __slots__ = ['a0', 'a1', 'a2', 'b1', 'b2', 'x1', 'x2', 'y1', 'y2']
@@ -179,14 +174,14 @@ def make_chebyshev_1(Fs, Fc, ripple, lowpass):
     a0 = (x0 - k * (x1 - x2 * k)) / d;
     a1 = 2.0 * a0;
     a2 = a0;
-    b1 = (k * (2.0 + y1p * k - 2 * y2) + y1p) / d;
-    b2 = (-k * (k + y1p) + y2) / d;
+    b1 = -(k * (2.0 + y1p * k - 2 * y2) + y1p) / d;
+    b2 = -(-k * (k + y1p) + y2) / d;
 
     if not lowpass:
 	a1 = -a1;
 	b1 = -b1;
 
-    return BiquadFilter(a0, a1, a2, -b1, -b2)
+    return BiquadFilter(a0, a1, a2, b1, b2)
 
 # from biquad.c attributed to Tom St Denis
 def make_filter(type, samplerate, center_frequency, bandwidth, db_gain):
@@ -198,58 +193,58 @@ def make_filter(type, samplerate, center_frequency, bandwidth, db_gain):
     beta = math.sqrt(A + A);
 
     if type == 'LPF':
-        b0 = (1 - cs) / 2;
-        b1 = 1 - cs;
-        b2 = (1 - cs) / 2;
-        a0 = 1 + alpha;
-        a1 = -2 * cs;
-        a2 = 1 - alpha;
+        a0 = (1 - cs) / 2;
+        a1 = 1 - cs;
+        a2 = (1 - cs) / 2;
+        b0 = 1 + alpha;
+        b1 = -2 * cs;
+        b2 = 1 - alpha;
     elif type == 'HPF':
-        b0 = (1 + cs) / 2;
-        b1 = -(1 + cs);
-        b2 = (1 + cs) / 2;
-        a0 = 1 + alpha;
-        a1 = -2 * cs;
-        a2 = 1 - alpha;
+        a0 = (1 + cs) / 2;
+        a1 = -(1 + cs);
+        a2 = (1 + cs) / 2;
+        b0 = 1 + alpha;
+        b1 = -2 * cs;
+        b2 = 1 - alpha;
     elif type == 'BPF':
-        b0 = alpha;
-        b1 = 0;
-        b2 = -alpha;
-        a0 = 1 + alpha;
-        a1 = -2 * cs;
-        a2 = 1 - alpha;
+        a0 = alpha;
+        a1 = 0;
+        a2 = -alpha;
+        b0 = 1 + alpha;
+        b1 = -2 * cs;
+        b2 = 1 - alpha;
     elif type == 'NOTCH':
-        b0 = 1;
-        b1 = -2 * cs;
-        b2 = 1;
-        a0 = 1 + alpha;
+        a0 = 1;
         a1 = -2 * cs;
-        a2 = 1 - alpha;
+        a2 = 1;
+        b0 = 1 + alpha;
+        b1 = -2 * cs;
+        b2 = 1 - alpha;
     elif type == 'PEQ':
-        b0 = 1 + (alpha * A);
-        b1 = -2 * cs;
-        b2 = 1 - (alpha * A);
-        a0 = 1 + (alpha / A);
+        a0 = 1 + (alpha * A);
         a1 = -2 * cs;
-        a2 = 1 - (alpha / A);
+        a2 = 1 - (alpha * A);
+        b0 = 1 + (alpha / A);
+        b1 = -2 * cs;
+        b2 = 1 - (alpha / A);
     elif type == 'LSH':
-        b0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
-        b1 = 2 * A * ((A - 1) - (A + 1) * cs);
-        b2 = A * ((A + 1) - (A - 1) * cs - beta * sn);
-        a0 = (A + 1) + (A - 1) * cs + beta * sn;
-        a1 = -2 * ((A - 1) + (A + 1) * cs);
-        a2 = (A + 1) + (A - 1) * cs - beta * sn;
+        a0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
+        a1 = 2 * A * ((A - 1) - (A + 1) * cs);
+        a2 = A * ((A + 1) - (A - 1) * cs - beta * sn);
+        b0 = (A + 1) + (A - 1) * cs + beta * sn;
+        b1 = -2 * ((A - 1) + (A + 1) * cs);
+        b2 = (A + 1) + (A - 1) * cs - beta * sn;
     elif type == 'HSH':
-        b0 = A * ((A + 1) + (A - 1) * cs + beta * sn);
-        b1 = -2 * A * ((A - 1) + (A + 1) * cs);
-        b2 = A * ((A + 1) + (A - 1) * cs - beta * sn);
-        a0 = (A + 1) - (A - 1) * cs + beta * sn;
-        a1 = 2 * ((A - 1) - (A + 1) * cs);
-        a2 = (A + 1) - (A - 1) * cs - beta * sn;
+        a0 = A * ((A + 1) + (A - 1) * cs + beta * sn);
+        a1 = -2 * A * ((A - 1) + (A + 1) * cs);
+        a2 = A * ((A + 1) + (A - 1) * cs - beta * sn);
+        b0 = (A + 1) - (A - 1) * cs + beta * sn;
+        b1 = 2 * ((A - 1) - (A + 1) * cs);
+        b2 = (A + 1) - (A - 1) * cs - beta * sn;
     else:
         raise RuntimeError, "Unknown filter type. Pick one from LPF, HPF, BPF, PEQ, NOTCH, LSH, HSH"
 
-    return BiquadFilter(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0)
+    return BiquadFilter(a0 / b0, a1 / b0, a2 / b0, b1 / b0, b2 / b0)
 
 def make_allpass(delay):
     if delay > 1.0 or delay < -1.0:
@@ -263,15 +258,16 @@ def main():
     # frequency if you like.
     sampling_rate_hz = 48000.0
 
-    filter = make_allpass(0.9)
+    #filter = make_allpass(float(sys.argv[1]))
     #filter = make_rc_lopass(sampling_rate_hz, 220, 0.22e-6)
-    #filter = make_filter('PEQ', sampling_rate_hz, 10000, 0.5, -10.0)
-    #filter = make_chebyshev_1(sampling_rate_hz, 7000.0, 1.0, True)
+    filter = make_filter('HSH', sampling_rate_hz, 1000, 0.5, -10.0)
+    #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 3.0, True)
 
-    for freq_hz in range(20, 20000, 20):
+    for dp in range(301):
+        freq_hz = 20*math.pow(2, math.log(20000./20.)/math.log(2) * dp / 300.)
         power_db = filter.lin2db(filter.mag(sampling_rate_hz, freq_hz))
         phase_ang = filter.phi(sampling_rate_hz, freq_hz) / math.pi * 180
-        print "%5.0f %7.3f %5.1f" % (freq_hz, power_db, phase_ang)
+        print "%8.2f %7.3f %5.1f" % (freq_hz, power_db, phase_ang)
 
 if __name__ == '__main__':
     main()
