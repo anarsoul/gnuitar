@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.49  2005/09/12 22:10:50  alankila
+ * - add missing checks into configure.in to silence autoscan's warnings
+ *
  * Revision 1.48  2005/09/12 09:42:25  fonin
  * - MSVC compatibility fixes
  *
@@ -209,7 +212,6 @@
 #include <string.h>
 #include <sys/types.h>
 #ifndef _WIN32
-#include <locale.h>
 #include <unistd.h>
 #include <pthread.h>
 #endif

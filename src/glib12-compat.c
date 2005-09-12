@@ -43,7 +43,6 @@ g_key_file_get_double(GKeyFile *kf, const gchar *grp, const gchar *name, GError 
 
 #include <errno.h>
 #include <fcntl.h>
-#include <locale.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>

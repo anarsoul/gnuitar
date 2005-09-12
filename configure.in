@@ -184,11 +184,14 @@ AC_ARG_WITH(oss,
 
 dnl used for state
 AC_C_VOLATILE
+dnl used for some speedups in biquad code
+AC_C_INLINE
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_TIME
+AC_HEADER_STAT
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h sys/stat.h float.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -197,7 +200,7 @@ AC_TYPE_PID_T
 
 dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
-AC_CHECK_FUNCS(getcwd isascii memset pow sqrt select)
+AC_CHECK_FUNCS(getcwd isascii memset pow sqrt select strchr strdup strtol)
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_STRFTIME
