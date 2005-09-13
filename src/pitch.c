@@ -241,8 +241,18 @@ pitch_filter(effect_t *p, data_block_t *db)
         phase_tmp = params->phase;
         for (i = 0; i < PITCH_PHASES; i += 1) {
             /* repeatedly weigh pieces of "accelerated" history through
-             * a windowing function */
-            tmp += sin_lookup(phase_tmp / 2) *
+	     * windowing function that must satisfy the following 
+	     * constraints:
+	     *
+	     * f(0)   = 0
+	     * f(1/2) = 1
+	     * f(1/4) = 1/2
+	     * f(x)   = f(1-x)        , 0 <= x <= 1
+	     * f(x)   = 1 - f(x + 1/2), 0 <= x <= 1/2
+	     *
+	     * Thanks to Ilmari Karonen for making me understand the
+	     * purpose of the original function used by Tom Szilagyi */
+            tmp += (1 - cos(phase_tmp * pi * 2)) / 2.0 *
                 params->history[c]->get_interpolated(params->history[c], 
                         depth * (dir ? phase_tmp : 1 - phase_tmp));
             phase_tmp += 1.0 / PITCH_PHASES;
