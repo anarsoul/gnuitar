@@ -35,7 +35,7 @@ struct distort2_params {
     double	c0,d1,lyf[MAX_CHANNELS];
     double 	last[MAX_CHANNELS];
     double	lastupsample[MAX_CHANNELS];
-    struct Biquad cheb;
+    Biquad_t    cheb_up, cheb_down;
 };
 
 #endif

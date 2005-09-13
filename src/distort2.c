@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.52  2005/09/13 08:18:28  alankila
+ * - reduce the bandwidth of input to newton, hopefully giving fractionally
+ *   yet more reliable behaviour overall
+ * - reconsider the bandwidth of the downsampling, now setting it at maximum
+ *
  * Revision 1.51  2005/09/10 10:53:38  alankila
  * - remove the need to reserve biquad's mem in caller's side
  *
@@ -306,7 +311,7 @@
 #define DRIVE_STATIC           50e3     /* ohms */
 #define DRIVE_LOG              500e3    /* ohms */
  
-#define UPSAMPLE	6
+#define UPSAMPLE	4
 #define MAX_NEWTON_ITERATIONS   50
  
 /* the effect is defined in -1.0 .. 1.0 range */
@@ -535,7 +540,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	/* Now the actual upsampled processing */
 	for (i=0; i<UPSAMPLE; i++)
 	{
-	    x = upsample[i]; /*get one of the upsamples */
+	    x = do_biquad(upsample[i], &dp->cheb_up, curr_channel);
 
 	    /* first compute the linear rc filter current output */
 	    x2 = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
@@ -577,7 +582,7 @@ distort2_filter(struct effect *p, struct data_block *db)
                 y = -3.0;
             
 	    dp->last[curr_channel] = y;
-	    y = do_biquad(y, &dp->cheb,  curr_channel);
+	    y = do_biquad(y, &dp->cheb_down, curr_channel);
 	}
 
 	/* scale up from -1..1 range */
@@ -674,8 +679,9 @@ distort2_create()
     ap->c0 = Ts1 / (Ts1 + RC);
     ap->d1 = RC / (Ts1 + RC);
 
-    /* a lowpass Chebyshev filter for downsampling */
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/3, 0.5, 1, &ap->cheb );
+    /* lowpass Chebyshev filters resampling */
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_down);
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_up);
 
     return p;
 }
