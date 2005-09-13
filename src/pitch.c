@@ -36,7 +36,7 @@
 #include <stdlib.h>
 
 #define PITCH_PHASES                2
-#define PITCH_MODULATION_FREQUENCY_MIN  1 /* Hz */
+#define PITCH_MODULATION_FREQUENCY_MIN  2 /* Hz */
 #define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY_MIN)
 #define PITCH_GAIN_CORRECTION_HISTORY    512
 #define PITCH_GAIN_CORRECTION_FACTOR     (31 / 32.0)
@@ -141,7 +141,7 @@ pitch_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     adj_buffer = gtk_adjustment_new(params->buffer,
-				     2.0, 14.0, 1.0, 1.0, 0.0);
+				     4.0, 16.0, 1.0, 1.0, 0.0);
     buffer_label = gtk_label_new("Latency\n(Hz)");
     gtk_table_attach(GTK_TABLE(parmTable), buffer_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -249,7 +249,6 @@ pitch_filter(effect_t *p, data_block_t *db)
             if (phase_tmp >= 1.0)
                 phase_tmp -= 1.0;
         }
-        tmp /= sqrt(PITCH_PHASES);
 
         phase_idx_d = phase_tmp * PITCH_GAIN_CORRECTION_RESOLUTION;
         phase_idx = phase_idx_d;
@@ -352,6 +351,6 @@ pitch_create()
         params->history[i] = new_Backbuf(PITCH_BUFFER_SIZE);
     }
     params->drywet = 50;
-    params->buffer = 8;
+    params->buffer = 10.0;
     return p;
 }
