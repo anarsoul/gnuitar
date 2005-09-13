@@ -252,7 +252,7 @@ pitch_filter(effect_t *p, data_block_t *db)
 	     *
 	     * Thanks to Ilmari Karonen for making me understand the
 	     * purpose of the original function used by Tom Szilagyi */
-            tmp += (1 - cos(phase_tmp * pi * 2)) / 2.0 *
+            tmp += (1 - cos(phase_tmp * M_PI * 2)) / 2.0 *
                 params->history[c]->get_interpolated(params->history[c], 
                         depth * (dir ? phase_tmp : 1 - phase_tmp));
             phase_tmp += 1.0 / PITCH_PHASES;
