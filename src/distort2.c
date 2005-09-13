@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.53  2005/09/13 18:23:35  alankila
+ * - reinstate some old code, offer it as a toggle
+ * - make standard "authentic" emulation harder
+ * - improve recovery from newton convergence failures
+ *
  * Revision 1.52  2005/09/13 08:18:28  alankila
  * - reduce the bandwidth of input to newton, hopefully giving fractionally
  *   yet more reliable behaviour overall
@@ -346,12 +351,11 @@ update_distort2_treble(GtkAdjustment *adj, struct distort2_params *params)
     params->treble = adj->value;
 }
 
-/*
 void
 toggle_distort2_mode(GtkAdjustment *adj, struct distort2_params *params)
 {
-    params->mode = !params->mode;
-}*/
+    params->unauthentic = !params->unauthentic;
+}
 
 void
 distort2_init(struct effect *p)
@@ -370,7 +374,7 @@ distort2_init(struct effect *p)
     GtkWidget      *treble_label;
     GtkObject      *adj_treble;
 
-    GtkWidget      *button/*, *modebutton*/;
+    GtkWidget      *button, *modebutton;
 
     GtkWidget      *parmTable;
 
@@ -446,9 +450,8 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
 
-    /*
-    modebutton = gtk_check_button_new_with_label("Mode");
-    if (pdistort->mode)
+    modebutton = gtk_check_button_new_with_label("Authentic");
+    if (! pdistort->unauthentic)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(modebutton), TRUE);
     gtk_signal_connect(GTK_OBJECT(modebutton), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_distort2_mode), pdistort);
@@ -457,7 +460,7 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
-    */
+    
     button = gtk_check_button_new_with_label("On");
     if (p->toggle == 1)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -484,10 +487,10 @@ distort2_filter(struct effect *p, struct data_block *db)
     int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp = p->params;
-    static double	x,y,x1,x2,f,df,dx,e1,e2;
+    static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4;
     static double upsample [UPSAMPLE];
     double DRIVE = DRIVE_STATIC + dp->drive / 100.0 * DRIVE_LOG;
-    double mUt = (30.0 + 100 - dp->clip) * 1e-3;
+    double mUt = (10.0 + 100 - dp->clip) * 1e-3;
     /* correct Is with mUt to approximately keep drive the
      * same. Original parameters said Is is 10e-12 and mUt 30e-3.
      * If mUt grows, Is must shrink. 0.39 is experimental */
@@ -521,6 +524,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     /*
      * process signal; x - input, in the range -1, 1
      */
+    e3 = 0; e4 = 0;
     while (count) {
 
 	/* scale down to -1..1 range */
@@ -545,8 +549,11 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    /* first compute the linear rc filter current output */
 	    x2 = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
 	    dp->lyf[curr_channel] = x2;
-
+            
             x1 = (x - x2) / RC_FEEDBACK_R;
+            /* This is unphysical but softens the sound */
+            if (dp->unauthentic)
+                x = x2;
             
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
@@ -555,14 +562,18 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    do {
 		/* f(y) = 0 , y= ? */
                 /* e^3 ~ 20 */
-		e1 = exp(  (x - y) / mUt); e2 = 1.0 / e1;
-		//e3 = exp(e1); e4 = 1.0 / e3;
+                e1 = exp((x - y) / mUt);
+                e2 = 1.0 / e1;
+                if (dp->unauthentic) {
+                    e3 = exp(3*(x - y) / mUt);
+                    e4 = 1.0 / e3;
+                }
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
-		f = x1 + (x - y) / DRIVE + Is * (e1 - e2);
+		f = x1 + (x - y) / DRIVE + Is * (e1 - e2 + (e3 - e4) / 20);
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
-		df = -1.0 / DRIVE - Is / mUt * (e1 + e2);
+		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + 3*(e3 + e4) / 20);
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
@@ -572,14 +583,9 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    while (fabs(dx) > EFFECT_PRECISION && --bailout);
 	    /* when dx gets very small, we found a solution. */
 	    
-            /* we can get NaN after all, let's check for this */
-	    if(isnan(y))
-                y=0.0;
-            /* the real limits are -1.0 to +1.0 but we allow for some headroom */
-            if (y > 3.0)
-                y = 3.0;
-            if (y < -3.0)
-                y = -3.0;
+            /* Ensure that the value gets reset if something goes wrong */
+            if (isnan(y) || ! (y >= -2.0 && y <= 2.0))
+                y = 0;
             
 	    dp->last[curr_channel] = y;
 	    y = do_biquad(y, &dp->cheb_down, curr_channel);
@@ -599,16 +605,22 @@ distort2_filter(struct effect *p, struct data_block *db)
         curr_channel = (curr_channel + 1) % db->channels;
     }
     RC_lowpass(db, &(dp->drivesmooth));
-    RC_lowpass(db, &(dp->rolloff));
 
-    /* compute highpass component and mix it */
-    for (i = 0; i < db->len; i += 1)
-        db->data_swap[i] = db->data[i];
-    RC_highpass(db, &(dp->treble_hipass));
+    if (dp->unauthentic) {
+        RC_set_freq((3200 + 720) / 2 + (3200 - 720) / 2 * dp->treble / 6.0, &(dp->rolloff));
+        RC_lowpass(db, &(dp->rolloff));
+    } else {
+        RC_set_freq(720, &(dp->rolloff));
+        RC_lowpass(db, &(dp->rolloff));
+        /* compute highpass component and mix it */
+        for (i = 0; i < db->len; i += 1)
+            db->data_swap[i] = db->data[i];
+        RC_highpass(db, &(dp->treble_hipass));
 
-    y = dp->treble / 6.0;
-    for (i = 0; i < db->len; i += 1)
-        db->data[i] = db->data_swap[i] + db->data[i] * y;
+        y = dp->treble / 6.0;
+        for (i = 0; i < db->len; i += 1)
+            db->data[i] = db->data_swap[i] + db->data[i] * y;
+    }
 }
 
 void
@@ -630,6 +642,7 @@ distort2_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("drive", params->drive);
     SAVE_DOUBLE("clip", params->clip);
     SAVE_DOUBLE("treble", params->treble);
+    SAVE_INT("unauthentic", params->unauthentic);
 }
 
 void
@@ -640,6 +653,7 @@ distort2_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("drive", params->drive);
     LOAD_DOUBLE("clip", params->clip);
     LOAD_DOUBLE("treble", params->treble);
+    LOAD_INT("unauthentic", params->unauthentic);
 }
 
 effect_t *
@@ -663,11 +677,11 @@ distort2_create()
     ap->drive = 0.0;
     ap->clip = 100.0;
     ap->treble = 3.0;
+    ap->unauthentic = 0;
 
     RC_setup(1, 1, &(ap->drivesmooth));
     RC_setup(1, 1, &(ap->rolloff));
     RC_setup(1, 1, &(ap->treble_hipass));
-    RC_set_freq(720, &(ap->rolloff));           // should be 720
     RC_set_freq(3200, &(ap->treble_hipass));    // should be 3200
     
     /* RC Filter tied to ground setup */
