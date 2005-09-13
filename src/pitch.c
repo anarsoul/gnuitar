@@ -13,15 +13,11 @@
  * function that in this case is simply sin(x) over 0 <= x <= pi.
  *
  * To control phase effects, some number of these fragments is required, and
- * the optimum is 3 without my gain compensation technique, however, with
- * a gain compensation we can do with just 2. This reduces the worst phase
- * cancellation type of artifacts that might mute certain frequencies
- * in the audio spectrum, but introduces inaccuracies in overall signal volume
- * and some phase shifting which manifests in a vibratolike sound.
- *
- * I have also improved the algorithm to make latency a central tunable,
- * which makes this effect considerably more useful. It seems that you must
- * trade small latency for low-frequency accuracy and the "vibrato" reduction.
+ * the optimum seems to be 3. If anyone can improve the windowing function
+ * then please be my guest. With a good window it may be possible to reduce
+ * PITCH_PHASES to two. That would reduce phase problems that plague this
+ * shifter. You find the windowing function at "gain =" line, and a description
+ * of requirements.
  *
  * $Id$
  */
@@ -35,11 +31,9 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 
-#define PITCH_PHASES                2
+#define PITCH_PHASES                3
 #define PITCH_MODULATION_FREQUENCY_MIN  2 /* Hz */
 #define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY_MIN)
-#define PITCH_GAIN_CORRECTION_HISTORY    512
-#define PITCH_GAIN_CORRECTION_FACTOR     (31 / 32.0)
 
 void
 update_pitch_halfnote(GtkAdjustment *adj, struct pitch_params *params)
@@ -203,9 +197,9 @@ pitch_filter(effect_t *p, data_block_t *db)
 {
     struct pitch_params *params = p->params;
     DSP_SAMPLE     *s, tmp, tmp2;
-    double          pitch_modulation_frequency, phase_inc, phase_tmp, phase_idx_d, Dry, Wet, gain;
+    double          pitch_modulation_frequency, phase_inc, phase_tmp, Dry, Wet, gain, gain_sum;
     double          depth = 0;
-    int             count, c = 0, dir = 0, i, phase_idx, phase_idx2;
+    int             count, c = 0, dir = 0, i;
 
     s = db->data;
     count = db->len;
@@ -240,62 +234,40 @@ pitch_filter(effect_t *p, data_block_t *db)
         tmp = 0;
         phase_tmp = params->phase;
         for (i = 0; i < PITCH_PHASES; i += 1) {
-            /* repeatedly weigh pieces of "accelerated" history through
-	     * windowing function that must satisfy the following 
+            /* Repeatedly weigh pieces of "accelerated" history through
+	     * windowing function that ought to satisfy the following 
 	     * constraints:
 	     *
 	     * f(0)   = 0
 	     * f(1/2) = 1
 	     * f(1/4) = 1/2
-	     * f(x)   = f(1-x)        , 0 <= x <= 1
+	     * f(x)   = f(1-x)        , 0 <= x <= 1/2
 	     * f(x)   = 1 - f(x + 1/2), 0 <= x <= 1/2
 	     *
+             * An arbitrary function will do provided you use it to construct
+             * the range from 0 <= x <= 1/4 and use the above identities to
+             * construct the rest.
+             * 
 	     * Thanks to Ilmari Karonen for making me understand the
-	     * purpose of the original function used by Tom Szilagyi */
-            tmp += (1 - cos(phase_tmp * M_PI * 2)) / 2.0 *
+	     * form of the original function used by Tom Szilagyi. */
+            // gain = (1 - cos(phase_tmp * M_PI * 2)) / 2.0;
+            gain = pow(sin_lookup(phase_tmp / 2), 2); /* Tom's but sin() */
+            gain_sum += gain;
+            tmp += gain *
                 params->history[c]->get_interpolated(params->history[c], 
                         depth * (dir ? phase_tmp : 1 - phase_tmp));
             phase_tmp += 1.0 / PITCH_PHASES;
             if (phase_tmp >= 1.0)
                 phase_tmp -= 1.0;
         }
-
-        phase_idx_d = phase_tmp * PITCH_GAIN_CORRECTION_RESOLUTION;
-        phase_idx = phase_idx_d;
-        assert(phase_idx >= 0 && phase_idx < PITCH_GAIN_CORRECTION_RESOLUTION);
+        /* gain_sum normalizes the windowing function, so it need not fulfill
+         * all the constraints specified above. However, if the function is
+         * bad there will be all sorts of weird distortion... */
+        phase_tmp /= gain_sum;
         
-        /* support variables for linear interpolation */
-        phase_idx2 = (phase_idx + 1) % PITCH_GAIN_CORRECTION_RESOLUTION;
-        phase_idx_d -= phase_idx;
-        
-        params->output[phase_idx] += pow(tmp, 2);
-        
-        /* we take the sample midpoint between accelerated history in order
-         * to reduce phase decorrelation effects, but this gives awful
-         * latency also for the dry signal -- but reduces the echo effect */    
+        /* we could try to pick the history a bit more forward at cost of
+         * some more echoing in average but less latency when dry is not 0 */
         tmp2 = params->history[c]->get(params->history[c], depth / 2);
-        params->input[phase_idx] += pow(tmp2, 2);
-
-        params->inout_n[phase_idx] += 1;
-
-        if (params->inout_n[phase_idx] >= PITCH_GAIN_CORRECTION_HISTORY) {
-            params->inout_n[phase_idx] *= PITCH_GAIN_CORRECTION_FACTOR;
-            params->input[phase_idx]   *= PITCH_GAIN_CORRECTION_FACTOR;
-            params->output[phase_idx]  *= PITCH_GAIN_CORRECTION_FACTOR;
-        }
-        
-        /* correct attenuation due to phase mismatches. */
-        gain = sqrt((params->input[phase_idx ] * (1 - phase_idx_d) +
-                     params->input[phase_idx2] * phase_idx_d)
-                  / (params->output[phase_idx ] * (1 - phase_idx_d) +
-                     params->output[phase_idx2] * phase_idx_d));
-        
-        /* prevent gain from going out of control */
-        if (gain > 2.0)
-            gain = 2.0;
-        if (gain < 0.5)
-            gain = 0.5;
-        
         *s = tmp2 * Dry + tmp * Wet;
         
         c = (c + 1) % db->channels;
