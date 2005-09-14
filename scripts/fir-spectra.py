@@ -14,7 +14,7 @@ def hamming(x):
     return math.sin(x * math.pi)
 
 def hanning(x):
-    return 0.04 + math.sin(x * math.pi) * 0.046
+    return 0.04 + math.sin(x * math.pi) * 0.46
 
 def sinc(x):
     if (x == 0):
