@@ -58,7 +58,7 @@ def main():
     coeffs = 14
     for _ in range(0, 1024):
         if _ < coeffs:
-            spectrum[_] *= hanning(0.5 + (_ + 0.5) / coeffs)
+            spectrum[_] *= hanning(0.5 + 1. * _ / coeffs)
         else:
             spectrum[_] *= 0j
 
