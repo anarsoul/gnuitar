@@ -11,8 +11,8 @@
 #
 #   set logscale x
 #   set xrange [20:20000]
-#   plot "output.txt" using ($1):($2) smooth bezier
-#   plot "output.txt" using ($1):($3) smooth bezier
+#   plot "output.txt" using ($1):($2) smooth cspline
+#   plot "output.txt" using ($1):($3) smooth cspline
 #
 # The 1st plot is frequency (Hz) vs. magnitude (dB)
 # The 2nd plot is frequency (Hz) vs. phase (°)
