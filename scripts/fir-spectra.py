@@ -2,10 +2,8 @@
 #
 # This program is used to show the frequency response of a FIR filter function.
 #
-# You should plot the spectra with gnuplot using commands such as:
+# You should plot the spectrum with gnuplot using commands such as:
 #
-# set xscale [20:20000]
-# set logscale x
 # plot "foo.txt" with lines smooth cspline
 
 import math
@@ -14,10 +12,10 @@ def hamming(x):
     return math.sin(x * math.pi)
 
 def hanning(x):
-    return 0.04 + math.sin(x * math.pi) * 0.46
+    return 0.04 + math.sin(x * math.pi) * 0.96
 
 def sinc(x):
-    if (x == 0):
+    if x == 0:
         return 1;
     return math.sin(x * math.pi) / x / math.pi
         
@@ -51,36 +49,31 @@ def do_fft(fft, sign):
         le <<= 1
 
 def main():
-    spectra = []
+    spectrum = []
+    # sinc with stopband starting at fs/2
     for _ in range(1024):
-        spectra += [sinc(_ / 2.0) + 0j]
+        spectrum += [sinc(_ / 2.0) + 0j]
+
+    # window the sinc, taking 14 coefficients
+    coeffs = 14
     for _ in range(0, 1024):
-        if _ < 14:
-            spectra[_] *= hanning(0.5 + (_ + 0.5) / 14.0)
+        if _ < coeffs:
+            spectrum[_] *= hanning(0.5 + (_ + 0.5) / coeffs)
         else:
-            spectra[_] = 0j
+            spectrum[_] *= 0j
 
     print "# FIR coefficients"
     print "#"
     for _ in range(0, 1024):
-        if abs(spectra[_]) > 1e-10:
-            print "# %d %f" % (_, spectra[_].real)
+        if abs(spectrum[_]) > 1e-14:
+            print "# %d %f" % (_, spectrum[_].real)
     print
 
-    #for _ in range(0, len(spectra), 2):
-    #    spectra[_] *= hamming(1.0 * _ / len(spectra))
-    #
-    do_fft(spectra, -1)
+    # -1 is forward, 1 is inverse
+    do_fft(spectrum, -1)
 
-    #for _ in range(1024):
-    #    power = 0.0
-    #    if _ < 32:
-    #        power = 1.0
-    #    spectra += [power + 0j]
-    #do_fft(spectra, 1)
-
-    for _ in range(0, len(spectra)/2 + 1):
-        print "%f %f %f" % (_, spectra[_].real, spectra[_].imag)
+    for _ in range(0, len(spectrum)/2 + 1):
+        print "%f %f %f" % (_, spectrum[_].real, spectrum[_].imag)
 
 if __name__ == '__main__':
     main()
