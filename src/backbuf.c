@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2005/09/16 20:40:18  alankila
+ * - increase backbuf performance by allocating to nearest exponent of 2
+ *
  * Revision 1.8  2005/09/01 14:09:56  alankila
  * - multichannel work: delay independent of nchannels; uses backbuf instead
  *   of doing it all on its own. Also fixes bugs with delay load/save.
@@ -55,59 +58,48 @@
 void
 backbuf_add(Backbuf_t *b, BUF_TYPE d)
 {
-    b->curpos++;
-    if (b->curpos == b->nstor)
-	b->curpos = 0;
-    b->storage[b->curpos] = d;
+    b->curpos += 1;
+    b->storage[b->curpos & b->mask] = d;
 }
 
 BUF_TYPE
 backbuf_get(Backbuf_t *b, unsigned int delay)
 {
-    int             getpos;
     assert(delay < b->nstor);
-    getpos = (int) b->curpos;
-    getpos -= delay;
-    if (getpos < 0)
-	getpos += b->nstor;
-
-    assert(getpos >= 0 && getpos < (int) b->nstor);
-
-    return b->storage[getpos];
+    return b->storage[(b->curpos - delay) & b->mask];
 }
 
 /* XXX optimize this a bit */
 BUF_TYPE
 backbuf_get_interpolated(Backbuf_t *b, double delay)
 {
-    BUF_TYPE x, x1, x2;
-    unsigned int delay1 = delay;
-    unsigned int delay2 = delay + 1;
+    unsigned int delay_int = delay;
+    unsigned int getpos;
     
-    if (delay2 == b->nstor)
-        delay2 = 0;
-    
-    x1 = backbuf_get(b, delay1);
-    x2 = backbuf_get(b, delay2);
-
-    delay = delay - delay1;
-    x = x1 * (1 - delay) + x2 * delay;
-    
-    return x;
+    delay -= delay_int;
+    getpos = b->curpos - delay_int;
+    return b->storage[getpos & b->mask] * (1 - delay) + b->storage[(getpos - 1) & b->mask] * delay;
 }
 
 void
 backbuf_clear(Backbuf_t *b)
 {
-    memset(b->storage, 0, b->nstor * sizeof(b->storage[0]));
+    memset(b->storage, 0, (b->mask + 1) * sizeof(b->storage[0]));
 }
 
 Backbuf_t *
 new_Backbuf(unsigned int max_delay)
 {
+    int size;
+    
     Backbuf_t *b = calloc(1, sizeof(Backbuf_t));
+
     b->nstor = max_delay + 1;
-    b->storage = calloc(b->nstor, sizeof(BUF_TYPE));
+    size = 1;
+    while (size < b->nstor)
+        size <<= 1;
+    b->storage = calloc(size, sizeof(BUF_TYPE));
+    b->mask = size - 1;
     b->curpos = 0;
     b->add = backbuf_add;
     b->get = backbuf_get;

@@ -28,8 +28,7 @@
 #define BUF_TYPE DSP_SAMPLE
 typedef struct Backbuf {
     BUF_TYPE       *storage;
-    unsigned int    nstor;
-    unsigned int    curpos;
+    unsigned int    mask, nstor, curpos;
     /* method slots */
     void	(*add)		    (struct Backbuf *, BUF_TYPE);
     BUF_TYPE	(*get)		    (struct Backbuf *, unsigned int);
