@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2005/09/16 20:40:51  alankila
+ * - reduce total voice count to spare memory and constrain effect
+ * - complete circular mixing and increase cross-mixing attenuation a lot
+ *
  * Revision 1.23  2005/09/06 23:21:40  alankila
  * - tabularize pow, set some constants, do crossmixing, better defaults
  *
@@ -113,7 +117,7 @@
 
 #define ECHO_FIRST_PRIME                    20
 #define ECHO_NEXT_PRIME_DISTANCE_FACTOR	    1.6
-#define ECHO_CROSSMIX_ATTN                  2.0
+#define ECHO_CROSSMIX_ATTN                  10.0
 
 void echo_filter(effect_t *p, data_block_t *db);
 void echo_filter_mc(effect_t *p, data_block_t *db);
@@ -320,12 +324,12 @@ echo_filter_mono(effect_t *p, data_block_t *db)
         for (i = 0; i < params->echoes; i += 1) {
 	    tmp = params->history[curr_channel][i]->get(params->history[curr_channel][i], delay_lookup[i]) * decay_lookup[i];
             out += tmp;
-
-	    /* mix extra history from previous buffer to make
-	     * the echo pattern more complicated */
-	    if (i > 1)
-                tmp += params->history[curr_channel][i-1]->get(params->history[curr_channel][i-1], delay_lookup[i-1]) * decay_lookup[i-1] / ECHO_CROSSMIX_ATTN;
-
+            if (params->echoes > 1) {
+                if (i > 1)
+                    tmp += params->history[0][i-1]->get(params->history[0][i-1], delay_lookup[i-1]) * decay_lookup[i-1] / ECHO_CROSSMIX_ATTN;
+                else
+                    tmp += params->history[0][params->echoes-1]->get(params->history[0][params->echoes-1], delay_lookup[params->echoes-1]) * decay_lookup[params->echoes-1] / ECHO_CROSSMIX_ATTN;
+            }
             params->history[curr_channel][i]->add(params->history[curr_channel][i], in + tmp);
         }
         *s = out;
@@ -377,10 +381,14 @@ echo_filter_mc(effect_t *p, data_block_t *db)
             for (i = curr_channel; i < params->echoes; i += db->channels) {
                 tmp = params->history[0][i]->get(params->history[0][i], delay_lookup[i]) * decay_lookup[i];
                 out += tmp;
-		
-                if (i > 1)
-                    tmp += params->history[0][i-1]->get(params->history[0][i-1], delay_lookup[i-1]) * decay_lookup[i-1] / ECHO_CROSSMIX_ATTN;
-                
+	
+                /* do some cross-mixing */        
+                if (params->echoes > 1) {
+                    if (i > 1)
+                        tmp += params->history[0][i-1]->get(params->history[0][i-1], delay_lookup[i-1]) * decay_lookup[i-1] / ECHO_CROSSMIX_ATTN;
+                    else
+                        tmp += params->history[0][params->echoes-1]->get(params->history[0][params->echoes-1], delay_lookup[params->echoes-1]) * decay_lookup[params->echoes-1] / ECHO_CROSSMIX_ATTN;
+                }
                 params->history[0][i]->add(params->history[0][i], in + tmp);
             }
 
