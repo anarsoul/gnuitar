@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2005/09/16 08:08:27  fonin
+ * - MSVC compatibility fixes
+ *
  * Revision 1.8  2005/09/03 22:13:56  alankila
  * - make multichannel processing selectable
  * - new GUI (it sucks as much as the old one and I'll need to grok GTK
@@ -76,7 +79,7 @@ inline void my_close_mutex(my_mutex m) {
 
 #else
 
-inline void my_create_mutex(my_mutex m*) {
+inline void my_create_mutex(my_mutex* m) {
     *m=CreateMutex(NULL,FALSE,NULL);
 }
 
