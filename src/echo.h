@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "backbuf.h"
 
-#define MAX_ECHO_COUNT  10
+#define MAX_ECHO_COUNT  4
 #define MAX_ECHO_LENGTH 500 /* ms */
 
 extern effect_t *   echo_create();
