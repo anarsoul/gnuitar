@@ -8,16 +8,19 @@
 
 import math
 
-def hamming(x):
-    return math.sin(x * math.pi)
+def hanning(x, max):
+    return 0.50 + 0.50 * math.cos((x - max/2) * math.pi / (max + 1))
 
-def hanning(x):
-    return 0.04 + math.sin(x * math.pi) * 0.96
+def hamming(x, max):
+    return 0.54 + 0.46 * math.cos((x - max/2) * math.pi / max)
+
+def blackman(x, max):
+    return 0.42 + 0.50 * math.cos((x - max/2) * math.pi / max) + 0.08 * math.cos(2 * (x - max / 2) * math.pi / max)
 
 def sinc(x):
     if x == 0:
         return 1;
-    return math.sin(x * math.pi) / x / math.pi
+    return math.sin(x * math.pi) / (x * math.pi)
         
 def reversebitorder(i, fftlen):
     j = 0;
@@ -40,8 +43,8 @@ def do_fft(fft, sign):
     le = 1
     while le < fftlen:
         for j in range(0, le):
-            angle = math.pi * j / le
-            u = math.cos(angle) + sign * math.sin(angle) * 1j;
+            angle = sign * math.pi * j / le
+            u = math.cos(angle) + math.sin(angle) * 1j;
             for i in range(j, fftlen, le << 1):
                 t = fft[i+le] * u
                 fft[i+le] = fft[i] - t
@@ -52,15 +55,15 @@ def main():
     spectrum = []
     # sinc with stopband starting at fs/2
     for _ in range(1024):
-        spectrum += [sinc(_ / 2.0) + 0j]
+        spectrum += [sinc((_ - 128) / 2.0) + 0j]
 
     # window the sinc, taking 14 coefficients
-    coeffs = 14
+    coeffs = 1024
     for _ in range(0, 1024):
         if _ < coeffs:
-            spectrum[_] *= hanning(0.5 + 0.5 * _ / coeffs)
+            spectrum[_] *= hamming(_, coeffs)
         else:
-            spectrum[_] *= 0j
+            spectrum[_] = 0j
 
     print "# FIR coefficients"
     print "#"
@@ -73,7 +76,9 @@ def main():
     do_fft(spectrum, -1)
 
     for _ in range(0, len(spectrum)/2 + 1):
-        print "%f %f %f" % (_, spectrum[_].real, spectrum[_].imag)
+        mag = 2 * abs(spectrum[_])
+        phi = math.atan2(spectrum[_].imag, spectrum[_].real)
+        print "%f %f %f" % (_, mag, phi)
 
 if __name__ == '__main__':
     main()
