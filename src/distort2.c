@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.54  2005/09/20 16:31:10  alankila
+ * - finally bought a TS9, now tuned the sound to fairly good approximation
+ *
  * Revision 1.53  2005/09/13 18:23:35  alankila
  * - reinstate some old code, offer it as a toggle
  * - make standard "authentic" emulation harder
@@ -490,7 +493,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4;
     static double upsample [UPSAMPLE];
     double DRIVE = DRIVE_STATIC + dp->drive / 100.0 * DRIVE_LOG;
-    double mUt = (10.0 + 100 - dp->clip) * 1e-3;
+    double mUt = (20.0 + 100 - dp->clip) * 1e-3;
     /* correct Is with mUt to approximately keep drive the
      * same. Original parameters said Is is 10e-12 and mUt 30e-3.
      * If mUt grows, Is must shrink. 0.39 is experimental */
@@ -604,22 +607,30 @@ distort2_filter(struct effect *p, struct data_block *db)
 
         curr_channel = (curr_channel + 1) % db->channels;
     }
-    RC_lowpass(db, &(dp->drivesmooth));
+    /* drivesmooth is not simply 6 dB/oct because the capacitor is in
+     * a system that employs R and C in parallel. I need to figure out
+     * the equation for that. In the meantime treble employs +12 dB
+     * max. boost to compensate. */
+    for (i = 0; i < db->len; i += 1)
+        db->data_swap[i] = db->data[i];
+    RC_highpass(db, &(dp->drivesmooth));
+    for (i = 0; i < db->len; i += 1)
+        db->data[i] = db->data_swap[i] - db->data[i] / 4;
 
     if (dp->unauthentic) {
         RC_set_freq((3200 + 720) / 2 + (3200 - 720) / 2 * dp->treble / 6.0, &(dp->rolloff));
         RC_lowpass(db, &(dp->rolloff));
     } else {
         RC_set_freq(720, &(dp->rolloff));
-        RC_lowpass(db, &(dp->rolloff));
         /* compute highpass component and mix it */
         for (i = 0; i < db->len; i += 1)
             db->data_swap[i] = db->data[i];
         RC_highpass(db, &(dp->treble_hipass));
 
-        y = dp->treble / 6.0;
+        y = dp->treble > 0 ? dp->treble / 3.0 : dp->treble / 6.0;
         for (i = 0; i < db->len; i += 1)
             db->data[i] = db->data_swap[i] + db->data[i] * y;
+        RC_lowpass(db, &(dp->rolloff));
     }
 }
 
@@ -675,8 +686,8 @@ distort2_create()
 
     ap = p->params;
     ap->drive = 0.0;
-    ap->clip = 100.0;
-    ap->treble = 3.0;
+    ap->clip = 50.0;
+    ap->treble = 6.0;
     ap->unauthentic = 0;
 
     RC_setup(1, 1, &(ap->drivesmooth));
