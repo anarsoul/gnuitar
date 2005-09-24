@@ -32,7 +32,7 @@ extern effect_t *distort2_create();
 struct distort2_params {
     double      drive, clip, treble;
     short       unauthentic;
-    struct filter_data rolloff, treble_hipass, drivesmooth;
+    struct filter_data rolloff, treble_hipass;
     double	c0,d1,lyf[MAX_CHANNELS];
     double 	last[MAX_CHANNELS];
     double	lastupsample[MAX_CHANNELS];

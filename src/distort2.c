@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.55  2005/09/24 11:21:16  alankila
+ * - remove the way incorrect simulation of the 51 pF capacitor. I need to
+ *   puzzle out the discrete time equation for it.
+ *
  * Revision 1.54  2005/09/20 16:31:10  alankila
  * - finally bought a TS9, now tuned the sound to fairly good approximation
  *
@@ -280,24 +284,7 @@
  * input at + pin.
  *
  * There is a 51 pF capacitor in parallel with the diodes. It eats away
- * the circuit's gain somewhat. I model it simply as a RC filter at DRIVE-
- * dependant cutoff frequency. This component probably could be better
- * modelled.
- *
- * An authentic tubescreamer circuitry also has the following output filtering:
- *
- * - 720 Hz lowpass (6 dB/oct)
- * - 3200 Hz lowpass / 3200 Hz highboost (both 6 dB/oct)
- * 
- * The 720 Hz lowpass is static, but the user can choose how much current
- * passes through the lowpass and highboost filters. I think emulating this
- * part makes the sound awfully dark, as there's 13 dB of attenuation
- * before the curve levels out---and that's with treble at max!
- * I can only assume that the real circuits are struggling with the opposite
- * problem: too much distortion!
- *
- * My goal is a sound like this:
- * http://www.mindspring.com/~j.blackstone/LoGn_Dynamics.mp3
+ * the circuit's gain somewhat. This component is not modelled for now.
  */
  
 #include <stdlib.h>
@@ -518,12 +505,6 @@ distort2_filter(struct effect *p, struct data_block *db)
         return;
     }
 
-    /* temporary usage of f */
-    f =  1.0 / (2 * M_PI * RC_DRIVE_C * DRIVE);
-    /* if f gets too large it's going to overflow with NaNs */
-    if (f >= sample_rate / 4)
-        f = sample_rate / 4;
-    RC_set_freq(f, &(dp->drivesmooth));
     /*
      * process signal; x - input, in the range -1, 1
      */
@@ -607,16 +588,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 
         curr_channel = (curr_channel + 1) % db->channels;
     }
-    /* drivesmooth is not simply 6 dB/oct because the capacitor is in
-     * a system that employs R and C in parallel. I need to figure out
-     * the equation for that. In the meantime treble employs +12 dB
-     * max. boost to compensate. */
-    for (i = 0; i < db->len; i += 1)
-        db->data_swap[i] = db->data[i];
-    RC_highpass(db, &(dp->drivesmooth));
-    for (i = 0; i < db->len; i += 1)
-        db->data[i] = db->data_swap[i] - db->data[i] / 4;
-
+    
     if (dp->unauthentic) {
         RC_set_freq((3200 + 720) / 2 + (3200 - 720) / 2 * dp->treble / 6.0, &(dp->rolloff));
         RC_lowpass(db, &(dp->rolloff));
@@ -627,6 +599,7 @@ distort2_filter(struct effect *p, struct data_block *db)
             db->data_swap[i] = db->data[i];
         RC_highpass(db, &(dp->treble_hipass));
 
+        /* XXX figure out why the treble range needs to be doubled */
         y = dp->treble > 0 ? dp->treble / 3.0 : dp->treble / 6.0;
         for (i = 0; i < db->len; i += 1)
             db->data[i] = db->data_swap[i] + db->data[i] * y;
@@ -690,7 +663,6 @@ distort2_create()
     ap->treble = 6.0;
     ap->unauthentic = 0;
 
-    RC_setup(1, 1, &(ap->drivesmooth));
     RC_setup(1, 1, &(ap->rolloff));
     RC_setup(1, 1, &(ap->treble_hipass));
     RC_set_freq(3200, &(ap->treble_hipass));    // should be 3200
