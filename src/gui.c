@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.65  2005/09/28 19:53:21  fonin
+ * Taken off DirectSound checkbox from the
+ *   sample params dialog
+ *
  * Revision 1.64  2005/09/12 09:42:25  fonin
  * - MSVC compatibility fixes
  *
@@ -267,6 +271,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <math.h>
 #ifdef _WIN32
 #    include <io.h>
 #    include <ctype.h>
@@ -275,7 +280,6 @@
 #    include "resource.h"
 #else
 #    include <libgen.h>
-#    include <math.h>
 #    include <unistd.h>
 #    include <pthread.h>
 #    include "gnuitar.xpm"
@@ -1007,6 +1011,13 @@ update_driver(GtkWidget * widget, gpointer data)
     if(strcmp(tmp,"MMSystem")==0) {
         audio_driver = &windows_driver;
         audio_driver_str = "MMSystem";
+        dsound=0;
+        buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
+    }
+    if(strcmp(tmp,"DirectX")==0) {
+        audio_driver = &windows_driver;
+        audio_driver_str = "DirectX";
+        dsound=1;
     }
 #endif
     /* XXX we should now reopen the dialog because changing audio driver
@@ -1015,13 +1026,6 @@ update_driver(GtkWidget * widget, gpointer data)
 }
 
 #ifdef _WIN32
-void
-toggle_directsound(GtkWidget * widget, gpointer threshold)
-{
-    dsound = !dsound;
-    gtk_widget_set_sensitive(GTK_WIDGET(threshold), dsound);
-}
-
 void
 update_threshold(GtkWidget * widget, gpointer threshold)
 {
@@ -1040,7 +1044,6 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gchar          *gtmp;
     GtkWidget      *sp_table;
 #ifdef _WIN32
-    GtkWidget      *directsound;
     GtkWidget      *threshold;
     GtkWidget      *threshold_label;
     GtkWidget      *threshold_fragments;
@@ -1196,21 +1199,10 @@ sample_dlg(GtkWidget *widget, gpointer data)
 	"If you encounter multiple buffer overruns, " \
 	"try to increase this setting.",NULL);
 #ifdef _WIN32
-    /* DirectSound checkbox */
-    directsound = gtk_check_button_new_with_label("Output via DirectSound");
-    gtk_table_attach(GTK_TABLE(sp_table), directsound, 0, 1, 3, 4,
-                     TBLOPT, TBLOPT, 3, 3);
-    if (dsound)
-	GTK_TOGGLE_BUTTON(directsound)->active = 1;
-    gtk_tooltips_set_tip(tooltips,directsound,"If this is turned on, " \
-	"the playback will be output via DirectSound, " \
-	"or via MME API otherwise. Resulting latency depends mostly on this." \
-	"However, if you have WDM sound driver, try to turn this off.",NULL);
-
     /* threshold spin button */
     threshold_label = gtk_label_new("Overrun threshold:");
     gtk_misc_set_alignment(GTK_MISC(threshold_label), 0, 0.5);
-    gtk_table_attach(GTK_TABLE(sp_table), threshold_label, 1, 2, 3, 4,
+    gtk_table_attach(GTK_TABLE(sp_table), threshold_label, 2, 3, 3, 4,
                      TBLOPT, TBLOPT, 3, 3);
     threshold_adj =
 	gtk_adjustment_new(overrun_threshold, 0, 200,
@@ -1220,7 +1212,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     dummy1 = GTK_SPIN_BUTTON(threshold);
     dummy2 = &(dummy1->entry);
     gtk_entry_set_editable(dummy2, FALSE);
-    gtk_table_attach(GTK_TABLE(sp_table), threshold, 2, 3, 3, 4,
+    gtk_table_attach(GTK_TABLE(sp_table), threshold, 3, 4, 3, 4,
                      TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,threshold,"Large value will force buffer overruns " \
 	"to be ignored. If you encounter heavy overruns, " \
@@ -1230,8 +1222,6 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_misc_set_alignment(GTK_MISC(threshold_fragments), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), threshold_fragments, 3, 4, 3, 4,
                      TBLOPT, TBLOPT, 3, 3);
-    gtk_signal_connect(GTK_OBJECT(directsound), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_directsound), threshold);
     gtk_signal_connect(GTK_OBJECT(threshold_adj), "value_changed",
 		       GTK_SIGNAL_FUNC(update_threshold), threshold);
 #endif
@@ -1351,11 +1341,6 @@ start_stop(GtkWidget *widget, gpointer data)
 				 FALSE);
 	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "STOP");
     } else {
-#ifdef _WIN32
-        state = STATE_PAUSE;
-// FIXME: need to make sure that we left the pump_sample().
-	SuspendThread(audio_thread);
-#endif
 	audio_driver->finish();
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
@@ -1602,5 +1587,6 @@ init_gui(void)
     gdk_window_set_icon(mainWnd->window, mainWnd->window, app_icon, mask);
 #endif
 }
+
 
 
