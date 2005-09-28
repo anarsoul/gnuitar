@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.49  2005/09/28 19:52:47  fonin
+ * Load and save windows settings correctly
+ *
  * Revision 1.48  2005/09/12 09:42:25  fonin
  * - MSVC compatibility fixes
  *
@@ -524,9 +527,11 @@ load_settings() {
             audio_driver_str = "OSS";
         if (strcmp(gstr, "MMSystem") == 0)
             audio_driver_str = "MMSystem";
+        if (strcmp(gstr, "DirectX") == 0)
+            audio_driver_str = "DirectX";
         free(gstr);
     }
-    
+
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "bits", &error);
     if (error == NULL)
@@ -559,7 +564,7 @@ load_settings() {
         nbuffers = tmp;
 #endif
     g_key_file_free(file);
-    free((void *) settingspath);
+    g_free((void *) settingspath);
     return;
 }
 
@@ -579,6 +584,11 @@ void save_settings() {
     g_key_file_set_integer(file, "global", "n_output_channels", n_output_channels);
     g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
     g_key_file_set_integer(file, "global", "sample_rate", sample_rate);
+#ifdef _WIN32
+    /* align fragment size to the power of 2 */
+    if(strcmp(audio_driver_str,"MMSystem")==0)
+        buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
+#endif
     g_key_file_set_integer(file, "global", "buffer_size", buffer_size);
 #ifdef _WIN32
     g_key_file_set_integer(file, "global", "n_inout_buffers", nbuffers);
@@ -596,8 +606,8 @@ void save_settings() {
 
   SAVE_SETTINGS_CLEANUP1:
     g_key_file_free(file);
-    free((void *) settingspath);
-    free((void *) key_file_as_str);
+    g_free((void *) settingspath);
+    g_free((void *) key_file_as_str);
     return;
 }
 
@@ -684,7 +694,7 @@ save_pump(const char *fname)
         perror("Save failed: ");
         return;
     }
-    
+
     preset = g_key_file_new();
 
     /* record software version */
@@ -711,7 +721,7 @@ save_pump(const char *fname)
 	perror("Failed to write settings file completely: ");
 
     g_key_file_free(preset);
-    
+
     close(fd);
 }
 
@@ -731,7 +741,7 @@ load_pump(const char *fname)
 	g_key_file_free(preset);
 	return;
     }
-    
+
     /* we should adapt the keyfile between version changes */
     if (strncmp(gtmp, version, 13) != 0) {
 	fprintf(stderr, "warning: version number mismatch: %s vs. %s\n", version, gtmp);
@@ -744,8 +754,8 @@ load_pump(const char *fname)
 	g_key_file_free(preset);
 	return;
     }
-	
-    
+
+
     gtk_clist_clear(GTK_CLIST(processor));
     my_lock_mutex(effectlist_lock);
     for (i = 0; i < n; i++)
@@ -773,7 +783,7 @@ load_pump(const char *fname)
 	}
 
 	effects[n] = effect_list[j].create_f();
-	
+
 	/* read enabled flag */
 	effects[n]->toggle = g_key_file_get_integer(preset, gtmp, "enabled", &error);
 	if (error != NULL) {
@@ -783,20 +793,21 @@ load_pump(const char *fname)
 	    free(gtmp);
 	    continue;
 	}
-	
+
 	/* load effect specific settings */
 	if (effects[n]->proc_load != NULL)
 	    effects[n]->proc_load(effects[n], preset, gtmp, &error);
-	
+
 	effects[n]->proc_init(effects[n]);
 	gtk_clist_append(GTK_CLIST(processor),
 			 &effect_list[j].str);
 	n++;
-	
+
 	free(effect_name);
 	free(gtmp);
     }
     my_unlock_mutex(effectlist_lock);
     g_key_file_free(preset);
 }
+
 
