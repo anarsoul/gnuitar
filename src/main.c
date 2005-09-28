@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.50  2005/09/28 19:55:04  fonin
+ * DirectSound hook on startup
+ *
  * Revision 1.49  2005/09/12 22:10:50  alankila
  * - add missing checks into configure.in to silence autoscan's warnings
  *
@@ -237,8 +240,9 @@ HANDLE          audio_thread = 0;
 
 char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
-DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE];
-DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE];
+DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+extern short    dsound;         /* from audio-windows.h */
 #endif
 
 int
@@ -321,6 +325,9 @@ main(int argc, char **argv)
     state = STATE_START_PAUSE;
 
     audio_driver = &windows_driver;
+    if (strcmp(audio_driver_str, "DirectX") == 0) {
+        dsound=1;
+    }
     my_create_mutex(&snd_open);
     /*
      * create audio thread
@@ -379,5 +386,4 @@ main(int argc, char **argv)
 
     return ERR_NOERROR;
 }
-
 
