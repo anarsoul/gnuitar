@@ -108,37 +108,43 @@ on 0.4.0 or maybe even 0.5.0.
 + Another feature which might be useful, would be a .gnuitar folder within the 
   home area?? which remembers the options settings eg latency, and reloads 
   these settings next time Gnuitar is run.
-  - GTK1.2
+  + GTK1.2
 + Debian package
 + Race condition on windows: START/STOP can mess up the audio thread.
 
 0.5.0
-- Distortion 2 effect values are reset when a layout is loaded.
++ Distortion 2 effect values are reset when a layout is loaded.
 - Fix track filename on windows
 + tuner
-  - draw a nice guitar tab and highlight the string as we match its freq.
+  + draw a nice guitar tab and highlight the string as we match its freq.
     Currently the tuner scale is a bit ugly.
-- GTK-compat for gkeyfile
-- Separate driver routines for DirectX
+  - decrease the accuracy - the leds never light
++ GTK-compat for gkeyfile
++ Separate driver routines for DirectX
+  - fix directsound high latency
+- update docs
+- create a script to produce README file from .html source
+- add a button to remove preset from a list
+- fix version and copyrights in about dialog; maybe create a tabbed window
+  with sections "authors", "license" etc.
+- weird values in "bits" dropdown
+- constraints for fragment size for various audio drivers (2^N for OSS etc)
+- remove mix control from autowah, or replace it with dry/wet
+- tooltips to the noise gate window with important notes
 
 0.6.0
-- allow to read help only with sound off, or auto-stop the sound
-- tooltips to the noise gate window with important notes
-- remove mix control from autowah
-- pitch shifter
+- Split off DirectX stuff into a separate file - audio-dsound.*
+- JACK-audio-connection support
 - load preset files from the command line
 - group effects and give it meaningful names
 - new noise gate effect
 - i18n
 - effects with a sinusoidal phase/amplitude shape (tremolo,chorus)
   offer other shapes (square, triangular)
+- fix non-ASCII filenames with GTK file dialogs
 
 0.7.0
 ?- external pedal and switch
-- Output through jack-audio-connection kit might be something to think about in 
-future versions? 
-
-0.8.0
 - play .wav in the background
 
 Ongoing bugs (misc):
