@@ -1,3 +1,37 @@
+Version 0.5.0
+Effects:
+- Distortion 2 reworked and renamed to Overdrive; currenly have two modes -
+  authentic TS9, and improved overdrive sound.
+- Tuner with layouts (6-string guitar, 4-str. bass etc; easily extendable)
+- pitch shift effect
+- built-in bias elimination and noise reduction
+- reworked much more realistic echo
+- reworked chorus - changed controls
+- reworked phaser - the previous effect was actually a wah modification rather
+  than phaser.
+- tremolo and vibrato names swapped
+Internals:
+- added infrastructure to support multiple sound drivers. Currently supported
+  ones are OSS, ALSA (*NIX), MMSystem, DirectSound (Win32).
+- added background for building stereo/quadro effects
+- added background for having different number of input and output channels,
+  if the audio driver supports such
+- unified lookup tables (previously there were many ways of calculating sin() -
+  via lookup table, and via math.h's sin()) 
+- unified "backbuf" memory storage for memory based effects (echo, delay etc)
+- many misc. improvements in effects
+Interface:
+- simple vU meter (based on GTK progress bar)
+- simple volume control
+- added configuration .ini-style file in home directory .gnuitarrc
+- presets are stored in text .ini-style format
+- effect windows can be closed by clicking on [x] icon and thus removed
+  from active effects list (more intuitive than before)
+- save track to .wav on *NIX using libsndfile library
+- suggest a date/time-based filename when writing a track
+Misc:
+- simplistic debian package
+
 5 May 2005, Version 0.3.2
 - some minor cleanups
 
