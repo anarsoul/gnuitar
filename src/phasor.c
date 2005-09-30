@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/09/30 12:43:55  alankila
+ * - make effect deeper
+ * - don't update biquad parameters so often to conserve some CPU
+ * - make 0 % depth sound identical to dry
+ * - change minimum period
+ *
  * Revision 1.28  2005/09/12 09:42:25  fonin
  * - MSVC compatibility fixes
  *
@@ -127,6 +133,8 @@
 #    include "utils.h"		/* for M_PI */
 #endif
 
+#define PHASOR_UPDATE_INTERVAL 8
+ 
 void            phasor_filter(struct effect *p, struct data_block *db);
 
 void
@@ -179,7 +187,7 @@ phasor_init(struct effect *p)
     parmTable = gtk_table_new(3, 3, FALSE);
 
 
-    adj_speed = gtk_adjustment_new(pphasor->sweep_time, 25.0, 2000,
+    adj_speed = gtk_adjustment_new(pphasor->sweep_time, 200.0, 2500,
 				   1.0, 10.0, 0.0);
     speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
@@ -276,15 +284,14 @@ phasor_filter(struct effect *p, struct data_block *db)
     Wet =     pp->drywet / 100.0;
     
     while (count) {
-        if (curr_channel == 0) { 
-            pp->f += 1000.0 / pp->sweep_time / sample_rate * 2 * M_PI;
+        if (curr_channel == 0 && count % PHASOR_UPDATE_INTERVAL == 0) { 
+            pp->f += 1000.0 / pp->sweep_time / sample_rate * 2 * M_PI * PHASOR_UPDATE_INTERVAL;
             if (pp->f >= 1.0)
                 pp->f -= 1.0;
             delay = (sin_lookup(pp->f) + 1) / 2;
             delay *= pp->depth / 100.0;
             for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-                set_allpass_biquad(delay, &(pp->allpass[i]));
-
+                set_allpass_biquad(1.0 - delay, &(pp->allpass[i]));
         }
         
         tmp = *s;

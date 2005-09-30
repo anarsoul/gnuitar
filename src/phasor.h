@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "biquad.h"
 
-#define MAX_PHASOR_FILTERS  16
+#define MAX_PHASOR_FILTERS  32
 
 extern effect_t *   phasor_create();
 
