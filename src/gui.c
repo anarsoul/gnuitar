@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.66  2005/10/01 07:54:28  fonin
+ * - Tracker suggests filename: fixed date format in strftime(),
+ *   because MSVC does not recognize C99 extensions;
+ * - Align fragment size to MIN_BUFFER_SIZE for OSS and MMSystem drivers.
+ *
  * Revision 1.65  2005/09/28 19:53:21  fonin
  * Taken off DirectSound checkbox from the
  *   sample params dialog
@@ -888,7 +893,7 @@ tracker_pressed(GtkWidget * widget, gpointer data)
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
         time(&t);
-        strftime(defaultname, 80, "%F-%T."
+        strftime(defaultname, 80, "%x-%X."
 #if defined(HAVE_SNDFILE) || defined(_WIN32)
 	    "wav"
 #else
@@ -1267,6 +1272,14 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
     sample_params  *sp = data;
 
     buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
+    /* for certain audio drivers, make the fragment size to be a multiple
+     * of the MIN_BUFFER_SIZE */
+    if(strcmp(audio_driver_str,"OSS")==0 ||
+	    strcmp(audio_driver_str,"MMSystem")==0) {
+        buffer_size=(buffer_size/MIN_BUFFER_SIZE)*MIN_BUFFER_SIZE;
+	gtk_adjustment_set_value(gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(sp->latency)),
+								buffer_size);
+    }
     bits = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->bits)->entry)));
     sscanf(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->channels)->entry)),
            "%d in - %d out", &tmp1, &tmp2);
@@ -1587,6 +1600,7 @@ init_gui(void)
     gdk_window_set_icon(mainWnd->window, mainWnd->window, app_icon, mask);
 #endif
 }
+
 
 
 
