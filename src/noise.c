@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/10/01 07:54:59  fonin
+ * Added tooltips
+ *
  * Revision 1.17  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -152,6 +155,7 @@ noise_init(struct effect *p)
     GtkWidget      *button;
 
     GtkWidget      *parmTable;
+    GtkTooltips    *tips;
 
 
     pnoise = (struct noise_params *) p->params;
@@ -160,6 +164,7 @@ noise_init(struct effect *p)
      * GUI Init
      */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
+    tips = gtk_tooltips_new();
 
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
@@ -188,6 +193,8 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_tooltips_set_tip(tips,threshold,
+	"Minimal volume of the sound\nrequired to pass signal to the output.",NULL);
 
     adj_hold =
 	gtk_adjustment_new(pnoise->hold_time * 1000 /
@@ -210,6 +217,9 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_tooltips_set_tip(tips,hold,
+	"If the signal is below threshold during this time,\n"
+	"it will be muted. Should be as low as possible.",NULL);
 
     adj_release =
 	gtk_adjustment_new(pnoise->release_time * 1000 /
@@ -232,6 +242,9 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_tooltips_set_tip(tips,release,
+	"If the signal is below threshold, the playback\n"
+	"is not muted immediately but fades out this time instead",NULL);
 
     adj_attack =
 	gtk_adjustment_new(pnoise->attack * 1000 /
@@ -254,6 +267,11 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_tooltips_set_tip(tips,attack,
+	"If the signal is above the threshold, it will fade in\n"
+	"this time. Usually should be 0, but having it\n"
+	"non-zero will produce interesting effect just like the\n"
+	"violin sound.",NULL);
 
 
     adj_hyst =
@@ -276,6 +294,12 @@ noise_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_tooltips_set_tip(tips,hyst,
+	"The threshold required to turn off the playback when\n"
+	"it is already asound (the regular threshold affects\n"
+	"only the growing signal, while hysteresis\n"
+	"affects fading signal). Should not be larger than\n"
+	"the threshold.",NULL);
 
     button = gtk_check_button_new_with_label("On");
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
@@ -293,6 +317,9 @@ noise_init(struct effect *p)
 
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("noise"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
+    gtk_tooltips_set_tip(tips,p->control,
+	"Noise filter must be before ANY effect (esp. distortion) !",NULL);
+
 
     gtk_widget_show_all(p->control);
 }
