@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2005/10/01 07:59:04  fonin
+ * Fixed driver_bits_cfg[] arrays (missing trailing zero)
+ *
  * Revision 1.13  2005/09/04 19:30:46  fonin
  * Added casts for DSP_FLOAT
  *
@@ -262,7 +265,7 @@ struct audio_driver_channels oss_channels_cfg[] = {
     { 0, 0 }
 };
 
-unsigned int oss_bits_cfg[1] = { 16 };
+unsigned int oss_bits_cfg[] = { 16, 0 };
 
 audio_driver_t oss_driver = {
     oss_init_sound,

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2005/10/01 07:59:04  fonin
+ * Fixed driver_bits_cfg[] arrays (missing trailing zero)
+ *
  * Revision 1.15  2005/09/06 23:25:38  alankila
  * - remove overrun/underrun indicators in order to not potentially retrigger
  *   an overrun/underrun with text scrolling in terminal
@@ -413,7 +416,7 @@ struct audio_driver_channels alsa_channels_cfg[] = {
     { 0, 0 }
 };
 
-unsigned int alsa_bits_cfg[2] = { 16, 32 };
+unsigned int alsa_bits_cfg[] = { 16, 32, 0 };
 
 audio_driver_t alsa_driver = {
     alsa_init_sound,
