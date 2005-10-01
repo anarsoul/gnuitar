@@ -35,7 +35,7 @@ g_key_file_get_double(GKeyFile *kf, const gchar *grp, const gchar *name, GError 
 	tmp = "NAN";
     /* XXX this parsing should be locale independent, how to do it? */
     value = g_ascii_strtod(tmp, NULL);
-    free(tmp);
+    g_free(tmp);
     return value;
 }
 
@@ -43,6 +43,7 @@ g_key_file_get_double(GKeyFile *kf, const gchar *grp, const gchar *name, GError 
 
 #include <errno.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -85,13 +86,13 @@ g_string_append_printf_internal (GString     *string,
                                  va_list      args)
 {
   gchar *buffer;
+#ifndef _WIN32
   gint length;
 
-#ifndef _WIN32
   length = g_vasprintf (&buffer, fmt, args);
 #else
 #define GLIB_TMPBUFSIZE 4096
-  if((buffer = (char*)malloc(GLIB_TMPBUFSIZE))!=NULL)
+  if((buffer = (gchar*)malloc(GLIB_TMPBUFSIZE))!=NULL)
     _vsnprintf(buffer,GLIB_TMPBUFSIZE,fmt,args);
   else return;
 #endif

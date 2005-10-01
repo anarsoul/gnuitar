@@ -5,21 +5,22 @@
  * restriction being that following block may not be deleted.
  *
  ******************************************************************************
- * 
+ *
  * COPYRIGHT 1999-2003 Stephan M. Bernsee <smb [AT] dspdimension [DOT] com>
  *
  * 						The Wide Open License (WOL)
  *
  * Permission to use, copy, modify, distribute and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice and this license appear in all source copies. 
+ * the above copyright notice and this license appear in all source copies.
  * THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT EXPRESS OR IMPLIED WARRANTY OF
  * ANY KIND. See http://www.dspguru.com/wol.htm for more information.
  *
- *****************************************************************************/ 
+ *****************************************************************************/
 
 #include <math.h>
 #include "fft.h"
+#include "utils.h"      /* for M_PI on windows */
 
 void
 do_fft(float *fftBuffer, int fftFrameSize, fft_direction_t sign)
@@ -65,3 +66,4 @@ do_fft(float *fftBuffer, int fftFrameSize, fft_direction_t sign)
 		}
 	}
 }
+
