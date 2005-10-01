@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.28  2005/10/01 07:55:27  fonin
+ * Decreased accuracy required to light the led
+ *
  * Revision 1.27  2005/09/06 09:51:50  fonin
  * - added layout for 6-string octave down (mine)
  *
@@ -403,7 +406,7 @@ timeout_update_label(gpointer gp)
     free(gtmp);
 
     /* light the led, if the accuracy is good */
-    if(fabs(accuracy)<=0.02) {
+    if(fabs(accuracy)<=0.05) {
 	int i;
 	int string=-1;
 	/* search in array for the string's index */
