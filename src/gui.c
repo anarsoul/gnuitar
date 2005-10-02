@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.67  2005/10/02 08:21:39  fonin
+ * - Added a button to remove preset from a list;
+ * - Double-click on the effect name puts a focus on its window
+ *
  * Revision 1.66  2005/10/01 07:54:28  fonin
  * - Tracker suggests filename: fixed date format in strftime(),
  *   because MSVC does not recognize C99 extensions;
@@ -340,6 +344,7 @@ GtkWidget      *bank;
 GtkWidget      *bank_scroll;
 GtkWidget      *bank_add;
 GtkWidget      *bank_switch;
+GtkWidget      *bank_del;
 GtkWidget      *up;
 GtkWidget      *down;
 GtkWidget      *del;
@@ -347,7 +352,8 @@ GtkWidget      *add;
 GtkWidget      *tracker;
 GtkWidget      *start;
 GtkTooltips    *tooltips;
-double		master_volume;
+GtkObject      *adj_master;	/* it must be public, cause we update it*/
+double		master_volume;	/* when loading preset */
 gint            curr_row = -1;	/*
 				 * current row in processor list
 				 */
@@ -568,12 +574,21 @@ selectrow_processor(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
     curr_row = row;
-    /* doubleclick highlights the window ...
-     * except I can't do this because the control widget is apparently
-     * not properly realized when add_pressed() causes selectrow. Bah.
-    if (event->type == GDK_2BUTTON_PRESS) {
+    /* doubleclick highlights the window */
+    if(event && event->type == GDK_2BUTTON_PRESS) {
         gtk_window_present(GTK_WINDOW(effects[curr_row]->control));
-    } */
+    }
+}
+
+void
+selectrow_bank(GtkWidget *widget, gint row, gint col,
+		    GdkEventButton *event, gpointer data)
+{
+    bank_row = row;
+//    /* doubleclick highlights the window */
+//    if(event && event->type == GDK_2BUTTON_PRESS) {
+//        gtk_window_present(GTK_WINDOW(effects[curr_row]->control));
+//    }
 }
 
 void
@@ -799,6 +814,22 @@ bank_add_pressed(GtkWidget * widget, gpointer data)
 		       GTK_WIDGET(filesel));
 
     gtk_widget_show(filesel);
+}
+
+void
+bank_del_pressed(GtkWidget * widget, gpointer data)
+{
+    int bank_len;
+    bank_len=GTK_CLIST(bank)->rows;
+
+    if (bank_row >= 0 && bank_row < bank_len) {
+	gtk_clist_freeze(GTK_CLIST(bank));
+	gtk_clist_remove(GTK_CLIST(bank), bank_row);
+	if (bank_row == bank_len - 1)
+	    bank_row--;
+	gtk_clist_select_row(GTK_CLIST(bank), bank_row, 0);
+	gtk_clist_thaw(GTK_CLIST(bank));
+    }
 }
 
 void
@@ -1368,7 +1399,6 @@ init_gui(void)
 {
     GtkAccelGroup  *accel_group;
     GtkWidget      *vumeter;
-    GtkObject      *adj_master;
     GtkWidget	   *master;
     int             i;
     gint            nmenu_items =
@@ -1466,15 +1496,15 @@ init_gui(void)
 	"Use \"Add Preset\" button to add the preset to the list." \
 	"Use SWITCH button to switch between presets.",NULL);
 
-    gtk_table_attach(GTK_TABLE(tbl), processor_scroll, 3, 4, 1, 4,
+    gtk_table_attach(GTK_TABLE(tbl), processor_scroll, 3, 4, 1, 5,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND), 0, 0);
 
-    gtk_table_attach(GTK_TABLE(tbl), effect_scroll, 5, 6, 1, 4,
+    gtk_table_attach(GTK_TABLE(tbl), effect_scroll, 5, 6, 1, 5,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND), 0, 0);
 
-    gtk_table_attach(GTK_TABLE(tbl), bank_scroll, 1, 2, 1, 4,
+    gtk_table_attach(GTK_TABLE(tbl), bank_scroll, 1, 2, 1, 5,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND), 0, 0);
 
@@ -1503,6 +1533,8 @@ init_gui(void)
 #endif
     gtk_clist_set_reorderable(GTK_CLIST(processor), TRUE);
 
+    bank_del = gtk_button_new_with_label("Remove Preset");
+    gtk_tooltips_set_tip(tooltips,bank_del,"Use this button to remove preset from the presets list.",NULL);
     bank_switch = gtk_button_new_with_label("SWITCH");
     gtk_tooltips_set_tip(tooltips,bank_switch,"Use this button to switch between presets",NULL);
     up = gtk_button_new_with_label("Up");
@@ -1532,10 +1564,12 @@ init_gui(void)
 
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
-    gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 3, 4,
+    gtk_table_attach(GTK_TABLE(tbl), bank_del, 0, 1, 2, 3,
+		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
+    gtk_table_attach(GTK_TABLE(tbl), bank_switch, 0, 1, 4, 5,
 		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL),
 		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 5, 5);
-    gtk_table_attach(GTK_TABLE(tbl), start, 0, 1, 2, 3,
+    gtk_table_attach(GTK_TABLE(tbl), start, 0, 1, 3, 4,
 		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL),
 		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 5, 5);
 
@@ -1554,6 +1588,8 @@ init_gui(void)
 
     gtk_signal_connect(GTK_OBJECT(bank_add), "clicked",
 		       GTK_SIGNAL_FUNC(bank_add_pressed), NULL);
+    gtk_signal_connect(GTK_OBJECT(bank_del), "clicked",
+		       GTK_SIGNAL_FUNC(bank_del_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(bank_switch), "clicked",
 		       GTK_SIGNAL_FUNC(bank_switch_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(start), "clicked",
@@ -1570,6 +1606,8 @@ init_gui(void)
 		       GTK_SIGNAL_FUNC(tracker_pressed), NULL);
     gtk_signal_connect(GTK_OBJECT(processor), "select_row",
 		       GTK_SIGNAL_FUNC(selectrow_processor), NULL);
+    gtk_signal_connect(GTK_OBJECT(bank), "select_row",
+		       GTK_SIGNAL_FUNC(selectrow_bank), NULL);
     gtk_signal_connect(GTK_OBJECT(processor), "row_move",
 		       GTK_SIGNAL_FUNC(rowmove_processor), NULL);
     gtk_signal_connect(GTK_OBJECT(known_effects), "select_row",
