@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.50  2005/10/02 08:23:50  fonin
+ * Master volume is stored in the preset file
+ *
  * Revision 1.49  2005/09/28 19:52:47  fonin
  * Load and save windows settings correctly
  *
@@ -715,6 +718,8 @@ save_pump(const char *fname)
     }
     my_unlock_mutex(effectlist_lock);
 
+    g_key_file_set_double(preset, "global", "volume", master_volume);
+
     key_file_as_str = g_key_file_to_data(preset, &length, NULL);
     w_length = write(fd, key_file_as_str, length);
     if (length != w_length)
@@ -807,7 +812,10 @@ load_pump(const char *fname)
 	free(gtmp);
     }
     my_unlock_mutex(effectlist_lock);
+
+    master_volume = g_key_file_get_double(preset, "global", "volume", &error);
     g_key_file_free(preset);
+
+    /* update master volume */
+    gtk_adjustment_set_value(GTK_ADJUSTMENT(adj_master),master_volume);
 }
-
-
