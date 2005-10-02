@@ -50,6 +50,7 @@ void            toggle_effect(GtkWidget *, effect_t *);
 
 extern GtkWidget *processor;
 extern double master_volume;
+extern GtkObject* adj_master;
 extern void set_vumeter_value(double peak, double power);
 
 #endif
