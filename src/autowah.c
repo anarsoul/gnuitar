@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2005/10/02 08:25:25  fonin
+ * "Mix" checkbox converted to dry/wet slider
+ *
  * Revision 1.26  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -146,13 +149,9 @@ update_wah_freqhi(GtkAdjustment * adj, struct autowah_params *params)
 }
 
 void
-toggle_mix(GtkWidget *bullshit, unsigned short *mixx)
+update_wah_drywet(GtkAdjustment *adj, struct autowah_params *params)
 {
-    if (*mixx == 1) {
-	*mixx = 0;
-    } else {
-	*mixx = 1;
-    }
+    params->drywet=(float) adj->value;
 }
 
 void
@@ -173,7 +172,9 @@ autowah_init(struct effect *p)
     GtkObject      *adj_freqhi;
 
     GtkWidget      *button;
-    GtkWidget      *mix;
+    GtkWidget      *drywet;
+    GtkObject	   *adj_drywet;
+    GtkWidget      *drywet_label;
     GtkWidget      *parmTable;
 
     pautowah = (struct autowah_params *) p->params;
@@ -186,7 +187,7 @@ autowah_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
 
-    parmTable = gtk_table_new(3, 3, FALSE);
+    parmTable = gtk_table_new(4, 3, FALSE);
 
     adj_speed = gtk_adjustment_new(pautowah->sweep_time, 100.0,
                                20000.0, 1.0, 10.0, 0.0);
@@ -267,19 +268,23 @@ autowah_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    mix = gtk_check_button_new_with_label("Mix");
-    gtk_signal_connect(GTK_OBJECT(mix), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_mix), &(pautowah->mixx));
-
-    gtk_table_attach(GTK_TABLE(parmTable), mix, 2, 3, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_EXPAND |
+    drywet_label = gtk_label_new("Dry/Wet\n%");
+    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 3, 4, 0, 1,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
-    if (pautowah->mixx == 1) {
-	pautowah->mixx = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mix), TRUE);
-    }
+    adj_drywet = gtk_adjustment_new(pautowah->drywet,
+				    0.0, 100.0, 1.0, 5.0, 0.0);
+    drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
+    gtk_range_set_update_policy(GTK_RANGE(drywet), GTK_UPDATE_DELAYED);
+    gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_drywet), pautowah);
+    gtk_table_attach(GTK_TABLE(parmTable), drywet, 3, 4, 1, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK), 0, 0);
 
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Wah-wah"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
@@ -298,8 +303,7 @@ autowah_filter(struct effect *p, struct data_block *db)
     ap = (struct autowah_params *) p->params;
 
 
-    if (ap->mixx == 1)
-	memcpy(dry, db->data, db->len * sizeof(DSP_SAMPLE));
+    memcpy(dry, db->data, db->len * sizeof(DSP_SAMPLE));
 
     if (ap->f > 1.0 && ap->dir > 0) {
 	ap->dir = -1;
@@ -322,10 +326,9 @@ autowah_filter(struct effect *p, struct data_block *db)
 
     ap->f += ap->dir * 1000.0 / ap->sweep_time * db->len / (sample_rate * db->channels) * 2;
 
-    if (ap->mixx == 1) {
-	for (i = 0; i < db->len; i++)
-	    db->data[i] = (db->data[i] + dry[i]) / 2;
-    }
+    /* mix with dry sound */
+    for (i = 0; i < db->len; i++)
+        db->data[i] = (db->data[i]*ap->drywet + dry[i]*(100-ap->drywet))/100.0;
 }
 
 void
@@ -348,7 +351,7 @@ autowah_save(effect_t *p, SAVE_ARGS)
     SAVE_DOUBLE("sweep_time", params->sweep_time);
     SAVE_DOUBLE("freq_low", params->freq_low);
     SAVE_DOUBLE("freq_high", params->freq_high);
-    SAVE_INT("mixx", params->mixx);
+    SAVE_DOUBLE("drywet", params->drywet);
 }
 
 void
@@ -359,7 +362,7 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_DOUBLE("sweep_time", params->sweep_time);
     LOAD_DOUBLE("freq_low", params->freq_low);
     LOAD_DOUBLE("freq_high", params->freq_high);
-    LOAD_INT("mixx", params->mixx);
+    LOAD_DOUBLE("drywet", params->drywet);
 }
 
 effect_t *
@@ -385,7 +388,7 @@ autowah_create()
     ap->sweep_time = 1000;
     ap->dir = 1;
     ap->f = 0.0;
-    ap->mixx = 0;
+    ap->drywet = 100;
 
     return p;
 }

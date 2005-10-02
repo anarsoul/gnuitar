@@ -35,7 +35,7 @@ struct autowah_params {
     float           f;
     int             dir;
     struct filter_data *fd;
-    unsigned short  mixx;
+    float	    drywet;
 };
 
 #endif
