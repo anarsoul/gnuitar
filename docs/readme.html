@@ -55,7 +55,7 @@ running complicated effect setups.
 </p>
 
 <p>When running the program, make sure you close all unnecessary applications,
-to free more resourcess. Avoid anything that can cause lots of disk I/O
+to free more resources. Avoid anything that can cause lots of disk I/O
 or sudden bursts of CPU usage.</p>
 
 <p>
@@ -82,7 +82,7 @@ GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA!
 <p>Windows have complex problems with latency when processing audio in real time,
 mostly because of its non-uniform drivers architecture. 
 GNUitar latency on Windows is much higher than on Linux. The real latency
-depends mostly on the soundcard's driver.
+depends mostly on the sound card's driver.
 </p>
 
 <p>GNUitar for Windows has two playback methods:</p>
@@ -115,7 +115,7 @@ and ~60ms on Pentium MMX/166/Yamaha OPL3/WDM/MME playback laptop.
 Try to start/stop sound few times, if the initial latency is bad.
 </p>
 <p>The kind of bus (PCI Express/PCI/ISA) of the sound card does not affect
-the latency that much, it's most often a software issue. Old soundcards that
+the latency that much, it's most often a software issue. Old sound cards that
 are unusable in Windows are likely to work just fine in Linux.
 </p>
 
@@ -126,7 +126,7 @@ It can be invoked from the
 need to stop playback before entering this dialog.
 There is an option called "Fragment Size". The lower the fragment size is,
 the better is the latency, but this is not a free lunch. If the latency
-is too low, the CPU drain from constantly attending to the soundcard
+is too low, the CPU drain from constantly attending to the sound card
 leaves no time for anything else! You may need to increase the
 fragment size on low-end computers. Try increasing this value if you hear
 repeated scratches from the speakers.
@@ -138,8 +138,8 @@ repeated scratches from the speakers.
 the lower sound quality.</li>
 <li>The lower the fragment size, the better is the latency. Drawback is the
 higher system load.</li>
-<li>The hearable periodic scratches (DirectSound output) can be fixed
-by decreasing the overrun threshold (sampling params dialog).</li>
+<li>The audible periodic scratches (DirectSound output) can be fixed
+by decreasing the overrun threshold (sampling parameters dialog).</li>
 <li>Increase the fragment size and decrease the sampling rate on
 low-end CPU, to gain the best latency/overruns/load ratio.</li>
 <li>On Windows, prefer WDM drivers, if possible. Try both MME and
@@ -182,11 +182,11 @@ or broken sound output.
 
 <p>You can write track of what you play to a file. Just click
 check-box "Write track" at the bottom of program window, enter 
-filename and play. Don't forget that continuous track write 
+file name and play. Don't forget that continuous track write 
 can fill out your hard drive.
-The track file format is wav data on Windows and Linux.
+The track file format is WAV data on Windows and Linux.
 </p>
-<p>Linux wav writing depends on libsndfile. However, if you do not have sndfile, then the data is raw 16-bit signed data, with the sampling rate and channels
+<p>Linux WAV writing depends on libsndfile. However, if you do not have sndfile, then the data is raw 16-bit signed data, with the sampling rate and channels
 as defined in the sampling parameters dialog. You can convert it with <a href="http://sox.sourceforge.net/">sox</a> like this:
 </p>
 <pre>
@@ -207,7 +207,7 @@ The controls and description of the effects follow below.
 <ul>
 <li>period   - length of one cycle of effect</li>
 <li>freq.low - low frequency (the cycle starts from this freq.)</li>
-<li>freq.hi  - high frequence (the cycle stops at this freq.)</li>
+<li>freq.hi  - high frequency (the cycle stops at this freq.)</li>
 <li>mix      - mix clean sound with processed sound</li>
 </ul>
 
@@ -297,7 +297,7 @@ large hall echo using varying length of delays in its voices.
 Phaser operates by selectively delaying the high frequency components of a
 signal as they pass through this effect. If the dry/wet ratio is at 50 %, the
 delayed components strongly interfere with the original, producing the
-phaserlike sound. However, if dry/wet ratio is at 100%, this effect becomes
+phaser effect. However, if dry/wet ratio is at 100%, this effect becomes
 a sweet-sounding frequency-selective vibrato.
 </p>
 
@@ -342,7 +342,7 @@ overdrive pedals such as Ibanez TS9.
     you must increase the Hold time as much as possible.
     Otherwise with the low Attack time and low signal you
     the effect will be constantly false triggered, therefore
-    breaking the fadein effect</li>
+    breaking the fade-in effect</li>
 </ul>
 
 <p>Controls are:</p>
@@ -355,20 +355,20 @@ overdrive pedals such as Ibanez TS9.
 <li>release time - if the signal is below threshold, the playback
                    is not muted immediately but fades out this time instead</li>
 <li>attack       - if the signal is above the threshold, it will fade in
-                   this time. Ususally should be 0, but having it
+                   this time. Usually should be 0, but having it
 		   non-zero will produce interesting effect just like the
 		   violin sound.</li>
 <li>hysteresis   - the threshold required to turn off the playback when
-                   it is already asound (the regular threshold affects
+                   it is already on (the regular threshold affects
 		   only the growing signal, while hysteresis
-		   affects fading signal). Should not be larger than
-		   the threshold.</li>
+		   affects fading signal). Should not be made larger than
+		   the threshold value.</li>
 </ul>
 
 <h2><a name="eqbank">Equalizer bank</a></h2>
 
 <p>
-A no-frills equalizer effect with plenty of sliders for finegrained
+A no-frills equalizer effect with plenty of sliders for fine grained
 control of the frequency response. Equalizers are rumoured to be especially
 useful before and after distortion effects.
 </p>
@@ -393,8 +393,8 @@ cancellation during wet/dry mixing phase. The latency introduced depends
 on the amount of rate shifting.  </p>
 
 <ul>
-<li>halfnote - how many halfnotes to adjust upwards or downwards</li>
-<li>finetune - adjust for in-between tones for halfnotes</li>
+<li>halfnote - how many half-notes to adjust upwards or downwards</li>
+<li>finetune - adjust for in-between tones for half-notes</li>
 <li>wet/dry  - select mix % between unprocessed and processed signal</li>
 </ul>
 <h2><a name=tuner>Tuner</a></h2>
@@ -469,7 +469,7 @@ with memory leaks and with sound initialisation/closing.</li>
 
 <p>You should always keep in mind, that development of free software
 doesn't work in the same way as commercial development. Every
-successful free software project has an active userbase behind it. This
+successful free software project has an active user base behind it. This
 means that your comments, ideas and bug reports are extremely
 important. If something doesn't work, or some feature is missing,
 please mail me about it. Thank you in advance! You can send GNUitar
