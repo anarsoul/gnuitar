@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/10/07 12:50:12  alankila
+ * - move delay shape computation to where it belongs and change it to bit
+ *   smoother
+ *
  * Revision 1.29  2005/09/30 12:43:55  alankila
  * - make effect deeper
  * - don't update biquad parameters so often to conserve some CPU
@@ -133,6 +137,7 @@
 #    include "utils.h"		/* for M_PI */
 #endif
 
+#define PHASOR_SHAPE           0.8
 #define PHASOR_UPDATE_INTERVAL 8
  
 void            phasor_filter(struct effect *p, struct data_block *db);
@@ -290,8 +295,12 @@ phasor_filter(struct effect *p, struct data_block *db)
                 pp->f -= 1.0;
             delay = (sin_lookup(pp->f) + 1) / 2;
             delay *= pp->depth / 100.0;
+            delay = 1.0 - delay;
+
+            delay = ((exp(PHASOR_SHAPE * delay) - 1) / (exp(PHASOR_SHAPE) - 1));
+
             for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-                set_allpass_biquad(1.0 - delay, &(pp->allpass[i]));
+                set_allpass_biquad(delay, &(pp->allpass[i]));
         }
         
         tmp = *s;

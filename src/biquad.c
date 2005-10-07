@@ -19,6 +19,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.13  2005/10/07 12:50:12  alankila
+ * - move delay shape computation to where it belongs and change it to bit
+ *   smoother
+ *
  * Revision 1.12  2005/09/12 22:01:56  alankila
  * - swap a0/b0 around to better coincide with available literature
  * - optimize x1 and x2 terms off chebyshev as they are defined as:
@@ -119,8 +123,6 @@ set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
 void
 set_allpass_biquad(double delay, Biquad_t *f)
 {
-    delay = ((exp(delay) - 1) / (exp(1) - 1));
-    
     f->b0 = delay;
     f->b1 = 1.0;
     f->a1 = delay;
