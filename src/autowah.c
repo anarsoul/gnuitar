@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2005/10/21 19:19:48  alankila
+ * - add a pick-sensitive mode where a downward sweep is started synchronously
+ *   with picking
+ * - reduce wah strength and gain to help with clipping and make effect more
+ *   usable (more a wowwow-type sound and less resonance)
+ *
  * Revision 1.27  2005/10/02 08:25:25  fonin
  * "Mix" checkbox converted to dry/wet slider
  *
@@ -126,38 +132,46 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
+#define AUTOWAH_TRIGGER_THRESHOLD 1.1
+
 void
                 autowah_filter(struct effect *p, struct data_block *db);
 
-
 void
-update_wah_speed(GtkAdjustment * adj, struct autowah_params *params)
+update_wah_speed(GtkAdjustment *adj, struct autowah_params *params)
 {
     params->sweep_time = adj->value;
 }
 
 void
-update_wah_freqlow(GtkAdjustment * adj, struct autowah_params *params)
+update_wah_freqlow(GtkAdjustment *adj, struct autowah_params *params)
 {
-    params->freq_low = (float) adj->value;
+    params->freq_low = adj->value;
 }
 
 void
-update_wah_freqhi(GtkAdjustment * adj, struct autowah_params *params)
+update_wah_freqhi(GtkAdjustment *adj, struct autowah_params *params)
 {
-    params->freq_high = (float) adj->value;
+    params->freq_high = adj->value;
 }
 
 void
 update_wah_drywet(GtkAdjustment *adj, struct autowah_params *params)
 {
-    params->drywet=(float) adj->value;
+    params->drywet = adj->value;
 }
+
+void
+update_wah_continuous(GtkAdjustment *adj, struct autowah_params *params)
+{
+    params->continuous = !params->continuous;
+}
+
 
 void
 autowah_init(struct effect *p)
 {
-    struct autowah_params *pautowah;
+    struct autowah_params *params;
 
     GtkWidget      *speed_label;
     GtkWidget      *speed;
@@ -171,13 +185,13 @@ autowah_init(struct effect *p)
     GtkWidget      *freqhi_label;
     GtkObject      *adj_freqhi;
 
-    GtkWidget      *button;
+    GtkWidget      *button, *continuous;
     GtkWidget      *drywet;
     GtkObject	   *adj_drywet;
     GtkWidget      *drywet_label;
     GtkWidget      *parmTable;
 
-    pautowah = (struct autowah_params *) p->params;
+    params = (struct autowah_params *) p->params;
 
     /*
      * GUI Init
@@ -189,8 +203,8 @@ autowah_init(struct effect *p)
 
     parmTable = gtk_table_new(4, 3, FALSE);
 
-    adj_speed = gtk_adjustment_new(pautowah->sweep_time, 100.0,
-                               20000.0, 1.0, 10.0, 0.0);
+    adj_speed = gtk_adjustment_new(params->sweep_time, 100.0,
+                               10000.0, 1.0, 10.0, 0.0);
     speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -199,10 +213,9 @@ autowah_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_speed), pautowah);
+		       GTK_SIGNAL_FUNC(update_wah_speed), params);
 
     speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
-    gtk_range_set_update_policy(GTK_RANGE(speed), GTK_UPDATE_DELAYED);
     gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
     gtk_table_attach(GTK_TABLE(parmTable), speed, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -211,7 +224,7 @@ autowah_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
 
-    adj_freqlow = gtk_adjustment_new(pautowah->freq_low,
+    adj_freqlow = gtk_adjustment_new(params->freq_low,
 				     150.0, 300.0, 1.0, 1.0, 0.0);
     freqlow_label = gtk_label_new("Freq. low\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freqlow_label, 1, 2, 0, 1,
@@ -220,19 +233,17 @@ autowah_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
-
     gtk_signal_connect(GTK_OBJECT(adj_freqlow), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_freqlow), pautowah);
+		       GTK_SIGNAL_FUNC(update_wah_freqlow), params);
 
     freq_low = gtk_vscale_new(GTK_ADJUSTMENT(adj_freqlow));
-    gtk_range_set_update_policy(GTK_RANGE(freq_low), GTK_UPDATE_DELAYED);
     gtk_table_attach(GTK_TABLE(parmTable), freq_low, 1, 2, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_freqhi = gtk_adjustment_new(pautowah->freq_high,
+    adj_freqhi = gtk_adjustment_new(params->freq_high,
 				    500.0, 3500.0, 1.0, 1.0, 0.0);
     freqhi_label = gtk_label_new("Freq. hi\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freqhi_label, 2, 3, 0, 1,
@@ -243,30 +254,35 @@ autowah_init(struct effect *p)
 
 
     gtk_signal_connect(GTK_OBJECT(adj_freqhi), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_freqhi), pautowah);
+		       GTK_SIGNAL_FUNC(update_wah_freqhi), params);
 
     freq_high = gtk_vscale_new(GTK_ADJUSTMENT(adj_freqhi));
-    gtk_range_set_update_policy(GTK_RANGE(freq_high), GTK_UPDATE_DELAYED);
     gtk_table_attach(GTK_TABLE(parmTable), freq_high, 2, 3, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
+    continuous = gtk_check_button_new_with_label("Continuous sweep");
+    if (params->continuous)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(continuous), TRUE);
+    gtk_signal_connect(GTK_OBJECT(continuous), "toggled",
+		       GTK_SIGNAL_FUNC(update_wah_continuous), params);
+    gtk_table_attach(GTK_TABLE(parmTable), continuous, 1, 4, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_EXPAND | GTK_FILL | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL |
+					GTK_SHRINK), 0, 0);
 
     button = gtk_check_button_new_with_label("On");
+    if (p->toggle)
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_EXPAND |
-					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
-    if (p->toggle == 1) {
-	p->toggle = 0;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
-    }
 
     drywet_label = gtk_label_new("Dry/Wet\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 3, 4, 0, 1,
@@ -274,12 +290,11 @@ autowah_init(struct effect *p)
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
-    adj_drywet = gtk_adjustment_new(pautowah->drywet,
+    adj_drywet = gtk_adjustment_new(params->drywet,
 				    0.0, 100.0, 1.0, 5.0, 0.0);
     drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
-    gtk_range_set_update_policy(GTK_RANGE(drywet), GTK_UPDATE_DELAYED);
     gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_drywet), pautowah);
+		       GTK_SIGNAL_FUNC(update_wah_drywet), params);
     gtk_table_attach(GTK_TABLE(parmTable), drywet, 3, 4, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -296,20 +311,49 @@ void
 autowah_filter(struct effect *p, struct data_block *db)
 {
     struct autowah_params *ap;
-    static DSP_SAMPLE      dry[MAX_BUFFER_SIZE];
     int             i;
-    double          freq;
+    double          freq, current_power;
 
     ap = (struct autowah_params *) p->params;
 
+    memcpy(db->data_swap, db->data, db->len * sizeof(DSP_SAMPLE));
 
-    memcpy(dry, db->data, db->len * sizeof(DSP_SAMPLE));
+    if (ap->continuous) {
+        /* recover from noncontinuous sweep */
+        if (ap->dir == 0 )
+            ap->dir = 1.0;
+        
+        if (ap->f > 1.0 && ap->dir > 0)
+            ap->dir = -1;
+        if (ap->f < 0.0 && ap->dir < 0)
+            ap->dir = 1;
+    } else {
+        /* Firstly, quiesce wah if we have reached the end of sweep */
+        if (ap->f < 0.0) {
+            ap->f = 0.0;
+            ap->dir = 0;
+        }
+        
+        /* Estimate signal higher frequency content's power. When user picks
+         * the string strongly it's the high frequency content that increases
+         * most. */
+        double oldval = db->data[0];
+        for (i = 1; i < db->len; i++) {
+            ap->power_accum += pow(db->data[i] - oldval, 2);
+            ap->power_accum_n += 1;
+            oldval = db->data[i];
 
-    if (ap->f > 1.0 && ap->dir > 0) {
-	ap->dir = -1;
-    }
-    if (ap->f < 0.0 && ap->dir < 0) {
-	ap->dir = 1;
+            if (ap->power_accum_n > 4096) {
+                ap->power_accum   *= 63/64.0;
+                ap->power_accum_n *= 63/64.0;
+            }
+        }
+        current_power = ap->power_accum / ap->power_accum_n;
+        if (current_power > ap->signal_power * AUTOWAH_TRIGGER_THRESHOLD) {
+            ap->f = 1.0;
+            ap->dir = -1.0;
+        }
+        ap->signal_power = current_power;
     }
 
     /* in order to have audibly linear sweep, we must map
@@ -319,8 +363,10 @@ autowah_filter(struct effect *p, struct data_block *db)
      * we know that f(0) = freq_low, and f(1) = freq_high. It follows that:
      * a = freq_low, and b = log2(freq_high / freq_low)
      */
+
+    ap->smoothed_f = (ap->f + ap->smoothed_f * 7) / 8;
     
-    freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->f);
+    freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->smoothed_f);
     RC_set_freq(freq, ap->fd);
     RC_bandpass(db, ap->fd);
 
@@ -328,7 +374,7 @@ autowah_filter(struct effect *p, struct data_block *db)
 
     /* mix with dry sound */
     for (i = 0; i < db->len; i++)
-        db->data[i] = (db->data[i]*ap->drywet + dry[i]*(100-ap->drywet))/100.0;
+        db->data[i] = (db->data[i]*ap->drywet + db->data_swap[i]*(100-ap->drywet))/100.0;
 }
 
 void
@@ -352,6 +398,7 @@ autowah_save(effect_t *p, SAVE_ARGS)
     SAVE_DOUBLE("freq_low", params->freq_low);
     SAVE_DOUBLE("freq_high", params->freq_high);
     SAVE_DOUBLE("drywet", params->drywet);
+    SAVE_INT("continuous", params->continuous);
 }
 
 void
@@ -362,7 +409,7 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_DOUBLE("sweep_time", params->sweep_time);
     LOAD_DOUBLE("freq_low", params->freq_low);
     LOAD_DOUBLE("freq_high", params->freq_high);
-    LOAD_DOUBLE("drywet", params->drywet);
+    LOAD_INT("drywet", params->continuous);
 }
 
 effect_t *
@@ -381,7 +428,7 @@ autowah_create()
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;
     ap->fd = calloc(1, sizeof(struct filter_data));
-    RC_setup(10, 1.5, ap->fd);
+    RC_setup(3, 1.48, ap->fd);
 
     ap->freq_low = 150;
     ap->freq_high = 1000;
@@ -389,6 +436,7 @@ autowah_create()
     ap->dir = 1;
     ap->f = 0.0;
     ap->drywet = 100;
+    ap->continuous = 1;
 
     return p;
 }

@@ -29,13 +29,17 @@
 extern effect_t *   autowah_create();
 
 struct autowah_params {
-    float           sweep_time;
-    float           freq_low;
-    float           freq_high;
-    float           f;
+    double          sweep_time;
+    double          freq_low;
+    double          freq_high;
+    int             continuous;
+    double          signal_power;
+    double          power_accum;
+    double          power_accum_n;
+    double          f, smoothed_f;
     int             dir;
     struct filter_data *fd;
-    float	    drywet;
+    double	    drywet;
 };
 
 #endif
