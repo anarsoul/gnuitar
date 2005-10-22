@@ -25,23 +25,28 @@
 
 #include "pump.h"
 #include "rcfilter.h"
+#include "backbuf.h"
 
 extern effect_t *   autowah_create();
 
 struct autowah_params {
+    Backbuf_t       *history;
+    
     double          sweep_time;
     double          freq_low;
     double          freq_high;
+    double	    drywet;
     int             continuous;
-    double          signal_delta;
-    double          signal_power;
-    double          accum_delta;
-    double          accum_power;
+
+    double          fresh_accum_delta;
+    double          fresh_accum_power;
+    double          delayed_accum_delta;
+    double          delayed_accum_power;
     int             accum_n;
+    
     double          f, smoothed_f;
     int             dir;
     struct filter_data *fd;
-    double	    drywet;
 };
 
 #endif

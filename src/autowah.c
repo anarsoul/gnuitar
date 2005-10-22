@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2005/10/22 13:55:14  alankila
+ * - add history buffer to make wah behaviour sampling parameter independent.
+ * - add rudimentary handling for multiple channels by ignoring all but first
+ *   in the pick-sweep mode.
+ *
  * Revision 1.29  2005/10/22 13:04:43  alankila
  * - add power and delta computation so that wah may key on either type of
  *   increase. Also convert units to dB.
@@ -139,18 +144,11 @@
 /* these thresholds are used to trigger the sweep. The system accumulates
  * time-weighted average of square difference between samples ("delta") and
  * the energy per sample ("power"). If either suddenly increases, the
- * sweep triggers. */
+ * sweep triggers. Data is collected AUTOWAH_HISTORY_LENGTH ms apart. */
 
-/* XXX these parameters depend on buffer size and sampling frequency.
- * I need to think about a better way to approach this problem. Perhaps
- * should compute the power of signals between two time periods such as
- * -10 ms .. -5 ms and -5 ms .. 0 ms so that the parameters become
- * sampling parameter independent. It should work better. At the moment
- * this seems to work well enough, but if I can't make the algorithm
- * smarter I need to expose these in UI. */
-
-#define AUTOWAH_DISCANT_TRIGGER 0.3 /* dB */
-#define AUTOWAH_BASS_TRIGGER    0.3 /* dB */
+#define AUTOWAH_HISTORY_LENGTH  40  /* ms */
+#define AUTOWAH_DISCANT_TRIGGER 0.7 /* dB */
+#define AUTOWAH_BASS_TRIGGER    0.7 /* dB */
 
 void
                 autowah_filter(struct effect *p, struct data_block *db);
@@ -325,12 +323,18 @@ autowah_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
+double
+power2db(double power)
+{
+    return log(power) / log(10) * 10;
+}
+
 void
 autowah_filter(struct effect *p, struct data_block *db)
 {
     struct autowah_params *ap;
-    int             i;
-    double          freq, current_power, current_delta;
+    int             i, curr_channel = 0, delay_time;
+    double          freq;
 
     ap = (struct autowah_params *) p->params;
 
@@ -338,7 +342,7 @@ autowah_filter(struct effect *p, struct data_block *db)
 
     if (ap->continuous) {
         /* recover from noncontinuous sweep */
-        if (ap->dir == 0 )
+        if (ap->dir == 0)
             ap->dir = 1.0;
         
         if (ap->f > 1.0 && ap->dir > 0)
@@ -351,32 +355,45 @@ autowah_filter(struct effect *p, struct data_block *db)
             ap->f = 0.0;
             ap->dir = 0;
         }
+        delay_time = sample_rate * AUTOWAH_HISTORY_LENGTH / 1000;
         
         /* Estimate signal higher frequency content's power. When user picks
          * the string strongly it's the high frequency content that increases
          * most. */
-        double oldval = db->data[0];
-        for (i = 1; i < db->len; i++) {
-            ap->accum_power += pow(db->data[i], 2);
-            ap->accum_delta += pow(db->data[i] - oldval, 2);
-            ap->accum_n += 1;
-            oldval = db->data[i];
 
-            if (ap->accum_n > 4096 + 2048) {
-                ap->accum_power *= 63/64.0;
-                ap->accum_delta *= 63/64.0;
-                ap->accum_n *= 63/64.0;
+        /* XXX we should probably treat all channels separately.
+         * We just skip all channels but the first presently. */
+        for (i = 0; i < db->len; i++) { if (curr_channel == 0) {
+            ap->delayed_accum_power += pow(ap->history->get(ap->history, delay_time), 2);
+            ap->fresh_accum_power += pow(db->data[i], 2);
+            
+            ap->delayed_accum_delta +=
+                pow(ap->history->get(ap->history, delay_time) -
+                    ap->history->get(ap->history, delay_time - 1), 2);
+            
+            ap->fresh_accum_delta +=
+                    pow(db->data[i] - ap->history->get(ap->history, 0), 2);
+
+            ap->history->add(ap->history, db->data[i]);
+            
+            ap->accum_n += 1;
+            if (ap->accum_n > 4096) {
+                ap->fresh_accum_power   *= 255/256.0;
+                ap->fresh_accum_delta   *= 255/256.0;
+                ap->delayed_accum_power *= 255/256.0;
+                ap->delayed_accum_delta *= 255/256.0;
+                ap->accum_n             *= 255/256.0;
             }
-        }
-        current_delta = log(ap->accum_delta / ap->accum_n) / log(10) * 10;
-        current_power = log(ap->accum_power / ap->accum_n) / log(10) * 10;
-        if (   current_delta > ap->signal_delta + AUTOWAH_DISCANT_TRIGGER
-            || current_power > ap->signal_power + AUTOWAH_BASS_TRIGGER) {
+        } curr_channel = (curr_channel + 1) % db->channels; }
+
+        /* I skip some scale factors here that would cancel out */
+        if ((power2db(ap->fresh_accum_delta) > power2db(ap->delayed_accum_delta)
+                                              + AUTOWAH_DISCANT_TRIGGER) ||
+            (power2db(ap->fresh_accum_power) > power2db(ap->delayed_accum_power)
+                                              + AUTOWAH_BASS_TRIGGER)) {
             ap->f = 1.0;
             ap->dir = -1.0;
         }
-        ap->signal_delta = current_delta;
-        ap->signal_power = current_power;
     }
 
     /* in order to have audibly linear sweep, we must map
@@ -387,7 +404,7 @@ autowah_filter(struct effect *p, struct data_block *db)
      * a = freq_low, and b = log2(freq_high / freq_low)
      */
 
-    ap->smoothed_f = (ap->f + ap->smoothed_f * 7) / 8;
+    ap->smoothed_f = (ap->f + ap->smoothed_f * 3) / 4;
     
     freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->smoothed_f);
     RC_set_freq(freq, ap->fd);
@@ -407,6 +424,7 @@ autowah_done(struct effect *p)
     ap = (struct autowah_params *) p->params;
 
     free(ap->fd);
+    del_Backbuf(ap->history);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -452,12 +470,11 @@ autowah_create()
     p->proc_load = autowah_load;
     ap->fd = calloc(1, sizeof(struct filter_data));
     RC_setup(3, 1.48, ap->fd);
-
+    ap->history = new_Backbuf(MAX_SAMPLE_RATE * AUTOWAH_HISTORY_LENGTH / 1000);
+    
     ap->freq_low = 150;
     ap->freq_high = 1000;
     ap->sweep_time = 1000;
-    ap->dir = 1;
-    ap->f = 0.0;
     ap->drywet = 100;
     ap->continuous = 1;
 
