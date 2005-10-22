@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2005/10/22 14:21:05  alankila
+ * - reduce wah sweep range to saner limits, also reduce number of magical-
+ *   seeming constants. This version is most reliable pick detector yet.
+ *
  * Revision 1.30  2005/10/22 13:55:14  alankila
  * - add history buffer to make wah behaviour sampling parameter independent.
  * - add rudimentary handling for multiple channels by ignoring all but first
@@ -146,9 +150,9 @@
  * the energy per sample ("power"). If either suddenly increases, the
  * sweep triggers. Data is collected AUTOWAH_HISTORY_LENGTH ms apart. */
 
-#define AUTOWAH_HISTORY_LENGTH  40  /* ms */
-#define AUTOWAH_DISCANT_TRIGGER 0.7 /* dB */
-#define AUTOWAH_BASS_TRIGGER    0.7 /* dB */
+#define AUTOWAH_HISTORY_LENGTH  100  /* ms */
+#define AUTOWAH_DISCANT_TRIGGER 0.6 /* dB */
+#define AUTOWAH_BASS_TRIGGER    0.6 /* dB */
 
 void
                 autowah_filter(struct effect *p, struct data_block *db);
@@ -241,7 +245,7 @@ autowah_init(struct effect *p)
 
 
     adj_freqlow = gtk_adjustment_new(params->freq_low,
-				     150.0, 300.0, 1.0, 1.0, 0.0);
+				     80.0, 330.0, 1.0, 1.0, 0.0);
     freqlow_label = gtk_label_new("Freq. low\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freqlow_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -260,7 +264,7 @@ autowah_init(struct effect *p)
 					GTK_SHRINK), 0, 0);
 
     adj_freqhi = gtk_adjustment_new(params->freq_high,
-				    500.0, 3500.0, 1.0, 1.0, 0.0);
+				    500.0, 2000.0, 1.0, 1.0, 0.0);
     freqhi_label = gtk_label_new("Freq. hi\nHz");
     gtk_table_attach(GTK_TABLE(parmTable), freqhi_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -377,12 +381,12 @@ autowah_filter(struct effect *p, struct data_block *db)
             ap->history->add(ap->history, db->data[i]);
             
             ap->accum_n += 1;
-            if (ap->accum_n > 4096) {
-                ap->fresh_accum_power   *= 255/256.0;
-                ap->fresh_accum_delta   *= 255/256.0;
-                ap->delayed_accum_power *= 255/256.0;
-                ap->delayed_accum_delta *= 255/256.0;
-                ap->accum_n             *= 255/256.0;
+            if (ap->accum_n > 8192) {
+                ap->fresh_accum_power   /= 2; 
+                ap->fresh_accum_delta   /= 2; 
+                ap->delayed_accum_power /= 2; 
+                ap->delayed_accum_delta /= 2;
+                ap->accum_n             /= 2;
             }
         } curr_channel = (curr_channel + 1) % db->channels; }
 
