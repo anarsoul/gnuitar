@@ -33,9 +33,11 @@ struct autowah_params {
     double          freq_low;
     double          freq_high;
     int             continuous;
+    double          signal_delta;
     double          signal_power;
-    double          power_accum;
-    double          power_accum_n;
+    double          accum_delta;
+    double          accum_power;
+    int             accum_n;
     double          f, smoothed_f;
     int             dir;
     struct filter_data *fd;

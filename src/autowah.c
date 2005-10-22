@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2005/10/22 13:04:43  alankila
+ * - add power and delta computation so that wah may key on either type of
+ *   increase. Also convert units to dB.
+ *
  * Revision 1.28  2005/10/21 19:19:48  alankila
  * - add a pick-sensitive mode where a downward sweep is started synchronously
  *   with picking
@@ -132,7 +136,21 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-#define AUTOWAH_TRIGGER_THRESHOLD 1.1
+/* these thresholds are used to trigger the sweep. The system accumulates
+ * time-weighted average of square difference between samples ("delta") and
+ * the energy per sample ("power"). If either suddenly increases, the
+ * sweep triggers. */
+
+/* XXX these parameters depend on buffer size and sampling frequency.
+ * I need to think about a better way to approach this problem. Perhaps
+ * should compute the power of signals between two time periods such as
+ * -10 ms .. -5 ms and -5 ms .. 0 ms so that the parameters become
+ * sampling parameter independent. It should work better. At the moment
+ * this seems to work well enough, but if I can't make the algorithm
+ * smarter I need to expose these in UI. */
+
+#define AUTOWAH_DISCANT_TRIGGER 0.3 /* dB */
+#define AUTOWAH_BASS_TRIGGER    0.3 /* dB */
 
 void
                 autowah_filter(struct effect *p, struct data_block *db);
@@ -312,7 +330,7 @@ autowah_filter(struct effect *p, struct data_block *db)
 {
     struct autowah_params *ap;
     int             i;
-    double          freq, current_power;
+    double          freq, current_power, current_delta;
 
     ap = (struct autowah_params *) p->params;
 
@@ -339,20 +357,25 @@ autowah_filter(struct effect *p, struct data_block *db)
          * most. */
         double oldval = db->data[0];
         for (i = 1; i < db->len; i++) {
-            ap->power_accum += pow(db->data[i] - oldval, 2);
-            ap->power_accum_n += 1;
+            ap->accum_power += pow(db->data[i], 2);
+            ap->accum_delta += pow(db->data[i] - oldval, 2);
+            ap->accum_n += 1;
             oldval = db->data[i];
 
-            if (ap->power_accum_n > 4096) {
-                ap->power_accum   *= 63/64.0;
-                ap->power_accum_n *= 63/64.0;
+            if (ap->accum_n > 4096 + 2048) {
+                ap->accum_power *= 63/64.0;
+                ap->accum_delta *= 63/64.0;
+                ap->accum_n *= 63/64.0;
             }
         }
-        current_power = ap->power_accum / ap->power_accum_n;
-        if (current_power > ap->signal_power * AUTOWAH_TRIGGER_THRESHOLD) {
+        current_delta = log(ap->accum_delta / ap->accum_n) / log(10) * 10;
+        current_power = log(ap->accum_power / ap->accum_n) / log(10) * 10;
+        if (   current_delta > ap->signal_delta + AUTOWAH_DISCANT_TRIGGER
+            || current_power > ap->signal_power + AUTOWAH_BASS_TRIGGER) {
             ap->f = 1.0;
             ap->dir = -1.0;
         }
+        ap->signal_delta = current_delta;
         ap->signal_power = current_power;
     }
 
