@@ -24,14 +24,16 @@
 import sys, math
 
 class BiquadFilter(object):
-    __slots__ = ['b0', 'b1', 'b2', 'a1', 'a2', 'x1', 'x2', 'y1', 'y2']
+    __slots__ = ['b0', 'b1', 'b2', 'b3', 'b4', 'b5', 'a1', 'a2', 'a3', 'a4', 'a5', 'x1', 'x2', 'y1', 'y2']
 
     def __init__(self, b0, b1, b2, a1, a2):
         self.b0 = b0
         self.b1 = b1
         self.b2 = b2
+        self.b3 = self.b4 = self.b5 = 0
         self.a1 = a1
         self.a2 = a2
+        self.a3 = self.a4 = self.a5 = 0
 
         self.x1 = 0.0
         self.x2 = 0.0
@@ -84,10 +86,15 @@ class BiquadFilter(object):
         a0 = self.b0
         a1 = self.b1
         a2 = self.b2
+        a3 = self.b3
+        a4 = self.b4
+        a5 = self.b5
         b0 = 1.0
         b1 = self.a1
         b2 = self.a2
-        a3 = a4 = a5 = b3 = b4 = b5 = 0.0
+        b3 = self.a3
+        b4 = self.a4
+        b5 = self.a5
         
         sin = math.sin
         cos = math.cos
@@ -136,6 +143,16 @@ def make_rc_lopass(sample_rate, res, cap):
     rc = res * cap
     ts = 1.0 / sample_rate
     return BiquadFilter(ts/(ts+rc), 0.0, 0.0, -rc/(ts+rc), 0.0);
+
+def make_rc_hipass(sample_rate, res, cap):
+    rc = res * cap
+    ts = 1.0 / sample_rate
+    return BiquadFilter(ts/(ts+rc), 0.0, 0.0, rc/(ts+rc), 0.0);
+
+def make_rc_hiboost(sample_rate, res, cap):
+    rc = res * cap
+    ts = 1.0 / sample_rate
+    return BiquadFilter(1 + rc/(ts+rc), 0.0, 0.0, rc/(ts+rc), 0.0);
 
 # from gnuitar/src/biquad.c
 def make_chebyshev_1(Fs, Fc, ripple, lowpass):
@@ -255,18 +272,37 @@ def main():
     # frequency is actually fairly irrelevant, but you can compare the
     # performance of some of the filters near 20 kHz using 44.1 kHz sampling
     # frequency if you like.
-    sampling_rate_hz = 48000.0
+    sampling_rate_hz = 44100.0
 
     #filter = make_allpass(float(sys.argv[1]))
-    #filter = make_rc_lopass(sampling_rate_hz, 4700, 47e-9)
-    #filter = make_filter('HSH', sampling_rate_hz, 1000, 0.5, -10.0)
-    filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 0.0, False)
+    #filter = make_rc_lopass(sampling_rate_hz, 20e3, 0.5e-9)
+    filter = make_rc_hiboost(sampling_rate_hz, 20e3, 0.5e-9)
+    #filter = make_filter('LPF', sampling_rate_hz, 2500, 2.0, 0)
+    #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 0.0, False)
+
+    #filter.b0 = 9/8.0;
+    #filter.a1 = 1/8.0;
+
+    print "# b0=%s" % filter.b0
+    print "# b1=%s" % filter.b1
+    print "# b2=%s" % filter.b2
+    print "# a1=%s" % filter.a1
+    print "# a2=%s" % filter.a2
 
     for dp in range(301):
         freq_hz = 20*math.pow(2, math.log(20000./20.)/math.log(2) * dp / 300.)
         power_db = filter.lin2db(filter.mag(sampling_rate_hz, freq_hz))
         phase_ang = filter.phi(sampling_rate_hz, freq_hz) / math.pi * 180
         print "%8.2f %7.3f %5.1f" % (freq_hz, power_db, phase_ang)
+    
+    # let's assume we sample data for 1 second and take 44100 measurements...
+    # then it's easy
+    for _ in range(44100):
+        out = filter.filter(math.sin(
+            _ / 44100.0 * math.pi * 2 * 3250
+        ))
+        print "# %.8f" % out
+
 
 if __name__ == '__main__':
     main()
