@@ -197,7 +197,7 @@ pitch_filter(effect_t *p, data_block_t *db)
 {
     struct pitch_params *params = p->params;
     DSP_SAMPLE     *s, tmp, tmp2;
-    double          pitch_modulation_frequency, phase_inc, phase_tmp, Dry, Wet, gain, gain_sum;
+    double          pitch_modulation_frequency, phase_inc, phase_tmp, Dry, Wet, gain;
     double          depth = 0;
     int             count, c = 0, dir = 0, i;
 
@@ -210,13 +210,26 @@ pitch_filter(effect_t *p, data_block_t *db)
     if (depth > 1.0)
        depth = 1.0;
 
-    /* this gives 4 for -12 tuning and 8 for +12 tuning and sensible values
-     * in between otherwise */
+    /* use intelligent modulation frequency that keeps latency close to
+     * user specified value */
     pitch_modulation_frequency = fabs(depth) * params->buffer;
 
     if (pitch_modulation_frequency < PITCH_MODULATION_FREQUENCY_MIN) {
         pitch_modulation_frequency = PITCH_MODULATION_FREQUENCY_MIN;
     }
+    
+    /* because we are eventually going to multiply input waveform with
+     * a sin waveform oscillating at half of pitch_modulation_frequency, the
+     * the entire frequency spectrum upwards by the modulation frequency.
+     * 
+     * (This effect can not be used to do wideband pitch shifting because
+     *  it performs f' = f + c, not f' = f * c.)
+     * 
+     * The code here would compensate the error for the bass string at
+     * the cost of distorting the higher notes' frequencies. No single
+     * frequency is entirely satisfactory. A sane value would be halfway
+     * between guitar's frequency band, at 330 Hz. */
+    /* depth *= 1 + pitch_modulation_frequency / 83.2 / 2.0; */
     
     depth = depth * sample_rate / pitch_modulation_frequency;
     if (depth < 0) {
@@ -252,7 +265,6 @@ pitch_filter(effect_t *p, data_block_t *db)
 	     * form of the original function used by Tom Szilagyi. */
             // gain = (1 - cos(phase_tmp * M_PI * 2)) / 2.0;
             gain = pow(sin_lookup(phase_tmp / 2), 2); /* Tom's but sin() */
-            gain_sum += gain;
             tmp += gain *
                 params->history[c]->get_interpolated(params->history[c], 
                         depth * (dir ? phase_tmp : 1 - phase_tmp));
@@ -263,7 +275,6 @@ pitch_filter(effect_t *p, data_block_t *db)
         /* gain_sum normalizes the windowing function, so it need not fulfill
          * all the constraints specified above. However, if the function is
          * bad there will be all sorts of weird distortion... */
-        phase_tmp /= gain_sum;
         
         /* we could try to pick the history a bit more forward at cost of
          * some more echoing in average but less latency when dry is not 0 */
