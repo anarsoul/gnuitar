@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2005/10/30 22:26:45  alankila
+ * - make chorus fatter by spreading voices apart in fractions of chosen
+ *   static delay
+ * - limit regen to 50 % as the effect tends to go out of control with
+ *   values approaching 80 %, and even 50 % sounds rather like reverb.
+ *
  * Revision 1.32  2005/09/09 20:57:20  alankila
  * - merge dry/wet sliders together
  *
@@ -347,7 +353,7 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
 
-    adj_regen = gtk_adjustment_new(pchorus->regen, 0.0, 100.0, 1.0, 1.0, 0.0);
+    adj_regen = gtk_adjustment_new(pchorus->regen, 0.0, 50.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("Regen\n%");
     gtk_label_set_justify(GTK_LABEL(regen_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 7, 8, 0, 1,
@@ -435,7 +441,7 @@ chorus_filter_mono(struct effect *p, struct data_block *db)
         tmp = 0.0;
         tmp_ang = cp->ang;
         for (i = 0; i < cp->voices; i += 1) {
-            dly = BaseDelay + Depth * (1 + sin_lookup(tmp_ang)) / 2.0;
+            dly = BaseDelay * i / cp->voices + Depth * (1 + sin_lookup(tmp_ang)) / 2.0;
             tmp += cp->history[curr_channel]->get_interpolated(cp->history[curr_channel], dly) / sqrt(cp->voices);
             tmp_ang += 1.0 / cp->voices;
             if (tmp_ang >= 1.0)

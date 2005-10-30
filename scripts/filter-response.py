@@ -276,10 +276,9 @@ def main():
 
     #filter = make_allpass(float(sys.argv[1]))
     #filter = make_rc_lopass(sampling_rate_hz, 20e3, 0.5e-9)
-    filter = make_rc_hiboost(sampling_rate_hz, 20e3, 0.5e-9)
-    #filter = make_filter('LPF', sampling_rate_hz, 2500, 2.0, 0)
+    filter = make_rc_hipass(sampling_rate_hz, 1, 1 / (2 * math.pi * 5000))
+    #filter = make_filter('PEQ', sampling_rate_hz, 3000, 2.0, 2.0)
     #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 0.0, False)
-
     #filter.b0 = 9/8.0;
     #filter.a1 = 1/8.0;
 
