@@ -19,6 +19,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.14  2005/10/30 11:21:05  alankila
+ * - more correct and precise output filtering!
+ * - real device seems to have some kind of highpass filtering around 50 Hz
+ *   maybe or so, because there's too much bass...
+ *
  * Revision 1.13  2005/10/07 12:50:12  alankila
  * - move delay shape computation to where it belongs and change it to bit
  *   smoother
@@ -127,6 +132,39 @@ set_allpass_biquad(double delay, Biquad_t *f)
     f->b1 = 1.0;
     f->a1 = delay;
     f->a2 = f->b2 = 0;
+}
+
+void
+set_rc_lowpass_biquad(double sample_rate, double freq, Biquad_t *f)
+{
+    double rc = 1 / (2 * M_PI * freq);
+    double ts = 1.0 / sample_rate;
+
+    f->b0 = ts / (ts + rc);
+    f->a1 = -rc / (ts + rc);
+    f->b1 = f->b2 = f->a2 = 0;
+}
+
+void
+set_rc_highpass_biquad(double sample_rate, double freq, Biquad_t *f)
+{
+    double rc = 1 / (2 * M_PI * freq);
+    double ts = 1.0 / sample_rate;
+
+    f->b0 = ts / (ts + rc);
+    f->a1 = rc / (ts + rc);
+    f->b1 = f->b2 = f->a2 = 0;
+}
+
+void
+set_rc_highboost_biquad(double sample_rate, double freq, Biquad_t *f)
+{
+    double rc = 1 / (2 * M_PI * freq);
+    double ts = 1.0 / sample_rate;
+
+    f->a1 = rc / (ts + rc);
+    f->b0 = 1 + f->a1;
+    f->b1 = f->b2 = f->a2 = 0;
 }
 
 void

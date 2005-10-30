@@ -18,6 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.13  2005/10/30 11:21:05  alankila
+ * - more correct and precise output filtering!
+ * - real device seems to have some kind of highpass filtering around 50 Hz
+ *   maybe or so, because there's too much bass...
+ *
  * Revision 1.12  2005/09/12 22:01:56  alankila
  * - swap a0/b0 around to better coincide with available literature
  * - optimize x1 and x2 terms off chebyshev as they are defined as:
@@ -90,6 +95,9 @@ extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
 extern void     set_bpf_biquad(double Fs, double Fc, double BW,
 			       Biquad_t *f);
 extern void     set_allpass_biquad(double delay, Biquad_t *f);
+extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
+extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
+extern void     set_rc_highboost_biquad(double fs, double fc, Biquad_t *f);
 
 /*
  * Sampling rate, Center frequency, Ripple %, Lowpass?

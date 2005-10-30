@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.56  2005/10/30 11:21:05  alankila
+ * - more correct and precise output filtering!
+ * - real device seems to have some kind of highpass filtering around 50 Hz
+ *   maybe or so, because there's too much bass...
+ *
  * Revision 1.55  2005/09/24 11:21:16  alankila
  * - remove the way incorrect simulation of the 51 pF capacitor. I need to
  *   puzzle out the discrete time equation for it.
@@ -505,6 +510,15 @@ distort2_filter(struct effect *p, struct data_block *db)
         return;
     }
 
+    if (dp->unauthentic) {
+        set_rc_lowpass_biquad(sample_rate,
+                (3200 + 720) / 2 + (3200 - 720) / 2 * dp->treble / 6.0,
+                &dp->rolloff);
+    } else {
+        set_rc_lowpass_biquad(sample_rate,
+                720,
+                &dp->rolloff);
+    }
     /*
      * process signal; x - input, in the range -1, 1
      */
@@ -528,6 +542,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	/* Now the actual upsampled processing */
 	for (i=0; i<UPSAMPLE; i++)
 	{
+            /* XXX bandlimiting should be integrated with the upsampling */
 	    x = do_biquad(upsample[i], &dp->cheb_up, curr_channel);
 
 	    /* first compute the linear rc filter current output */
@@ -572,8 +587,13 @@ distort2_filter(struct effect *p, struct data_block *db)
                 y = 0;
             
 	    dp->last[curr_channel] = y;
+            /* decimation filter; values are thrown away except for last */
 	    y = do_biquad(y, &dp->cheb_down, curr_channel);
 	}
+        /* treble control + other final output filtering */
+        double tmp = do_biquad(y, &dp->treble_highpass, curr_channel);
+        /* static lowpass filtering */
+        y = do_biquad(y, &dp->rolloff, curr_channel) + tmp * dp->treble / 6.0;
 
 	/* scale up from -1..1 range */
 	*s = y * DIST2_UPSCALE;
@@ -587,23 +607,6 @@ distort2_filter(struct effect *p, struct data_block *db)
 	count--;
 
         curr_channel = (curr_channel + 1) % db->channels;
-    }
-    
-    if (dp->unauthentic) {
-        RC_set_freq((3200 + 720) / 2 + (3200 - 720) / 2 * dp->treble / 6.0, &(dp->rolloff));
-        RC_lowpass(db, &(dp->rolloff));
-    } else {
-        RC_set_freq(720, &(dp->rolloff));
-        /* compute highpass component and mix it */
-        for (i = 0; i < db->len; i += 1)
-            db->data_swap[i] = db->data[i];
-        RC_highpass(db, &(dp->treble_hipass));
-
-        /* XXX figure out why the treble range needs to be doubled */
-        y = dp->treble > 0 ? dp->treble / 3.0 : dp->treble / 6.0;
-        for (i = 0; i < db->len; i += 1)
-            db->data[i] = db->data_swap[i] + db->data[i] * y;
-        RC_lowpass(db, &(dp->rolloff));
     }
 }
 
@@ -659,14 +662,10 @@ distort2_create()
 
     ap = p->params;
     ap->drive = 0.0;
-    ap->clip = 50.0;
+    ap->clip = 100.0;
     ap->treble = 6.0;
     ap->unauthentic = 0;
 
-    RC_setup(1, 1, &(ap->rolloff));
-    RC_setup(1, 1, &(ap->treble_hipass));
-    RC_set_freq(3200, &(ap->treble_hipass));    // should be 3200
-    
     /* RC Filter tied to ground setup */
     Ts = 1.0/sample_rate;
     Ts1 = Ts / UPSAMPLE;  /* Ts1 is Ts for upsampled processing  */
@@ -679,6 +678,8 @@ distort2_create()
     /* lowpass Chebyshev filters resampling */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_down);
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_up);
+    /* static shaper */
+    set_rc_highpass_biquad(sample_rate, 3200, &ap->treble_highpass);
 
     return p;
 }
