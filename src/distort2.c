@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.57  2005/10/30 12:07:27  alankila
+ * - the highpass is buggy; revert back to inverted lowpass
+ * - do similar bass cut as real TS-9 does
+ * - reduce clipping strength slightly
+ *
  * Revision 1.56  2005/10/30 11:21:05  alankila
  * - more correct and precise output filtering!
  * - real device seems to have some kind of highpass filtering around 50 Hz
@@ -305,8 +310,8 @@
 #include "gui.h"
 #include <math.h>
 
-#define RC_FEEDBACK_R          4.7e3    /* ohms */
-#define RC_FEEDBACK_C          47e-9    /* farads */
+#define RC_FEEDBACK_R          4.7e3
+#define RC_FEEDBACK_C          47e-9
 #define RC_DRIVE_C             51e-12   /* farads */
 #define DRIVE_STATIC           50e3     /* ohms */
 #define DRIVE_LOG              500e3    /* ohms */
@@ -505,7 +510,6 @@ distort2_filter(struct effect *p, struct data_block *db)
         for (i = 0; i < MAX_CHANNELS; i += 1) {
             dp->last[i] = 0;
             dp->lastupsample[i] = 0;
-	    dp->lyf[i] = 0;
         }
         return;
     }
@@ -546,8 +550,7 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    x = do_biquad(upsample[i], &dp->cheb_up, curr_channel);
 
 	    /* first compute the linear rc filter current output */
-	    x2 = dp->c0*x + dp->d1 * dp->lyf[curr_channel];
-	    dp->lyf[curr_channel] = x2;
+	    x2 = do_biquad(x, &dp->feedback_minus_loop, curr_channel);
             
             x1 = (x - x2) / RC_FEEDBACK_R;
             /* This is unphysical but softens the sound */
@@ -590,12 +593,14 @@ distort2_filter(struct effect *p, struct data_block *db)
             /* decimation filter; values are thrown away except for last */
 	    y = do_biquad(y, &dp->cheb_down, curr_channel);
 	}
-        /* treble control + other final output filtering */
-        double tmp = do_biquad(y, &dp->treble_highpass, curr_channel);
         /* static lowpass filtering */
-        y = do_biquad(y, &dp->rolloff, curr_channel) + tmp * dp->treble / 6.0;
-
-	/* scale up from -1..1 range */
+        y = do_biquad(y, &dp->rolloff, curr_channel);
+        /* treble control + other final output filtering */
+        y += (y - do_biquad(y, &dp->treble_highpass, curr_channel)) * dp->treble / 3.0;
+        if (! dp->unauthentic)
+            y = y - do_biquad(y, &dp->output_bass_cut, curr_channel);
+	
+        /* scale up from -1..1 range */
 	*s = y * DIST2_UPSCALE;
 
 	/*if(*s > MAX_SAMPLE)
@@ -648,8 +653,6 @@ distort2_create()
 {
     effect_t   *p;
     struct distort2_params *ap;
-    double	Ts, Ts1;
-    double	RC = RC_FEEDBACK_C * RC_FEEDBACK_R;
 
     p = calloc(1, sizeof(effect_t)); 
     p->params = calloc(1, sizeof(struct distort2_params));
@@ -662,24 +665,19 @@ distort2_create()
 
     ap = p->params;
     ap->drive = 0.0;
-    ap->clip = 100.0;
+    ap->clip = 80.0;
     ap->treble = 6.0;
     ap->unauthentic = 0;
 
-    /* RC Filter tied to ground setup */
-    Ts = 1.0/sample_rate;
-    Ts1 = Ts / UPSAMPLE;  /* Ts1 is Ts for upsampled processing  */
-
-    /* Init stuff
-     * This is the rc filter tied to ground. */
-    ap->c0 = Ts1 / (Ts1 + RC);
-    ap->d1 = RC / (Ts1 + RC);
-
-    /* lowpass Chebyshev filters resampling */
+    /* lowpass Chebyshev filters for resampling */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_down);
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_up);
-    /* static shaper */
-    set_rc_highpass_biquad(sample_rate, 3200, &ap->treble_highpass);
-
+    /* static shapers */
+    set_rc_lowpass_biquad(sample_rate, 3200, &ap->treble_highpass);
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE,
+            1 / (2 * M_PI * RC_FEEDBACK_R * RC_FEEDBACK_C),
+            &ap->feedback_minus_loop);
+    set_rc_lowpass_biquad(sample_rate, 80, &ap->output_bass_cut);
+    
     return p;
 }
