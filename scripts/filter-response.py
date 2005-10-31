@@ -144,6 +144,7 @@ def make_rc_lopass(sample_rate, res, cap):
     ts = 1.0 / sample_rate
     return BiquadFilter(ts/(ts+rc), 0.0, 0.0, -rc/(ts+rc), 0.0);
 
+# XXX hipass and hiboost are a bit dubious, hipass is probably wrong
 def make_rc_hipass(sample_rate, res, cap):
     rc = res * cap
     ts = 1.0 / sample_rate
@@ -268,6 +269,13 @@ def make_allpass(delay):
 
     return BiquadFilter(delay, 1.0, 0.0, delay, 0.0)
 
+def make_nr(length):
+    if length == 2:
+        return BiquadFilter(0.5, 0.5, 0.0, 0.0, 0.0)
+    if length == 3:
+        return BiquadFilter(0.33, 0.33, 0.33, 0.0, 0.0)
+    raise RuntimeError, "only lenghts 2, 3 supported"
+
 def main():
     # frequency is actually fairly irrelevant, but you can compare the
     # performance of some of the filters near 20 kHz using 44.1 kHz sampling
@@ -276,7 +284,8 @@ def main():
 
     #filter = make_allpass(float(sys.argv[1]))
     #filter = make_rc_lopass(sampling_rate_hz, 20e3, 0.5e-9)
-    filter = make_rc_hipass(sampling_rate_hz, 1, 1 / (2 * math.pi * 5000))
+    #filter = make_rc_hipass(sampling_rate_hz, 1, 1 / (2 * math.pi * 5000))
+    filter = make_nr(2)
     #filter = make_filter('PEQ', sampling_rate_hz, 3000, 2.0, 2.0)
     #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 0.0, False)
     #filter.b0 = 9/8.0;
@@ -296,11 +305,11 @@ def main():
     
     # let's assume we sample data for 1 second and take 44100 measurements...
     # then it's easy
-    for _ in range(44100):
-        out = filter.filter(math.sin(
-            _ / 44100.0 * math.pi * 2 * 3250
-        ))
-        print "# %.8f" % out
+    #for _ in range(44100):
+    #    out = filter.filter(math.sin(
+    #        _ / 44100.0 * math.pi * 2 * 3250
+    #    ))
+    #    print "# %.8f" % out
 
 
 if __name__ == '__main__':
