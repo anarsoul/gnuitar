@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.58  2005/11/01 12:32:44  alankila
+ * - further reduce the fuzz level to more closely match real TS9
+ * - increase bass cut
+ *
  * Revision 1.57  2005/10/30 12:07:27  alankila
  * - the highpass is buggy; revert back to inverted lowpass
  * - do similar bass cut as real TS-9 does
@@ -598,7 +602,7 @@ distort2_filter(struct effect *p, struct data_block *db)
         /* treble control + other final output filtering */
         y += (y - do_biquad(y, &dp->treble_highpass, curr_channel)) * dp->treble / 3.0;
         if (! dp->unauthentic)
-            y = y - do_biquad(y, &dp->output_bass_cut, curr_channel);
+            y = do_biquad(y, &dp->output_bass_cut, curr_channel);
 	
         /* scale up from -1..1 range */
 	*s = y * DIST2_UPSCALE;
@@ -665,7 +669,7 @@ distort2_create()
 
     ap = p->params;
     ap->drive = 0.0;
-    ap->clip = 80.0;
+    ap->clip = 70.0;
     ap->treble = 6.0;
     ap->unauthentic = 0;
 
@@ -677,7 +681,7 @@ distort2_create()
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE,
             1 / (2 * M_PI * RC_FEEDBACK_R * RC_FEEDBACK_C),
             &ap->feedback_minus_loop);
-    set_rc_lowpass_biquad(sample_rate, 80, &ap->output_bass_cut);
+    set_rc_highpass_biquad(sample_rate, 160, &ap->output_bass_cut);
     
     return p;
 }
