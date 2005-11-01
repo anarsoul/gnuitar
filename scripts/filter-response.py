@@ -148,7 +148,7 @@ def make_rc_lopass(sample_rate, res, cap):
 def make_rc_hipass(sample_rate, res, cap):
     rc = res * cap
     ts = 1.0 / sample_rate
-    return BiquadFilter(ts/(ts+rc), 0.0, 0.0, rc/(ts+rc), 0.0);
+    return BiquadFilter(1, -1, 0.0, -rc/(ts+rc), 0.0);
 
 def make_rc_hiboost(sample_rate, res, cap):
     rc = res * cap
@@ -284,12 +284,9 @@ def main():
 
     #filter = make_allpass(float(sys.argv[1]))
     #filter = make_rc_lopass(sampling_rate_hz, 20e3, 0.5e-9)
-    #filter = make_rc_hipass(sampling_rate_hz, 1, 1 / (2 * math.pi * 5000))
-    filter = make_nr(2)
+    filter = make_rc_hipass(sampling_rate_hz, 1, 1 / (2 * math.pi * 100))
     #filter = make_filter('PEQ', sampling_rate_hz, 3000, 2.0, 2.0)
     #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 0.0, False)
-    #filter.b0 = 9/8.0;
-    #filter.a1 = 1/8.0;
 
     print "# b0=%s" % filter.b0
     print "# b1=%s" % filter.b1
