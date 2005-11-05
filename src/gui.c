@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.68  2005/11/05 12:18:38  alankila
+ * - pepper the code with static declarations for all private funcs and vars
+ *
  * Revision 1.67  2005/10/02 08:21:39  fonin
  * - Added a button to remove preset from a list;
  * - Double-click on the effect name puts a focus on its window
@@ -306,15 +309,15 @@ extern short dsound;
 
 #define VU_UPDATE_INTERVAL 25.0    /* ms */
 
-void            add_pressed(GtkWidget *, gpointer);
-void            bank_start_save(GtkWidget *, gpointer);
-void            bank_start_load(GtkWidget *, gpointer);
-void            sample_dlg(GtkWidget *, gpointer);
-void            update_sampling_params(GtkWidget *, gpointer);
-void            update_sampling_params_and_close_dialog(GtkWidget *, gpointer);
-void            quit(GtkWidget *, gpointer);
-void            about_dlg(void);
-void            help_contents(void);
+static void     add_pressed(GtkWidget *, gpointer);
+static void     bank_start_save(GtkWidget *, gpointer);
+static void     bank_start_load(GtkWidget *, gpointer);
+static void     sample_dlg(GtkWidget *, gpointer);
+static void     update_sampling_params(GtkWidget *, gpointer);
+static void     update_sampling_params_and_close_dialog(GtkWidget *, gpointer);
+static void     quit(GtkWidget *, gpointer);
+static void     about_dlg(void);
+static void     help_contents(void);
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -332,50 +335,54 @@ static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_Help/Contents", NULL, (GtkSignalFunc) help_contents, 0, NULL},
     {"/_Help/About", NULL, (GtkSignalFunc) about_dlg, 0, NULL}
 };
-GtkWidget      *mainWnd;
-GtkItemFactory *item_factory;
-GtkWidget      *tbl;
-GtkWidget      *menuBar;
+static GtkWidget      *mainWnd;
+static GtkItemFactory *item_factory;
+static GtkWidget      *tbl;
+static GtkWidget      *menuBar;
+static GtkWidget      *processor_scroll;
+static GtkWidget      *known_effects;
+static GtkWidget      *effect_scroll;
+static GtkWidget      *bank;
+static GtkWidget      *bank_scroll;
+static GtkWidget      *bank_add;
+static GtkWidget      *bank_switch;
+static GtkWidget      *bank_del;
+static GtkWidget      *up;
+static GtkWidget      *down;
+static GtkWidget      *del;
+static GtkWidget      *add;
+static GtkWidget      *tracker;
+static GtkWidget      *start;
+static GtkTooltips    *tooltips;
+
+/* some public GUI widgets */
 GtkWidget      *processor;
-GtkWidget      *processor_scroll;
-GtkWidget      *known_effects;
-GtkWidget      *effect_scroll;
-GtkWidget      *bank;
-GtkWidget      *bank_scroll;
-GtkWidget      *bank_add;
-GtkWidget      *bank_switch;
-GtkWidget      *bank_del;
-GtkWidget      *up;
-GtkWidget      *down;
-GtkWidget      *del;
-GtkWidget      *add;
-GtkWidget      *tracker;
-GtkWidget      *start;
-GtkTooltips    *tooltips;
-GtkObject      *adj_master;	/* it must be public, cause we update it*/
-double		master_volume;	/* when loading preset */
-gint            curr_row = -1;	/*
-				 * current row in processor list
-				 */
-gint            effects_row = -1;	/*
-					 * current row in known effects list
-					 */
-gint            bank_row = -1;	/*
-				 * current row in bank list
-				 */
+/* master volume and its current value */
+GtkObject      *adj_master;
+double		master_volume;
+
+/* vumeter state */
+static double vumeter_peak = 0;
+static double vumeter_power = 0;
+/* current row in processor list */
+static gint            curr_row = -1;
+/* current row in known effects list */
+static gint            effects_row = -1;
+/* current row in bank list */
+static gint            bank_row = -1;
 extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
                                  * MSVC 6.0 complains: identifier effectlist_lock: */
 
 /*
  * Cleaning and quit from application
  */
-void
+static void
 quit(GtkWidget * widget, gpointer data)
 {
     gtk_main_quit();
 }
 
-void
+static void
 about_dlg(void)
 {
     GtkWidget      *about;
@@ -440,7 +447,7 @@ about_dlg(void)
     gtk_widget_show_all(about);
 }
 
-void
+static void
 help_contents(void)
 {
     char            path[2048] = "";
@@ -569,7 +576,7 @@ delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
     return TRUE;
 }
 
-void
+static void
 selectrow_processor(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
@@ -580,7 +587,7 @@ selectrow_processor(GtkWidget *widget, gint row, gint col,
     }
 }
 
-void
+static void
 selectrow_bank(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
@@ -591,7 +598,7 @@ selectrow_bank(GtkWidget *widget, gint row, gint col,
 //    }
 }
 
-void
+static void
 selectrow_effects(GtkWidget *widget, gint row, gint col,
 		  GdkEventButton *event, gpointer data)
 {
@@ -602,7 +609,8 @@ selectrow_effects(GtkWidget *widget, gint row, gint col,
     }
 }
 
-void rowmove_processor(GtkWidget *widget, gint start, gint end, gpointer data)
+static void
+rowmove_processor(GtkWidget *widget, gint start, gint end, gpointer data)
 {
     effect_t   *swap;
     int         i;
@@ -625,8 +633,7 @@ void rowmove_processor(GtkWidget *widget, gint start, gint end, gpointer data)
     my_unlock_mutex(effectlist_lock);
 }
 
-
-void
+static void
 up_pressed(GtkWidget *widget, gpointer data)
 {
     effect_t       *swap;
@@ -655,7 +662,7 @@ up_pressed(GtkWidget *widget, gpointer data)
     }
 }
 
-void
+static void
 down_pressed(GtkWidget * widget, gpointer data)
 {
     effect_t       *swap;
@@ -684,7 +691,7 @@ down_pressed(GtkWidget * widget, gpointer data)
     }
 }
 
-void
+static void
 del_pressed(GtkWidget *widget, gpointer data)
 {
     int             i;
@@ -706,7 +713,7 @@ del_pressed(GtkWidget *widget, gpointer data)
     }
 }
 
-void
+static void
 add_pressed(GtkWidget *widget, gpointer data)
 {
     int             idx, i;
@@ -743,15 +750,14 @@ add_pressed(GtkWidget *widget, gpointer data)
 /*
  * callback for gtk_set_pointer_data_full()
  */
-void
+static void
 free_clist_ptr(gpointer data)
 {
     if (data != NULL)
 	free(data);
 }
 
-
-void
+static void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
     char            *fname;
@@ -793,13 +799,13 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
-void
+static void
 destroy_widget(GtkWidget * widget, GtkWidget * gallowman)
 {
     gtk_widget_destroy(gallowman);
 }
 
-void
+static void
 bank_add_pressed(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
@@ -816,7 +822,7 @@ bank_add_pressed(GtkWidget * widget, gpointer data)
     gtk_widget_show(filesel);
 }
 
-void
+static void
 bank_del_pressed(GtkWidget * widget, gpointer data)
 {
     int bank_len;
@@ -832,7 +838,7 @@ bank_del_pressed(GtkWidget * widget, gpointer data)
     }
 }
 
-void
+static void
 bank_switch_pressed(GtkWidget * widget, gpointer data)
 {
     char           *fname;
@@ -846,7 +852,7 @@ bank_switch_pressed(GtkWidget * widget, gpointer data)
     load_pump(fname);
 }
 
-void
+static void
 bank_perform_save(GtkWidget * widget, GtkFileSelection * filesel)
 {
     save_pump(gtk_file_selection_get_filename
@@ -854,7 +860,7 @@ bank_perform_save(GtkWidget * widget, GtkFileSelection * filesel)
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
-void
+static void
 bank_start_save(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
@@ -871,7 +877,7 @@ bank_start_save(GtkWidget * widget, gpointer data)
     gtk_widget_show(filesel);
 }
 
-void
+static void
 bank_perform_load(GtkWidget * widget, GtkFileSelection * filesel)
 {
     load_pump(gtk_file_selection_get_filename
@@ -879,7 +885,7 @@ bank_perform_load(GtkWidget * widget, GtkFileSelection * filesel)
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
-void
+static void
 bank_start_load(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
@@ -896,7 +902,7 @@ bank_start_load(GtkWidget * widget, gpointer data)
     gtk_widget_show(filesel);
 }
 
-void
+static void
 start_tracker(GtkWidget * widget, GtkFileSelection * filesel)
 {
     const char		*name;
@@ -908,14 +914,14 @@ start_tracker(GtkWidget * widget, GtkFileSelection * filesel)
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
-void
+static void
 cancel_tracker(GtkWidget * widget, GtkFileSelection * filesel)
 {
     gtk_widget_destroy(GTK_WIDGET(filesel));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tracker), 0);
 }
 
-void
+static void
 tracker_pressed(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
@@ -960,9 +966,8 @@ typedef struct SAMPLE_PARAMS {
     GtkWidget      *driver;
 } sample_params;
 
-double vumeter_peak = 0;
-double vumeter_power = 0;
-void set_vumeter_value(double peak, double power) {
+void
+set_vumeter_value(double peak, double power) {
     /* accept peaks, decay exponentially otherwise */
     if (peak > vumeter_peak)
         vumeter_peak = peak;
@@ -972,7 +977,7 @@ void set_vumeter_value(double peak, double power) {
     vumeter_power = 7 * (vumeter_power + power) / 8;
 }
 
-gboolean
+static gboolean
 timeout_update_vumeter(gpointer vumeter) {
     GtkRcStyle *rc_style = NULL;
     GdkColor color;
@@ -1006,11 +1011,12 @@ timeout_update_vumeter(gpointer vumeter) {
     return TRUE;
 }
 
-void update_master_volume(GtkAdjustment *adj, void *nothing) {
+static void
+update_master_volume(GtkAdjustment *adj, void *nothing) {
     master_volume = adj->value;
 }
 
-void
+static void
 update_latency_label(GtkWidget *widget, gpointer data)
 {
     gchar          *gtmp;
@@ -1022,8 +1028,8 @@ update_latency_label(GtkWidget *widget, gpointer data)
     free(gtmp);
 }
 
-void
-update_driver(GtkWidget * widget, gpointer data)
+static void
+update_driver(GtkWidget *widget, gpointer data)
 {
     const char *tmp=NULL;
     sample_params *sp = (sample_params *) data;
@@ -1062,7 +1068,7 @@ update_driver(GtkWidget * widget, gpointer data)
 }
 
 #ifdef _WIN32
-void
+static void
 update_threshold(GtkWidget * widget, gpointer threshold)
 {
     overrun_threshold=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(threshold));
@@ -1072,7 +1078,7 @@ update_threshold(GtkWidget * widget, gpointer threshold)
 /*
  * Sampling parameters dialog
  */
-void
+static void
 sample_dlg(GtkWidget *widget, gpointer data)
 {
     static sample_params sparams;
@@ -1296,7 +1302,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_widget_show_all(sparams.dialog);
 }
 
-void
+static void
 update_sampling_params(GtkWidget * dialog, gpointer data)
 {
     int             tmp1, tmp2;
@@ -1319,7 +1325,8 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
     sample_rate = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
 }
 
-void update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
+static void
+update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
 {
     sample_params  *sp = data;
 
@@ -1327,7 +1334,7 @@ void update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
     gtk_widget_destroy(GTK_WIDGET(sp->dialog));
 }
 
-void
+static void
 start_stop(GtkWidget *widget, gpointer data)
 {
     int             error;

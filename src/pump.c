@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.51  2005/11/05 12:18:38  alankila
+ * - pepper the code with static declarations for all private funcs and vars
+ *
  * Revision 1.50  2005/10/02 08:23:50  fonin
  * Master volume is stored in the preset file
  *
@@ -281,7 +284,7 @@ int    bias_n[MAX_CHANNELS];
 /* If the long-term average of input data does not exactly equal to 0,
  * compensate. Some soundcards would also need highpass filtering ~20 Hz
  * or so. */
-void
+static void
 bias_elimination(data_block_t *db) {
     int             i;
     int             curr_channel = 0;
@@ -301,8 +304,7 @@ bias_elimination(data_block_t *db) {
     }
 }
 
-/* a practical maximum is 3. Above that you lose too much discant and
- * it starts to sound like a big-speakered guitar amp... */
+/* NR_SIZE 3 should be a symemtric FIR with 0.25, 0.5, 0.25 */
 #define NR_SIZE 2
 DSP_SAMPLE nr_last[MAX_CHANNELS][NR_SIZE];
 
@@ -310,7 +312,7 @@ DSP_SAMPLE nr_last[MAX_CHANNELS][NR_SIZE];
  * noise and probably helps with crappy soundcards, although its
  * effect is very subtle. Nevertheless, it drops noise floor here
  * worth 1-2 dB. */
-void
+static void
 noise_reduction(data_block_t *db) {
     int             i, j;
     int             curr_channel = 0;
@@ -331,7 +333,7 @@ noise_reduction(data_block_t *db) {
 }
 
 /* accumulate power estimate and monitor clipping */
-void
+static void
 vu_meter(data_block_t *db) {
     int             i;
     DSP_SAMPLE      sample, max_sample = 0;
@@ -352,7 +354,7 @@ vu_meter(data_block_t *db) {
 }
 
 /* adjust master volume according to the main window slider and clip */
-void
+static void
 adjust_master_volume(data_block_t *db) {
     int		    i;
     double	    volume = pow(10, master_volume / 20.0);
@@ -373,7 +375,7 @@ adjust_master_volume(data_block_t *db) {
  * More specifically dithering prevents repeatable roundoff errors from
  * accumulating into an audible distortion, instead producing wideband
  * noise rather than distortion */
-void
+static void
 dither_output(data_block_t *db) {
     int		    i;
     static unsigned int randseed = 1;
@@ -383,7 +385,7 @@ dither_output(data_block_t *db) {
     }
 }
 
-void
+static void
 adapt_to_output(data_block_t *db)
 {
     int             i;
@@ -486,13 +488,14 @@ struct effect_creator effect_list[] = {
     {NULL, NULL}
 };
 
-void init_sin_lookup_table() {
+static void
+init_sin_lookup_table() {
     int i = 0;
     for (i = 0; i < SIN_LOOKUP_SIZE; i += 1)
         sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE) * SIN_LOOKUP_AMPLITUDE;
 }
 
-const gchar *
+static const gchar *
 discover_settings_path() {
     const gchar *path;
 #ifdef _WIN32

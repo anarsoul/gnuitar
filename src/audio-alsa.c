@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2005/11/05 12:18:38  alankila
+ * - pepper the code with static declarations for all private funcs and vars
+ *
  * Revision 1.16  2005/10/01 07:59:04  fonin
  * Fixed driver_bits_cfg[] arrays (missing trailing zero)
  *
@@ -105,7 +108,7 @@ const char     *snd_4ch_device_out = "surround40:0,0";
 snd_pcm_t      *playback_handle;
 snd_pcm_t      *capture_handle;
 
-void           *
+static void           *
 alsa_audio_thread(void *V)
 {
     int             i, frames, inframes, outframes;
@@ -199,7 +202,7 @@ alsa_audio_thread(void *V)
 /*
  * sound shutdown 
  */
-void
+static void
 alsa_finish_sound(void)
 {
     state = STATE_PAUSE;
@@ -214,7 +217,7 @@ alsa_finish_sound(void)
  * On the second call, adapting is disabled. This is done to force identical
  * parameters on the two devices, which may not even be same physical
  * hardware. */
-int
+static int
 alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *frames, int channels, int adapting)
 {
     snd_pcm_hw_params_t *hw_params;
@@ -337,7 +340,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
 /*
  * sound initialization
  */
-int
+static int
 alsa_init_sound(void)
 {
     int             err;
@@ -407,7 +410,7 @@ alsa_available() {
     return 1;
 }
 
-struct audio_driver_channels alsa_channels_cfg[] = {
+static struct audio_driver_channels alsa_channels_cfg[] = {
     { 1, 1 },
     { 1, 2 },
     { 1, 4 },
@@ -416,7 +419,7 @@ struct audio_driver_channels alsa_channels_cfg[] = {
     { 0, 0 }
 };
 
-unsigned int alsa_bits_cfg[] = { 16, 32, 0 };
+static unsigned int alsa_bits_cfg[] = { 16, 32, 0 };
 
 audio_driver_t alsa_driver = {
     alsa_init_sound,

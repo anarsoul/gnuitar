@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2005/11/05 12:18:38  alankila
+ * - pepper the code with static declarations for all private funcs and vars
+ *
  * Revision 1.14  2005/10/01 07:59:04  fonin
  * Fixed driver_bits_cfg[] arrays (missing trailing zero)
  *
@@ -104,7 +107,7 @@
 
 int             fd;
 
-void           *
+static void           *
 oss_audio_thread(void *V)
 {
     int             count, i;
@@ -162,7 +165,7 @@ oss_audio_thread(void *V)
     return NULL;
 }
 
-void
+static void
 oss_finish_sound(void)
 {
     state = STATE_PAUSE;
@@ -170,7 +173,7 @@ oss_finish_sound(void)
     close(fd);
 }
 
-int
+static int
 oss_init_sound(void)
 {
     int             i;
@@ -259,13 +262,13 @@ oss_available() {
     return 1;
 }
 
-struct audio_driver_channels oss_channels_cfg[] = {
+static struct audio_driver_channels oss_channels_cfg[] = {
     { 1, 1 },
     { 2, 2 },
     { 0, 0 }
 };
 
-unsigned int oss_bits_cfg[] = { 16, 0 };
+static unsigned int oss_bits_cfg[] = { 16, 0 };
 
 audio_driver_t oss_driver = {
     oss_init_sound,
