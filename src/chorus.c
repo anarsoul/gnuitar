@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2005/11/05 14:51:16  alankila
+ * - use basedelay scaling also in multichannel
+ * - make maximum period longer
+ *
  * Revision 1.33  2005/10/30 22:26:45  alankila
  * - make chorus fatter by spreading voices apart in fractions of chosen
  *   static delay
@@ -289,7 +293,7 @@ chorus_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
 
-    adj_speed = gtk_adjustment_new(pchorus->speed, 50.0, 3500, 0.1, 1.0, 0.0);
+    adj_speed = gtk_adjustment_new(pchorus->speed, 200.0, 5000, 0.1, 1.0, 0.0);
     speed_label = gtk_label_new("Period\nms");
     gtk_label_set_justify(GTK_LABEL(speed_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 2, 3, 0, 1,
@@ -476,7 +480,7 @@ void
 chorus_filter_mc(struct effect *p, struct data_block *db)
 {
     struct chorus_params *cp;
-    int             count, curr_channel = 0;
+    int             i, count, curr_channel = 0;
     double          dly, Speed, tmp_ang, Depth, BaseDelay, Dry, Wet, Rgn;
     DSP_SAMPLE     *outs, *ins;
     DSP_SAMPLE      tmp, rgn;
@@ -505,14 +509,16 @@ chorus_filter_mc(struct effect *p, struct data_block *db)
     while (count) {
         tmp_ang = cp->ang;
 
+        i = 0;
         /* mix # voices repeatedly into output channels if need be */
         for (curr_channel = 0; curr_channel < db->channels; curr_channel += 1) {
-            dly = BaseDelay + Depth * (1 + sin_lookup(tmp_ang)) / 2.0;
+            dly = BaseDelay * i / db->channels + Depth * (1 + sin_lookup(tmp_ang)) / 2.0;
             tmp = cp->history[0]->get_interpolated(cp->history[0], dly);
             tmp_ang += 1.0 / cp->voices;
             if (tmp_ang >= 1.0)
                 tmp_ang -= 1.0;
             *outs++ = (*ins * Dry + tmp * Wet) / sqrt(2);
+            i += 1;
         }
         
         dly = BaseDelay + Depth * (1 + sin_lookup(cp->ang)) / 2.0;
