@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2005/11/07 20:33:42  alankila
+ * - comment update
+ *
  * Revision 1.18  2005/11/07 20:26:40  alankila
  * - I decided to start trusting snd_pcm_hw_params_set_buffer_size_near.
  *
@@ -104,12 +107,14 @@
 #include "pump.h"
 #include "main.h"
 
-short           restarting;
-const char     *snd_device_in  = "plughw:0,0";
+// XXX: these should be made changeable in the UI
+const char     *snd_device_in      = "plughw:0,0";
 const char     *snd_2ch_device_out = "plughw:0,0";
 const char     *snd_4ch_device_out = "surround40:0,0";
-snd_pcm_t      *playback_handle;
-snd_pcm_t      *capture_handle;
+
+static short   restarting;
+static snd_pcm_t *playback_handle;
+static snd_pcm_t *capture_handle;
 
 static void           *
 alsa_audio_thread(void *V)
@@ -282,7 +287,21 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
 	return 1;
     }
 
-    /* set_periods_near fails on at least one hardware, bah. */ 
+    /* set_periods_near fails on at least one hardware. Perhaps count of
+     * periods can't really be specified before the period size is known?
+     * The code calling this part tries various fragment counts in trying to
+     * come up with identical parameters for playback and capture.
+     *
+     * Perhaps I should simply try setting buffer_time_near as user-specified
+     * latency; it'd be at least as likely to work, and much simpler. I'd
+     * still need to read the device to know what parameters ALSA eventually
+     * chose, and enforce that periods and period size are the same for
+     * playback and capture.
+     *
+     * To do that needs UI change -- most drivers should no longer allow
+     * choosing  buffer size but rather let user pick a latency and try to
+     * get a value as close as possible.
+     */
     if ((err = snd_pcm_hw_params_set_periods(device, hw_params, fragments, 0)) < 0) {
         snd_pcm_hw_params_free(hw_params);
 	return 1;
