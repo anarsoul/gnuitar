@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2005/11/07 20:26:40  alankila
+ * - I decided to start trusting snd_pcm_hw_params_set_buffer_size_near.
+ *
  * Revision 1.17  2005/11/05 12:18:38  alankila
  * - pepper the code with static declarations for all private funcs and vars
  *
@@ -224,7 +227,6 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
     int                 err;
     unsigned int        tmp;
     snd_pcm_uframes_t   frame_info;
-    int                 frame_size = channels * (bits / 8);
     
     if ((err = snd_pcm_hw_params_malloc(&hw_params)) < 0) {
         fprintf (stderr, "can't allocate parameter structure: %s\n",
@@ -285,44 +287,27 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
         snd_pcm_hw_params_free(hw_params);
 	return 1;
     }
+    
     //fprintf(stderr, "trying with %d fragments\n", fragments);
-    
-    /* workaround difficulties with SB Live!, if I ask a frame smaller than
-     * the minimum buffer it starts to read/write in that frame size while
-     * expecting larger frames nevertheless */
-    if ((err = snd_pcm_hw_params_get_buffer_size_min(hw_params, &frame_info)) < 0) {
-        fprintf(stderr, "can't query min buffer_size: %s\n",
-                snd_strerror(err));
-        frame_info = MIN_BUFFER_SIZE / frame_size;
-    }
-    //fprintf(stderr, "device claims min frame size = %d\n", (int) frame_info);
-    if (adapting && *frames < frame_info) {
-        fprintf(stderr, "warning: buffer_size %d is too small, using %d\n", (int) *frames, (int) frame_info);
-        *frames = frame_info;
-    }
-    if ((err = snd_pcm_hw_params_get_buffer_size_max(hw_params, &frame_info)) < 0) {
-        fprintf(stderr, "can't query max buffer_size: %s\n",
-                snd_strerror(err));
-        frame_info = MAX_BUFFER_SIZE / frame_size;
-    }
-    //fprintf(stderr, "device claims max frame size = %d\n", (int) frame_info);
-    if (frame_info > MAX_BUFFER_SIZE / frame_size)
-	frame_info = MAX_BUFFER_SIZE / frame_size;
-
-    /* I don't trust set_buffer_size_near, ALSA docs are too vague */
-    while (adapting && *frames < frame_info) {
-        if ((err = snd_pcm_hw_params_set_buffer_size(device, hw_params, *frames)) < 0) {
-	    *frames += fragments;
-	} else {
-	    break;
+    if (adapting) {
+        frame_info = *frames;
+        if ((err = snd_pcm_hw_params_set_buffer_size_near(device, hw_params, &frame_info)) < 0) {
+            fprintf(stderr, "can't set buffer_size to %d frames: %s\n",
+                    (int) *frames, snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
 	}
-    }
-    
-    if ((err = snd_pcm_hw_params_set_buffer_size(device, hw_params, *frames)) < 0) {
-        fprintf(stderr, "can't set buffer_size to %d frames: %s\n",
-		(int) *frames, snd_strerror(err));
-        snd_pcm_hw_params_free(hw_params);
-	return 1;
+        if (*frames != frame_info) {
+            fprintf(stderr, "alsa adjusted requested buffer size %d to %d frames\n", *frames, (int) frame_info);
+        }
+        *frames = frame_info;
+    } else {
+        if ((err = snd_pcm_hw_params_set_buffer_size(device, hw_params, *frames)) < 0) {
+            fprintf(stderr, "can't set buffer_size to %d frames: %s\n",
+                    (int) *frames, snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
+        }
     }
 
     if ((err = snd_pcm_hw_params(device, hw_params)) < 0) {
