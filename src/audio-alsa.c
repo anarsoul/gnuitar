@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2005/12/02 11:37:33  alankila
+ * - let's not hardcode plughw:0,0, it's better to use default:0,0
+ *
  * Revision 1.19  2005/11/07 20:33:42  alankila
  * - comment update
  *
@@ -108,8 +111,8 @@
 #include "main.h"
 
 // XXX: these should be made changeable in the UI
-const char     *snd_device_in      = "plughw:0,0";
-const char     *snd_2ch_device_out = "plughw:0,0";
+const char     *snd_device_in      = "default:0,0";
+const char     *snd_2ch_device_out = "default:0,0";
 const char     *snd_4ch_device_out = "surround40:0,0";
 
 static short   restarting;
