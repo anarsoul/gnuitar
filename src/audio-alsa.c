@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2005/12/03 20:01:05  alankila
+ * - fix snafu, the device I meant was default, not default:0,0 :-(
+ *
  * Revision 1.20  2005/12/02 11:37:33  alankila
  * - let's not hardcode plughw:0,0, it's better to use default:0,0
  *
@@ -111,9 +114,9 @@
 #include "main.h"
 
 // XXX: these should be made changeable in the UI
-const char     *snd_device_in      = "default:0,0";
-const char     *snd_2ch_device_out = "default:0,0";
-const char     *snd_4ch_device_out = "surround40:0,0";
+const char     *snd_device_in      = "default";
+const char     *snd_2ch_device_out = "default";
+const char     *snd_4ch_device_out = "surround40";
 
 static short   restarting;
 static snd_pcm_t *playback_handle;
