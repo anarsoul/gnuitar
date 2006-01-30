@@ -1,0 +1,94 @@
+> - To have some documentation (if it exist) on your project, or
+> maybe a general explanation of how it work (especially the way
+> you implements your effects [Structures, in/out...])
+I have no formal docs for developers. Look into src/pump.h -
+there are main structs. Each effect is divided into two files -
+effect.c and effect.h. Each effect (struct effect) has 5
+routines: init(), done(), filter(), save(), load(). Names are
+speaking for themselves. GUI stuff is in init() proc.
+Additonally, there are many callback functions for GTK events
+for every effect.
+The sound processing happens in pump.c - pump_sample().
+Also, there are additional files for sound drivers (only in the
+CVS version), like audio-alsa.c, audio-oss.c etc. There are few
+files with helper functions, like rcfilter.c, backbuf.c,
+biquad.c, fft.c.
+There are a lot of GUI stuff, but you can easily create a new
+effect using the existing effect as a skeleton, and just editing
+its source. You will also need to add the effect into pump.c:
+effect_list[].
+
+> -  A ping-pong delay : does gnuitar supports stereo ?
+CVS version -- yes. There is improved internal infrastructure --
+it is multichannel now -- not necessary stereo but even quadro,
+if the driver supports it (only for specific audio drivers.
+Currently ALSA only). So when you will write a multichannel
+effect, you must keep this in mind. Never assume it is stereo,
+but instead look for the # of channels in the
+main.c:audio_driver (variable of the type audio_driver_t, the
+type is defined in pump.h).
+
+> - A pitch shifter : does yours include amplitude and phase
+> correction ?
+Nor sure. Don't think it includes it. As I see it uses a quite
+simplistic algo. The last year the active project developer is
+Antti S. Lankila <alankila@bel.fi>. He is the author of pitch
+shifter, new version of overdrive (former distort2 effect),
+tuner, as well as fft library. While I do the overall project
+coordination, i.e. approve which features are essential, also do
+some minor programming and make the product from the program.
+If you have questions about the effects/lib above, you may just
+write to Antti.
+
+> We hope these effects could help you in your project.
+> Just a few many questions :
+> - What is the problem in using the existent fftw library ?
+No problem at all. I think it is used in the effects written by
+Antti. Feel free to use it.
+
+> - What is the role the BACKBUF ?
+backbuf is a sample memory. It is used everywhere in the time
+effects (various delays, reverb, chorus etc - everywhere you
+need to save a sample to pick it up in future).
+So Antti written a C variant of class -- a structure with
+ methods (as we use pure C, we avoid C++ syntax. I must ask you
+ to follow this rule).
+
+> - Can you explain the main lines of how the file pump.c works
+> ?
+There are few helper functions:
+bias_elimitation()
+noise_reduction() -- these two are applied to the input signal
+ to make it cleaner.
+init_sin_lookup_table() - to initialize the sin() lookup table.
+Instead of using sin() trigonomethric function in various
+effects (chorus for example), we compose a lookup table to save
+CPU.
+
+The main functions are:
+pump_sample() - this one takes one data block received from
+ audio driver and apply all chosen effects (including bias
+ elimination, rendering vu meter etc).
+
+struct effect_creator creator_list[] is a list of effects create
+functions and its GUI names. It is used in pump_start() to
+initialize all internal structures of effects.
+
+load_settings() and save_settings() speak for themselves. These
+two load/save settings into the .ini-style config file.
+
+pump_start() and pump_stop() are called everytime you press the
+big START/STOP button (i.e. begin or end the sound processing).
+It do init/deinit work.
+
+save_pump() and load_pump() are used to save/load the list of
+current effects into the preset file.
+
+There are few mutexes in the program. In the pump.c there is a
+mutex to access effect list. It is introduced by Antti and I'm
+not sure what for is it. I suspect it is to disallow to access
+effects when you're going to START/STOP sound processing.
+
+Feel free to ask if something is not clear.
+
+Max.
