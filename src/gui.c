@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.69  2006/02/07 13:30:57  fonin
+ * Fixes to ALSA driver by Vasily Khoruzhick
+ *
  * Revision 1.68  2005/11/05 12:18:38  alankila
  * - pepper the code with static declarations for all private funcs and vars
  *
@@ -582,9 +585,9 @@ selectrow_processor(GtkWidget *widget, gint row, gint col,
 {
     curr_row = row;
     /* doubleclick highlights the window */
-    if(event && event->type == GDK_2BUTTON_PRESS) {
-        gtk_window_present(GTK_WINDOW(effects[curr_row]->control));
-    }
+    //if(event && event->type == GDK_2BUTTON_PRESS) {
+    //    gtk_window_present(GTK_WINDOW(effects[curr_row]->control));
+    //}
 }
 
 static void
@@ -979,11 +982,12 @@ set_vumeter_value(double peak, double power) {
 
 static gboolean
 timeout_update_vumeter(gpointer vumeter) {
+    //return TRUE;
     GtkRcStyle *rc_style = NULL;
     GdkColor color;
     double power = 0.0;
 
-    rc_style = gtk_rc_style_new();
+    //rc_style = gtk_rc_style_new();
     if (vumeter_peak >= 1.0) {
 
         /* indicate distortion due to clipping */
@@ -992,11 +996,11 @@ timeout_update_vumeter(gpointer vumeter) {
         color.green = 0;
         color.blue  = 0;
 
-        rc_style->bg[GTK_STATE_NORMAL] = color;
-        rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG;
+    //    rc_style->bg[GTK_STATE_NORMAL] = color;
+    //    rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG;
     }
-    gtk_widget_modify_style(vumeter, rc_style);
-    gtk_rc_style_unref(rc_style);
+    //gtk_widget_modify_style(vumeter, rc_style);
+    //gtk_rc_style_unref(rc_style);
 
     if (vumeter_power != 0.0) {
         power = log(vumeter_power) / log(10) * 10;

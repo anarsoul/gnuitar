@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.51  2006/02/07 13:30:57  fonin
+ * Fixes to ALSA driver by Vasily Khoruzhick
+ *
  * Revision 1.50  2005/09/28 19:55:04  fonin
  * DirectSound hook on startup
  *
@@ -350,9 +353,8 @@ main(int argc, char **argv)
 		GetLastError());
     }
 #endif
-    init_gui();
+    pump_start(argc, argv);    
 
-    pump_start(argc, argv);
     if (audio_driver) {
         if ((error = audio_driver->init()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
@@ -361,6 +363,10 @@ main(int argc, char **argv)
         }
     }
 
+    init_gui();
+
+    
+    
     gtk_main();
 
 #ifndef _WIN32

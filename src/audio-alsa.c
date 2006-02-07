@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2006/02/07 13:30:57  fonin
+ * Fixes to ALSA driver by Vasily Khoruzhick
+ *
  * Revision 1.21  2005/12/03 20:01:05  alankila
  * - fix snafu, the device I meant was default, not default:0,0 :-(
  *
@@ -232,8 +235,12 @@ alsa_finish_sound(void)
  * parameters on the two devices, which may not even be same physical
  * hardware. */
 static int
-alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *frames, int channels, int adapting)
+alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *frames, int channels, int adapting)
 {
+    /*fprintf(stderr,"So we want to have:\n");
+    fprintf(stderr,"Fragments: %d\n", *fragments);
+    fprintf(stderr,"Frames: %d\n", *frames);
+    fprintf(stderr,"Channels: %d\n", channels);*/
     snd_pcm_hw_params_t *hw_params;
     int                 err;
     unsigned int        tmp;
@@ -308,14 +315,29 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int fragments, unsigned int *fr
      * choosing  buffer size but rather let user pick a latency and try to
      * get a value as close as possible.
      */
-    if ((err = snd_pcm_hw_params_set_periods(device, hw_params, fragments, 0)) < 0) {
-        snd_pcm_hw_params_free(hw_params);
-	return 1;
+    if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
+	fprintf(stderr, "set period to %d failed!\n", *fragments);
+	
+	unsigned int ret_fragments=*fragments;
+	if ((err = snd_pcm_hw_params_set_periods_near(device, hw_params, &ret_fragments,0)) < 0)
+	{
+	    fprintf(stderr, "near fails too :)\n");
+	    snd_pcm_hw_params_free(hw_params);
+            return 1;
+	}
+	else
+	{
+	    fprintf(stderr, "alsa sets periods to %d\n", ret_fragments);
+	    *fragments=ret_fragments;
+	
+	}
+	
+        
     }
     
-    //fprintf(stderr, "trying with %d fragments\n", fragments);
     if (adapting) {
         frame_info = *frames;
+	
         if ((err = snd_pcm_hw_params_set_buffer_size_near(device, hw_params, &frame_info)) < 0) {
             fprintf(stderr, "can't set buffer_size to %d frames: %s\n",
                     (int) *frames, snd_strerror(err));
@@ -354,7 +376,7 @@ static int
 alsa_init_sound(void)
 {
     int             err;
-    unsigned int    frames;
+    unsigned int    frames, fragments2, tries;
     const char     *snd_device_out;
 
     snd_device_out = n_output_channels == 4 ? snd_4ch_device_out : snd_2ch_device_out;
@@ -371,32 +393,43 @@ alsa_init_sound(void)
 	return ERR_WAVEINOPEN;
     }
 
-#define MAX_FRAGMENTS 8
+#define MAX_FRAGMENTS 16
+#define MAX_TRIES 32
+    tries=0;
     fragments = 2;
     /* buffer size really defines the input buffer's size. We convert it to
      * frames and ask same count of frames in both directions */
     frames = buffer_size / n_input_channels / (bits / 8) * fragments;
     while (fragments < MAX_FRAGMENTS) {
         frames = buffer_size / n_input_channels / (bits / 8) * fragments;
-        /* since the parameters can take a different form depending on which is
+        
+	/* since the parameters can take a different form depending on which is
          * configured first, try configuring both ways before incrementing
          * fragments */ 
+	fragments2=fragments;
 	if (
-(alsa_configure_audio(playback_handle, fragments, &frames, n_output_channels, 1)
-|| alsa_configure_audio(capture_handle, fragments, &frames, n_input_channels, 0))
+(alsa_configure_audio(playback_handle, &fragments, &frames, n_output_channels, 1)
+|| alsa_configure_audio(capture_handle, &fragments, &frames, n_input_channels, 0))
         ) {
+	    fragments=fragments2;
             frames = buffer_size / n_input_channels / (bits / 8) * fragments;
             if (
-(alsa_configure_audio(capture_handle, fragments, &frames, n_input_channels, 1)
-|| alsa_configure_audio(playback_handle, fragments, &frames, n_output_channels, 0))
+(alsa_configure_audio(capture_handle, &fragments, &frames, n_input_channels, 1)
+|| alsa_configure_audio(playback_handle, &fragments, &frames, n_output_channels, 0))
             ) {
-                fragments += 1;
+		fragments=fragments2;
+		fragments +=1;
             } else {
                 break;
             }
 	} else {
             break;
         }
+    tries++;
+    if (tries==MAX_TRIES) {
+	fragments == MAX_FRAGMENTS;
+	break;
+	}
     }
     /* if reached max we failed to find anything workable */
     if (fragments == MAX_FRAGMENTS) {
