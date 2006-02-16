@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2006/02/16 19:23:43  alankila
+ * - fix a useless use of comparison to what was probably meant
+ *
  * Revision 1.22  2006/02/07 13:30:57  fonin
  * Fixes to ALSA driver by Vasily Khoruzhick
  *
@@ -427,7 +430,7 @@ alsa_init_sound(void)
         }
     tries++;
     if (tries==MAX_TRIES) {
-	fragments == MAX_FRAGMENTS;
+	fragments = MAX_FRAGMENTS;
 	break;
 	}
     }
