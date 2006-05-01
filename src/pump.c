@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.52  2006/05/01 10:23:54  anarsoul
+ * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
+ *
  * Revision 1.51  2005/11/05 12:18:38  alankila
  * - pepper the code with static declarations for all private funcs and vars
  *
@@ -238,6 +241,7 @@
 #include "gui.h"
 #include "glib12-compat.h"
 
+#include "amp.h"
 #include "autowah.h"
 #include "phasor.h"
 #include "chorus.h"
@@ -264,6 +268,7 @@ volatile unsigned short  write_track = 0;
 
 /* default settings */
 char           *audio_driver_str = NULL;
+char           alsadevice_str[64];
 unsigned short  n_input_channels = 1;
 unsigned short  n_output_channels = 1;
 unsigned int    sample_rate = 44100;
@@ -369,6 +374,22 @@ adjust_master_volume(data_block_t *db) {
     }
 }
 
+static void
+adjust_input_volume(data_block_t *db) {
+    int		    i;
+    double	    volume = pow(10, input_volume / 20.0);
+
+    for (i = 0; i < db->len; i += 1) {
+	double val = db->data[i] * volume;
+        if (val < -MAX_SAMPLE)
+            val = -MAX_SAMPLE;
+        if (val > MAX_SAMPLE)
+            val = MAX_SAMPLE;
+        db->data[i] = val;
+    }
+}
+
+
 /* dithering can be thought of as a procedure where quantization errors
  * are drowned in noise that has the same energy as the errors themselves.
  *
@@ -445,8 +466,11 @@ pump_sample(data_block_t *db)
 
     /* NR is enabled only experimentally until
      * the noise filter will have been implemented */
+     
     noise_reduction(db);
     bias_elimination(db);
+    
+    adjust_input_volume(db);
 
     my_lock_mutex(effectlist_lock);
     for (i = 0; i < n; i++) {
@@ -470,6 +494,7 @@ pump_sample(data_block_t *db)
 
 /* note that vibrato & tremolo effects are swapped */
 struct effect_creator effect_list[] = {
+    {"Amp", amp_create},
     {"Autowah", autowah_create},
     {"Distort", distort_create},
     {"Delay", delay_create},
@@ -537,7 +562,24 @@ load_settings() {
             audio_driver_str = "DirectX";
         free(gstr);
     }
+    
+    error = NULL;
+    gstr = g_key_file_get_string(file, "global", "alsadevice", &error);
+    strcpy(alsadevice_str, "default");
+    if (error == NULL) {
+	if (strlen(gstr)>63)
+        {
+	    fprintf(stderr,"alsadevice name too long. device set to default");
+	    strcpy(alsadevice_str,"default");
+	}
+	else
+	{
+	    strcpy(alsadevice_str, gstr);
+	
+	}
 
+	free(gstr);	
+    }
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "bits", &error);
     if (error == NULL)
@@ -586,6 +628,7 @@ void save_settings() {
     file = g_key_file_new();
 
     g_key_file_set_string(file, "global", "driver", audio_driver_str);
+    g_key_file_set_string(file, "global", "alsadevice", alsadevice_str);
     g_key_file_set_integer(file, "global", "bits", bits);
     g_key_file_set_integer(file, "global", "n_output_channels", n_output_channels);
     g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
@@ -629,6 +672,7 @@ pump_start(int argc, char **argv)
     init_sin_lookup_table();
 
     master_volume = 0.0;
+    input_volume = 0.0;
     j = 0;
 
     if (argc == 1) {
@@ -722,6 +766,7 @@ save_pump(const char *fname)
     my_unlock_mutex(effectlist_lock);
 
     g_key_file_set_double(preset, "global", "volume", master_volume);
+    g_key_file_set_double(preset, "global", "input_volume", input_volume);
 
     key_file_as_str = g_key_file_to_data(preset, &length, NULL);
     w_length = write(fd, key_file_as_str, length);
@@ -816,9 +861,39 @@ load_pump(const char *fname)
     }
     my_unlock_mutex(effectlist_lock);
 
-    master_volume = g_key_file_get_double(preset, "global", "volume", &error);
+    //g_key_file_get_double causes sigfault on my version of gtk (2.6.10)
+    //so making workaround this bug
+    master_volume = g_key_file_get_integer(preset, "global", "volume", &error);
+    
+    if (error != NULL) 
+    {
+	master_volume = 0.0;
+	error = NULL;
+    }
+    else
+    {
+	master_volume = g_key_file_get_double(preset, "global", "volume", &error);
+    }
+    
+    //g_key_file_get_double causes sigfault on my version of gtk (2.6.10)
+    //so making workaround this bug
+    input_volume = g_key_file_get_integer(preset, "global", "input_volume", &error);
+    
+    if (error != NULL) 
+    {
+	input_volume = 0.0;
+	error = NULL;
+    }
+    else
+    {
+	input_volume = g_key_file_get_double(preset, "global", "input_volume", &error);
+    }
+        
     g_key_file_free(preset);
-
+    
+    
     /* update master volume */
     gtk_adjustment_set_value(GTK_ADJUSTMENT(adj_master),master_volume);
+    /* update input volume */
+    gtk_adjustment_set_value(GTK_ADJUSTMENT(adj_input),input_volume);
 }

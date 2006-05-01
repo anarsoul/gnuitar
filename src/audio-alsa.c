@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2006/05/01 10:23:54  anarsoul
+ * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
+ *
  * Revision 1.23  2006/02/16 19:23:43  alankila
  * - fix a useless use of comparison to what was probably meant
  *
@@ -122,7 +125,7 @@
 // XXX: these should be made changeable in the UI
 const char     *snd_device_in      = "default";
 const char     *snd_2ch_device_out = "default";
-const char     *snd_4ch_device_out = "surround40";
+const char     *snd_4ch_device_out = "default";
 
 static short   restarting;
 static snd_pcm_t *playback_handle;
@@ -382,7 +385,8 @@ alsa_init_sound(void)
     unsigned int    frames, fragments2, tries;
     const char     *snd_device_out;
 
-    snd_device_out = n_output_channels == 4 ? snd_4ch_device_out : snd_2ch_device_out;
+    //snd_device_out = n_output_channels == 4 ? snd_4ch_device_out : snd_2ch_device_out;
+    snd_device_out = alsadevice_str;
 
     if ((err = snd_pcm_open(&playback_handle, snd_device_out, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 	fprintf(stderr, "can't open output audio device %s: %s\n", snd_device_out, snd_strerror(err));
@@ -396,15 +400,18 @@ alsa_init_sound(void)
 	return ERR_WAVEINOPEN;
     }
 
-#define MAX_FRAGMENTS 16
-#define MAX_TRIES 32
+#define MAX_FRAGMENTS 8
+#define MAX_TRIES 16
     tries=0;
     fragments = 2;
     /* buffer size really defines the input buffer's size. We convert it to
      * frames and ask same count of frames in both directions */
-    frames = buffer_size / n_input_channels / (bits / 8) * fragments;
+    //frames = buffer_size / n_input_channels / (bits / 8) * fragments;
+    frames = buffer_size;
     while (fragments < MAX_FRAGMENTS) {
-        frames = buffer_size / n_input_channels / (bits / 8) * fragments;
+    
+        //frames = buffer_size / n_input_channels / (bits / 8) * fragments;
+	frames = buffer_size;
         
 	/* since the parameters can take a different form depending on which is
          * configured first, try configuring both ways before incrementing
@@ -440,9 +447,10 @@ alsa_init_sound(void)
         snd_pcm_close(capture_handle);
 	return ERR_WAVEFRAGMENT;
     }
-    buffer_size = frames * n_input_channels * (bits / 8) / fragments;
+    //buffer_size = frames * n_input_channels * (bits / 8) / fragments;
+    buffer_size = frames;
     restarting = 1;
-    
+        
     state = STATE_PROCESS;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;

@@ -131,6 +131,7 @@ extern int sin_lookup_table[SIN_LOOKUP_SIZE];
 
 extern volatile unsigned short write_track;
 
+extern char alsadevice_str[64];
 extern char *audio_driver_str;
 extern unsigned short n_input_channels;
 extern unsigned short n_output_channels;

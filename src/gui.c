@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.70  2006/05/01 10:23:54  anarsoul
+ * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
+ *
  * Revision 1.69  2006/02/07 13:30:57  fonin
  * Fixes to ALSA driver by Vasily Khoruzhick
  *
@@ -310,7 +313,7 @@
 extern short dsound;
 #endif
 
-#define VU_UPDATE_INTERVAL 25.0    /* ms */
+#define VU_UPDATE_INTERVAL 100.0    /* ms */
 
 static void     add_pressed(GtkWidget *, gpointer);
 static void     bank_start_save(GtkWidget *, gpointer);
@@ -357,12 +360,18 @@ static GtkWidget      *add;
 static GtkWidget      *tracker;
 static GtkWidget      *start;
 static GtkTooltips    *tooltips;
+static GtkWidget      *volume_label;
+static GtkWidget      *input_label;
+
 
 /* some public GUI widgets */
 GtkWidget      *processor;
 /* master volume and its current value */
 GtkObject      *adj_master;
 double		master_volume;
+GtkObject      *adj_input;
+double		input_volume;
+
 
 /* vumeter state */
 static double vumeter_peak = 0;
@@ -964,6 +973,10 @@ typedef struct SAMPLE_PARAMS {
     GtkWidget      *channels;
     GtkWidget      *bits;
     GtkWidget      *latency;
+    
+    GtkWidget      *alsadevice;
+    GtkWidget      *alsadevice_label;
+    
     GtkWidget      *dialog;
     GtkWidget      *latency_label;
     GtkWidget      *driver;
@@ -983,7 +996,7 @@ set_vumeter_value(double peak, double power) {
 static gboolean
 timeout_update_vumeter(gpointer vumeter) {
     //return TRUE;
-    GtkRcStyle *rc_style = NULL;
+    //GtkRcStyle *rc_style = NULL;
     GdkColor color;
     double power = 0.0;
 
@@ -1019,6 +1032,12 @@ static void
 update_master_volume(GtkAdjustment *adj, void *nothing) {
     master_volume = adj->value;
 }
+
+static void
+update_input_volume(GtkAdjustment *adj, void *nothing) {
+    input_volume = adj->value;
+}
+
 
 static void
 update_latency_label(GtkWidget *widget, gpointer data)
@@ -1098,6 +1117,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     GtkWidget      *rate_label;
     GtkWidget      *bits_label;
     GtkWidget      *channels_label;
+        
     GtkWidget      *latency_label;
     GtkWidget	   *driver_label;
     GtkWidget      *ok;
@@ -1106,6 +1126,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     GtkWidget      *vpack,
                    *buttons_pack;
     GList          *sample_rates = NULL;
+    GList          *alsadevice_list = NULL;
     GList          *bits_list = NULL;
     GList          *channels_list = NULL;
     GList          *drivers_list = NULL;
@@ -1124,7 +1145,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(vpack), group, TRUE, TRUE, 0);
     gtk_container_add(GTK_CONTAINER(sparams.dialog), vpack);
 
-    sp_table = gtk_table_new(4, 4, FALSE);
+    sp_table = gtk_table_new(4, 5, FALSE);
     gtk_container_add(GTK_CONTAINER(group), sp_table);
 
 #define TBLOPT  __GTKATTACHOPTIONS(GTK_FILL|GTK_EXPAND|GTK_SHRINK)
@@ -1134,8 +1155,34 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_table_attach(GTK_TABLE(sp_table), rate_label, 0, 1, 0, 1,
                      TBLOPT, TBLOPT, 3, 3);
 
+    sparams.alsadevice_label = gtk_label_new("Alsa Device:");
+    gtk_misc_set_alignment(GTK_MISC(sparams.alsadevice_label), 0, 0.5);
+    
+    gtk_table_attach(GTK_TABLE(sp_table), sparams.alsadevice_label, 0, 1, 3, 4,
+                     TBLOPT, TBLOPT, 3, 3);
+		     
+    sparams.alsadevice = gtk_combo_new();
+    
+    alsadevice_list = g_list_append(alsadevice_list, "default");
+    alsadevice_list = g_list_append(alsadevice_list, "guitar");
+    
+    gtk_combo_set_popdown_strings(GTK_COMBO(sparams.alsadevice), alsadevice_list);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.alsadevice)->entry), alsadevice_str);
+		       //g_strdup_printf("%d", sample_rate));
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.alsadevice)->entry), TRUE);
+    
+    //gtk_misc_set_alignment(GTK_MISC(alsadevice), 0, 0.5);
+    
+    gtk_table_attach(GTK_TABLE(sp_table),  sparams.alsadevice, 1, 2, 3, 4,
+                     TBLOPT, TBLOPT, 3, 3);
+		     
+    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.alsadevice)->entry,"This is name of alsa device. (Effective only with alsa driver)",NULL);
+
+    
     sparams.rate = gtk_combo_new();
     /* these may also be driver dependant but let's leave them as is for now */
+    sample_rates = g_list_append(sample_rates, "96000");
+    sample_rates = g_list_append(sample_rates, "88200");
     sample_rates = g_list_append(sample_rates, "48000");
     sample_rates = g_list_append(sample_rates, "44100");
     sample_rates = g_list_append(sample_rates, "22050");
@@ -1312,6 +1359,19 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
     int             tmp1, tmp2;
     sample_params  *sp = data;
 
+    const char *tmp=NULL;
+
+    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->alsadevice)->entry));
+    if (tmp == NULL)
+    {
+	strcpy(alsadevice_str, "default");
+    }
+    else
+    {
+	strcpy(alsadevice_str, tmp);
+    }
+    
+    
     buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
     /* for certain audio drivers, make the fragment size to be a multiple
      * of the MIN_BUFFER_SIZE */
@@ -1411,6 +1471,7 @@ init_gui(void)
     GtkAccelGroup  *accel_group;
     GtkWidget      *vumeter;
     GtkWidget	   *master;
+    GtkWidget      *input;
     int             i;
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
@@ -1570,8 +1631,22 @@ init_gui(void)
     gtk_progress_configure(GTK_PROGRESS(vumeter), -91, -91, 0);
     gtk_progress_set_show_text(GTK_PROGRESS(vumeter), TRUE);
     adj_master = gtk_adjustment_new(master_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
+    adj_input = gtk_adjustment_new(input_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
+    
+
+    
     master = gtk_hscale_new(GTK_ADJUSTMENT(adj_master));
+    input = gtk_hscale_new(GTK_ADJUSTMENT(adj_input));
+    
+    gtk_tooltips_set_tip(tooltips, master, "Use this adjustment to change output level.", NULL);
+    gtk_tooltips_set_tip(tooltips, input, "Use this adjustment to change input level.", NULL);
+    
     gtk_scale_set_draw_value(GTK_SCALE(master), FALSE);
+    
+    gtk_scale_set_draw_value(GTK_SCALE(input), FALSE);
+    
+    volume_label = gtk_label_new("Output volume:");
+    input_label = gtk_label_new("Input volume:");
 
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
@@ -1592,10 +1667,14 @@ init_gui(void)
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), add, 4, 5, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
-    gtk_table_attach(GTK_TABLE(tbl), tracker, 0, 1, 5, 6,
+    gtk_table_attach(GTK_TABLE(tbl), tracker, 0, 1, 5, 7,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 2, 2);
-    gtk_table_attach(GTK_TABLE(tbl), vumeter, 1, 3, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
-    gtk_table_attach(GTK_TABLE(tbl), master, 4, 6, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), vumeter, 1, 3, 5, 7, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), input, 4, 6, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), master, 4, 6, 6, 7, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+
+    gtk_table_attach(GTK_TABLE(tbl), volume_label, 3, 4, 6, 7, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), input_label, 3, 4, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
 
     gtk_signal_connect(GTK_OBJECT(bank_add), "clicked",
 		       GTK_SIGNAL_FUNC(bank_add_pressed), NULL);
@@ -1624,7 +1703,9 @@ init_gui(void)
     gtk_signal_connect(GTK_OBJECT(known_effects), "select_row",
 		       GTK_SIGNAL_FUNC(selectrow_effects), known_effects);
     gtk_signal_connect(GTK_OBJECT(adj_master), "value_changed",
-		       GTK_SIGNAL_FUNC(update_master_volume), NULL);
+		       GTK_SIGNAL_FUNC(update_master_volume), NULL);		       
+    gtk_signal_connect(GTK_OBJECT(adj_input), "value_changed",
+		       GTK_SIGNAL_FUNC(update_input_volume), NULL);
     gtk_widget_show_all(mainWnd);
 
     g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter, vumeter);

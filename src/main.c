@@ -20,8 +20,8 @@
  * $Id$
  *
  * $Log$
- * Revision 1.51  2006/02/07 13:30:57  fonin
- * Fixes to ALSA driver by Vasily Khoruzhick
+ * Revision 1.52  2006/05/01 10:23:54  anarsoul
+ * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
  *
  * Revision 1.50  2005/09/28 19:55:04  fonin
  * DirectSound hook on startup
@@ -257,7 +257,7 @@ main(int argc, char **argv)
     struct sched_param p;
 
     max_priority = sched_get_priority_max(SCHED_FIFO);
-    p.sched_priority = max_priority;
+    p.sched_priority = max_priority/2;
 
     if (sched_setscheduler(0, SCHED_FIFO, &p)) {
 	fprintf(stderr, "warning: unable to set realtime priority (needs root privileges)\n");
