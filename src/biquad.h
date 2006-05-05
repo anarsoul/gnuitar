@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.14  2006/05/05 18:34:32  alankila
+ * - handle denormals to avoid slowdowns for digital silence type situations.
+ *
  * Revision 1.13  2005/10/30 11:21:05  alankila
  * - more correct and precise output filtering!
  * - real device seems to have some kind of highpass filtering around 50 Hz
@@ -81,6 +84,10 @@
 
 #include "pump.h"
 
+/* Denormals are small numbers that force FPU into slow mode.
+ * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
+#define DENORMAL_BIAS   1E-5
+
 struct Biquad {
     double          b0, b1, b2, a1, a2;
     double          mem[MAX_CHANNELS][4];
@@ -122,7 +129,7 @@ do_biquad(double x, Biquad_t *f, int c)
     if(isnan(x))
 	x=0;
     y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
-        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2;
+        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2 + DENORMAL_BIAS;
     if(isnan(y))
 	y=0;
     f->mem[c][1] = f->mem[c][0];

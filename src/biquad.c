@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.16  2006/05/05 18:34:32  alankila
+ * - handle denormals to avoid slowdowns for digital silence type situations.
+ *
  * Revision 1.15  2005/11/01 12:32:16  alankila
  * - fix highpass
  *
@@ -231,7 +234,7 @@ do_biquad(double x, Biquad_t *f, int c)
     if(isnan(x))
 	x=0;
     y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
-        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2;
+        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2 + DENORMAL_BIAS;
     if(isnan(y))
 	y=0;
     f->mem[c][1] = f->mem[c][0];
