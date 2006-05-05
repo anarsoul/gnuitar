@@ -59,11 +59,16 @@ class BiquadFilter(object):
         a0 = self.b0
         a1 = self.b1
         a2 = self.b2
+        a3 = self.b3
+        a4 = self.b4
+        a5 = self.b5
         b0 = 1.0
         b1 = self.a1
         b2 = self.a2
-        a3 = a4 = a5 = b3 = b4 = b5 = 0.0
-
+        b3 = self.a3
+        b4 = self.a4
+        b5 = self.a5
+        
         sin = math.sin
         cos = math.cos
         C_PI = math.pi
@@ -136,13 +141,20 @@ class BiquadFilter(object):
               2*b2*b5*cos((6*f*C_PI)/rate) + 2*b0*b4*cos((8*f*C_PI)/rate) +
               2*b1*b5*cos((8*f*C_PI)/rate) + 2*b0*b5*cos((10*f*C_PI)/rate)))
 
+    @classmethod
     def lin2db(self, lin):
         return 20 * (math.log(lin) / math.log(10))
 
-def make_rc_lopass(sample_rate, res, cap):
-    rc = res * cap
-    ts = 1.0 / sample_rate
-    return BiquadFilter(ts/(ts+rc), 0.0, 0.0, -rc/(ts+rc), 0.0);
+def make_rc_lopass(sample_rate, freq):
+    if freq > sample_rate / 2.0:
+        freq = sample_rate / 2.0
+
+    # correction for frequency warping effect
+    omega = 2 * math.pi * freq / sample_rate;
+    omega = math.tan(omega / 2) * 2
+
+    term = 1 + 1/omega;
+    return BiquadFilter(1/term, 0.0, 0.0, -1.0 + 1/term, 0.0);
 
 # XXX hipass and hiboost are a bit dubious, hipass is probably wrong
 def make_rc_hipass(sample_rate, res, cap):
@@ -273,42 +285,72 @@ def make_nr(length):
     if length == 2:
         return BiquadFilter(0.5, 0.5, 0.0, 0.0, 0.0)
     if length == 3:
-        return BiquadFilter(0.33, 0.33, 0.33, 0.0, 0.0)
+        return BiquadFilter(0.25, 0.5, 0.25, 0.0, 0.0)
     raise RuntimeError, "only lenghts 2, 3 supported"
+
+def make_butterworth(fs, fc):
+    # a0 = a2 = omega^2 / c
+    # a1 = 2 * a0
+    # b1 = 2 * (omega^2 - 1)
+    # b2 = (1 - 2 * cos(pi / 4) * omega + omega^2) / c
+    # c = 1 + 2 * cos(pic / 4) * omega + omega^2
+    omega = 2 * math.pi * fc / fs;
+
+    c = 1 + 2 * math.cos(math.pi / 4) * omega + omega ** 2
+    a0 = a2 = omega ** 2 / c
+    a1 = 2 * a0
+    b1 = 2 * (omega ** 2 - 1) / c
+    b2 = (1 - 2 * math.cos(math.pi / 4) * omega + omega ** 2) / c
+    
+    return BiquadFilter(a0, a1, a2, b1, b2)
 
 def main():
     # frequency is actually fairly irrelevant, but you can compare the
     # performance of some of the filters near 20 kHz using 44.1 kHz sampling
     # frequency if you like.
-    sampling_rate_hz = 44100.0
+    sampling_rate_hz = int(sys.argv[1])
 
-    #filter = make_allpass(float(sys.argv[1]))
-    #filter = make_rc_lopass(sampling_rate_hz, 20e3, 0.5e-9)
-    filter = make_rc_hipass(sampling_rate_hz, 1, 1 / (2 * math.pi * 100))
-    #filter = make_filter('PEQ', sampling_rate_hz, 3000, 2.0, 2.0)
-    #filter = make_chebyshev_1(sampling_rate_hz, 1000.0, 0.0, False)
+    # A500 / A1200 LED filter -- third order roll-off at 2.5 kHz
+    #filter1 = make_rc_lopass(sampling_rate_hz, 6070)
+    #filter2 = make_rc_lopass(sampling_rate_hz, 10070)
+    #filter3 = make_rc_lopass(sampling_rate_hz, 10070)
+    filter4 = BiquadFilter(1, 0, 0, 0, 0)
+    
+    # A500 static filter -- first order roll-off at 5 kHz
+    #filter1 = make_rc_lopass(sampling_rate_hz, 7600)
+    #filter2 = make_rc_lopass(sampling_rate_hz, 80500)
+    #filter3 = BiquadFilter(1, 0, 0, 0, 0)
+    #filter4 = BiquadFilter(1, 0, 0, 0, 0)
 
-    print "# b0=%s" % filter.b0
-    print "# b1=%s" % filter.b1
-    print "# b2=%s" % filter.b2
-    print "# a1=%s" % filter.a1
-    print "# a2=%s" % filter.a2
+    # null filter
+    #filter1 = BiquadFilter(0.6, 0, 0, -0.4, 0)
+    filter1 = make_butterworth(sampling_rate_hz, 3200)
+    #filter1 = make_filter('LPF', sampling_rate_hz, 3200, 2.0, 0)
+    filter2 = BiquadFilter(0.6, 0, 0, -0.4, 0)
+    filter3 = BiquadFilter(0.6, 0, 0, -0.4, 0)
+    filter4 = BiquadFilter(0.6, 0, 0, -0.4, 0)
+ 
+    print "#f1: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter1.b0, filter1.b1, filter1.b2, filter1.a1, filter1.a2)
+    print "#f2: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter2.b0, filter2.b1, filter2.b2, filter2.a1, filter2.a2)
+    print "#f3: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter3.b0, filter3.b1, filter3.b2, filter3.a1, filter3.a2)
+    print "#f4: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter4.b0, filter4.b1, filter4.b2, filter4.a1, filter4.a2)
 
-    for dp in range(301):
-        freq_hz = 20*math.pow(2, math.log(20000./20.)/math.log(2) * dp / 300.)
-        power_db = filter.lin2db(filter.mag(sampling_rate_hz, freq_hz))
-        phase_ang = filter.phi(sampling_rate_hz, freq_hz) / math.pi * 180
+    for dp in range(90):
+        freq_hz = 20 * math.pow(2, math.log(sampling_rate_hz/20./2)/math.log(2) * dp / 90.)
+        power_db = BiquadFilter.lin2db(
+              filter1.mag(sampling_rate_hz, freq_hz)
+            * filter2.mag(sampling_rate_hz, freq_hz)
+            * filter3.mag(sampling_rate_hz, freq_hz)
+            * filter4.mag(sampling_rate_hz, freq_hz)
+        )
+        phase_ang = (
+                  filter1.phi(sampling_rate_hz, freq_hz)
+                 + filter2.phi(sampling_rate_hz, freq_hz)
+                 + filter3.phi(sampling_rate_hz, freq_hz)
+                 + filter4.phi(sampling_rate_hz, freq_hz)
+        ) / math.pi * 180
         print "%8.2f %7.3f %5.1f" % (freq_hz, power_db, phase_ang)
     
-    # let's assume we sample data for 1 second and take 44100 measurements...
-    # then it's easy
-    #for _ in range(44100):
-    #    out = filter.filter(math.sin(
-    #        _ / 44100.0 * math.pi * 2 * 3250
-    #    ))
-    #    print "# %.8f" % out
-
-
 if __name__ == '__main__':
     main()
 
