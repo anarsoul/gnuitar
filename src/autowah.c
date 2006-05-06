@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2006/05/06 16:52:29  alankila
+ * - better defaults
+ * - more exciting Wah algorithm according to Antti Huoviala's paper
+ *   "Non-Linear Digital implementation Of The Moog Ladder Filter"
+ *   (published on 7th int. conference on digital audio effects, DAFx'04)
+ *
  * Revision 1.31  2005/10/22 14:21:05  alankila
  * - reduce wah sweep range to saner limits, also reduce number of magical-
  *   seeming constants. This version is most reliable pick detector yet.
@@ -408,14 +414,55 @@ autowah_filter(struct effect *p, struct data_block *db)
      * a = freq_low, and b = log2(freq_high / freq_low)
      */
 
-    ap->smoothed_f = (ap->f + ap->smoothed_f * 3) / 4;
-    
-    freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->smoothed_f);
-    RC_set_freq(freq, ap->fd);
-    RC_bandpass(db, ap->fd);
-
+    ap->smoothed_f = (ap->f + ap->smoothed_f) / 2;
+    freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->smoothed_f + 0.2 * sin(ap->freq_vibrato));
     ap->f += ap->dir * 1000.0 / ap->sweep_time * db->len / (sample_rate * db->channels) * 2;
 
+    ap->freq_vibrato += 1000.0 / ap->sweep_time * db->len / (sample_rate * db->channels) * M_PI;
+    if (ap->freq_vibrato >= 2 * M_PI)
+        ap->freq_vibrato -= 2 * M_PI;
+    
+    if (0) {
+        RC_set_freq(freq, ap->fd);
+        RC_bandpass(db, ap->fd);
+    } else {
+        /* Moog ladder filter according to Antti Huoviala. */
+
+/* I, C, V = electrical parameters
+ * f = center frequency
+ * r = resonance amount 0 .. 1
+ *
+ * ya(n) = ya(n-1) + I / (C * f) * (tanh( (x(n) - 4 * r * yd(n-1)) / (2 * V) ) - Wa(n-1))
+ * yb(n) = yb(n-1) + I / (C * f) * (Wa(n) - Wb(n-1))
+ * yc(n) = yc(n-1) + I / (C * f) * (Wb(n) - Wc(n-1))
+ * yd(n) = yd(n-1) + I / (C * f) * (Wc(n) - Wd(n-1))
+ *
+ * Wx = tanh(Yx(n) / (2 * Vt)) */
+
+        float res = 0.80; /* resonance of filter: 0 to 1 */
+        for (i = 0; i < db->len; i += 1) {
+
+#define PARAM_V 1.0
+            float g = 1 - exp(-2 * M_PI * freq / sample_rate);
+            ap->ya[curr_channel] += PARAM_V * g *
+                (tanh( (1.0 * db->data[i] / MAX_SAMPLE - 4 * res * ap->yd[curr_channel]) / PARAM_V )
+                 - tanh( ap->ya[curr_channel] / PARAM_V));
+            ap->yb[curr_channel] += PARAM_V * g *
+                (tanh( ap->ya[curr_channel] / PARAM_V )
+                 - tanh( ap->yb[curr_channel] / PARAM_V ));
+            ap->yc[curr_channel] += PARAM_V * g *
+                (tanh( ap->yb[curr_channel] / PARAM_V )
+                 - tanh( ap->yc[curr_channel] / PARAM_V ));
+            ap->yd[curr_channel] += PARAM_V * g *
+                (tanh( ap->yc[curr_channel] / PARAM_V )
+                 - tanh( ap->yd[curr_channel] / PARAM_V ));
+
+            db->data[i] = ap->yd[curr_channel] * MAX_SAMPLE;
+            curr_channel = (curr_channel + 1) % db->channels;
+        }
+
+    }
+    
     /* mix with dry sound */
     for (i = 0; i < db->len; i++)
         db->data[i] = (db->data[i]*ap->drywet + db->data_swap[i]*(100-ap->drywet))/100.0;
@@ -476,11 +523,11 @@ autowah_create()
     RC_setup(3, 1.48, ap->fd);
     ap->history = new_Backbuf(MAX_SAMPLE_RATE * AUTOWAH_HISTORY_LENGTH / 1000);
     
-    ap->freq_low = 150;
-    ap->freq_high = 1000;
-    ap->sweep_time = 1000;
+    ap->freq_low = 130;
+    ap->freq_high = 1700;
+    ap->sweep_time = 3000;
     ap->drywet = 100;
-    ap->continuous = 1;
+    ap->continuous = 0;
 
     return p;
 }

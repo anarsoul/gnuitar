@@ -44,9 +44,13 @@ struct autowah_params {
     double          delayed_accum_power;
     int             accum_n;
     
-    double          f, smoothed_f;
+    double          f, smoothed_f, freq_vibrato;
     int             dir;
     struct filter_data *fd;
+    double          ya[MAX_CHANNELS];
+    double          yb[MAX_CHANNELS];
+    double          yc[MAX_CHANNELS];
+    double          yd[MAX_CHANNELS];
 };
 
 #endif
