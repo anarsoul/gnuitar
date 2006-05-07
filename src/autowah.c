@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2006/05/07 10:25:17  alankila
+ * - I misspelled Antti's name.
+ *
  * Revision 1.34  2006/05/07 07:40:14  alankila
  * - still more parameter finetuning
  *
@@ -33,7 +36,7 @@
  *
  * Revision 1.32  2006/05/06 16:52:29  alankila
  * - better defaults
- * - more exciting Wah algorithm according to Antti Huoviala's paper
+ * - more exciting Wah algorithm according to Antti Huovilainen's paper
  *   "Non-Linear Digital implementation Of The Moog Ladder Filter"
  *   (published on 7th int. conference on digital audio effects, DAFx'04)
  *
@@ -460,7 +463,7 @@ autowah_filter(struct effect *p, struct data_block *db)
         RC_set_freq(freq, ap->fd);
         RC_bandpass(db, ap->fd);
     } else {
-        /* Moog ladder filter according to Antti Huoviala. */
+        /* Moog ladder filter according to Antti Huovilainen. */
 
 /* I, C, V = electrical parameters
  * f = center frequency
@@ -475,10 +478,10 @@ autowah_filter(struct effect *p, struct data_block *db)
 
         for (i = 0; i < db->len; i += 1) {
 
-#define PARAM_V 1.0
+#define PARAM_V (MAX_SAMPLE * 2.0) /* the sound gets dirtier if the factor gets small */
             float g = 1 - exp(-2 * M_PI * freq / sample_rate);
             ap->ya[curr_channel] += PARAM_V * g *
-                (tanh( (1.0 * db->data[i] / MAX_SAMPLE - 4 * ap->res/100.0 * ap->yd[curr_channel]) / PARAM_V )
+                (tanh( (db->data[i] - 4 * ap->res/100.0 * ap->yd[curr_channel]) / PARAM_V )
                  - tanh( ap->ya[curr_channel] / PARAM_V));
             ap->yb[curr_channel] += PARAM_V * g *
                 (tanh( ap->ya[curr_channel] / PARAM_V )
@@ -492,7 +495,7 @@ autowah_filter(struct effect *p, struct data_block *db)
 
             /* the wah causes a gain loss of 12 dB which, but due to resonance we
              * have to be careful in how much gain we adjust back */
-            db->data[i] = ap->yd[curr_channel] * MAX_SAMPLE * 3;
+            db->data[i] = ap->yd[curr_channel] * 2;
             curr_channel = (curr_channel + 1) % db->channels;
         }
 
