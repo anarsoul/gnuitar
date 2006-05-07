@@ -32,12 +32,13 @@ extern effect_t *tubeamp_create();
 
 struct tubeamp_params {
     int         stages;
-    float       gain, lsfreq, treblefreq, biasfreq;
+    float       gain, lsfreq, treblefreq, biasfreq, middlecut;
     
     Biquad_t    highpass[MAX_STAGES];
     Biquad_t    lowshelf[MAX_STAGES];
     Biquad_t    lowpass[MAX_STAGES];
     Biquad_t    biaslowpass[MAX_STAGES];
+    Biquad_t    middlecut_bq[MAX_STAGES];
     double      bias[MAX_STAGES];
     Biquad_t    final_highpass;
     Biquad_t    final_lowpass;

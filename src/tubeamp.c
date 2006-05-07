@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/05/07 18:58:53  alankila
+ * - knob to tone the midrange distortion fatness
+ *
  * Revision 1.3  2006/05/07 18:22:23  alankila
  * - produce controls and more aggressive defaults
  *
@@ -50,6 +53,12 @@ static void
 update_treblefreq(GtkAdjustment *adj, struct tubeamp_params *params)
 {
     params->treblefreq = adj->value;
+}
+
+static void
+update_middlecut(GtkAdjustment *adj, struct tubeamp_params *params)
+{
+    params->middlecut = adj->value;
 }
 
 static void
@@ -103,7 +112,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->lsfreq, 20.0, 200.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->lsfreq, 20.0, 320.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_lsfreq), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -113,8 +122,24 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
 
-    w = gtk_label_new("Treble cut\n(Hz)");
+    w = gtk_label_new("Middle cut\n(dB)");
     gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 0, 1,
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+                     3, 0);
+    o = gtk_adjustment_new(params->middlecut, -9.9, 0.0, 0.1, 1, 0);
+    gtk_signal_connect(GTK_OBJECT(o), "value_changed",
+                       GTK_SIGNAL_FUNC(update_middlecut), params);
+    w = gtk_vscale_new(GTK_ADJUSTMENT(o));
+    gtk_range_set_inverted(GTK_RANGE(w), TRUE);
+    gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
+    gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 1, 2,
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+                     3, 0);
+    
+    w = gtk_label_new("Treble cut\n(Hz)");
+    gtk_table_attach(GTK_TABLE(parmTable), w, 4, 5, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
@@ -123,7 +148,7 @@ tubeamp_init(struct effect *p)
                        GTK_SIGNAL_FUNC(update_treblefreq), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
     gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
-    gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), w, 4, 5, 1, 2,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
@@ -165,7 +190,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         set_rc_lowpass_biquad(sample_rate, params->treblefreq, &params->lowpass[i]);
         set_rc_lowpass_biquad(sample_rate, params->biasfreq, &params->biaslowpass[i]);
         set_rc_highpass_biquad(sample_rate, params->lsfreq, &params->lowshelf[i]);
-        //set_lsh_biquad(sample_rate, 80, -6, &params->lowshelf[i]);
+        set_peq_biquad(sample_rate, 720, 500.0, params->middlecut, &params->middlecut_bq[i]);
     }
 
     gain = pow(10, params->gain / 20);
@@ -175,6 +200,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         float result = db->data[i];
         for (j = 0; j < params->stages; j += 1) {
             result = do_biquad(result, &params->highpass[j], curr_channel);
+            result = do_biquad(result, &params->middlecut_bq[j], curr_channel);
             result = 0.5 * result + 0.5 * do_biquad(result, &params->lowshelf[j], curr_channel);
             result = waveshaper(result - params->bias[j] * (0.25 + j / (MAX_STAGES * 2.0))) * gain;
             params->bias[j] = do_biquad(result, &params->biaslowpass[j], curr_channel);
@@ -234,6 +260,7 @@ tubeamp_create()
     params->lsfreq = 80;
     params->treblefreq = 4500;
     params->biasfreq = 40;
+    params->middlecut = -5.0;
     
     set_rc_lowpass_biquad(sample_rate, 8000, &params->final_lowpass);
     set_rc_highpass_biquad(sample_rate, 10, &params->final_highpass);
