@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2006/05/07 22:39:18  alankila
+ * - correct some errors in the model
+ *
  * Revision 1.5  2006/05/07 21:53:26  alankila
  * - remove some multiplications in the waveshaper path
  *
@@ -210,10 +213,10 @@ tubeamp_filter(struct effect *p, struct data_block *db)
                 /* low shelve to remove bass to avoid saturating the sound */
                 result = 0.5 * result + 0.5 * do_biquad(result, &params->lowshelf[j], curr_channel);
                 /* waveshaper adds high-frequency components */
-                result = tanh(result + params->bias[j]) * gain;
+                result += tanh(result + params->bias[j]) * gain;
                 /* bias calculation creates a feedback loop with the distortion, making
                  * the distort react more to sound dynamics. */
-                params->bias[j] = do_biquad(0.5 - result * (0.25 + j / (MAX_STAGES * 2.0)), &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad(0.5 - (0.25 + 0.5 * j / params->stages) * result, &params->biaslowpass[j], curr_channel);
                 /* lowpass filter keeps the added high-frequency components in control */
                 result = do_biquad(result, &params->lowpass[j], curr_channel);
                 /* each stage inverts in a real tube amp */
@@ -223,7 +226,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             result = do_biquad(result, &params->final_highpass, curr_channel);
             result = do_biquad(result, &params->final_lowpass, curr_channel);
         }
-        db->data[i] = result * DISTORTION_AMOUNT / gain / params->stages;
+        db->data[i] = result * DISTORTION_AMOUNT / gain / params->stages / 4;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     
@@ -269,11 +272,11 @@ tubeamp_create()
     p->toggle = 0;
     p->proc_done = tubeamp_done;
 
-    params->stages = 6;
-    params->gain = 12.0;
+    params->stages = 3;
+    params->gain = 18.0;
     params->lsfreq = 80;
     params->treblefreq = 4500;
-    params->biasfreq = 40;
+    params->biasfreq = 80;
     params->middlecut = -5.0;
 
     /* low-end cabinet simulation: 6 kHz cut and 20 Hz cut */ 

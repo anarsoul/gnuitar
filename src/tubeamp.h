@@ -28,7 +28,7 @@
 
 extern effect_t *tubeamp_create();
 
-#define MAX_STAGES 8
+#define MAX_STAGES 6
 
 struct tubeamp_params {
     int         stages;
