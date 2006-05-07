@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.15  2006/05/07 13:22:12  alankila
+ * - new bare bones distortion effect: tubeamp
+ *
  * Revision 1.14  2006/05/05 18:34:32  alankila
  * - handle denormals to avoid slowdowns for digital silence type situations.
  *
@@ -105,6 +108,7 @@ extern void     set_allpass_biquad(double delay, Biquad_t *f);
 extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highboost_biquad(double fs, double fc, Biquad_t *f);
+extern void     set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f);
 
 /*
  * Sampling rate, Center frequency, Ripple %, Lowpass?

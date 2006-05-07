@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.17  2006/05/07 13:22:12  alankila
+ * - new bare bones distortion effect: tubeamp
+ *
  * Revision 1.16  2006/05/05 18:34:32  alankila
  * - handle denormals to avoid slowdowns for digital silence type situations.
  *
@@ -218,6 +221,31 @@ set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t
         f->b1 = -f->b1;
         f->a1 = -f->a1;
     }
+}
+
+void
+set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f)
+{
+    double b0, b1, b2, a0, a1, a2, omega, cs, sn, beta, A;
+
+    A = powf(10, G / 40);
+    omega = 2 * M_PI * Fc / Fs;
+    cs = cos(omega);
+    sn = sin(omega);
+    beta = sqrt(A + A);
+    
+    b0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
+    b1 = 2 * A * ((A - 1) - (A + 1) * cs);
+    b2 = A * ((A + 1) - (A - 1) * cs - beta * sn);
+    a0 = (A + 1) + (A - 1) * cs + beta * sn;
+    a1 = -2 * ((A - 1) + (A + 1) * cs);
+    a2 = (A + 1) + (A - 1) * cs - beta * sn;
+
+    f->b0 = b0 / a0;
+    f->b1 = b1 / a0;
+    f->b2 = b2 / a0;
+    f->a1 = a1 / a0;
+    f->a2 = a2 / a0;
 }
 
 #if !defined(_MSC_VER)

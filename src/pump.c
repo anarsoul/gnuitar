@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.53  2006/05/07 13:22:12  alankila
+ * - new bare bones distortion effect: tubeamp
+ *
  * Revision 1.52  2006/05/01 10:23:54  anarsoul
  * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
  *
@@ -251,6 +254,7 @@
 #include "vibrato.h"
 #include "distort.h"
 #include "distort2.h"
+#include "tubeamp.h"
 #include "sustain.h"
 #include "reverb.h"
 #include "tracker.h"
@@ -506,6 +510,7 @@ struct effect_creator effect_list[] = {
     {"Vibrato", tremolo_create},
     {"Sustain", sustain_create},
     {"Overdrive", distort2_create},
+    {"Tube amplifier", tubeamp_create},
     {"Noise gate", noise_create},
     {"Eq bank", eqbank_create},
     {"Pitch shift", pitch_create},
