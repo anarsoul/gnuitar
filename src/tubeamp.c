@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/05/07 14:38:15  alankila
+ * - reimplement shelve as partial highpass
+ * - use less stages
+ *
  * Revision 1.1  2006/05/07 13:22:12  alankila
  * - new bare bones distortion effect: tubeamp
  *
@@ -52,13 +56,11 @@ tubeamp_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-#define DISTORTION_AMOUNT (MAX_SAMPLE * 0.5)
+#define DISTORTION_AMOUNT (MAX_SAMPLE*2.0)
 /* asymmetric waveshaper based on offseted tan */
 static float
-waveshaper(float input, int idx) {
-    //input += idx * DISTORTION_AMOUNT / 8;
-    //return input - powf(input / DISTORTION_AMOUNT, 3) / 3 * input;
-    return tanh(input / DISTORTION_AMOUNT + 0.5 + (idx-4) / 10.0) * DISTORTION_AMOUNT;
+waveshaper(float input) {
+    return tanh(input / DISTORTION_AMOUNT + 0.5) * DISTORTION_AMOUNT;
 }
 
 static void
@@ -71,14 +73,15 @@ tubeamp_filter(struct effect *p, struct data_block *db)
     for (i = 0; i < db->len; i += 1) {
         float result = db->data[i];
         for (j = 0; j < MAX_STAGES; j += 1) {
+            result = -result * 4.0; /* compensate for lost gain in lsh and waveshaper */
             result = do_biquad(result, &params->highpass[j], curr_channel);
-            result = do_biquad(result, &params->lowshelf[j], curr_channel);
+            result = 0.5 * result + 0.5 * do_biquad(result, &params->lowshelf[j], curr_channel);
             result = do_biquad(result, &params->lowpass[j], curr_channel);
-            result = waveshaper(result, j);
-            result = -result * 1.80; /* compensate for lost gain in lsh and waveshaper */
+            result = waveshaper(result - params->bias[j] / MAX_STAGES * j);
+            params->bias[j] = do_biquad(result, &params->biaslowpass[j], curr_channel);
         }
         result = do_biquad(result, &params->final_highpass, curr_channel);
-        db->data[i] = result / 2.0;
+        db->data[i] = result / 6;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     
@@ -127,8 +130,10 @@ tubeamp_create()
 
     for (i = 0; i < MAX_STAGES; i += 1) {
         set_rc_highpass_biquad(sample_rate, 10, &params->highpass[i]);
-        set_rc_lowpass_biquad(sample_rate, 5000, &params->lowpass[i]);
-        set_lsh_biquad(sample_rate, 80, -3, &params->lowshelf[i]);
+        set_rc_lowpass_biquad(sample_rate, 8000, &params->lowpass[i]);
+        set_rc_lowpass_biquad(sample_rate, 50, &params->biaslowpass[i]);
+        set_rc_highpass_biquad(sample_rate, 100, &params->lowshelf[i]);
+        //set_lsh_biquad(sample_rate, 80, -6, &params->lowshelf[i]);
     }
     set_rc_highpass_biquad(sample_rate, 10, &params->final_highpass);
     
