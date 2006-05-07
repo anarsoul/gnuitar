@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2006/05/07 07:40:14  alankila
+ * - still more parameter finetuning
+ *
  * Revision 1.33  2006/05/07 07:11:46  alankila
  * - fix load/save function
  * - add static keywords where appropriate
@@ -348,7 +351,7 @@ autowah_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
     adj_res = gtk_adjustment_new(params->res,
-				    0.0, 120, 10, 30, 0.0);
+				    30.0, 110.0, 10, 30, 0.0);
     res = gtk_vscale_new(GTK_ADJUSTMENT(adj_res));
     gtk_signal_connect(GTK_OBJECT(adj_res), "value_changed",
 		       GTK_SIGNAL_FUNC(update_wah_res), params);
@@ -487,7 +490,9 @@ autowah_filter(struct effect *p, struct data_block *db)
                 (tanh( ap->yc[curr_channel] / PARAM_V )
                  - tanh( ap->yd[curr_channel] / PARAM_V ));
 
-            db->data[i] = ap->yd[curr_channel] * MAX_SAMPLE;
+            /* the wah causes a gain loss of 12 dB which, but due to resonance we
+             * have to be careful in how much gain we adjust back */
+            db->data[i] = ap->yd[curr_channel] * MAX_SAMPLE * 3;
             curr_channel = (curr_channel + 1) % db->channels;
         }
 
