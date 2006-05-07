@@ -28,15 +28,19 @@
 
 extern effect_t *tubeamp_create();
 
-#define MAX_STAGES 4
+#define MAX_STAGES 8
 
 struct tubeamp_params {
-    Biquad_t    highpass[MAX_STAGES];       /* 5 - 20 Hz */
-    Biquad_t    lowshelf[MAX_STAGES];       /* 20 - 100 Hz */
-    Biquad_t    lowpass[MAX_STAGES];        /* 5 - 10 kHz */
-    Biquad_t    biaslowpass[MAX_STAGES];    /* 20 Hz */
+    int         stages;
+    float       gain, lsfreq, treblefreq, biasfreq;
+    
+    Biquad_t    highpass[MAX_STAGES];
+    Biquad_t    lowshelf[MAX_STAGES];
+    Biquad_t    lowpass[MAX_STAGES];
+    Biquad_t    biaslowpass[MAX_STAGES];
     double      bias[MAX_STAGES];
-    Biquad_t    final_highpass;             /* 5 Hz */
+    Biquad_t    final_highpass;
+    Biquad_t    final_lowpass;
 };
 
 #endif
