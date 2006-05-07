@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2006/05/07 07:11:46  alankila
+ * - fix load/save function
+ * - add static keywords where appropriate
+ * - allow user to tune the resonance. Resonance values near 110 % trigger
+ *   self-supporting oscillations of the moog filter, and are actually used
+ *   by real moog synths for sound generation. I capped it at 120 % so that
+ *   user can play with that a bit.
+ *
  * Revision 1.32  2006/05/06 16:52:29  alankila
  * - better defaults
  * - more exciting Wah algorithm according to Antti Huoviala's paper
@@ -160,41 +168,43 @@
 #define AUTOWAH_DISCANT_TRIGGER 0.6 /* dB */
 #define AUTOWAH_BASS_TRIGGER    0.6 /* dB */
 
-void
-                autowah_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_wah_speed(GtkAdjustment *adj, struct autowah_params *params)
 {
     params->sweep_time = adj->value;
 }
 
-void
+static void
 update_wah_freqlow(GtkAdjustment *adj, struct autowah_params *params)
 {
     params->freq_low = adj->value;
 }
 
-void
+static void
 update_wah_freqhi(GtkAdjustment *adj, struct autowah_params *params)
 {
     params->freq_high = adj->value;
 }
 
-void
+static void
 update_wah_drywet(GtkAdjustment *adj, struct autowah_params *params)
 {
     params->drywet = adj->value;
 }
 
-void
+static void
+update_wah_res(GtkAdjustment *adj, struct autowah_params *params)
+{
+    params->res = adj->value;
+}
+
+static void
 update_wah_continuous(GtkAdjustment *adj, struct autowah_params *params)
 {
     params->continuous = !params->continuous;
 }
 
-
-void
+static void
 autowah_init(struct effect *p)
 {
     struct autowah_params *params;
@@ -210,6 +220,10 @@ autowah_init(struct effect *p)
     GtkWidget      *freq_high;
     GtkWidget      *freqhi_label;
     GtkObject      *adj_freqhi;
+    
+    GtkWidget      *res;
+    GtkObject	   *adj_res;
+    GtkWidget      *res_label;
 
     GtkWidget      *button, *continuous;
     GtkWidget      *drywet;
@@ -227,7 +241,7 @@ autowah_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
 
-    parmTable = gtk_table_new(4, 3, FALSE);
+    parmTable = gtk_table_new(5, 3, FALSE);
 
     adj_speed = gtk_adjustment_new(params->sweep_time, 100.0,
                                10000.0, 1.0, 10.0, 0.0);
@@ -252,7 +266,7 @@ autowah_init(struct effect *p)
 
     adj_freqlow = gtk_adjustment_new(params->freq_low,
 				     80.0, 330.0, 1.0, 1.0, 0.0);
-    freqlow_label = gtk_label_new("Freq. low\nHz");
+    freqlow_label = gtk_label_new("Lower freq\n(Hz)");
     gtk_table_attach(GTK_TABLE(parmTable), freqlow_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -271,7 +285,7 @@ autowah_init(struct effect *p)
 
     adj_freqhi = gtk_adjustment_new(params->freq_high,
 				    500.0, 2000.0, 1.0, 1.0, 0.0);
-    freqhi_label = gtk_label_new("Freq. hi\nHz");
+    freqhi_label = gtk_label_new("Higher freq\n(Hz)");
     gtk_table_attach(GTK_TABLE(parmTable), freqhi_label, 2, 3, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -310,8 +324,8 @@ autowah_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
-    drywet_label = gtk_label_new("Dry/Wet\n%");
-    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 3, 4, 0, 1,
+    drywet_label = gtk_label_new("Dry/Wet\n(%)");
+    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 4, 5, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
@@ -321,7 +335,24 @@ autowah_init(struct effect *p)
     drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
     gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
 		       GTK_SIGNAL_FUNC(update_wah_drywet), params);
-    gtk_table_attach(GTK_TABLE(parmTable), drywet, 3, 4, 1, 2,
+    gtk_table_attach(GTK_TABLE(parmTable), drywet, 4, 5, 1, 2,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK), 0, 0);
+    
+    res_label = gtk_label_new("Resonance\n(%)");
+    gtk_table_attach(GTK_TABLE(parmTable), res_label, 3, 4, 0, 1,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL |
+					GTK_SHRINK), 0, 0);
+    adj_res = gtk_adjustment_new(params->res,
+				    0.0, 120, 10, 30, 0.0);
+    res = gtk_vscale_new(GTK_ADJUSTMENT(adj_res));
+    gtk_signal_connect(GTK_OBJECT(adj_res), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_res), params);
+    gtk_table_attach(GTK_TABLE(parmTable), res, 3, 4, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -333,13 +364,13 @@ autowah_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-double
+static double
 power2db(double power)
 {
     return log(power) / log(10) * 10;
 }
 
-void
+static void
 autowah_filter(struct effect *p, struct data_block *db)
 {
     struct autowah_params *ap;
@@ -439,13 +470,12 @@ autowah_filter(struct effect *p, struct data_block *db)
  *
  * Wx = tanh(Yx(n) / (2 * Vt)) */
 
-        float res = 0.80; /* resonance of filter: 0 to 1 */
         for (i = 0; i < db->len; i += 1) {
 
 #define PARAM_V 1.0
             float g = 1 - exp(-2 * M_PI * freq / sample_rate);
             ap->ya[curr_channel] += PARAM_V * g *
-                (tanh( (1.0 * db->data[i] / MAX_SAMPLE - 4 * res * ap->yd[curr_channel]) / PARAM_V )
+                (tanh( (1.0 * db->data[i] / MAX_SAMPLE - 4 * ap->res/100.0 * ap->yd[curr_channel]) / PARAM_V )
                  - tanh( ap->ya[curr_channel] / PARAM_V));
             ap->yb[curr_channel] += PARAM_V * g *
                 (tanh( ap->ya[curr_channel] / PARAM_V )
@@ -468,7 +498,7 @@ autowah_filter(struct effect *p, struct data_block *db)
         db->data[i] = (db->data[i]*ap->drywet + db->data_swap[i]*(100-ap->drywet))/100.0;
 }
 
-void
+static void
 autowah_done(struct effect *p)
 {
     struct autowah_params *ap;
@@ -481,7 +511,7 @@ autowah_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 autowah_save(effect_t *p, SAVE_ARGS)
 {
     struct autowah_params *params = p->params;
@@ -489,11 +519,12 @@ autowah_save(effect_t *p, SAVE_ARGS)
     SAVE_DOUBLE("sweep_time", params->sweep_time);
     SAVE_DOUBLE("freq_low", params->freq_low);
     SAVE_DOUBLE("freq_high", params->freq_high);
+    SAVE_DOUBLE("res", params->res);
     SAVE_DOUBLE("drywet", params->drywet);
     SAVE_INT("continuous", params->continuous);
 }
 
-void
+static void
 autowah_load(effect_t *p, LOAD_ARGS)
 {
     struct autowah_params *params = p->params;
@@ -501,7 +532,9 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_DOUBLE("sweep_time", params->sweep_time);
     LOAD_DOUBLE("freq_low", params->freq_low);
     LOAD_DOUBLE("freq_high", params->freq_high);
-    LOAD_INT("drywet", params->continuous);
+    LOAD_DOUBLE("res", params->res);
+    LOAD_DOUBLE("drywet", params->continuous);
+    LOAD_INT("continuous", params->continuous);
 }
 
 effect_t *
@@ -528,6 +561,7 @@ autowah_create()
     ap->sweep_time = 3000;
     ap->drywet = 100;
     ap->continuous = 0;
+    ap->res = 80;
 
     return p;
 }

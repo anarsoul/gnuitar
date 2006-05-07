@@ -35,6 +35,7 @@ struct autowah_params {
     double          sweep_time;
     double          freq_low;
     double          freq_high;
+    double          res;
     double	    drywet;
     int             continuous;
 
