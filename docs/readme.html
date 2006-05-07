@@ -2,6 +2,18 @@
 <head>
     <title>GNUitar - A Guitar processor software</title>
 </head>
+<style type="text/css"><!--
+dl {
+    margin-left: 3em;
+}
+dt {
+    font-weight: bold;
+}
+dd {
+    margin-bottom: 0.5em;
+}
+
+--></style>
 <body>
 <h1 style="text-align: center">
 			    <strong>GNUitar</strong><br>
@@ -204,12 +216,34 @@ and then to <a href="http://www.vorbis.com/">ogg vorbis</a>:
 The controls and description of the effects follow below.
 </p>
 <h2><a name=autowah>Autowah</a></h2>
-<ul>
-<li>period   - length of one cycle of effect</li>
-<li>freq.low - low frequency (the cycle starts from this freq.)</li>
-<li>freq.hi  - high frequency (the cycle stops at this freq.)</li>
-<li>mix      - mix clean sound with processed sound</li>
-</ul>
+<p>
+    The autowah is implemented using a digital model of the moog ladder filter.
+    The model was designed by Antti Huoviala, and it was published at DAFx'04.
+    On low resonance values it acts a lot like a 2nd order bandpass filter with some
+    saturation colouring the sound into a warm, bloomy sound. On high resonance
+    values, the wah acts like a sound synthesizer. (Try resonance value of 100% for
+    good example of the synth-like sound.)
+</p>
+<dl>
+<dt>period</dt>
+<dd>length of one cycle of effect</dd>
+<dt>low freq</dt>
+<dd>lowest frequency (the cycle ends at this freq.)</dd>
+<dt>high freq</dt>
+<dd>high frequency (the cycle starts at this freq.)</dd>
+<dt>dry/wet</dt>
+<dd>mix clean sound with processed sound</dd>
+<dt>resonance</dt>
+<dd>choose resonance of the moog ladder filter.
+    Values above 110 % lead to self-supporting oscillations.</dd>
+<dt>continuous sweep</dt>
+<dd>The Wah can be run in two modes, one where it sweeps between the low and high
+    frequency in /\/\/\/ type manner, and another where it "listens" to input signal
+    and tries to detect guitar picks for triggering the wah sweep synchronously with
+    guitar picking. The pick
+    detection works best if the wah receives unaltered input signal from the guitar,
+    rather than say distorted input from the overdrive effect.</dd>
+</dl>
 
 <h2><a name=distort>Distortion</a></h2>
 <ul>
@@ -516,7 +550,7 @@ according to the GNU software concept.
     <td valign="top">Eugen Bogdan (/Dexterus)&nbsp;</td>
     <td valign="top">&lt;dexterus at hackernetwork dot com&gt;</td></tr>
 <tr>
-    <td valign="top"><a href="http://www.saunalahti.fi/~s7l/">Antti S. Lankila</a></td>
+    <td valign="top"><a href="http://bel.fi/~alankila/blog/">Antti S. Lankila</a></td>
     <td valign="top">&lt;alankila at bel dot fi&gt;</td></tr>
 </table>
 
