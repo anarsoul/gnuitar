@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2006/05/08 07:29:14  alankila
+ * - improve nonlinearity crunch a bit -- add gain -- get by with less stages
+ *
  * Revision 1.6  2006/05/07 22:39:18  alankila
  * - correct some errors in the model
  *
@@ -106,7 +109,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 6.0, 18.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 3.0, 20.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -216,7 +219,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
                 result += tanh(result + params->bias[j]) * gain;
                 /* bias calculation creates a feedback loop with the distortion, making
                  * the distort react more to sound dynamics. */
-                params->bias[j] = do_biquad(0.5 - (0.25 + 0.5 * j / params->stages) * result, &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad((0.25 + 0.5 * (j+1) / params->stages) - 0.25 * result, &params->biaslowpass[j], curr_channel);
                 /* lowpass filter keeps the added high-frequency components in control */
                 result = do_biquad(result, &params->lowpass[j], curr_channel);
                 /* each stage inverts in a real tube amp */
