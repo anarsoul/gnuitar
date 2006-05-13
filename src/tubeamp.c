@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2006/05/13 08:53:05  alankila
+ * - load/save functions
+ *
  * Revision 1.8  2006/05/13 08:04:23  alankila
  * - parameter lickup
  *
@@ -250,17 +253,23 @@ tubeamp_done(struct effect *p)
 static void
 tubeamp_save(struct effect *p, SAVE_ARGS)
 {
-    //struct tubeamp_params *params = p->params;
-
-    return;
+    struct tubeamp_params *params = p->params;
+    SAVE_INT("stages", params->stages);
+    SAVE_DOUBLE("gain", params->gain);
+    SAVE_DOUBLE("lsfreq", params->lsfreq);
+    SAVE_DOUBLE("treblefreq", params->treblefreq);
+    SAVE_DOUBLE("middlecut", params->middlecut);
 }
 
 static void
 tubeamp_load(struct effect *p, LOAD_ARGS)
 {
-    //struct tubeamp_params *params = p->params;
-
-    return;
+    struct tubeamp_params *params = p->params;
+    LOAD_INT("stages", params->stages);
+    LOAD_DOUBLE("gain", params->gain);
+    LOAD_DOUBLE("lsfreq", params->lsfreq);
+    LOAD_DOUBLE("treblefreq", params->treblefreq);
+    LOAD_DOUBLE("middlecut", params->middlecut);
 }
 
 effect_t *
