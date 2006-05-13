@@ -80,22 +80,23 @@ rotary_filter(struct effect *p, struct data_block *db)
     struct rotary_params *params = p->params;
     int i, j;
     float fftbuf[FFT_SIZE * 2];
-    float pha, sinval, cosval;
+    float pha, sinval = 0, cosval = 0;
     
     if (db->channels != 1)
         return;
     
-    params->phase += (float) db->len / db->channels / sample_rate * 1000.0 / params->speed;
+    params->phase += (float) db->len / sample_rate * 1000.0 / params->speed;
     if (params->phase >= 1.0)
         params->phase -= 1.0;
 
-    pha = params->phase;
-    sinval = sin_lookup(pha);
-    pha += 0.25;
-    if (pha >= 1.0)
-        pha -= 1.0;
-    cosval = sin_lookup(pha);
-
+    /* The rotary speaker simulation is based on modulating input with subsonic
+     * sinuswave and then separating the upwards and downwards shifted frequencies
+     * with hilbert transform. The upwards shifted component can be thought to be
+     * the horn, and the downwards shifted component the bass speaker.
+     *
+     * After the separation step, a rough approximation of HRTF is used to mix the
+     * horn with the bass speaker for both channels. */
+    
     for (i = 0; i < db->len; i += 1) {
         params->history->add(params->history, db->data[i]);
         if (params->time_to_next_fft > 0) {
@@ -114,12 +115,6 @@ rotary_filter(struct effect *p, struct data_block *db)
         for (j = 0; j < FFT_SIZE / 2; j += 1)
             params->norm->add(params->norm, fftbuf[(j + FFT_SIZE/2 - FFT_SIZE/4) * 2]);
         
-        /* window it with a flat top window -- I should use a better window for this */
-        for (j = 0; j < FFT_SIZE / 4; j += 1) {
-            fftbuf[j * 2] *= (float) j / (FFT_SIZE / 4);
-            fftbuf[(FFT_SIZE - j - 1) * 2] *= (float) j / (FFT_SIZE / 4);
-        }
-
         /* compute spectrum */
         do_fft(fftbuf, FFT_SIZE, FFT_FORWARD);
             
@@ -162,7 +157,20 @@ rotary_filter(struct effect *p, struct data_block *db)
     db->channels = 2;
     db->len *= 2;
 
+    pha = params->phase;
     for (i = 0; i < db->len/2; i += 1) {
+        if (i % 16 == 0) {
+            float phatmp;
+            sinval = sin_lookup(pha);
+            phatmp = pha + 0.25;
+            if (phatmp >= 1.0)
+                phatmp -= 1.0;
+            cosval = sin_lookup(phatmp);
+            pha += (float) 16 / sample_rate * 1000.0 / params->speed;
+            if (pha >= 1.0)
+                pha -= 1.0;
+        }
+
         DSP_SAMPLE x0 = params->norm->get(params->norm, params->unread_output - i);
         DSP_SAMPLE x1 = params->hilb->get(params->hilb, params->unread_output - i);
         DSP_SAMPLE y0 = cosval * x0 + sinval * x1;
@@ -177,7 +185,6 @@ rotary_filter(struct effect *p, struct data_block *db)
         db->data[i*2+1] = (cosval * y0 + sinval * y1);
          */
     }
-
     
     params->unread_output -= db->len/2;
 
@@ -200,17 +207,15 @@ rotary_done(struct effect *p)
 static void
 rotary_save(struct effect *p, SAVE_ARGS)
 {
-    //struct rotary_params *params = p->params;
-
-    return;
+    struct rotary_params *params = p->params;
+    SAVE_INT("speed", params->speed);
 }
 
 static void
 rotary_load(struct effect *p, LOAD_ARGS)
 {
-    //struct rotary_params *params = p->params;
-
-    return;
+    struct rotary_params *params = p->params;
+    LOAD_INT("speed", params->speed);
 }
 
 effect_t *
@@ -234,8 +239,8 @@ rotary_create()
     params->norm = new_Backbuf(MAX_BUFFER_SIZE);
     params->unread_output = 0;
 
-    set_rc_lowpass_biquad(sample_rate, 7000, &params->ld);
-    set_rc_lowpass_biquad(sample_rate, 7000, &params->rd);
+    set_rc_lowpass_biquad(sample_rate, 2000, &params->ld);
+    set_rc_lowpass_biquad(sample_rate, 2000, &params->rd);
     
     return p;
 }
