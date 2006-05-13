@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2006/05/13 13:33:38  alankila
+ * - new biasfreq, more tubish sound
+ *
  * Revision 1.9  2006/05/13 08:53:05  alankila
  * - load/save functions
  *
@@ -201,7 +204,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, params->treblefreq, &params->lowpass[i]);
         set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, params->biasfreq, &params->biaslowpass[i]);
         set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, params->lsfreq, &params->lowshelf[i]);
-        set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 720, 500.0, params->middlecut, &params->middlecut_bq[i]);
+        set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 800, 500.0, params->middlecut, &params->middlecut_bq[i]);
     }
 
     gain = pow(10, params->gain / 20);
@@ -216,13 +219,13 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             result = params->in[curr_channel] / DISTORTION_AMOUNT * gain;
             for (j = 0; j < params->stages; j += 1) {
                 /* highpass filter to remove offset from earlier pass */
-                result = do_biquad(result, &params->highpass[j], curr_channel);
+//                result = do_biquad(result, &params->highpass[j], curr_channel);
                 /* middlecut for user tone control, for the "metal crunch" sound */
                 result = do_biquad(result, &params->middlecut_bq[j], curr_channel);
                 /* low shelve to remove bass to avoid saturating the sound */
                 result = 0.5 * result + 0.5 * do_biquad(result, &params->lowshelf[j], curr_channel);
                 /* waveshaper adds high-frequency components */
-                result += tanh(result + params->bias[j]) * gain;
+                result += do_biquad(tanh(result + params->bias[j]), &params->highpass[j], curr_channel) * gain;
                 /* bias calculation creates a feedback loop with the distortion, making
                  * the distort react more to sound dynamics. */
                 params->bias[j] = do_biquad((0.25 + 0.5 * (j+1) / params->stages) - 0.25 * result, &params->biaslowpass[j], curr_channel);
@@ -287,11 +290,11 @@ tubeamp_create()
     p->toggle = 0;
     p->proc_done = tubeamp_done;
 
-    params->stages = 3;
-    params->gain = 18.0;
-    params->lsfreq = 60;
-    params->treblefreq = 4500;
-    params->biasfreq = 120;
+    params->stages = 5;
+    params->gain = 15.0;
+    params->lsfreq = 120;
+    params->treblefreq = 5000;
+    params->biasfreq = 10;
     params->middlecut = -4.0;
 
     /* low-end cabinet simulation: 6 kHz cut and 20 Hz cut */ 
