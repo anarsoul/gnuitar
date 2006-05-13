@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.72  2006/05/13 11:02:53  alankila
+ * - small GUI overhaul
+ *
  * Revision 1.71  2006/05/13 10:45:44  alankila
  * - increase window height to make space for more effects :-)
  * - rename "Processor list" to "Preset list"
@@ -826,7 +829,7 @@ bank_add_pressed(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
 
-    filesel = gtk_file_selection_new("Select processor profile");
+    filesel = gtk_file_selection_new("Select preset to add");
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_add),
 		       filesel);
@@ -881,7 +884,7 @@ bank_start_save(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
 
-    filesel = gtk_file_selection_new("Select processor profile");
+    filesel = gtk_file_selection_new("Save current effects' settings");
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_save),
 		       filesel);
@@ -1458,14 +1461,14 @@ start_stop(GtkWidget *widget, gpointer data)
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),
 				 FALSE);
-	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "STOP");
+	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "Stop");
     } else {
 	audio_driver->finish();
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),
 				 TRUE);
-	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "START");
+	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "Start");
     }
 }
 
@@ -1568,9 +1571,9 @@ init_gui(void)
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(bank_scroll),
 				   GTK_POLICY_AUTOMATIC,
 				   GTK_POLICY_AUTOMATIC);
-    gtk_tooltips_set_tip(tooltips,bank,"This area contains a list of presets." \
-	"Use \"Add Preset\" button to add the preset to the list." \
-	"Use SWITCH button to switch between presets.",NULL);
+    gtk_tooltips_set_tip(tooltips,bank,"This area contains the available presets." \
+	"Use \"Add preset\" button to add more presets to the list." \
+	"Use \"Switch preset\" to switch to selected preset.", NULL);
 
     gtk_table_attach(GTK_TABLE(tbl), processor_scroll, 3, 4, 1, 5,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND),
@@ -1588,8 +1591,8 @@ init_gui(void)
     gtk_container_add(GTK_CONTAINER(mainWnd), tbl);
     gtk_window_set_title(GTK_WINDOW(mainWnd), "GNUitar");
 
-    bank_add = gtk_button_new_with_label("Add Preset >>");
-    gtk_tooltips_set_tip(tooltips,bank_add,"Use this button to add the presets to the presets list.",NULL);
+    bank_add = gtk_button_new_with_label("Add preset >>");
+    gtk_tooltips_set_tip(tooltips,bank_add,"Load a file into the presets list.", NULL);
 
     style = gtk_widget_get_style(bank_add);
 #ifdef HAVE_GTK
@@ -1609,27 +1612,27 @@ init_gui(void)
 #endif
     gtk_clist_set_reorderable(GTK_CLIST(processor), TRUE);
 
-    bank_del = gtk_button_new_with_label("Remove Preset");
-    gtk_tooltips_set_tip(tooltips,bank_del,"Use this button to remove preset from the presets list.",NULL);
-    bank_switch = gtk_button_new_with_label("SWITCH");
-    gtk_tooltips_set_tip(tooltips,bank_switch,"Use this button to switch between presets",NULL);
+    bank_del = gtk_button_new_with_label("Remove preset");
+    gtk_tooltips_set_tip(tooltips,bank_del,"Remove preset from the presets list.",NULL);
+    bank_switch = gtk_button_new_with_label("Switch\npreset");
+    gtk_tooltips_set_tip(tooltips,bank_switch,"Switch effects to currently selected preset",NULL);
     up = gtk_button_new_with_label("Up");
-    gtk_tooltips_set_tip(tooltips,up,"Use this button to move the current selected effect up.",NULL);
+    gtk_tooltips_set_tip(tooltips,up,"Move the currently selected effect up.", NULL);
     down = gtk_button_new_with_label("Down");
-    gtk_tooltips_set_tip(tooltips,down,"Use this button to move the current selected effect down.",NULL);
+    gtk_tooltips_set_tip(tooltips,down,"Move the currently selected effect down.", NULL);
     del = gtk_button_new_with_label("Delete");
-    gtk_tooltips_set_tip(tooltips,del,"Use this button to delete the current selected effect",NULL);
+    gtk_tooltips_set_tip(tooltips,del,"Delete the currently selected effect", NULL);
     add = gtk_button_new_with_label("<< Add");
-    gtk_tooltips_set_tip(tooltips,add,"Use this button to add the current selected effect to the \"Current Effects\" list.",NULL);
-    tracker = gtk_check_button_new_with_label("Write track");
-    gtk_tooltips_set_tip(tooltips,tracker,"You can write the output to the file, did you know ?.",NULL);
+    gtk_tooltips_set_tip(tooltips,add,"Add the selected effect to Current Effects.", NULL);
+    tracker = gtk_check_button_new_with_label("Record audio...");
+    gtk_tooltips_set_tip(tooltips,tracker,"Toggle to begin recording audio.", NULL);
     if (audio_driver) {
-        start = gtk_toggle_button_new_with_label("STOP");
+        start = gtk_toggle_button_new_with_label("Stop");
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
     } else {
-        start = gtk_toggle_button_new_with_label("START\n(disabled:\nno audio\ndriver)");
+        start = gtk_toggle_button_new_with_label("Start\n(disabled:\nno audio\ndriver)");
     }
-    gtk_tooltips_set_tip(tooltips,start,"This button starts/stops the sound processing.",NULL);
+    gtk_tooltips_set_tip(tooltips,start,"Pause and resume audio processing.", NULL);
     vumeter = gtk_progress_bar_new();
     gtk_progress_set_format_string(GTK_PROGRESS(vumeter), "%v dB");
     gtk_progress_configure(GTK_PROGRESS(vumeter), -91, -91, 0);
