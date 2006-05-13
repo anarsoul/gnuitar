@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.55  2006/05/13 10:09:52  alankila
+ * - allow sin_lookup(1.0) to work
+ *
  * Revision 1.54  2006/05/13 07:44:50  alankila
  * - remove pump's noise reduction -- we'll have the real effect soon enough
  * - add rotary speaker simulator based on hilbert transform
@@ -290,7 +293,7 @@ unsigned int    fragments = 2;
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
-int sin_lookup_table[SIN_LOOKUP_SIZE];
+int sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
 double bias_s[MAX_CHANNELS];
 int    bias_n[MAX_CHANNELS];
@@ -498,7 +501,7 @@ struct effect_creator effect_list[] = {
 static void
 init_sin_lookup_table() {
     int i = 0;
-    for (i = 0; i < SIN_LOOKUP_SIZE; i += 1)
+    for (i = 0; i < SIN_LOOKUP_SIZE + 1; i += 1)
         sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE) * SIN_LOOKUP_AMPLITUDE;
 }
 

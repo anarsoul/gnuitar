@@ -124,7 +124,7 @@ struct effect_creator {
 
 #define SIN_LOOKUP_SIZE         65536
 #define SIN_LOOKUP_AMPLITUDE    0x7ffffffL
-extern int sin_lookup_table[SIN_LOOKUP_SIZE];
+extern int sin_lookup_table[SIN_LOOKUP_SIZE+1];
 
 /* [0 .. 1[ -> sin(0 .. 2pi) */
 #define sin_lookup(scale) ((double) sin_lookup_table[(int) ((scale) * SIN_LOOKUP_SIZE)] / SIN_LOOKUP_AMPLITUDE)
