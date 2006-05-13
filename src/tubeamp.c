@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2006/05/13 16:20:23  alankila
+ * - further small tuning of the formula and the defaults
+ *
  * Revision 1.10  2006/05/13 13:33:38  alankila
  * - new biasfreq, more tubish sound
  *
@@ -133,7 +136,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->lsfreq, 20.0, 320.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->lsfreq, 20.0, 500.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_lsfreq), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -204,7 +207,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, params->treblefreq, &params->lowpass[i]);
         set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, params->biasfreq, &params->biaslowpass[i]);
         set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, params->lsfreq, &params->lowshelf[i]);
-        set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 800, 500.0, params->middlecut, &params->middlecut_bq[i]);
+        set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 800, 600.0, params->middlecut, &params->middlecut_bq[i]);
     }
 
     gain = pow(10, params->gain / 20);
@@ -218,17 +221,17 @@ tubeamp_filter(struct effect *p, struct data_block *db)
 #define DISTORTION_AMOUNT (MAX_SAMPLE * 2.0)
             result = params->in[curr_channel] / DISTORTION_AMOUNT * gain;
             for (j = 0; j < params->stages; j += 1) {
-                /* highpass filter to remove offset from earlier pass */
-//                result = do_biquad(result, &params->highpass[j], curr_channel);
+                /* remove DC offset from earlier stage */
+                result = do_biquad(result, &params->highpass[j], curr_channel);
                 /* middlecut for user tone control, for the "metal crunch" sound */
                 result = do_biquad(result, &params->middlecut_bq[j], curr_channel);
                 /* low shelve to remove bass to avoid saturating the sound */
                 result = 0.5 * result + 0.5 * do_biquad(result, &params->lowshelf[j], curr_channel);
                 /* waveshaper adds high-frequency components */
-                result += do_biquad(tanh(result + params->bias[j]), &params->highpass[j], curr_channel) * gain;
+                result += tanh(result + params->bias[j]) * gain;
                 /* bias calculation creates a feedback loop with the distortion, making
                  * the distort react more to sound dynamics. */
-                params->bias[j] = do_biquad((0.25 + 0.5 * (j+1) / params->stages) - 0.25 * result, &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad((0.25 + 0.5 * j / MAX_STAGES) - result, &params->biaslowpass[j], curr_channel);
                 /* lowpass filter keeps the added high-frequency components in control */
                 result = do_biquad(result, &params->lowpass[j], curr_channel);
                 /* each stage inverts in a real tube amp */
@@ -290,12 +293,12 @@ tubeamp_create()
     p->toggle = 0;
     p->proc_done = tubeamp_done;
 
-    params->stages = 5;
-    params->gain = 15.0;
-    params->lsfreq = 120;
+    params->stages = 4;
+    params->gain = 16.0;
+    params->lsfreq = 130;
     params->treblefreq = 5000;
-    params->biasfreq = 10;
-    params->middlecut = -4.0;
+    params->biasfreq = 5;
+    params->middlecut = -5.0;
 
     /* low-end cabinet simulation: 6 kHz cut and 20 Hz cut */ 
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 6000, 1.0, TRUE, &params->final_lowpass);
