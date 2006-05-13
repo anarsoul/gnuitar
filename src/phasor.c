@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2006/05/13 17:10:06  alankila
+ * - move hilbert transform into biquad.c
+ * - implement stereo phaser using hilbert transform
+ * - clean up remaining struct biquad references and replace them with typedef
+ *
  * Revision 1.31  2006/05/13 09:33:16  alankila
  * - more power to phaser, less cpu use, good deal
  *
@@ -142,30 +147,34 @@
 
 #define PHASOR_UPDATE_INTERVAL 8
  
-void            phasor_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_phasor_speed(GtkAdjustment *adj, struct phasor_params *params)
 {
     params->sweep_time = adj->value;
 }
 
-void
+static void
 update_phasor_depth(GtkAdjustment *adj, struct phasor_params *params)
 {
     params->depth = adj->value;
 }
 
-void
+static void
 update_phasor_drywet(GtkAdjustment *adj, struct phasor_params *params)
 {
     params->drywet = adj->value;
 }
 
-void
+static void
+toggle_stereo(GtkAdjustment *adj, struct phasor_params *params)
+{
+    params->stereo = !params->stereo;
+}
+
+static void
 phasor_init(struct effect *p)
 {
-    struct phasor_params *pphasor;
+    struct phasor_params *params;
 
     GtkWidget      *speed;
     GtkWidget      *speed_label;
@@ -181,7 +190,7 @@ phasor_init(struct effect *p)
 
     GtkWidget      *button;
     GtkWidget      *parmTable;
-    pphasor = p->params;
+    params = p->params;
 
     /*
      * GUI Init
@@ -194,7 +203,7 @@ phasor_init(struct effect *p)
     parmTable = gtk_table_new(3, 3, FALSE);
 
 
-    adj_speed = gtk_adjustment_new(pphasor->sweep_time, 200.0, 2500,
+    adj_speed = gtk_adjustment_new(params->sweep_time, 150.0, 2000,
 				   1.0, 10.0, 0.0);
     speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
@@ -204,7 +213,7 @@ phasor_init(struct effect *p)
 
 
     gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
-		       GTK_SIGNAL_FUNC(update_phasor_speed), pphasor);
+		       GTK_SIGNAL_FUNC(update_phasor_speed), params);
 
     speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
     gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
@@ -217,7 +226,7 @@ phasor_init(struct effect *p)
 
 
     adj_depth =
-	gtk_adjustment_new(pphasor->depth, 0.0, 100.0, 1.0, 5.0, 0.0);
+	gtk_adjustment_new(params->depth, 0.0, 100.0, 1.0, 5.0, 0.0);
     depth_label = gtk_label_new("Depth\n%");
     gtk_table_attach(GTK_TABLE(parmTable), depth_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS
@@ -226,7 +235,7 @@ phasor_init(struct effect *p)
 
 
     gtk_signal_connect(GTK_OBJECT(adj_depth), "value_changed",
-		       GTK_SIGNAL_FUNC(update_phasor_depth), pphasor);
+		       GTK_SIGNAL_FUNC(update_phasor_depth), params);
 
     depth = gtk_vscale_new(GTK_ADJUSTMENT(adj_depth));
 
@@ -237,7 +246,7 @@ phasor_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
     adj_drywet =
-	gtk_adjustment_new(pphasor->drywet, 0.0, 100.0, 1.0, 5.0,
+	gtk_adjustment_new(params->drywet, 0.0, 100.0, 1.0, 5.0,
 			   0.0);
     drywet_label = gtk_label_new("Dry/Wet\n%");
     gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 2, 3, 0, 1,
@@ -247,7 +256,7 @@ phasor_init(struct effect *p)
 
 
     gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
-		       GTK_SIGNAL_FUNC(update_phasor_drywet), pphasor);
+		       GTK_SIGNAL_FUNC(update_phasor_drywet), params);
 
     drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
 
@@ -259,7 +268,7 @@ phasor_init(struct effect *p)
 
 
     button = gtk_check_button_new_with_label("On");
-    if (p->toggle == 1)
+    if (p->toggle)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
@@ -269,53 +278,121 @@ phasor_init(struct effect *p)
 		     (GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
+    if (n_output_channels > 1) {
+        button = gtk_check_button_new_with_label("Stereo");
+        if (params->stereo)
+	    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
+        gtk_signal_connect(GTK_OBJECT(button), "toggled",
+                           GTK_SIGNAL_FUNC(toggle_stereo), params);
+
+        gtk_table_attach(GTK_TABLE(parmTable), button, 1, 2, 2, 3,
+                         __GTKATTACHOPTIONS(GTK_EXPAND | GTK_SHRINK),
+                         __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
+    }
+
+    
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Phasor"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
 }
 
-void
-phasor_filter(struct effect *p, struct data_block *db)
+static void
+phasor_filter_mono(struct effect *p, struct data_block *db)
 {
-    struct phasor_params *pp;
+    struct phasor_params *params = p->params;
     DSP_SAMPLE     *s, tmp;
     int             count, curr_channel = 0, i;
-    double          delay, Dry, Wet;
+    float           delay, Dry, Wet, f;
 
-    pp = (struct phasor_params *) p->params;
     count = db->len;
     s = db->data;
 
-    Dry = 1 - pp->drywet / 100.0;
-    Wet =     pp->drywet / 100.0;
+    Dry = 1 - params->drywet / 100.0;
+    Wet =     params->drywet / 100.0;
+    f = params->f;
     
     while (count) {
         if (curr_channel == 0 && count % PHASOR_UPDATE_INTERVAL == 0) { 
-            pp->f += 1000.0 / pp->sweep_time / sample_rate * PHASOR_UPDATE_INTERVAL;
-            if (pp->f >= 1.0)
-                pp->f -= 1.0;
-            delay = (sin_lookup(pp->f) + 1) / 2;
-            delay *= pp->depth / 100.0;
+            f += 1000.0 / params->sweep_time / sample_rate * PHASOR_UPDATE_INTERVAL;
+            if (f >= 1.0)
+                f -= 1.0;
+            delay = (sin_lookup(f) + 1) / 2;
+            delay *= params->depth / 100.0;
             delay = 1.0 - delay;
 
             for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-                set_2nd_allpass_biquad(delay, &(pp->allpass[i]));
+                set_2nd_allpass_biquad(delay, &params->allpass[i]);
         }
         
         tmp = *s;
         for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-            tmp = do_biquad(tmp, &(pp->allpass[i]), curr_channel);
+            tmp = do_biquad(tmp, &params->allpass[i], curr_channel);
         *s = *s * Dry + tmp * Wet;
 
         curr_channel = (curr_channel + 1) % db->channels;
         *s++;
         count--;
     }
-
 }
 
-void
+static void
+phasor_filter_stereo(struct effect *p, struct data_block *db)
+{
+    struct phasor_params *params = p->params;
+    float f, sinval=0, cosval=0;
+    int i;
+    
+    db->channels = 2;
+    db->len *= 2;
+    f = params->f;
+    for (i = 0; i < db->len / 2; i += 1) {
+        DSP_SAMPLE x0, x1, y0, y1;
+        if (i % PHASOR_UPDATE_INTERVAL == 0) { 
+            float ftmp;
+            
+            f += 1000.0 / params->sweep_time / sample_rate * PHASOR_UPDATE_INTERVAL;
+            if (f >= 1.0)
+                f -= 1.0;
+            sinval = sin_lookup(f);
+
+            ftmp = f + 0.25;
+            if (ftmp >= 1.0)
+                ftmp -= 1.0;
+            cosval = sin_lookup(ftmp);
+        }
+
+        hilbert_transform(db->data[i], &x0, &x1, &params->hilb);
+        y0 = cosval * x0 + sinval * x1;
+        y1 = cosval * x0 - sinval * x1;
+
+        db->data_swap[i*2+0] = (cosval * y0 + sinval * y1);
+        db->data_swap[i*2+1] = (cosval * y0 - sinval * y1);
+    }
+    /* swap to processed buffer for next effect */
+    DSP_SAMPLE *tmp = db->data;
+    db->data = db->data_swap;
+    db->data_swap = tmp;
+}
+
+static void
+phasor_filter(struct effect *p, struct data_block *db)
+{
+    struct phasor_params *params = p->params;
+
+    if (n_output_channels > 1 && db->channels == 1 && params->stereo) {
+        phasor_filter_stereo(p, db);
+        params->f += 1000.0 / params->sweep_time / sample_rate * (db->len / db->channels) / 2;
+    } else {
+        phasor_filter_mono(p, db);
+        params->f += 1000.0 / params->sweep_time / sample_rate * (db->len / db->channels);
+    }
+    
+    if (params->f >= 1.0)
+        params->f -= 1.0;
+}
+
+static void
 phasor_done(struct effect *p)
 {
     free(p->params);
@@ -323,7 +400,7 @@ phasor_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 phasor_save(struct effect *p, SAVE_ARGS)
 {
     struct phasor_params *params = p->params;
@@ -331,9 +408,10 @@ phasor_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("sweep_time", params->sweep_time);
     SAVE_DOUBLE("depth", params->depth);
     SAVE_DOUBLE("drywet", params->drywet);
+    SAVE_INT("stereo", params->stereo);
 }
 
-void
+static void
 phasor_load(struct effect *p, LOAD_ARGS)
 {
     struct phasor_params *params = p->params;
@@ -341,13 +419,14 @@ phasor_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("sweep_time", params->sweep_time);
     LOAD_DOUBLE("depth", params->depth);
     LOAD_DOUBLE("drywet", params->drywet);
+    LOAD_INT("stereo", params->stereo);
 }
 
 effect_t *
 phasor_create()
 {
-    effect_t           *p;
-    struct phasor_params *pphasor;
+    effect_t             *p;
+    struct phasor_params *params;
 
     p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct phasor_params));
@@ -357,12 +436,15 @@ phasor_create()
     p->proc_load = phasor_load;
     p->proc_save = phasor_save;
 
-    pphasor = p->params;
+    params = p->params;
 
-    pphasor->sweep_time = 200.0;
-    pphasor->depth = 100.0;
-    pphasor->drywet = 50.0;
-    pphasor->f = 0;
+    params->sweep_time = 200.0;
+    params->depth = 100.0;
+    params->drywet = 50.0;
+    params->f = 0;
+    params->stereo = 0;
+
+    hilbert_init(&params->hilb);
 
     return p;
 }

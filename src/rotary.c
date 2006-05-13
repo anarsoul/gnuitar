@@ -77,10 +77,10 @@ static void
 rotary_filter(struct effect *p, struct data_block *db)
 {
     struct rotary_params *params = p->params;
-    int i, j;
+    int i;
     float pha, sinval = 0, cosval = 0;
     
-    if (db->channels != 1)
+    if (db->channels != 1 || n_output_channels < 2)
         return;
     
     params->phase += (float) db->len / sample_rate * 1000.0 / params->speed;
@@ -100,6 +100,8 @@ rotary_filter(struct effect *p, struct data_block *db)
 
     pha = params->phase;
     for (i = 0; i < db->len/2; i += 1) {
+        DSP_SAMPLE x0, x1, y0, y1;
+
         /* update the approximation of sin and cos values to avoid
          * discontinuities between audio blocks */
         if (i % 16 == 0) {
@@ -115,30 +117,15 @@ rotary_filter(struct effect *p, struct data_block *db)
         }
 
         /* run the input through allpass delay lines */
-        DSP_SAMPLE x0 = db->data[i];
-        DSP_SAMPLE x1 = x0;
-        for (j = 0; j < 4; j += 1) {
-            x0 = do_biquad(x0, &params->a1[j], 0);
-            x1 = do_biquad(x1, &params->a2[j], 0);
-        }
-        /* additionally, x0 needs to be delayed by 1 sample */
-        DSP_SAMPLE x0_tmp = x0;
-        x0 = params->x0_tmp;
-        params->x0_tmp = x0_tmp;
+        hilbert_transform(db->data[i], &x0, &x1, &params->hilb);
         
         /* compute separate f + fc and f - fc outputs */
-        DSP_SAMPLE y0 = cosval * x0 + sinval * x1;
-        DSP_SAMPLE y1 = cosval * x0 - sinval * x1;
+        y0 = cosval * x0 + sinval * x1;
+        y1 = cosval * x0 - sinval * x1;
 
         /* factor and biquad estimate hrtf */
         db->data_swap[i*2+0] = 0.68 * y0 + 0.32 * do_biquad(y1, &params->ld, 0);
         db->data_swap[i*2+1] = 0.68 * y1 + 0.32 * do_biquad(y0, &params->rd, 0);
-        
-        /* This code would implement cool stereo phaser.
-         * Unfortunately it doesn't belong here but in phasor.c... :-/
-        db->data_swap[i*2+0] = (cosval * y0 + sinval * y1);
-        db->data_swap[i*2+1] = (cosval * y0 + sin_lookup(1.0-pha) * y1);
-        */
     }
     
     /* swap to processed buffer for next effect */
@@ -191,25 +178,7 @@ rotary_create()
     set_rc_lowpass_biquad(sample_rate, 4000, &params->ld);
     set_rc_lowpass_biquad(sample_rate, 4000, &params->rd);
 
-    /* Setup allpass sections to produce hilbert transform.
-     * There value were searched with a genetic algorithm by
-     * Olli Niemitalo <o@iki.fi>
-     * 
-     * http://www.biochem.oulu.fi/~oniemita/dsp/hilbert/
-     *
-     * The difference between the outputs of passing signal through
-     * a1 allpass delay + 1 sample delay and a2 allpass delay
-     * is shifted by 90 degrees over 99 % of the frequency band.
-     */
-    set_2nd_allpass_biquad(0.6923878, &params->a1[0]);
-    set_2nd_allpass_biquad(0.9306054, &params->a1[1]);
-    set_2nd_allpass_biquad(0.9882295, &params->a1[2]);
-    set_2nd_allpass_biquad(0.9987488, &params->a1[3]);
-
-    set_2nd_allpass_biquad(0.4021921, &params->a2[0]);
-    set_2nd_allpass_biquad(0.8561711, &params->a2[1]);
-    set_2nd_allpass_biquad(0.9722910, &params->a2[2]);
-    set_2nd_allpass_biquad(0.9952885, &params->a2[3]);
+    hilbert_init(&params->hilb);
     
     return p;
 }

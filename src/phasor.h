@@ -32,7 +32,9 @@ extern effect_t *   phasor_create();
 
 struct phasor_params {
     double          depth, sweep_time, drywet, f;
+    int             stereo;
     Biquad_t        allpass[MAX_PHASOR_FILTERS];
+    Hilbert_t       hilb;
 };
 
 #endif

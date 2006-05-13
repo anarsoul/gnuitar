@@ -20,6 +20,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.6  2006/05/13 17:10:06  alankila
+ * - move hilbert transform into biquad.c
+ * - implement stereo phaser using hilbert transform
+ * - clean up remaining struct biquad references and replace them with typedef
+ *
  * Revision 1.5  2005/09/04 12:12:36  alankila
  * - make create() and done() symmetric in memory allocation/free
  *
@@ -51,8 +56,8 @@ extern effect_t *   eqbank_create();
 
 struct eqbank_params {
     double          *boosts;
-    double          volume;
-    struct Biquad  *filters;
+    double           volume;
+    Biquad_t        *filters;
 };
 
 

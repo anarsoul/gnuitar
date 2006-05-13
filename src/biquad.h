@@ -18,6 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.17  2006/05/13 17:10:06  alankila
+ * - move hilbert transform into biquad.c
+ * - implement stereo phaser using hilbert transform
+ * - clean up remaining struct biquad references and replace them with typedef
+ *
  * Revision 1.16  2006/05/13 09:33:16  alankila
  * - more power to phaser, less cpu use, good deal
  *
@@ -94,11 +99,15 @@
  * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
 #define DENORMAL_BIAS   1E-5
 
-struct Biquad {
+typedef struct {
     double          b0, b1, b2, a1, a2;
     double          mem[MAX_CHANNELS][4];
-};
-typedef struct Biquad Biquad_t;
+} Biquad_t;
+
+typedef struct {
+    Biquad_t        a1[4], a2[4];
+    DSP_SAMPLE      x0_tmp;
+} Hilbert_t;
 
 /*
  * Sampling rate, Center frequency, Bandwidth, Gain (decibels) 
@@ -113,6 +122,9 @@ extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highboost_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f);
+
+extern void     hilbert_transform(DSP_SAMPLE in, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h);
+extern void     hilbert_init(Hilbert_t *h);
 
 /*
  * Sampling rate, Center frequency, Ripple %, Lowpass?

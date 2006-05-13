@@ -20,8 +20,8 @@ struct rotary_params {
     int         speed;
     int         time_to_next_fft, unread_output;
     float       phase;
-    DSP_SAMPLE  x0_tmp;
-    Biquad_t    ld, rd, a1[4], a2[4];
+    Biquad_t    ld, rd;
+    Hilbert_t   hilb;
 };
 
 #endif

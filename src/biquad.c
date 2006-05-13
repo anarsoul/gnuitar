@@ -19,6 +19,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.19  2006/05/13 17:10:06  alankila
+ * - move hilbert transform into biquad.c
+ * - implement stereo phaser using hilbert transform
+ * - clean up remaining struct biquad references and replace them with typedef
+ *
  * Revision 1.18  2006/05/13 09:33:16  alankila
  * - more power to phaser, less cpu use, good deal
  *
@@ -261,6 +266,48 @@ set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f)
     f->b2 = b2 / a0;
     f->a1 = a1 / a0;
     f->a2 = a2 / a0;
+}
+
+/* input is input, output is x0 and x1 with 90° phase separation between them */
+void
+hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h)
+{
+    int i;
+
+    *x0 = input;
+    *x1 = *x0;
+    for (i = 0; i < 4; i += 1) {
+        *x0 = do_biquad(*x0, &h->a1[i], 0);
+        *x1 = do_biquad(*x1, &h->a2[i], 0);
+    }
+    /* delay x0 by 1 sample */
+    DSP_SAMPLE x0_tmp = *x0;
+    *x0 = h->x0_tmp;
+    h->x0_tmp = x0_tmp;
+}
+
+/* Setup allpass sections to produce hilbert transform.
+ * There value were searched with a genetic algorithm by
+ * Olli Niemitalo <o@iki.fi>
+ * 
+ * http://www.biochem.oulu.fi/~oniemita/dsp/hilbert/
+ *
+ * The difference between the outputs of passing signal through
+ * a1 allpass delay + 1 sample delay and a2 allpass delay
+ * is shifted by 90 degrees over 99 % of the frequency band.
+ */
+void
+hilbert_init(Hilbert_t *h)
+{
+    set_2nd_allpass_biquad(0.6923878, &h->a1[0]);
+    set_2nd_allpass_biquad(0.9306054, &h->a1[1]);
+    set_2nd_allpass_biquad(0.9882295, &h->a1[2]);
+    set_2nd_allpass_biquad(0.9987488, &h->a1[3]);
+
+    set_2nd_allpass_biquad(0.4021921, &h->a2[0]);
+    set_2nd_allpass_biquad(0.8561711, &h->a2[1]);
+    set_2nd_allpass_biquad(0.9722910, &h->a2[2]);
+    set_2nd_allpass_biquad(0.9952885, &h->a2[3]);
 }
 
 #if !defined(_MSC_VER)
