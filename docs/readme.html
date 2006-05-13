@@ -221,8 +221,7 @@ The controls and description of the effects follow below.
     The model was designed by Antti Huovilainen, and it was published at DAFx'04.
     On low resonance values it acts a lot like a 2nd order bandpass filter with some
     saturation colouring the sound into a warm, bloomy sound. On high resonance
-    values, the wah acts like a sound synthesizer. (Try resonance value of 100% for
-    good example of the synth-like sound.)
+    values, the wah becomes a sound synthesizer itself.
 </p>
 <dl>
 <dt>period</dt>
@@ -246,100 +245,119 @@ The controls and description of the effects follow below.
 </dl>
 
 <h2><a name=distort>Distortion</a></h2>
-<ul>
-<li>distort    - power of effect</li>
-<li>level      - volume in case you need to mute it quickly</li>
-<li>saturation - high-frequency "sand" in the sound</li>
-<li>lowpass    - lowpass filter that can be used to change the sound feel</li>
-</ul>
+<dl>
+<dt>distort</dt><dd>power of effect</dd>
+<dt>level</dt><dd>volume in case you need to mute it quickly</dd>
+<dt>saturation</dt><dd>high-frequency "sand" in the sound</dd>
+<dt>lowpass</dt><dd>lowpass filter that can be used to change the sound feel</dd>
+</dl>
 
 <h2><a name=delay>Delay</a></h2>
 <p>
 A no-frills time-delay effect that can also split original signal in several
 physical output channels if available.
 </p>
-<ul>
-<li>decay  - decay % between subsequent repeats</li>
-<li>time   - delay time between repeats</li>
-<li>repeat - number of repeats</li>
-<li>multichannel (if present) - switch effect to circulate delay voices through available channels</li>
-</ul>
+<dl>
+<dt>decay</dt><dd>decay % between subsequent repeats</dd>
+<dt>time</dt><dd>delay time between repeats</dd>
+<dt>repeat</dt><dd>number of repeats</dd>
+<dt>multichannel</dt><dd>(if available) switch effect to circulate delay voices through available channels</dd>
+</dl>
 
 <h2><a name=reverb>Reverberator</a></h2>
 <p>
 Reverberator produces echoed "space" sound. Controls:
 </p>
-<ul>
-<li>delay  - delay before repeating starts</li>
-<li>wet    - "wet" (processed) sound volume</li>
-<li>dry    - "dry" (clean) sound volume</li>
-<li>regen  - decay % between subsequent repeats</li>
-</ul>
+<dl>
+<dt>delay</dt><dd>delay before repeating starts</dd>
+<dt>wet</dt><dd>"wet" (processed) sound volume</dd>
+<dt>dry</dt><dd>"dry" (clean) sound volume</dd>
+<dt>regen</dt><dd>decay % between subsequent repeats</dd>
+</dl>
 
 <h2><a name=tremolo>Tremolo</a></h2>
 <p>
-Tremolo sounds like when you turn the master volume on and off very quickly.
-This is done by multiplying the data with a factor that is altered sinuously.
+Tremolo is an amplitude modulator that turns the volume up and down very quickly.
 </p>
-<ul>
-<li>period    - length of one cycle of effect</li>
-<li>amplitude - depth of modulation</li>
-</ul>
+<dl>
+<dt>period</dt><dd>length of one cycle of effect</dd>
+<dt>amplitude</dt><dd>depth of modulation</dd>
+</dl>
 
 <h2><a name=chorus>Chorus / Flanger</a></h2>
 <p>
-Chorus mixes a time-delayed versions of input with the original signal
+This effect mixes a time-delayed versions of input with the original signal
 simulating several players playing the same tune. Variations of this
 concept also produce flanger and vibrato effects.
 </p>
-<p>
-<strong>Flanger</strong> With just 1 voice and low delay time, the effect becomes a flanger.
-However, by adding more voices and increasing the delay, the sound again
-turns choruslike.
-If the multichannel mode is available and enabled, the effect distributes one
-voice per output channel.
+<p><strong>Chorus</strong>Use several voices and long base delay time.</p>
+<p><strong>Flanger</strong>With just 1 voice and low delay time, the effect becomes a
+flanger. However, by adding more voices and increasing the delay, the sound again
+turns choruslike. If the multichannel mode is available and enabled, the effect
+distributes one voice per output channel.
 </p>
-<p>
-<strong>Vibrato</strong> If dry/wet at 100% (fully wet) and 1 voice, this effect
+<p><strong>Vibrato</strong> If dry/wet at 100% (fully wet) and 1 voice, this effect
 is a vibrato.
 </p>
-<ul>
-<li>delay     - fixed time delay before mixing</li>
-<li>depth     - the depth of modulation</li>
-<li>period    - the length of modulation cycle</li>
-<li>voices    - number of chorus voices to mix</li>
-<li>dry/wet   - dry vs. wet mixing ratio</li>
-<li>regen     - feedbacks some of the output back to input</li>
-</ul>
+<dl>
+<dt>delay</dt><dd>fixed time delay before mixing</dd>
+<dt>depth</dt><dd>the depth of modulation</dd>
+<dt>period</dt><dd>the length of modulation cycle</dd>
+<dt>voices</dt><dd>number of chorus voices to mix</dd>
+<dt>dry/wet</dt><dd>dry vs. wet mixing ratio</dd>
+<dt>regen</dt><dd>feedbacks some of the output back to input</dd>
+</dl>
 
 <h2><a name=echo>Echo</a></h2>
 
 <p>
 Another reverberation effect, but not like the others.  Echo simulates a
-large hall echo using varying length of delays in its voices.
+large hall echo using varying length of delays in all its voices, and produces
+complicated echo pattern that simulates large hall full of hard surfaces of different
+sizes.
 </p>
 
-<ul>
-<li>decay     - decay % between subsequent repeats</li>
-<li>voices    - number of independent echo voices</li>
-<li>delay     - sets the length of maximum echo delay</li>
-</ul>
+<dl>
+<dt>decay</dt>
+<dd>decay % between subsequent repeats</dd>
+<dt>voices</dt>
+<dd>number of independent echo voices</dd>
+<dt>delay</dt>
+<dd>sets the length of maximum echo delay</dd>
+</dl>
 
 <h2><a name=phaser>Phaser</a></h2>
 
 <p>
-Phaser operates by selectively delaying the high frequency components of a
-signal as they pass through this effect. If the dry/wet ratio is at 50 %, the
-delayed components strongly interfere with the original, producing the
-phaser effect. However, if dry/wet ratio is at 100%, this effect becomes
-a sweet-sounding frequency-selective vibrato.
+Phaser operates by introducing a variable frequency dependant delay over the audio
+signal. If the dry/wet ratio is at 50 %, the delayed components will produce interference
+with the original signal which produces moving notches across the audio spectrum,
+producing the phaser sound. However, if dry/wet ratio is at 100%, this effect becomes 
+a vibrato.
 </p>
 
-<ul>
-<li>period    - length of the modulation cycle</li>
-<li>depth     - an unitless measure of effect strength</li>
-<li>dry/wet   - the dry vs. wet mixing ratio</li>
-</ul>
+<dl>
+<dt>period</dt>
+<dd>length of the modulation cycle</dd>
+<dt>depth</dt>
+<dd>an unitless measure of the maximum delay imposed by the effect on the audio</dd>
+<dt>dry/wet</dt>
+<dd>the dry vs. wet mixing ratio</dd>
+</dl>
+
+<h2><a name=rotary>Rotary speaker</a></h2>
+
+<p>
+Rotary speaker is an implementation of the combined horn and bass speaker mounted on
+opposite sides of a rotating cabinet. As the cabinet turns, the doppler effect shifts
+the audio spectrum up and down, depending on whether the speaker is receding or
+approaching.
+</p>
+
+<dl>
+<dt>period</dt>
+<dd>Time for one complete rotation of the cabinet.</dd>
+</dl>
 
 <h2><a name=vibrato>Vibrato</a></h2>
 <p>
@@ -358,11 +376,38 @@ done by time-delaying the playback in a long sinuous curve.
 overdrive pedals such as Ibanez TS9.
 </p>
 
-<ul>
-<li>drive  - how much amplification</li>
-<li>clip   - changes tone from TS9-type fuzz to less powerful distortion</li>
-<li>treble - tone control</li>
-</ul>
+<dl>
+<dt>drive</dt><dd>how much amplification</dd>
+<dt>clip</dt><dd>changes tone from TS9-type fuzz to less powerful distortion</dd>
+<dt>treble</dt><dd>tone control</dd>
+</dl>
+
+<h2><a name=tubeamp>Tube amplifier</a></h2>
+
+<p>
+Because Overdrive is limited to simulating the Ibanez TS9, another effect is required
+for more powerful distortion sounds.
+The effect loosely models a tube amplifier with a variable number of output stages,
+each which add different kind of clipping to the sound. Some tone controls are provided
+for additional flexibility.
+</p>
+
+<dl>
+<dt>stages</dt>
+<dd>Number of stages. All can be used to produce distortion, 5 stages being very close
+to overkill.</dd>
+<dt>gain</dt>
+<dd>Gain per stage. Higher gains drive the later stages into more clipping.</dd>
+<dt>bass cut</dt>
+<dd>A highpass filter with tunable cutoff frequency. Increasing this value reduces
+   bass from the output.</dd>
+<dt>middle cut</dt>
+<dd>Decreasing the value of the control introduces a deepening notch at 720 Hz, allowing
+   the effect to be used for dark distortion sounds.</dd>
+<dt>treble cut</dt>
+<dd>A lowpass filter with tunable cutoff frequency. This can be used to change the
+   tone and control noise.</dd>
+</dl>
 
 <h2><a name=noise>Noise gate</a></h2>
 
@@ -426,11 +471,11 @@ Finally, the dry signal is delayed by this effect to control some of the phase
 cancellation during wet/dry mixing phase. The latency introduced depends
 on the amount of rate shifting.  </p>
 
-<ul>
-<li>halfnote - how many half-notes to adjust upwards or downwards</li>
-<li>finetune - adjust for in-between tones for half-notes</li>
-<li>wet/dry  - select mix % between unprocessed and processed signal</li>
-</ul>
+<dl>
+<dt>halfnote</dt><dd>how many half-notes to adjust upwards or downwards</dd>
+<dt>finetune</dt><dd>adjust for in-between tones for half-notes</dd>
+<dt>wet/dry</dt><dd>select mix % between unprocessed and processed signal</dd>
+</dl>
 <h2><a name=tuner>Tuner</a></h2>
 
 <p>
