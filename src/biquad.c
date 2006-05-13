@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.18  2006/05/13 09:33:16  alankila
+ * - more power to phaser, less cpu use, good deal
+ *
  * Revision 1.17  2006/05/07 13:22:12  alankila
  * - new bare bones distortion effect: tubeamp
  *
@@ -131,16 +134,28 @@ set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
     f->a2 = (1 - alpha)  / a0;
 }
 
-/* allpass filter, really 1st order as a2 = b2 = 0,
- * delay can vary from 0 to 1.
- */
+/* 1st order allpass filter, delay can vary from 0 to 1 */
 void
-set_allpass_biquad(double delay, Biquad_t *f)
+set_allpass_biquad(double a, Biquad_t *f)
 {
-    f->b0 = delay;
-    f->b1 = 1.0;
-    f->a1 = delay;
-    f->a2 = f->b2 = 0;
+    a = a * a;
+    f->b0 = a;
+    f->b1 = 1;
+    f->b2 = 0;
+    f->a1 = a;
+    f->a2 = 0;
+}
+
+/* A 2nd order allpass, delay can vary from 0 to 1 */
+void
+set_2nd_allpass_biquad(double a, Biquad_t *f)
+{
+    a = a * a;
+    f->b0 = a;
+    f->b1 = 0;
+    f->b2 = 1;
+    f->a1 = 0;
+    f->a2 = a;
 }
 
 void

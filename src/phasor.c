@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2006/05/13 09:33:16  alankila
+ * - more power to phaser, less cpu use, good deal
+ *
  * Revision 1.30  2005/10/07 12:50:12  alankila
  * - move delay shape computation to where it belongs and change it to bit
  *   smoother
@@ -137,7 +140,6 @@
 #    include "utils.h"		/* for M_PI */
 #endif
 
-#define PHASOR_SHAPE           0.8
 #define PHASOR_UPDATE_INTERVAL 8
  
 void            phasor_filter(struct effect *p, struct data_block *db);
@@ -290,17 +292,15 @@ phasor_filter(struct effect *p, struct data_block *db)
     
     while (count) {
         if (curr_channel == 0 && count % PHASOR_UPDATE_INTERVAL == 0) { 
-            pp->f += 1000.0 / pp->sweep_time / sample_rate * 2 * M_PI * PHASOR_UPDATE_INTERVAL;
+            pp->f += 1000.0 / pp->sweep_time / sample_rate * PHASOR_UPDATE_INTERVAL;
             if (pp->f >= 1.0)
                 pp->f -= 1.0;
             delay = (sin_lookup(pp->f) + 1) / 2;
             delay *= pp->depth / 100.0;
             delay = 1.0 - delay;
 
-            delay = ((exp(PHASOR_SHAPE * delay) - 1) / (exp(PHASOR_SHAPE) - 1));
-
             for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-                set_allpass_biquad(delay, &(pp->allpass[i]));
+                set_2nd_allpass_biquad(delay, &(pp->allpass[i]));
         }
         
         tmp = *s;
@@ -359,7 +359,7 @@ phasor_create()
 
     pphasor = p->params;
 
-    pphasor->sweep_time = 1000.0;
+    pphasor->sweep_time = 200.0;
     pphasor->depth = 100.0;
     pphasor->drywet = 50.0;
     pphasor->f = 0;

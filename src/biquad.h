@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.16  2006/05/13 09:33:16  alankila
+ * - more power to phaser, less cpu use, good deal
+ *
  * Revision 1.15  2006/05/07 13:22:12  alankila
  * - new bare bones distortion effect: tubeamp
  *
@@ -105,6 +108,7 @@ extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
 extern void     set_bpf_biquad(double Fs, double Fc, double BW,
 			       Biquad_t *f);
 extern void     set_allpass_biquad(double delay, Biquad_t *f);
+extern void     set_2nd_allpass_biquad(double delay, Biquad_t *f);
 extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highboost_biquad(double fs, double fc, Biquad_t *f);

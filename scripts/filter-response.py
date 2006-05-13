@@ -167,6 +167,10 @@ def make_rc_hiboost(sample_rate, res, cap):
     ts = 1.0 / sample_rate
     return BiquadFilter(1 + rc/(ts+rc), 0.0, 0.0, rc/(ts+rc), 0.0);
 
+def make_2nd_allpass(a):
+    a = a * a
+    return BiquadFilter(a, 0, -1, 0, -a);
+
 # from gnuitar/src/biquad.c
 def make_chebyshev_1(Fs, Fc, ripple, lowpass):
     c = -math.cos(math.pi / 4);
@@ -324,8 +328,7 @@ def main():
     #filter2 = make_rc_lopass(sampling_rate_hz, 80500)
 
     # null filter
-    #filter1 = BiquadFilter(0.6, 0, 0, -0.4, 0)
-    filter1 = make_filter('PEQ', sampling_rate_hz, 720, 1.0, -19.9)
+    filter1 = make_2nd_allpass(0.9)
  
     print "#f1: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter1.b0, filter1.b1, filter1.b2, filter1.a1, filter1.a2)
     print "#f2: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter2.b0, filter2.b1, filter2.b2, filter2.a1, filter2.a2)
