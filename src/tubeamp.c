@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2006/05/13 08:04:23  alankila
+ * - parameter lickup
+ *
  * Revision 1.7  2006/05/08 07:29:14  alankila
  * - improve nonlinearity crunch a bit -- add gain -- get by with less stages
  *
@@ -207,7 +210,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             /* IIR interpolation */
             params->in[curr_channel] = (db->data[i] + params->in[curr_channel] * 3) / 4.0;
 #define DISTORTION_AMOUNT (MAX_SAMPLE * 2.0)
-            result = params->in[curr_channel] / DISTORTION_AMOUNT;
+            result = params->in[curr_channel] / DISTORTION_AMOUNT * gain;
             for (j = 0; j < params->stages; j += 1) {
                 /* highpass filter to remove offset from earlier pass */
                 result = do_biquad(result, &params->highpass[j], curr_channel);
@@ -277,10 +280,10 @@ tubeamp_create()
 
     params->stages = 3;
     params->gain = 18.0;
-    params->lsfreq = 80;
+    params->lsfreq = 60;
     params->treblefreq = 4500;
-    params->biasfreq = 80;
-    params->middlecut = -5.0;
+    params->biasfreq = 120;
+    params->middlecut = -4.0;
 
     /* low-end cabinet simulation: 6 kHz cut and 20 Hz cut */ 
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 6000, 1.0, TRUE, &params->final_lowpass);
