@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.71  2006/05/13 10:45:44  alankila
+ * - increase window height to make space for more effects :-)
+ * - rename "Processor list" to "Preset list"
+ *
  * Revision 1.70  2006/05/01 10:23:54  anarsoul
  * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
  *
@@ -1477,7 +1481,7 @@ init_gui(void)
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
     char           *processor_titles[] = { "Current effects", NULL };
     char           *effects_titles[] = { "Known effects", NULL };
-    char           *bank_titles[] = { "Processor bank", NULL };
+    char           *bank_titles[] = { "Preset list", NULL };
 #ifdef HAVE_GTK
     GdkFont        *new_font;
 #endif
@@ -1494,7 +1498,7 @@ init_gui(void)
     GtkStyle       *style;
 
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_widget_set_usize(mainWnd, 700, 400);
+    gtk_widget_set_usize(mainWnd, 700, 450);
     tbl = gtk_table_new(5, 6, FALSE);
     gtk_signal_connect(GTK_OBJECT(mainWnd), "destroy",
 		       GTK_SIGNAL_FUNC(quit), NULL);
