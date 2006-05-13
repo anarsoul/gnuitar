@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.73  2006/05/13 11:27:58  alankila
+ * - remember last path in effect/layout functions
+ * - more string changes
+ *
  * Revision 1.72  2006/05/13 11:02:53  alankila
  * - small GUI overhaul
  *
@@ -331,6 +335,8 @@ static void     update_sampling_params_and_close_dialog(GtkWidget *, gpointer);
 static void     quit(GtkWidget *, gpointer);
 static void     about_dlg(void);
 static void     help_contents(void);
+
+static gchar *effects_dir = NULL;
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -830,6 +836,7 @@ bank_add_pressed(GtkWidget * widget, gpointer data)
     GtkWidget      *filesel;
 
     filesel = gtk_file_selection_new("Select preset to add");
+    gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_add),
 		       filesel);
@@ -867,6 +874,8 @@ bank_switch_pressed(GtkWidget * widget, gpointer data)
     else
 	bank_row++;
     fname = gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
+    if (fname == NULL)
+        return;
     gtk_clist_select_row(GTK_CLIST(bank), bank_row, 0);
     load_pump(fname);
 }
@@ -874,8 +883,11 @@ bank_switch_pressed(GtkWidget * widget, gpointer data)
 static void
 bank_perform_save(GtkWidget * widget, GtkFileSelection * filesel)
 {
-    save_pump(gtk_file_selection_get_filename
-	      (GTK_FILE_SELECTION(filesel)));
+    const gchar *path = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+    save_pump(path);
+    if (effects_dir)
+        g_free(effects_dir);
+    effects_dir = g_strdup(path);
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
@@ -884,7 +896,8 @@ bank_start_save(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
 
-    filesel = gtk_file_selection_new("Save current effects' settings");
+    filesel = gtk_file_selection_new("Save current effect settings");
+    gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_save),
 		       filesel);
@@ -899,8 +912,11 @@ bank_start_save(GtkWidget * widget, gpointer data)
 static void
 bank_perform_load(GtkWidget * widget, GtkFileSelection * filesel)
 {
-    load_pump(gtk_file_selection_get_filename
-	      (GTK_FILE_SELECTION(filesel)));
+    const gchar *path = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+    load_pump(path);
+    if (effects_dir)
+        g_free(effects_dir);
+    effects_dir = g_strdup(path);
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
@@ -909,7 +925,8 @@ bank_start_load(GtkWidget * widget, gpointer data)
 {
     GtkWidget      *filesel;
 
-    filesel = gtk_file_selection_new("Select processor profile");
+    filesel = gtk_file_selection_new("Load effect settings");
+    gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_load),
 		       filesel);
@@ -1591,7 +1608,7 @@ init_gui(void)
     gtk_container_add(GTK_CONTAINER(mainWnd), tbl);
     gtk_window_set_title(GTK_WINDOW(mainWnd), "GNUitar");
 
-    bank_add = gtk_button_new_with_label("Add preset >>");
+    bank_add = gtk_button_new_with_label("Add preset...");
     gtk_tooltips_set_tip(tooltips,bank_add,"Load a file into the presets list.", NULL);
 
     style = gtk_widget_get_style(bank_add);
@@ -1645,14 +1662,14 @@ init_gui(void)
     master = gtk_hscale_new(GTK_ADJUSTMENT(adj_master));
     input = gtk_hscale_new(GTK_ADJUSTMENT(adj_input));
     
-    gtk_tooltips_set_tip(tooltips, master, "Use this adjustment to change output level.", NULL);
-    gtk_tooltips_set_tip(tooltips, input, "Use this adjustment to change input level.", NULL);
+    gtk_tooltips_set_tip(tooltips, master, "Change output gain (post-amp)", NULL);
+    gtk_tooltips_set_tip(tooltips, input, "Change input gain (pre-amp)", NULL);
     
     gtk_scale_set_draw_value(GTK_SCALE(master), FALSE);
     
     gtk_scale_set_draw_value(GTK_SCALE(input), FALSE);
     
-    volume_label = gtk_label_new("Output volume:");
+    volume_label = gtk_label_new("Master volume:");
     input_label = gtk_label_new("Input volume:");
 
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
