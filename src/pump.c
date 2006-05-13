@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.56  2006/05/13 10:16:53  alankila
+ * - produce 2 output channels by default rather than 1 to allow new effects
+ *   such as rotary speaker to work
+ *
  * Revision 1.55  2006/05/13 10:09:52  alankila
  * - allow sin_lookup(1.0) to work
  *
@@ -282,7 +286,7 @@ volatile unsigned short  write_track = 0;
 char           *audio_driver_str = NULL;
 char           alsadevice_str[64];
 unsigned short  n_input_channels = 1;
-unsigned short  n_output_channels = 1;
+unsigned short  n_output_channels = 2;
 unsigned int    sample_rate = 44100;
 unsigned short  bits = 16;
 unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
