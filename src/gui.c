@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.74  2006/05/13 11:37:31  alankila
+ * - shut up glib
+ *
  * Revision 1.73  2006/05/13 11:27:58  alankila
  * - remember last path in effect/layout functions
  * - more string changes
@@ -336,7 +339,7 @@ static void     quit(GtkWidget *, gpointer);
 static void     about_dlg(void);
 static void     help_contents(void);
 
-static gchar *effects_dir = NULL;
+static gchar *effects_dir = ".";
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
