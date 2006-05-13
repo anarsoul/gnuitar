@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.54  2006/05/13 07:44:50  alankila
+ * - remove pump's noise reduction -- we'll have the real effect soon enough
+ * - add rotary speaker simulator based on hilbert transform
+ *
  * Revision 1.53  2006/05/07 13:22:12  alankila
  * - new bare bones distortion effect: tubeamp
  *
@@ -257,6 +261,7 @@
 #include "tubeamp.h"
 #include "sustain.h"
 #include "reverb.h"
+#include "rotary.h"
 #include "tracker.h"
 #include "noise.h"
 #include "eqbank.h"
@@ -310,34 +315,6 @@ bias_elimination(data_block_t *db) {
 	    bias_s[i] /= 2;
 	    bias_n[i] /= 2;
 	}
-    }
-}
-
-/* NR_SIZE 3 should be a symemtric FIR with 0.25, 0.5, 0.25 */
-#define NR_SIZE 2
-DSP_SAMPLE nr_last[MAX_CHANNELS][NR_SIZE];
-
-/* a simple moving window averaging filter. This is good against random
- * noise and probably helps with crappy soundcards, although its
- * effect is very subtle. Nevertheless, it drops noise floor here
- * worth 1-2 dB. */
-static void
-noise_reduction(data_block_t *db) {
-    int             i, j;
-    int             curr_channel = 0;
-    DSP_SAMPLE      tmp;
-
-    for (i = 0; i < db->len; i += 1) {
-        for (j = NR_SIZE; j > 1; j -= 1)
-            nr_last[curr_channel][j-1] = nr_last[curr_channel][j-2];
-        nr_last[curr_channel][0] = db->data[i];
-
-        tmp = 0;
-        for (j = 0; j < NR_SIZE; j += 1)
-            tmp += nr_last[curr_channel][j];
-        db->data[i] = tmp / NR_SIZE;
-
-        curr_channel = (curr_channel + 1) % db->channels;
     }
 }
 
@@ -471,7 +448,6 @@ pump_sample(data_block_t *db)
     /* NR is enabled only experimentally until
      * the noise filter will have been implemented */
      
-    noise_reduction(db);
     bias_elimination(db);
     
     adjust_input_volume(db);
@@ -511,6 +487,7 @@ struct effect_creator effect_list[] = {
     {"Sustain", sustain_create},
     {"Overdrive", distort2_create},
     {"Tube amplifier", tubeamp_create},
+    {"Rotary speaker", rotary_create},
     {"Noise gate", noise_create},
     {"Eq bank", eqbank_create},
     {"Pitch shift", pitch_create},
@@ -718,7 +695,6 @@ pump_start(int argc, char **argv)
 
     memset(bias_s, 0, sizeof(bias_s));
     memset(bias_n, 0, sizeof(bias_n));
-    memset(nr_last, 0, sizeof(nr_last));
 }
 
 void

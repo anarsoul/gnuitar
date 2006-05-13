@@ -305,6 +305,10 @@ def make_butterworth(fs, fc):
     return BiquadFilter(a0, a1, a2, b1, b2)
 
 def main():
+    filter1 = BiquadFilter(1, 0, 0, 0, 0)
+    filter2 = BiquadFilter(1, 0, 0, 0, 0)
+    filter3 = BiquadFilter(1, 0, 0, 0, 0)
+    filter4 = BiquadFilter(1, 0, 0, 0, 0)
     # frequency is actually fairly irrelevant, but you can compare the
     # performance of some of the filters near 20 kHz using 44.1 kHz sampling
     # frequency if you like.
@@ -314,21 +318,14 @@ def main():
     #filter1 = make_rc_lopass(sampling_rate_hz, 6070)
     #filter2 = make_rc_lopass(sampling_rate_hz, 10070)
     #filter3 = make_rc_lopass(sampling_rate_hz, 10070)
-    filter4 = BiquadFilter(1, 0, 0, 0, 0)
     
     # A500 static filter -- first order roll-off at 5 kHz
     #filter1 = make_rc_lopass(sampling_rate_hz, 7600)
     #filter2 = make_rc_lopass(sampling_rate_hz, 80500)
-    #filter3 = BiquadFilter(1, 0, 0, 0, 0)
-    #filter4 = BiquadFilter(1, 0, 0, 0, 0)
 
     # null filter
     #filter1 = BiquadFilter(0.6, 0, 0, -0.4, 0)
-    filter1 = make_butterworth(sampling_rate_hz, 3200)
-    #filter1 = make_filter('LPF', sampling_rate_hz, 3200, 2.0, 0)
-    filter2 = BiquadFilter(0.6, 0, 0, -0.4, 0)
-    filter3 = BiquadFilter(0.6, 0, 0, -0.4, 0)
-    filter4 = BiquadFilter(0.6, 0, 0, -0.4, 0)
+    filter1 = make_filter('PEQ', sampling_rate_hz, 720, 1.0, -19.9)
  
     print "#f1: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter1.b0, filter1.b1, filter1.b2, filter1.a1, filter1.a2)
     print "#f2: b0=%f, b1=%f, b2=%f, a1=%f, a2=%f" % (filter2.b0, filter2.b1, filter2.b2, filter2.a1, filter2.a2)

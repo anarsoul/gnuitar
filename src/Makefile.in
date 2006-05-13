@@ -50,12 +50,12 @@ am_gnuitar_OBJECTS = amp.$(OBJEXT) main.$(OBJEXT) pump.$(OBJEXT) \
 	chorus.$(OBJEXT) delay.$(OBJEXT) echo.$(OBJEXT) \
 	tracker.$(OBJEXT) tremolo.$(OBJEXT) vibrato.$(OBJEXT) \
 	autowah.$(OBJEXT) phasor.$(OBJEXT) rcfilter.$(OBJEXT) \
-	tubeamp.$(OBJEXT) gui.$(OBJEXT) distort.$(OBJEXT) \
-	distort2.$(OBJEXT) sustain.$(OBJEXT) reverb.$(OBJEXT) \
-	backbuf.$(OBJEXT) utils.$(OBJEXT) noise.$(OBJEXT) \
-	biquad.$(OBJEXT) eqbank.$(OBJEXT) tuner.$(OBJEXT) \
-	audio-alsa.$(OBJEXT) audio-oss.$(OBJEXT) pitch.$(OBJEXT) \
-	fft.$(OBJEXT) glib12-compat.$(OBJEXT)
+	tubeamp.$(OBJEXT) rotary.$(OBJEXT) gui.$(OBJEXT) \
+	distort.$(OBJEXT) distort2.$(OBJEXT) sustain.$(OBJEXT) \
+	reverb.$(OBJEXT) backbuf.$(OBJEXT) utils.$(OBJEXT) \
+	noise.$(OBJEXT) biquad.$(OBJEXT) eqbank.$(OBJEXT) \
+	tuner.$(OBJEXT) audio-alsa.$(OBJEXT) audio-oss.$(OBJEXT) \
+	pitch.$(OBJEXT) fft.$(OBJEXT) glib12-compat.$(OBJEXT)
 gnuitar_OBJECTS = $(am_gnuitar_OBJECTS)
 am__DEPENDENCIES_1 =
 gnuitar_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -156,10 +156,10 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 gnuitar_SOURCES = amp.c main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
-	vibrato.c autowah.c phasor.c rcfilter.c tubeamp.c \
+	vibrato.c autowah.c phasor.c rcfilter.c tubeamp.c rotary.c \
 	gui.c distort.c distort2.c sustain.c reverb.c backbuf.c utils.c \
 	amp. h pump.h chorus.h delay.h echo.h tracker.h tremolo.h \
-	vibrato.h autowah.h phasor.h rcfilter.h tubeamp.h \
+	vibrato.h autowah.h phasor.h rcfilter.h tubeamp.h rotary.h \
 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h \
 	tuner.c tuner.h audio-alsa.c audio-alsa.h audio-oss.c audio-oss.h \
@@ -262,6 +262,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcfilter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rotary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sustain.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tracker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tremolo.Po@am__quote@
