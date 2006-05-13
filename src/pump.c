@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.57  2006/05/13 10:57:57  alankila
+ * - We can get better dynamic range if we don't clip everywhere, but only at
+ *   the master gain adjustment, just before output is produced.
+ *
  * Revision 1.56  2006/05/13 10:16:53  alankila
  * - produce 2 output channels by default rather than 1 to allow new effects
  *   such as rotary speaker to work
@@ -369,10 +373,6 @@ adjust_input_volume(data_block_t *db) {
 
     for (i = 0; i < db->len; i += 1) {
 	double val = db->data[i] * volume;
-        if (val < -MAX_SAMPLE)
-            val = -MAX_SAMPLE;
-        if (val > MAX_SAMPLE)
-            val = MAX_SAMPLE;
         db->data[i] = val;
     }
 }

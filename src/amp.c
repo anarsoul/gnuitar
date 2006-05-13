@@ -116,11 +116,11 @@ amp_filter(effect_t *p, data_block_t *db)
 	{    
 	    sample=(*ins);
 	    sample=sample*power;
-	    
+            /*	    
 	    if (sample < -MAX_SAMPLE) sample = -MAX_SAMPLE;
 	    
 	    if (sample > MAX_SAMPLE) sample = MAX_SAMPLE;
-	    
+	    */
 	    *outs=(DSP_SAMPLE)sample;
 	    ins++;
 	    outs++;
