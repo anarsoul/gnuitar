@@ -16,7 +16,6 @@
 #include "fft.h"
 #include "pump.h"
 #include "rotary.h"
-#include "backbuf.h"
 
 static void
 update_speed(GtkAdjustment *adj, struct rotary_params *params)
@@ -79,7 +78,6 @@ rotary_filter(struct effect *p, struct data_block *db)
 {
     struct rotary_params *params = p->params;
     int i, j;
-    float fftbuf[FFT_SIZE * 2];
     float pha, sinval = 0, cosval = 0;
     
     if (db->channels != 1)
@@ -92,73 +90,18 @@ rotary_filter(struct effect *p, struct data_block *db)
     /* The rotary speaker simulation is based on modulating input with subsonic
      * sinuswave and then separating the upwards and downwards shifted frequencies
      * with hilbert transform. The upwards shifted component can be thought to be
-     * the horn, and the downwards shifted component the bass speaker.
+     * the horn, and the downwards shifted component the bass speaker. (After
+     * a half-turn, the "bass" will shift up and the "horn" will shift down.)
      *
      * After the separation step, a rough approximation of HRTF is used to mix the
      * horn with the bass speaker for both channels. */
-    
-    for (i = 0; i < db->len; i += 1) {
-        params->history->add(params->history, db->data[i]);
-        if (params->time_to_next_fft > 0) {
-            params->time_to_next_fft -= 1;
-            continue;
-        }
-        /* we do four FFTs on every input sample */
-        params->time_to_next_fft = FFT_SIZE / 2 - 1;
-
-        /* fill FFT buffer with data from history */
-        for (j = 0; j < FFT_SIZE; j += 1) {
-            fftbuf[j * 2] = params->history->get(params->history, FFT_SIZE - j);
-            fftbuf[j * 2 + 1] = 0;
-        }
-        /* this is rather dumb because it's same as history -- I'll optimize it later */
-        for (j = 0; j < FFT_SIZE / 2; j += 1)
-            params->norm->add(params->norm, fftbuf[(j + FFT_SIZE/2 - FFT_SIZE/4) * 2]);
-        
-        /* compute spectrum */
-        do_fft(fftbuf, FFT_SIZE, FFT_FORWARD);
-            
-        /* Hilbert transform:
-         * Multiply positive frequences with -i and negatives with +i.
-         *
-         * We could probably do this with carefully tuned allpass delays instead,
-         * or maybe some FIR that also does hilbert transform. Anyway, let's do
-         * it like this for now. */
-        for (j = 0; j < FFT_SIZE / 2; j += 1) {
-            float re = fftbuf[j * 2];
-            float im = fftbuf[j * 2 + 1];
-
-            fftbuf[j * 2] = im;
-            fftbuf[j * 2 + 1] = -re;
-        }
-        for (j = FFT_SIZE / 2; j < FFT_SIZE; j += 1) {
-            float re = fftbuf[j * 2];
-            float im = fftbuf[j * 2 + 1];
-                
-            fftbuf[j * 2] = -im;
-            fftbuf[j * 2 + 1] = re;
-        }
-            
-        /* now we have hilbert transformed signal */
-        do_fft(fftbuf, FFT_SIZE, FFT_INVERSE);
-
-        /* obtain the 1/4th of the inverse for output */
-        for (j = 0; j < FFT_SIZE / 2; j += 1)
-            params->hilb->add(params->hilb, fftbuf[(j + FFT_SIZE/2 - FFT_SIZE/4) * 2] / FFT_SIZE);
-        params->unread_output += FFT_SIZE / 2;
-    }
-    /* this is a hack -- we probably could compute the right buffer offset. This only
-     * hurts us on the first few buffer runs, later this condition will not trigger */
-    if (params->unread_output < db->len)
-        params->unread_output = db->len;
-    
-    /* Rotary effect
-     * We obtain two outputs and shift their frequency bands like this: */
     db->channels = 2;
     db->len *= 2;
 
     pha = params->phase;
     for (i = 0; i < db->len/2; i += 1) {
+        /* update the approximation of sin and cos values to avoid
+         * discontinuities between audio blocks */
         if (i % 16 == 0) {
             float phatmp;
             sinval = sin_lookup(pha);
@@ -171,34 +114,43 @@ rotary_filter(struct effect *p, struct data_block *db)
                 pha -= 1.0;
         }
 
-        DSP_SAMPLE x0 = params->norm->get(params->norm, params->unread_output - i);
-        DSP_SAMPLE x1 = params->hilb->get(params->hilb, params->unread_output - i);
+        /* run the input through allpass delay lines */
+        DSP_SAMPLE x0 = db->data[i];
+        DSP_SAMPLE x1 = x0;
+        for (j = 0; j < 4; j += 1) {
+            x0 = do_biquad(x0, &params->a1[j], 0);
+            x1 = do_biquad(x1, &params->a2[j], 0);
+        }
+        /* additionally, x0 needs to be delayed by 1 sample */
+        DSP_SAMPLE x0_tmp = x0;
+        x0 = params->x0_tmp;
+        params->x0_tmp = x0_tmp;
+        
+        /* compute separate f + fc and f - fc outputs */
         DSP_SAMPLE y0 = cosval * x0 + sinval * x1;
         DSP_SAMPLE y1 = cosval * x0 - sinval * x1;
 
         /* factor and biquad estimate hrtf */
-        db->data[i*2+0] = 0.68 * y0 + 0.32 * do_biquad(y1, &params->ld, 0);
-        db->data[i*2+1] = 0.68 * y1 + 0.32 * do_biquad(y0, &params->rd, 0);
+        db->data_swap[i*2+0] = 0.68 * y0 + 0.32 * do_biquad(y1, &params->ld, 0);
+        db->data_swap[i*2+1] = 0.68 * y1 + 0.32 * do_biquad(y0, &params->rd, 0);
         
-        /* this code would implement stereo phaser
-        db->data[i*2+0] = (sinval * y0 + cosval * y1);
-        db->data[i*2+1] = (cosval * y0 + sinval * y1);
-         */
+        /* This code would implement cool stereo phaser.
+         * Unfortunately it doesn't belong here but in phasor.c... :-/
+        db->data_swap[i*2+0] = (cosval * y0 + sinval * y1);
+        db->data_swap[i*2+1] = (cosval * y0 + sin_lookup(1.0-pha) * y1);
+        */
     }
     
-    params->unread_output -= db->len/2;
-
-    return;
+    /* swap to processed buffer for next effect */
+    DSP_SAMPLE *tmp = db->data;
+    db->data = db->data_swap;
+    db->data_swap = tmp;
 }
 
 static void
 rotary_done(struct effect *p)
 {
-    struct rotary_params *params = p->params;
-    
-    del_Backbuf(params->history);
-    del_Backbuf(params->hilb);
-    del_Backbuf(params->norm);
+    //struct rotary_params *params = p->params;
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -234,13 +186,30 @@ rotary_create()
     p->proc_done = rotary_done;
 
     params->speed = 1000;
-    params->history = new_Backbuf(FFT_SIZE);
-    params->hilb = new_Backbuf(MAX_BUFFER_SIZE);
-    params->norm = new_Backbuf(MAX_BUFFER_SIZE);
     params->unread_output = 0;
 
-    set_rc_lowpass_biquad(sample_rate, 2000, &params->ld);
-    set_rc_lowpass_biquad(sample_rate, 2000, &params->rd);
+    set_rc_lowpass_biquad(sample_rate, 4000, &params->ld);
+    set_rc_lowpass_biquad(sample_rate, 4000, &params->rd);
+
+    /* Setup allpass sections to produce hilbert transform.
+     * There value were searched with a genetic algorithm by
+     * Olli Niemitalo <o@iki.fi>
+     * 
+     * http://www.biochem.oulu.fi/~oniemita/dsp/hilbert/
+     *
+     * The difference between the outputs of passing signal through
+     * a1 allpass delay + 1 sample delay and a2 allpass delay
+     * is shifted by 90 degrees over 99 % of the frequency band.
+     */
+    set_2nd_allpass_biquad(0.6923878, &params->a1[0]);
+    set_2nd_allpass_biquad(0.9306054, &params->a1[1]);
+    set_2nd_allpass_biquad(0.9882295, &params->a1[2]);
+    set_2nd_allpass_biquad(0.9987488, &params->a1[3]);
+
+    set_2nd_allpass_biquad(0.4021921, &params->a2[0]);
+    set_2nd_allpass_biquad(0.8561711, &params->a2[1]);
+    set_2nd_allpass_biquad(0.9722910, &params->a2[2]);
+    set_2nd_allpass_biquad(0.9952885, &params->a2[3]);
     
     return p;
 }

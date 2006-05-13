@@ -10,7 +10,6 @@
 #define _ROTARY_H_ 1
 
 #include "pump.h"
-#include "backbuf.h"
 #include "biquad.h"
 
 #define FFT_SIZE 512
@@ -21,8 +20,8 @@ struct rotary_params {
     int         speed;
     int         time_to_next_fft, unread_output;
     float       phase;
-    Backbuf_t   *history, *hilb, *norm;
-    Biquad_t    ld, rd;
+    DSP_SAMPLE  x0_tmp;
+    Biquad_t    ld, rd, a1[4], a2[4];
 };
 
 #endif
