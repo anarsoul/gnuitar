@@ -343,7 +343,7 @@ pitch_create()
     for (i = 0; i < MAX_CHANNELS; i += 1) {
         params->history[i] = new_Backbuf(PITCH_BUFFER_SIZE);
     }
-    params->drywet = 50;
+    params->drywet = 100;
     params->buffer = 10.0;
     return p;
 }
