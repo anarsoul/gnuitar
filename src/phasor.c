@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2006/05/14 21:20:14  alankila
+ * - make dry/wet work for stereo phaser
+ *
  * Revision 1.33  2006/05/14 08:47:34  alankila
  * - snafu: the previous code implemented sidewise panning, not phaser
  *
@@ -343,12 +346,14 @@ static void
 phasor_filter_stereo(struct effect *p, struct data_block *db)
 {
     struct phasor_params *params = p->params;
-    float f, sinval=0, cosval=0;
+    float f, Dry, Wet, sinval=0, cosval=0;
     int i;
     
     db->channels = 2;
     db->len *= 2;
     f = params->f;
+    Dry = 1 - params->drywet / 100.0;
+    Wet =     params->drywet / 100.0;
     for (i = 0; i < db->len / 2; i += 1) {
         DSP_SAMPLE x0, x1, y0, y1;
         if (i % PHASOR_UPDATE_INTERVAL == 0) { 
@@ -369,8 +374,8 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
         y0 = cosval * x0 + sinval * x1;
         y1 = cosval * x0 - sinval * x1;
 
-        db->data_swap[i*2+0] = y0;//(cosval * y0 + sinval * y1);
-        db->data_swap[i*2+1] = y1;//(cosval * y0 - sinval * y1);
+        db->data_swap[i*2+0] = Dry * x0 + Wet * y0;
+        db->data_swap[i*2+1] = Dry * x0 + Wet * y1;
     }
     /* swap to processed buffer for next effect */
     DSP_SAMPLE *tmp = db->data;
@@ -385,7 +390,7 @@ phasor_filter(struct effect *p, struct data_block *db)
 
     if (n_output_channels > 1 && db->channels == 1 && params->stereo) {
         phasor_filter_stereo(p, db);
-        params->f += 1000.0 / params->sweep_time / sample_rate * (db->len / db->channels) / 2;
+        params->f += 1000.0 / params->sweep_time / sample_rate * (db->len / db->channels);
     } else {
         phasor_filter_mono(p, db);
         params->f += 1000.0 / params->sweep_time / sample_rate * (db->len / db->channels);
