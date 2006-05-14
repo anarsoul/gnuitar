@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2006/05/14 08:47:34  alankila
+ * - snafu: the previous code implemented sidewise panning, not phaser
+ *
  * Revision 1.32  2006/05/13 17:10:06  alankila
  * - move hilbert transform into biquad.c
  * - implement stereo phaser using hilbert transform
@@ -366,8 +369,8 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
         y0 = cosval * x0 + sinval * x1;
         y1 = cosval * x0 - sinval * x1;
 
-        db->data_swap[i*2+0] = (cosval * y0 + sinval * y1);
-        db->data_swap[i*2+1] = (cosval * y0 - sinval * y1);
+        db->data_swap[i*2+0] = y0;//(cosval * y0 + sinval * y1);
+        db->data_swap[i*2+1] = y1;//(cosval * y0 - sinval * y1);
     }
     /* swap to processed buffer for next effect */
     DSP_SAMPLE *tmp = db->data;
