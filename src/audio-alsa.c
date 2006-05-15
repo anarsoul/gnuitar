@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2006/05/15 19:32:23  alankila
+ * - improve error handling that hopefully will help users to decipher errors
+ *   from gnuitar
+ * - specifying surround40 ought to enforce number of output channels to 4.
+ *   several other such rules should be written in gui.c to protect the user.
+ *
  * Revision 1.24  2006/05/01 10:23:54  anarsoul
  * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
  *
@@ -123,9 +129,8 @@
 #include "main.h"
 
 // XXX: these should be made changeable in the UI
-const char     *snd_device_in      = "default";
-const char     *snd_2ch_device_out = "default";
-const char     *snd_4ch_device_out = "default";
+static const char     *snd_device_in       = "default";
+static const char     *snd_test_device_out = "default";
 
 static short   restarting;
 static snd_pcm_t *playback_handle;
@@ -266,7 +271,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     }
 
     if ((err = snd_pcm_hw_params_set_access(device, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-        fprintf (stderr, "can't set access type: %s\n",
+        fprintf (stderr, "can't set access type RW_INTERLEAVE (try using plughw): %s\n",
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -279,7 +284,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 	bits = 16;
     }
     if ((err = snd_pcm_hw_params_set_format(device, hw_params, tmp)) < 0) {
-        fprintf (stderr, "can't set sample format: %s\n",
+        fprintf (stderr, "can't set sample format %d bits: %s\n", bits,
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -289,7 +294,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     if ((err = adapting
             ? snd_pcm_hw_params_set_rate_near(device, hw_params, &tmp, 0)
             : snd_pcm_hw_params_set_rate(device, hw_params, tmp, 0)) < 0) {
-        fprintf (stderr, "can't set sample rate: %s\n",
+        fprintf (stderr, "can't set sample rate %d: %s\n", tmp,
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -300,7 +305,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     }
 
     if ((err = snd_pcm_hw_params_set_channels(device, hw_params, channels)) < 0) {
-        fprintf (stderr, "can't set channel count: %s\n",
+        fprintf (stderr, "can't set channel count %d: %s\n", channels,
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -322,12 +327,14 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
      * get a value as close as possible.
      */
     if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
-	fprintf(stderr, "set period to %d failed!\n", *fragments);
+	fprintf(stderr, "can't set period to %d: %s\n", *fragments,
+                snd_strerror(err));
 	
 	unsigned int ret_fragments=*fragments;
 	if ((err = snd_pcm_hw_params_set_periods_near(device, hw_params, &ret_fragments,0)) < 0)
 	{
-	    fprintf(stderr, "near fails too :)\n");
+	    fprintf(stderr, "failed to set period size near %d: %s\n", *fragments,
+                    snd_strerror(err));
 	    snd_pcm_hw_params_free(hw_params);
             return 1;
 	}
@@ -385,7 +392,6 @@ alsa_init_sound(void)
     unsigned int    frames, fragments2, tries;
     const char     *snd_device_out;
 
-    //snd_device_out = n_output_channels == 4 ? snd_4ch_device_out : snd_2ch_device_out;
     snd_device_out = alsadevice_str;
 
     if ((err = snd_pcm_open(&playback_handle, snd_device_out, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
@@ -458,7 +464,7 @@ alsa_init_sound(void)
 
 int
 alsa_available() {
-    if (snd_pcm_open(&playback_handle, snd_2ch_device_out, SND_PCM_STREAM_PLAYBACK, 0) < 0)
+    if (snd_pcm_open(&playback_handle, snd_test_device_out, SND_PCM_STREAM_PLAYBACK, 0) < 0)
 	return 0;
     snd_pcm_close(playback_handle);
     return 1;
