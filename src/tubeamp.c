@@ -8,6 +8,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2006/05/15 19:08:26  alankila
+ * - remove several multiplier terms, collect them under F_tube
+ * - some remaining constants such as 250 indicate original tube mains voltage
+ * - increase feedback strength by some 10x -- warmer now
+ *
  * Revision 1.15  2006/05/15 16:00:59  alankila
  * - move middle control into the inner loop
  *
@@ -213,8 +218,8 @@ tubeamp_init(struct effect *p)
 static float
 F_tube(float in, float r_i)
 {
-    r_i /= 2500;
-    return tanh(0.5 + in / r_i) * r_i - 0.5;
+    r_i /= 3000;
+    return tanh(in / r_i) * r_i;
 }
 
 static void
@@ -247,7 +252,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
                 /* run waveshaper */
                 result = F_tube(result, params->r_i[j]);
                 /* feedback bias */
-                params->bias[j] = do_biquad((250 - result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad((500 - 20 * result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
                 /* high pass filter to remove bias from the current stage */
                 result = do_biquad(result, &params->highpass[j], curr_channel);
                 /* middlecut for user tone control, for the "metal crunch" sound */
@@ -261,8 +266,8 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         db->data[i] = result / 250 * MAX_SAMPLE;
         curr_channel = (curr_channel + 1) % db->channels;
     }
-    
-    return;
+    //for (i = 0; i < params->stages; i += 1)
+    //    printf("%d. bias=%.1f\n", i, params->bias[i]);
 }
 
 static void
@@ -344,7 +349,6 @@ tubeamp_create()
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[3]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 250, &params->biaslowpass[3]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[3]);
-    
     
     return p;
 }
