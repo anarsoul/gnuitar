@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2006/05/15 11:32:18  alankila
+ * - rebalance bias for "punch"
+ *
  * Revision 1.13  2006/05/15 10:55:46  alankila
  * - make it sound sweeter
  * - make initial lowpass IIR stronger
@@ -229,7 +232,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         for (k = 0; k < UPSAMPLE_RATIO; k += 1) {
             /* IIR interpolation */
             params->in[curr_channel] = (db->data[i] + params->in[curr_channel] * 5) / 6.0;
-            result = params->in[curr_channel] / MAX_SAMPLE * 1500;
+            result = params->in[curr_channel] / MAX_SAMPLE * 1700;
             for (j = 0; j < params->stages; j += 1) {
                 /* gain of the block */
                 result *= gain;
@@ -240,7 +243,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
                 /* run waveshaper */
                 result = F_tube(result, params->r_i[j]);
                 /* feedback bias */
-                params->bias[j] = do_biquad((250 - result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad((12000 - result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
                 /* high pass filter to remove bias from the current stage */
                 result = do_biquad(result, &params->highpass[j], curr_channel);
                 result = -result;
@@ -251,7 +254,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             result = do_biquad(result, &params->final_highpass, curr_channel);
             result = do_biquad(result, &params->final_lowpass, curr_channel);
         }
-        db->data[i] = result * MAX_SAMPLE / gain / 22000;
+        db->data[i] = result * MAX_SAMPLE / gain / 21000;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     
@@ -306,7 +309,7 @@ tubeamp_create()
     params->stages = 3;
     params->gain = 30.0;
     params->lsfreq = 20;
-    params->treblefreq = 4500;
+    params->treblefreq = 5000;
     params->middlecut = -3.0;
 
     /* configure the various stages */
