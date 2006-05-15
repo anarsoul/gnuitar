@@ -8,6 +8,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2006/05/15 09:45:01  alankila
+ * - new model according to Antti Huoviala et al. "Virtual Air Guitar",
+ *   presented at 117th Audio Engineering Society conference.
+ * - still missing: proper F_tube.
+ *
  * Revision 1.11  2006/05/13 16:20:23  alankila
  * - further small tuning of the formula and the defaults
  *
@@ -105,7 +110,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->stages, 3, MAX_STAGES, 1, 1, 0);
+    o = gtk_adjustment_new(params->stages, 1, MAX_STAGES, 1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_stages), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -121,7 +126,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 3.0, 20.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 30.0, 45.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -130,7 +135,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    
+
     w = gtk_label_new("Bass cut\n(Hz)");
     gtk_table_attach(GTK_TABLE(parmTable), w, 2, 3, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -145,7 +150,6 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-
     w = gtk_label_new("Middle cut\n(dB)");
     gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -195,6 +199,13 @@ tubeamp_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
+/* no waveshaping at the present time */
+static float
+F_tube(float in, float r_i)
+{
+    return tanh(0.5 + in / r_i) * r_i - 0.5;
+}
+
 static void
 tubeamp_filter(struct effect *p, struct data_block *db)
 {
@@ -202,14 +213,10 @@ tubeamp_filter(struct effect *p, struct data_block *db)
     struct tubeamp_params *params = p->params;
     float gain;
 
-    for (i = 0; i < MAX_STAGES; i += 1) {
-        set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 10, &params->highpass[i]);
-        set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, params->treblefreq, &params->lowpass[i]);
-        set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, params->biasfreq, &params->biaslowpass[i]);
-        set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, params->lsfreq, &params->lowshelf[i]);
-        set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 800, 600.0, params->middlecut, &params->middlecut_bq[i]);
-    }
-
+    set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, params->lsfreq, &params->final_highpass);
+    
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, params->treblefreq, 1.0, TRUE, &params->final_lowpass);
+    set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 800, 600.0, params->middlecut, &params->final_middlecut);
     gain = pow(10, params->gain / 20);
     
     /* highpass -> low shelf eq -> lowpass -> waveshaper */
@@ -219,29 +226,29 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             /* IIR interpolation */
             params->in[curr_channel] = (db->data[i] + params->in[curr_channel] * 3) / 4.0;
 #define DISTORTION_AMOUNT (MAX_SAMPLE * 2.0)
-            result = params->in[curr_channel] / DISTORTION_AMOUNT * gain;
+            result = params->in[curr_channel] / DISTORTION_AMOUNT * 250;
             for (j = 0; j < params->stages; j += 1) {
-                /* remove DC offset from earlier stage */
-                result = do_biquad(result, &params->highpass[j], curr_channel);
-                /* middlecut for user tone control, for the "metal crunch" sound */
-                result = do_biquad(result, &params->middlecut_bq[j], curr_channel);
-                /* low shelve to remove bass to avoid saturating the sound */
-                result = 0.5 * result + 0.5 * do_biquad(result, &params->lowshelf[j], curr_channel);
-                /* waveshaper adds high-frequency components */
-                result += tanh(result + params->bias[j]) * gain;
-                /* bias calculation creates a feedback loop with the distortion, making
-                 * the distort react more to sound dynamics. */
-                params->bias[j] = do_biquad((0.25 + 0.5 * j / MAX_STAGES) - result, &params->biaslowpass[j], curr_channel);
-                /* lowpass filter keeps the added high-frequency components in control */
+                /* gain of the block */
+                result *= gain;
+                /* low-pass filter that mimicks input capacitance */
                 result = do_biquad(result, &params->lowpass[j], curr_channel);
-                /* each stage inverts in a real tube amp */
+                /* add feedback bias current for "punch" simulation */
+                result -= params->bias[j];
+                /* run waveshaper */
+                result = F_tube(result, params->r_i[j]);
+                /* feedback bias */
+                params->bias[j] = do_biquad((250 - result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
+                /* high pass filter to remove bias from the current stage */
+                result = do_biquad(result, &params->highpass[j], curr_channel);
                 result = -result;
             }
+            /* middlecut for user tone control, for the "metal crunch" sound */
+            result = do_biquad(result, &params->final_middlecut, curr_channel);
             /* final tone control, a poor man's cabinet simulation */
             result = do_biquad(result, &params->final_highpass, curr_channel);
             result = do_biquad(result, &params->final_lowpass, curr_channel);
         }
-        db->data[i] = result * DISTORTION_AMOUNT / gain / params->stages / 4;
+        db->data[i] = result * DISTORTION_AMOUNT / gain / 12000;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     
@@ -293,16 +300,33 @@ tubeamp_create()
     p->toggle = 0;
     p->proc_done = tubeamp_done;
 
-    params->stages = 4;
-    params->gain = 16.0;
-    params->lsfreq = 130;
-    params->treblefreq = 5000;
-    params->biasfreq = 5;
+    params->stages = 3;
+    params->gain = 42.0;
+    params->lsfreq = 20;
+    params->treblefreq = 4500;
     params->middlecut = -5.0;
 
-    /* low-end cabinet simulation: 6 kHz cut and 20 Hz cut */ 
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 6000, 1.0, TRUE, &params->final_lowpass);
-    set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 20, &params->final_highpass);
+    /* configure the various stages */
+    params->r_i[0] = 68e3;
+    params->r_p[0] = 100000;
+    params->r_k[0] = 2700;
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 22570, &params->lowpass[0]);
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 86, &params->biaslowpass[0]);
+    set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[0]);
+    
+    params->r_i[1] = 250e3;
+    params->r_p[1] = 100000;
+    params->r_k[1] = 1500;
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[1]);
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 132, &params->biaslowpass[1]);
+    set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[1]);
+    
+    params->r_i[2] = 250e3;
+    params->r_p[2] = 100000;
+    params->r_k[2] = 820;
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[2]);
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 194, &params->biaslowpass[2]);
+    set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[2]);
     
     return p;
 }

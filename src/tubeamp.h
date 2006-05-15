@@ -28,21 +28,23 @@
 
 extern effect_t *tubeamp_create();
 
-#define MAX_STAGES 5
+#define MAX_STAGES 3
 
 struct tubeamp_params {
     int         stages;
-    float       gain, lsfreq, treblefreq, biasfreq, middlecut;
+    float       gain, treblefreq, middlecut, lsfreq;
     float       in[MAX_CHANNELS];
     
+    /* internal state variables */
     Biquad_t    highpass[MAX_STAGES];
-    Biquad_t    lowshelf[MAX_STAGES];
     Biquad_t    lowpass[MAX_STAGES];
     Biquad_t    biaslowpass[MAX_STAGES];
-    Biquad_t    middlecut_bq[MAX_STAGES];
-    double      bias[MAX_STAGES];
-    Biquad_t    final_highpass;
-    Biquad_t    final_lowpass;
+    float       bias[MAX_STAGES];
+
+    float       r_i[MAX_STAGES], r_k[MAX_STAGES], r_p[MAX_STAGES];
+    
+    /* user tunable tone control */
+    Biquad_t    final_highpass, final_lowpass, final_middlecut;
 };
 
 #endif
