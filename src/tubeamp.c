@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2006/05/15 10:55:46  alankila
+ * - make it sound sweeter
+ * - make initial lowpass IIR stronger
+ *
  * Revision 1.12  2006/05/15 09:45:01  alankila
  * - new model according to Antti Huoviala et al. "Virtual Air Guitar",
  *   presented at 117th Audio Engineering Society conference.
@@ -110,7 +114,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->stages, 1, MAX_STAGES, 1, 1, 0);
+    o = gtk_adjustment_new(params->stages, 2, MAX_STAGES, 1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_stages), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -126,7 +130,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 30.0, 45.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 20.0, 35.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -199,7 +203,7 @@ tubeamp_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-/* no waveshaping at the present time */
+/* no decent waveshaping at the present time */
 static float
 F_tube(float in, float r_i)
 {
@@ -224,9 +228,8 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         float result;
         for (k = 0; k < UPSAMPLE_RATIO; k += 1) {
             /* IIR interpolation */
-            params->in[curr_channel] = (db->data[i] + params->in[curr_channel] * 3) / 4.0;
-#define DISTORTION_AMOUNT (MAX_SAMPLE * 2.0)
-            result = params->in[curr_channel] / DISTORTION_AMOUNT * 250;
+            params->in[curr_channel] = (db->data[i] + params->in[curr_channel] * 5) / 6.0;
+            result = params->in[curr_channel] / MAX_SAMPLE * 1500;
             for (j = 0; j < params->stages; j += 1) {
                 /* gain of the block */
                 result *= gain;
@@ -248,7 +251,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             result = do_biquad(result, &params->final_highpass, curr_channel);
             result = do_biquad(result, &params->final_lowpass, curr_channel);
         }
-        db->data[i] = result * DISTORTION_AMOUNT / gain / 12000;
+        db->data[i] = result * MAX_SAMPLE / gain / 22000;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     
@@ -301,10 +304,10 @@ tubeamp_create()
     p->proc_done = tubeamp_done;
 
     params->stages = 3;
-    params->gain = 42.0;
+    params->gain = 30.0;
     params->lsfreq = 20;
     params->treblefreq = 4500;
-    params->middlecut = -5.0;
+    params->middlecut = -3.0;
 
     /* configure the various stages */
     params->r_i[0] = 68e3;
