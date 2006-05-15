@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.75  2006/05/15 19:39:46  alankila
+ * - add surround40 to the list of chooseable ALSA devices.
+ * - this has the drawback that user choosing surround40 must also choose
+ *   an output mode with 4 channels, or the audio driver can not be opened.
+ *   Shitty.
+ *
  * Revision 1.74  2006/05/13 11:37:31  alankila
  * - shut up glib
  *
@@ -1192,6 +1198,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     
     alsadevice_list = g_list_append(alsadevice_list, "default");
     alsadevice_list = g_list_append(alsadevice_list, "guitar");
+    alsadevice_list = g_list_append(alsadevice_list, "surround40");
     
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.alsadevice), alsadevice_list);
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.alsadevice)->entry), alsadevice_str);
@@ -1203,7 +1210,8 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_table_attach(GTK_TABLE(sp_table),  sparams.alsadevice, 1, 2, 3, 4,
                      TBLOPT, TBLOPT, 3, 3);
 		     
-    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.alsadevice)->entry,"This is name of alsa device. (Effective only with alsa driver)",NULL);
+    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.alsadevice)->entry,
+        "Name of ALSA output device. (Used only with ALSA driver)", NULL);
 
     
     sparams.rate = gtk_combo_new();
@@ -1398,7 +1406,6 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
 	strcpy(alsadevice_str, tmp);
     }
     
-    
     buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
     /* for certain audio drivers, make the fragment size to be a multiple
      * of the MIN_BUFFER_SIZE */
@@ -1413,6 +1420,7 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
            "%d in - %d out", &tmp1, &tmp2);
     n_input_channels = tmp1;
     n_output_channels = tmp2;
+
     sample_rate = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
 }
 
