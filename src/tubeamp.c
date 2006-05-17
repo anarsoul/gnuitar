@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2006/05/17 10:22:38  alankila
+ * - further parameter tuning
+ * - flip bias term to drive the distortion to occur the other way
+ *
  * Revision 1.16  2006/05/15 19:08:26  alankila
  * - remove several multiplier terms, collect them under F_tube
  * - some remaining constants such as 250 indicate original tube mains voltage
@@ -141,7 +145,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 20.0, 35.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 30.0, 40.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -248,11 +252,11 @@ tubeamp_filter(struct effect *p, struct data_block *db)
                 /* low-pass filter that mimicks input capacitance */
                 result = do_biquad(result, &params->lowpass[j], curr_channel);
                 /* add feedback bias current for "punch" simulation */
-                result -= params->bias[j];
+                result += params->bias[j];
                 /* run waveshaper */
                 result = F_tube(result, params->r_i[j]);
                 /* feedback bias */
-                params->bias[j] = do_biquad((500 - 20 * result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad((3000 - 35 * result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
                 /* high pass filter to remove bias from the current stage */
                 result = do_biquad(result, &params->highpass[j], curr_channel);
                 /* middlecut for user tone control, for the "metal crunch" sound */
@@ -263,7 +267,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             result = do_biquad(result, &params->final_highpass, curr_channel);
             result = do_biquad(result, &params->final_lowpass, curr_channel);
         }
-        db->data[i] = result / 250 * MAX_SAMPLE;
+        db->data[i] = result / 150 * MAX_SAMPLE;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     //for (i = 0; i < params->stages; i += 1)
