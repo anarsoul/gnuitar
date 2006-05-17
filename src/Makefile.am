@@ -4,7 +4,7 @@ bin_PROGRAMS = gnuitar
 gnuitar_SOURCES =  amp.c main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.c \
 	vibrato.c autowah.c phasor.c rcfilter.c tubeamp.c rotary.c \
 	gui.c distort.c distort2.c sustain.c reverb.c backbuf.c utils.c \
-	amp. h pump.h chorus.h delay.h echo.h tracker.h tremolo.h \
+	amp.h pump.h chorus.h delay.h echo.h tracker.h tremolo.h \
 	vibrato.h autowah.h phasor.h rcfilter.h tubeamp.h rotary.h \
 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h \
