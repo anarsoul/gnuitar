@@ -32,7 +32,8 @@ extern effect_t *tubeamp_create();
 
 struct tubeamp_params {
     int         stages;
-    float       gain, treblefreq, middlefreq, lsfreq;
+    float       gain, middlefreq;
+    float       asymmetry, biasfactor;
     float       in[MAX_CHANNELS];
     
     /* internal state variables */
@@ -41,8 +42,11 @@ struct tubeamp_params {
     Biquad_t    biaslowpass[MAX_STAGES];
     Biquad_t    middlecut[MAX_STAGES];
     float       bias[MAX_STAGES];
-
     float       r_i[MAX_STAGES], r_k[MAX_STAGES], r_p[MAX_STAGES];
+
+    /* convolution buffer */
+    DSP_SAMPLE  buf[MAX_CHANNELS][256];
+    int         bufidx[MAX_CHANNELS];
     
     /* user tunable tone control */
     Biquad_t    final_highpass, final_lowpass;

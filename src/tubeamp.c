@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2006/05/18 20:58:05  alankila
+ * - mimick Marshall Pro Jr
+ *
  * Revision 1.17  2006/05/17 10:22:38  alankila
  * - further parameter tuning
  * - flip bias term to drive the distortion to occur the other way
@@ -78,7 +81,35 @@
 #include "tubeamp.h"
 
 #define UPSAMPLE_RATIO 4
-    
+
+/* Narshall Pro Jr */
+int impulse[256] = {
+  4138,  14611,  26189,  34250,  37102,  34071,  26597,  16581,   7236,   2504,   1816,
+  1633,    800,   -196,  -1047,   -969,    137,   1698,   3159,   3497,   2204,    399,
+ -1583,  -4201,  -7083, -10054, -13786, -17384, -18258, -15413, -10370,  -5328,  -1841,
+  -382,  -1525,  -4882,  -7757,  -8338,  -7171,  -5643,  -4865,  -4798,  -4937,  -5238,
+ -5322,  -5120,  -4950,  -4658,  -4049,  -3294,  -2562,  -2205,  -2353,  -2971,  -3915,
+ -4662,  -4769,  -4166,  -3396,  -2813,  -2258,  -1482,   -675,   -198,   -131,   -414,
+  -983,  -1688,  -2454,  -3162,  -3583,  -3602,  -3422,  -3060,  -2433,  -1858,  -1866,
+ -2707,  -3905,  -4531,  -4241,  -3507,  -2595,  -1626,   -925,   -556,   -103,    976,
+  2625,   3995,   4524,   4214,   3286,   2029,    577,  -1039,  -2628,  -4108,  -5456,
+ -6359,  -6527,  -5884,  -4494,  -2661,   -927,    361,   1241,   1894,   2221,   1833,
+   574,  -1097,  -2559,  -3387,  -3414,  -2812,  -1936,  -1234,   -999,   -990,   -650,
+   272,   1553,   2671,   3237,   3259,   2924,   2415,   1840,   1189,    453,   -282,
+  -829,  -1002,   -718,   -226,    146,    347,    455,    501,    530,    470,    268,
+  -159,   -857,  -1543,  -1878,  -1698,  -1072,   -253,    563,   1311,   2039,   2823,
+  3560,   3939,   3677,   2807,   1718,    847,    343,     57,   -184,   -355,   -337,
+    -7,    656,   1508,   2346,   3003,   3333,   3253,   2798,   2143,   1504,    979,
+   417,   -299,  -1098,  -1740,  -1960,  -1694,  -1113,   -459,     -9,      4,   -417,
+ -1113,  -1837,  -2300,  -2307,  -1811,   -964,    -75,    633,   1048,   1109,    854,
+   402,    -90,   -446,   -545,   -349,     25,    332,    380,    179,   -170,   -601,
+ -1008,  -1214,  -1079,   -637,    -60,    428,    620,    385,   -219,   -994,  -1763,
+ -2413,  -2872,  -3076,  -2973,  -2598,  -2076,  -1529,  -1010,   -508,    -10,    504,
+  1041,   1599,   2127,   2540,   2741,   2655,   2261,   1620,    873,    173,   -410,
+  -812,   -949,   -808,   -467,    -43,    329,    539,    593,    593,    622,    716,
+   859,    989,   1040
+};
+
 static void
 update_stages(GtkAdjustment *adj, struct tubeamp_params *params)
 {
@@ -92,22 +123,23 @@ update_gain(GtkAdjustment *adj, struct tubeamp_params *params)
 }
 
 static void
-update_lsfreq(GtkAdjustment *adj, struct tubeamp_params *params)
+update_asymmetry(GtkAdjustment *adj, struct tubeamp_params *params)
 {
-    params->lsfreq = adj->value;
+    params->asymmetry = adj->value;
 }
 
 static void
-update_treblefreq(GtkAdjustment *adj, struct tubeamp_params *params)
+update_biasfactor(GtkAdjustment *adj, struct tubeamp_params *params)
 {
-    params->treblefreq = adj->value;
+    params->biasfactor = adj->value;
 }
 
+/*
 static void
 update_middlefreq(GtkAdjustment *adj, struct tubeamp_params *params)
 {
     params->middlefreq = adj->value;
-}
+}*/
 
 static void
 tubeamp_init(struct effect *p)
@@ -145,7 +177,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 30.0, 40.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 30.0, 45.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -155,20 +187,21 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
 
-    w = gtk_label_new("Bass cut\n(Hz)");
+    w = gtk_label_new("Absolute bias");
     gtk_table_attach(GTK_TABLE(parmTable), w, 2, 3, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->lsfreq, 20.0, 500.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->asymmetry, 2000.0, 3500.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
-                       GTK_SIGNAL_FUNC(update_lsfreq), params);
+                       GTK_SIGNAL_FUNC(update_asymmetry), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
     gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
     gtk_table_attach(GTK_TABLE(parmTable), w, 2, 3, 1, 2,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
+    /*
     w = gtk_label_new("Middle cut\n(dB)");
     gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
@@ -184,15 +217,15 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    
-    w = gtk_label_new("Treble cut\n(Hz)");
+    */
+    w = gtk_label_new("Dynamic bias");
     gtk_table_attach(GTK_TABLE(parmTable), w, 4, 5, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->treblefreq, 1600.0, 8000.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->biasfactor, 1.0, 40.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
-                       GTK_SIGNAL_FUNC(update_treblefreq), params);
+                       GTK_SIGNAL_FUNC(update_biasfactor), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
     gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
     gtk_table_attach(GTK_TABLE(parmTable), w, 4, 5, 1, 2,
@@ -233,10 +266,10 @@ tubeamp_filter(struct effect *p, struct data_block *db)
     struct tubeamp_params *params = p->params;
     float gain;
 
-    set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, params->lsfreq, &params->final_highpass);
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, params->treblefreq, 1.0, TRUE, &params->final_lowpass);
+    /*
     for (j = 0; j < params->stages; j += 1)
         set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 720, 500.0, params->middlefreq, &params->middlecut[j]);
+    */
     gain = pow(10, params->gain / 20);
     
     /* highpass -> low shelf eq -> lowpass -> waveshaper */
@@ -256,18 +289,27 @@ tubeamp_filter(struct effect *p, struct data_block *db)
                 /* run waveshaper */
                 result = F_tube(result, params->r_i[j]);
                 /* feedback bias */
-                params->bias[j] = do_biquad((3000 - 35 * result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad((params->asymmetry - params->biasfactor * result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
                 /* high pass filter to remove bias from the current stage */
                 result = do_biquad(result, &params->highpass[j], curr_channel);
                 /* middlecut for user tone control, for the "metal crunch" sound */
-                result = do_biquad(result, &params->middlecut[j], curr_channel);
+                //result = do_biquad(result, &params->middlecut[j], curr_channel);
                 result = -result;
             }
             /* final tone control, a poor man's cabinet simulation */
-            result = do_biquad(result, &params->final_highpass, curr_channel);
-            result = do_biquad(result, &params->final_lowpass, curr_channel);
         }
-        db->data[i] = result / 150 * MAX_SAMPLE;
+        DSP_SAMPLE *ptr = params->buf[curr_channel];
+        int bufidx = params->bufidx[curr_channel];
+        /* convolve the output */
+        ptr[bufidx] = result / 200 * (MAX_SAMPLE >> 12);
+        DSP_SAMPLE val = 0;
+        for (j = 0; j < 255; j += 1) {
+            val += ptr[(bufidx - j) & 0xff] * impulse[j];
+        }
+        db->data[i] = val >> 6;
+        params->bufidx[curr_channel] += 1;
+        if (params->bufidx[curr_channel] == 256)
+            params->bufidx[curr_channel] = 0;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     //for (i = 0; i < params->stages; i += 1)
@@ -288,8 +330,6 @@ tubeamp_save(struct effect *p, SAVE_ARGS)
     struct tubeamp_params *params = p->params;
     SAVE_INT("stages", params->stages);
     SAVE_DOUBLE("gain", params->gain);
-    SAVE_DOUBLE("lsfreq", params->lsfreq);
-    SAVE_DOUBLE("treblefreq", params->treblefreq);
     SAVE_DOUBLE("middlefreq", params->middlefreq);
 }
 
@@ -299,8 +339,6 @@ tubeamp_load(struct effect *p, LOAD_ARGS)
     struct tubeamp_params *params = p->params;
     LOAD_INT("stages", params->stages);
     LOAD_DOUBLE("gain", params->gain);
-    LOAD_DOUBLE("lsfreq", params->lsfreq);
-    LOAD_DOUBLE("treblefreq", params->treblefreq);
     LOAD_DOUBLE("middlefreq", params->middlefreq);
 }
 
@@ -320,10 +358,9 @@ tubeamp_create()
     p->proc_done = tubeamp_done;
 
     params->stages = 3;
-    params->gain = 30.0;
-    params->lsfreq = 20;
-    params->treblefreq = 5000;
-    params->middlefreq = -1.5;
+    params->gain = 40.0;
+    params->biasfactor = 20;
+    params->asymmetry = 2500;
 
     /* configure the various stages */
     params->r_i[0] = 68e3;
@@ -349,9 +386,9 @@ tubeamp_create()
     
     params->r_i[3] = 250e3;
     params->r_p[3] = 100000;
-    params->r_k[3] = 410;
+    params->r_k[3] = 810;
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[3]);
-    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 250, &params->biaslowpass[3]);
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 194, &params->biaslowpass[3]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[3]);
     
     return p;
