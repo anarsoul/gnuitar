@@ -12,8 +12,9 @@
 # -> impulse
 # -> truncation
 
-import wave, sys, struct
+import math, wave, sys, struct, optparse
 from scipy.fftpack import fft, ifft
+from scipy.signal import get_window
 
 # this returns minimum phase reconstruction of the original input
 def fir_minphase(table, pad_size=4):
@@ -44,6 +45,16 @@ def cexp(x):
     imag = x.imag
     return math.exp(real) * (math.cos(imag) + math.sin(imag) * 1j)
 
+def print_spectrum(table, sample_rate, full=False):
+    fact = 2
+    if full:
+        fact = 1
+
+    for _ in range(len(table) / fact):
+        mag = math.log(abs(table[_])) / math.log(10) * 20
+        pha = math.atan2(table[_].real, table[_].imag) / math.pi * 180
+        print "%s %s %s" % (float(_) / len(table) * sample_rate, mag, pha)
+
 def print_fir(table, format='gnuplot'):
     if format == 'gnuplot':
         for _ in range(len(table)):
@@ -58,10 +69,25 @@ def print_fir(table, format='gnuplot'):
 # out: table of floating point values in range [-1, 1[
 def load_wav_file(wf):
     # read all data
-    data = wf.readframes(len(wf))
+    data = wf.readframes(wf.getnframes())
     # transform it to values
-    data = struct.unpack("%dh" % len(wf), data)
-    return map(lambda _: float(_) / 32768, data)
+
+    if wf.getsampwidth() == 2: # 16-bit int
+        data = struct.unpack("%dh" % wf.getnframes(), data)
+        data = map(lambda _: float(_) / 65536, data)
+    elif wf.getsampwidth() == 3: # 24-bit int
+        # close eyes now
+        tmp = []
+        for _ in range(0, len(data), 3):
+            dataslice = data[_ : _+3]
+            dataslice = chr(0) + dataslice
+            val, = struct.unpack("i", dataslice)
+            tmp.append(float(val) / 2 ** 32)
+        data = tmp
+    elif wf.getsampwidth() == 4: # 32-bit float
+        data = struct.unpack("%df" % wf.getnframes(), data)
+
+    return data
 
 # return new table which has power-of-two length, padded by zeroes.
 def expand_to_power_of_two(table):
@@ -69,14 +95,19 @@ def expand_to_power_of_two(table):
     tablelen = math.log(tablelen) / math.log(2)
     tablelen = math.ceil(tablelen)
     tablelen = math.pow(2, tablelen)
-    return table + [0] * (tablelen - len(table))
+    return table + [0] * int(tablelen - len(table))
 
 def main():
+    usage = "%prog [options] <wav file>"
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('-s', '--spectrum', action='store_true', help='Dump spectrum');
+    parser.add_option('-l', '--length', help='Spectrum size', default=256, type=int);
+    options, args = parser.parse_args(sys.argv[1:])
+
     try:
-        wavfile = wave.open(sys.argv[1])
+        wavfile = wave.open(args[0])
     except Exception, e:
-        print "Error loading input wav file. Did you use: prog foo.wav?"
-        print "Stack trace: %s" % file
+        print "Error loading input wav file: %s" % e
         sys.exit(1)
 
     if wavfile.getframerate() != 44100:
@@ -85,19 +116,23 @@ def main():
     if wavfile.getnchannels() != 1:
         print "Error: this file has more than one channel. Impulses are mono."
         sys.exit(1)
-    if wavfile.getsampwidth() != 2:
-        print "Error: we are lame and can only read 16-bit PCM data... The current sample width is: %d! Sorry :-(" % wavfile.getsampwidth()
-        sys.exit(1)
 
     table = load_wav_file(wavfile)
     table = expand_to_power_of_two(table)
     table = fir_minphase(table)
-    # the minimum phase reconstruction put everything interesting at the start of table 
-    # 256 may still be a bit low, but FIR convolutions are expensive.
-    if len(table) > 256:
-        table = table[0:256]
-    table = map(lambda _: int(_ * 32767), _)
-    print_fir(table, format='c')
+    if len(table) > options.length:
+        table = table[0:options.length]
+    if len(table) < options.length:
+        table += [0] * (options.length - len(table))
+
+    if options.spectrum:
+        table = fft(table * get_window('hanning', len(table)))
+        print_spectrum(table, sample_rate=wavfile.getframerate())
+    else:
+        table = map(lambda _: int(_ * 65536), table)
+        print "int impulse[%d] = {" % len(table)
+        print_fir(table, format='c')
+        print "\n};"
 
 if __name__ == '__main__':
     main()
