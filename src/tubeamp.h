@@ -45,7 +45,7 @@ struct tubeamp_params {
     float       r_i[MAX_STAGES], r_k[MAX_STAGES], r_p[MAX_STAGES];
 
     /* convolution buffer */
-    DSP_SAMPLE  buf[MAX_CHANNELS][256];
+    DSP_SAMPLE  buf[MAX_CHANNELS][512];
     int         bufidx[MAX_CHANNELS];
     
     /* user tunable tone control */
