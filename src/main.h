@@ -64,13 +64,15 @@ extern char version[];
 
 extern volatile int state;
 extern volatile audio_driver_t *audio_driver;
+extern volatile int audio_driver_enabled;
 extern my_mutex         snd_open;
 #ifndef _WIN32
 extern pthread_t        audio_thread;
 
-extern SAMPLE16         rdbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+extern SAMPLE32         wrbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+extern SAMPLE32         rdbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
 extern HANDLE	        audio_thread;	/* defined in main.c */
 

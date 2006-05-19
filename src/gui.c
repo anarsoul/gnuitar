@@ -20,6 +20,32 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.76  2006/05/19 15:12:54  alankila
+ * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
+ * know when to swap buffers or allows write to go on too easily. I
+ * performed a major overhaul/cleanup in trying to kill this bug for good.
+ *
+ * - fix confusion about what "buffer_size" really means and how many bytes
+ *   it takes.
+ *   - buffer size is ALWAYS the fragment size in all audio drivers
+ *     (ALSA, OSS, Win32 driver)
+ *   - it follows that memory needed is buffer_size times maximum
+ *     frame size. (32-bit samples, 4 channels, max buffer size.)
+ *   - latency calculation updated, but it may be incorrect yet
+ * - add write buffer for faster ALSA read-write cycle. (Hopefully this
+ *   reduces buffer underruns and rattles and all sort of ugliness we
+ *   have with ALSA)
+ * - redesign the ALSA configuration code. Now we let ALSA choose the
+ *   parameters during the adjustment phase, then we try same for playback.
+ * - some bugs squashed in relation to this, variables renamed, etc.
+ * - if opening audio driver fails, do not kill the user's audio_driver
+ *   choice. (It makes configuring bits, channels, etc. difficult.)
+ *   We try to track whether processing is on/off through new variable,
+ *   audio_driver_enabled.
+ *
+ * Note: all the GUI code related to audio is in need of a major overhaul.
+ * Several variables should be renamed, variable visibility better controlled.
+ *
  * Revision 1.75  2006/05/15 19:39:46  alankila
  * - add surround40 to the list of chooseable ALSA devices.
  * - this has the drawback that user choosing surround40 must also choose
@@ -1079,7 +1105,7 @@ update_latency_label(GtkWidget *widget, gpointer data)
     sample_params  *sp = data;
 
     update_sampling_params(widget, data);
-    gtmp = g_strdup_printf("%.2f ms", 1000.0 * buffer_size / (sample_rate * n_input_channels) / (bits / 8));
+    gtmp = g_strdup_printf("%.2f ms", 1000.0 * (buffer_size * (fragments-1)) / sample_rate);
     gtk_label_set_text(GTK_LABEL(sp->latency_label), gtmp);
     free(gtmp);
 }
@@ -1437,12 +1463,14 @@ static void
 start_stop(GtkWidget *widget, gpointer data)
 {
     int             error;
-    if (! audio_driver) {
+    if (! audio_driver_enabled) {
         /* don't allow user to press us into active state */
-        if (GTK_TOGGLE_BUTTON(widget)->active)
+        if (! GTK_TOGGLE_BUTTON(widget)->active) {
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
-        return;
+            return;
+        }
     }
+
     if (GTK_TOGGLE_BUTTON(widget)->active) {
 #ifdef _WIN32
 	ResumeThread(audio_thread);
@@ -1478,18 +1506,19 @@ start_stop(GtkWidget *widget, gpointer data)
 
 	if ((error = audio_driver->init()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
-            gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "ERROR");
-	    audio_driver = NULL;
-	    audio_driver_str = "invalid";
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
-            return;
+            audio_driver_enabled = 0;
+        } else {
+            audio_driver_enabled = 1;
         }
 
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),
-				 FALSE);
-	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "Stop");
+				 !audio_driver_enabled);
+	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
+                    audio_driver_enabled ? "Stop" : "ERROR");
+        if (!audio_driver_enabled)
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
     } else {
 	audio_driver->finish();
 	gtk_widget_set_sensitive(GTK_WIDGET
@@ -1654,11 +1683,11 @@ init_gui(void)
     gtk_tooltips_set_tip(tooltips,add,"Add the selected effect to Current Effects.", NULL);
     tracker = gtk_check_button_new_with_label("Record audio...");
     gtk_tooltips_set_tip(tooltips,tracker,"Toggle to begin recording audio.", NULL);
-    if (audio_driver) {
+    if (audio_driver_enabled) {
         start = gtk_toggle_button_new_with_label("Stop");
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
     } else {
-        start = gtk_toggle_button_new_with_label("Start\n(disabled:\nno audio\ndriver)");
+        start = gtk_toggle_button_new_with_label("Start\n");
     }
     gtk_tooltips_set_tip(tooltips,start,"Pause and resume audio processing.", NULL);
     vumeter = gtk_progress_bar_new();

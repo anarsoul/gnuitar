@@ -56,7 +56,7 @@ struct audio_driver_channels {
     unsigned int in, out;
 };
 
-struct audio_driver {
+typedef struct {
     int     (*init)(void);
     void    (*finish)(void);
 #ifndef _WIN32
@@ -66,8 +66,7 @@ struct audio_driver {
 #endif
     struct audio_driver_channels *channels;
     unsigned int *bits;
-};
-typedef struct audio_driver audio_driver_t;
+} audio_driver_t;
 
 struct data_block {
     DSP_SAMPLE     *data;

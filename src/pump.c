@@ -20,6 +20,32 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.59  2006/05/19 15:12:54  alankila
+ * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
+ * know when to swap buffers or allows write to go on too easily. I
+ * performed a major overhaul/cleanup in trying to kill this bug for good.
+ *
+ * - fix confusion about what "buffer_size" really means and how many bytes
+ *   it takes.
+ *   - buffer size is ALWAYS the fragment size in all audio drivers
+ *     (ALSA, OSS, Win32 driver)
+ *   - it follows that memory needed is buffer_size times maximum
+ *     frame size. (32-bit samples, 4 channels, max buffer size.)
+ *   - latency calculation updated, but it may be incorrect yet
+ * - add write buffer for faster ALSA read-write cycle. (Hopefully this
+ *   reduces buffer underruns and rattles and all sort of ugliness we
+ *   have with ALSA)
+ * - redesign the ALSA configuration code. Now we let ALSA choose the
+ *   parameters during the adjustment phase, then we try same for playback.
+ * - some bugs squashed in relation to this, variables renamed, etc.
+ * - if opening audio driver fails, do not kill the user's audio_driver
+ *   choice. (It makes configuring bits, channels, etc. difficult.)
+ *   We try to track whether processing is on/off through new variable,
+ *   audio_driver_enabled.
+ *
+ * Note: all the GUI code related to audio is in need of a major overhaul.
+ * Several variables should be renamed, variable visibility better controlled.
+ *
  * Revision 1.58  2006/05/19 10:17:04  alankila
  * - avoid floating point in input path, especially denormal numbers
  *
@@ -291,13 +317,13 @@ volatile unsigned short  write_track = 0;
 
 /* default settings */
 char           *audio_driver_str = NULL;
-char           alsadevice_str[64];
+char            alsadevice_str[64];
 unsigned short  n_input_channels = 1;
 unsigned short  n_output_channels = 2;
 unsigned int    sample_rate = 44100;
 unsigned short  bits = 16;
 unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
-my_mutex        effectlist_lock=NULL;
+my_mutex        effectlist_lock = NULL;
 #ifndef _WIN32
 unsigned int    fragments = 2;
 #else
@@ -306,8 +332,8 @@ unsigned int    nbuffers = MAX_BUFFERS;
 
 int sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
-double bias_s[MAX_CHANNELS];
-int    bias_n[MAX_CHANNELS];
+static double bias_s[MAX_CHANNELS];
+static int    bias_n[MAX_CHANNELS];
 
 /* If the long-term average of input data does not exactly equal to 0,
  * compensate. Some soundcards would also need highpass filtering ~20 Hz
@@ -610,7 +636,8 @@ load_settings() {
     return;
 }
 
-void save_settings() {
+void
+save_settings() {
     const gchar    *settingspath;
     GKeyFile       *file;
     gchar          *key_file_as_str;

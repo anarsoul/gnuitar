@@ -20,6 +20,32 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2006/05/19 15:12:54  alankila
+ * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
+ * know when to swap buffers or allows write to go on too easily. I
+ * performed a major overhaul/cleanup in trying to kill this bug for good.
+ *
+ * - fix confusion about what "buffer_size" really means and how many bytes
+ *   it takes.
+ *   - buffer size is ALWAYS the fragment size in all audio drivers
+ *     (ALSA, OSS, Win32 driver)
+ *   - it follows that memory needed is buffer_size times maximum
+ *     frame size. (32-bit samples, 4 channels, max buffer size.)
+ *   - latency calculation updated, but it may be incorrect yet
+ * - add write buffer for faster ALSA read-write cycle. (Hopefully this
+ *   reduces buffer underruns and rattles and all sort of ugliness we
+ *   have with ALSA)
+ * - redesign the ALSA configuration code. Now we let ALSA choose the
+ *   parameters during the adjustment phase, then we try same for playback.
+ * - some bugs squashed in relation to this, variables renamed, etc.
+ * - if opening audio driver fails, do not kill the user's audio_driver
+ *   choice. (It makes configuring bits, channels, etc. difficult.)
+ *   We try to track whether processing is on/off through new variable,
+ *   audio_driver_enabled.
+ *
+ * Note: all the GUI code related to audio is in need of a major overhaul.
+ * Several variables should be renamed, variable visibility better controlled.
+ *
  * Revision 1.26  2006/05/19 12:19:29  alankila
  * - write output buffer as soon as input buffer is read -- this hopefully
  *   avoids the rattle effect I've been getting lately. :-/
@@ -132,6 +158,9 @@
 #include "pump.h"
 #include "main.h"
 
+/* these parameters affect our persistency in attempts to configure playback */
+#define MAX_TRIES 8
+
 // XXX: these should be made changeable in the UI
 static const char     *snd_device_in       = "default";
 static const char     *snd_test_device_out = "default";
@@ -143,8 +172,12 @@ static snd_pcm_t *capture_handle;
 static void           *
 alsa_audio_thread(void *V)
 {
-    int             i, frames, inframes, outframes;
-    struct data_block db = { .data = procbuf, .data_swap = procbuf2 };
+    int             i, inframes, outframes;
+    struct data_block db = {
+        .data = procbuf,
+        .data_swap = procbuf2,
+        .len = buffer_size * n_output_channels
+    };
     SAMPLE16    *rdbuf16 = (SAMPLE16 *) rdbuf;
     SAMPLE32    *rdbuf32 = (SAMPLE32 *) rdbuf;
     SAMPLE16    *wrbuf16 = (SAMPLE16 *) wrbuf;
@@ -162,7 +195,6 @@ alsa_audio_thread(void *V)
             break;
         }
         
-        frames = snd_pcm_bytes_to_frames(capture_handle, buffer_size);
         /* ensure output buffer has data in it,
          * this fixes the rattly scratching I used to be getting
          * after a restart. This is probably a bit too paranoid, but
@@ -176,47 +208,44 @@ alsa_audio_thread(void *V)
             /* prepare for use */
             snd_pcm_prepare(capture_handle);
             snd_pcm_prepare(playback_handle);
-            
-            /* fill 2 playback buffer fragments. Normally this is the
+
+            //fprintf(stderr, "Resyncing input/output\n");
+            /* Prefill 2 playback buffer fragments. Normally this is the
              * maximum amount of fragments, and it ensures there's something
              * to play while we come up with more data to play. */
-            for (i = 0; i < frames * n_output_channels; i += 1)
-                rdbuf[i] = 0;
+            for (i = 0; i < buffer_size * n_output_channels; i += 1)
+                wrbuf[i] = 0;
             for (i = 0; i < fragments; i += 1)
-                snd_pcm_writei(playback_handle, rdbuf, frames);
+                snd_pcm_writei(playback_handle, wrbuf, buffer_size);
         }
 
-        while ((inframes = snd_pcm_readi(capture_handle, rdbuf, frames)) < 0) {
-            if (inframes == -EAGAIN)
-                continue;
+        while ((inframes = snd_pcm_readi(capture_handle, rdbuf, buffer_size)) < 0) {
             //fprintf(stderr, "Input buffer overrun\n");
             restarting = 1;
             snd_pcm_prepare(capture_handle);
         }
-        if (inframes != frames)
-            fprintf(stderr, "Short read from capture device: %d, expecting %d\n", inframes, frames);
+        if (inframes != buffer_size)
+            fprintf(stderr, "Short read from capture device: %d, expecting %d\n", inframes, buffer_size);
         
         /* prepare output */
 	if (bits == 32)
-	    for (i = 0; i < frames * n_output_channels; i++)
+	    for (i = 0; i < db.len; i++)
 		wrbuf32[i] = (SAMPLE32) db.data[i] << 8;
 	else
-	    for (i = 0; i < frames * n_output_channels; i++)
+	    for (i = 0; i < db.len; i++)
 		wrbuf16[i] = (SAMPLE32) db.data[i] >> 8;
 
         /* write output */
-        while ((outframes = snd_pcm_writei(playback_handle, wrbuf, frames)) < 0) {
-            if (outframes == -EAGAIN)
-                continue;
+        while ((outframes = snd_pcm_writei(playback_handle, wrbuf, buffer_size)) < 0) {
             //fprintf(stderr, "Output buffer underrun\n");
             restarting = 1;
             snd_pcm_prepare(playback_handle);
         }
-        if (outframes != frames)
-            fprintf(stderr, "Short write to playback device: %d, expecting %d\n", outframes, frames);
+        if (outframes != buffer_size)
+            fprintf(stderr, "Short write to playback device: %d, expecting %d\n", outframes, buffer_size);
 
         /* now that output is out of the way, we have most time for running effects */ 
-        db.len = frames * n_input_channels;
+        db.len = buffer_size * n_input_channels;
         db.channels = n_input_channels;
 	if (bits == 32)
 	    for (i = 0; i < db.len; i++)
@@ -229,7 +258,7 @@ alsa_audio_thread(void *V)
         /* adapting must have worked, and effects must not have changed
          * frame counts somehow */
         assert(db.channels == n_output_channels);
-        assert(db.len / n_output_channels == frames);
+        assert(db.len / n_output_channels == buffer_size);
 
         my_unlock_mutex(snd_open);
     }
@@ -264,7 +293,6 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     snd_pcm_hw_params_t *hw_params;
     int                 err;
     unsigned int        tmp;
-    snd_pcm_uframes_t   frame_info;
     
     if ((err = snd_pcm_hw_params_malloc(&hw_params)) < 0) {
         fprintf (stderr, "can't allocate parameter structure: %s\n",
@@ -320,63 +348,46 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 	return 1;
     }
 
-    /* set_periods_near fails on at least one hardware. Perhaps count of
-     * periods can't really be specified before the period size is known?
-     * The code calling this part tries various fragment counts in trying to
-     * come up with identical parameters for playback and capture.
-     *
-     * Perhaps I should simply try setting buffer_time_near as user-specified
-     * latency; it'd be at least as likely to work, and much simpler. I'd
-     * still need to read the device to know what parameters ALSA eventually
-     * chose, and enforce that periods and period size are the same for
-     * playback and capture.
-     *
-     * To do that needs UI change -- most drivers should no longer allow
-     * choosing  buffer size but rather let user pick a latency and try to
-     * get a value as close as possible.
-     */
-    if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
-	fprintf(stderr, "can't set period to %d: %s\n", *fragments,
-                snd_strerror(err));
-	
-	unsigned int ret_fragments=*fragments;
-	if ((err = snd_pcm_hw_params_set_periods_near(device, hw_params, &ret_fragments,0)) < 0)
-	{
-	    fprintf(stderr, "failed to set period size near %d: %s\n", *fragments,
-                    snd_strerror(err));
-	    snd_pcm_hw_params_free(hw_params);
-            return 1;
-	}
-	else
-	{
-	    fprintf(stderr, "alsa sets periods to %d\n", ret_fragments);
-	    *fragments=ret_fragments;
-	
-	}
-	
-        
-    }
-    
     if (adapting) {
-        frame_info = *frames;
-	
-        if ((err = snd_pcm_hw_params_set_buffer_size_near(device, hw_params, &frame_info)) < 0) {
-            fprintf(stderr, "can't set buffer_size to %d frames: %s\n",
-                    (int) *frames, snd_strerror(err));
+        /* let the sound driver pick something that we agree to be happy with */
+        snd_pcm_uframes_t alsa_frames;
+        tmp = (float) (*frames * *fragments) / sample_rate * 1E6;
+
+        if ((err = snd_pcm_hw_params_set_buffer_time_near(device, hw_params, &tmp, NULL)) < 0) {
+            fprintf(stderr, "can't set buffer time near %d: %s\n", tmp,
+                    snd_strerror(err));
             snd_pcm_hw_params_free(hw_params);
             return 1;
-	}
-        if (*frames != frame_info) {
-            fprintf(stderr, "alsa adjusted requested buffer size %d to %d frames\n", *frames, (int) frame_info);
         }
-        *frames = frame_info;
+        /* obtain the frames and fragments chosen by ALSA */
+        if ((err = snd_pcm_hw_params_get_period_size(hw_params, &alsa_frames, NULL)) < 0) {
+	    fprintf(stderr, "can't get period size value from ALSA (read: %d): %s\n",
+                    (int) alsa_frames, snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
+        }
+        *frames = alsa_frames;
+        if ((err = snd_pcm_hw_params_get_periods(hw_params, fragments, NULL)) < 0) {
+	    fprintf(stderr, "can't get fragments value from ALSA (read: %d): %s\n",
+                    *fragments, snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
+        }
     } else {
-        if ((err = snd_pcm_hw_params_set_buffer_size(device, hw_params, *frames)) < 0) {
-            fprintf(stderr, "can't set buffer_size to %d frames: %s\n",
+        if ((err = snd_pcm_hw_params_set_period_size(device, hw_params, *frames, 0)) < 0) {
+            fprintf(stderr, "can't set period size to %d frames: %s\n",
                     (int) *frames, snd_strerror(err));
             snd_pcm_hw_params_free(hw_params);
             return 1;
         }
+        
+        if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
+            fprintf(stderr, "can't set periods to %d: %s\n", *fragments,
+                    snd_strerror(err));
+
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
+        }        
     }
 
     if ((err = snd_pcm_hw_params(device, hw_params)) < 0) {
@@ -385,9 +396,8 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
         snd_pcm_hw_params_free(hw_params);
 	return 1;
     }
-    snd_pcm_hw_params_free(hw_params);
     //printf("pass!\n");
-    
+    snd_pcm_hw_params_free(hw_params);
     return 0;
 }
 
@@ -398,13 +408,10 @@ static int
 alsa_init_sound(void)
 {
     int             err;
-    unsigned int    frames, fragments2, tries;
-    const char     *snd_device_out;
+    unsigned int    frames, fragments_try, tries;
 
-    snd_device_out = alsadevice_str;
-
-    if ((err = snd_pcm_open(&playback_handle, snd_device_out, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-	fprintf(stderr, "can't open output audio device %s: %s\n", snd_device_out, snd_strerror(err));
+    if ((err = snd_pcm_open(&playback_handle, alsadevice_str, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+	fprintf(stderr, "can't open output audio device %s: %s\n", alsadevice_str, snd_strerror(err));
 	state = STATE_EXIT;
 	return ERR_WAVEOUTOPEN;
     }
@@ -415,57 +422,48 @@ alsa_init_sound(void)
 	return ERR_WAVEINOPEN;
     }
 
-#define MAX_FRAGMENTS 8
-#define MAX_TRIES 16
-    tries=0;
+    tries = 0;
     fragments = 2;
-    /* buffer size really defines the input buffer's size. We convert it to
-     * frames and ask same count of frames in both directions */
-    //frames = buffer_size / n_input_channels / (bits / 8) * fragments;
-    frames = buffer_size;
-    while (fragments < MAX_FRAGMENTS) {
-    
-        //frames = buffer_size / n_input_channels / (bits / 8) * fragments;
-	frames = buffer_size;
-        
-	/* since the parameters can take a different form depending on which is
+    while (tries < MAX_TRIES) {
+	/* since the parameters could take a different form depending on which is
          * configured first, try configuring both ways before incrementing
          * fragments */ 
-	fragments2=fragments;
+	frames = buffer_size;
+	fragments_try = fragments;
+        
 	if (
-(alsa_configure_audio(playback_handle, &fragments, &frames, n_output_channels, 1)
-|| alsa_configure_audio(capture_handle, &fragments, &frames, n_input_channels, 0))
-        ) {
-	    fragments=fragments2;
-            frames = buffer_size / n_input_channels / (bits / 8) * fragments;
-            if (
 (alsa_configure_audio(capture_handle, &fragments, &frames, n_input_channels, 1)
 || alsa_configure_audio(playback_handle, &fragments, &frames, n_output_channels, 0))
+        ) {
+	    /* no go; try the other way */
+            fragments_try = fragments;
+            frames = buffer_size;
+            
+            if (
+(alsa_configure_audio(playback_handle, &fragments_try, &frames, n_output_channels, 1)
+|| alsa_configure_audio(capture_handle, &fragments_try, &frames, n_input_channels, 0))
             ) {
-		fragments=fragments2;
-		fragments +=1;
+                /* no go -- try with more fragments */
+		fragments += 1;
+                /* XXX should we try perturbing buffer size too? */
             } else {
                 break;
             }
 	} else {
             break;
         }
-    tries++;
-    if (tries==MAX_TRIES) {
-	fragments = MAX_FRAGMENTS;
-	break;
-	}
+        tries++;
     }
     /* if reached max we failed to find anything workable */
-    if (fragments == MAX_FRAGMENTS) {
+    if (tries == MAX_TRIES) {
         snd_pcm_close(playback_handle);
         snd_pcm_close(capture_handle);
 	return ERR_WAVEFRAGMENT;
     }
-    //buffer_size = frames * n_input_channels * (bits / 8) / fragments;
+    
     buffer_size = frames;
     restarting = 1;
-        
+    
     state = STATE_PROCESS;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;

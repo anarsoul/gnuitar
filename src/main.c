@@ -20,6 +20,32 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.53  2006/05/19 15:12:54  alankila
+ * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
+ * know when to swap buffers or allows write to go on too easily. I
+ * performed a major overhaul/cleanup in trying to kill this bug for good.
+ *
+ * - fix confusion about what "buffer_size" really means and how many bytes
+ *   it takes.
+ *   - buffer size is ALWAYS the fragment size in all audio drivers
+ *     (ALSA, OSS, Win32 driver)
+ *   - it follows that memory needed is buffer_size times maximum
+ *     frame size. (32-bit samples, 4 channels, max buffer size.)
+ *   - latency calculation updated, but it may be incorrect yet
+ * - add write buffer for faster ALSA read-write cycle. (Hopefully this
+ *   reduces buffer underruns and rattles and all sort of ugliness we
+ *   have with ALSA)
+ * - redesign the ALSA configuration code. Now we let ALSA choose the
+ *   parameters during the adjustment phase, then we try same for playback.
+ * - some bugs squashed in relation to this, variables renamed, etc.
+ * - if opening audio driver fails, do not kill the user's audio_driver
+ *   choice. (It makes configuring bits, channels, etc. difficult.)
+ *   We try to track whether processing is on/off through new variable,
+ *   audio_driver_enabled.
+ *
+ * Note: all the GUI code related to audio is in need of a major overhaul.
+ * Several variables should be renamed, variable visibility better controlled.
+ *
  * Revision 1.52  2006/05/01 10:23:54  anarsoul
  * Alsa device is selectable and input volume is adjustable now. Added new filter - amp.
  *
@@ -228,6 +254,7 @@
 #include "gui.h"
 
 volatile audio_driver_t  *audio_driver = NULL;
+volatile int    audio_driver_enabled = 0;
 volatile int    state;
 char            version[13] = "GNUitar "VERSION;
 
@@ -235,9 +262,10 @@ my_mutex        snd_open=NULL;
 #ifndef _WIN32
 pthread_t       audio_thread = 0;
 
-SAMPLE16        rdbuf[MAX_BUFFER_SIZE   / sizeof(SAMPLE16)];
-DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+SAMPLE32        wrbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+SAMPLE32        rdbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
 HANDLE          audio_thread = 0;
 
@@ -358,8 +386,9 @@ main(int argc, char **argv)
     if (audio_driver) {
         if ((error = audio_driver->init()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
-	    audio_driver = NULL;
-	    audio_driver_str = "invalid";
+            audio_driver_enabled = 0;
+        } else {
+            audio_driver_enabled = 1;
         }
     }
 

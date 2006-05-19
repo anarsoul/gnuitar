@@ -20,6 +20,32 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2006/05/19 15:12:54  alankila
+ * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
+ * know when to swap buffers or allows write to go on too easily. I
+ * performed a major overhaul/cleanup in trying to kill this bug for good.
+ *
+ * - fix confusion about what "buffer_size" really means and how many bytes
+ *   it takes.
+ *   - buffer size is ALWAYS the fragment size in all audio drivers
+ *     (ALSA, OSS, Win32 driver)
+ *   - it follows that memory needed is buffer_size times maximum
+ *     frame size. (32-bit samples, 4 channels, max buffer size.)
+ *   - latency calculation updated, but it may be incorrect yet
+ * - add write buffer for faster ALSA read-write cycle. (Hopefully this
+ *   reduces buffer underruns and rattles and all sort of ugliness we
+ *   have with ALSA)
+ * - redesign the ALSA configuration code. Now we let ALSA choose the
+ *   parameters during the adjustment phase, then we try same for playback.
+ * - some bugs squashed in relation to this, variables renamed, etc.
+ * - if opening audio driver fails, do not kill the user's audio_driver
+ *   choice. (It makes configuring bits, channels, etc. difficult.)
+ *   We try to track whether processing is on/off through new variable,
+ *   audio_driver_enabled.
+ *
+ * Note: all the GUI code related to audio is in need of a major overhaul.
+ * Several variables should be renamed, variable visibility better controlled.
+ *
  * Revision 1.17  2005/09/03 22:13:56  alankila
  * - make multichannel processing selectable
  * - new GUI (it sucks as much as the old one and I'll need to grok GTK
@@ -203,7 +229,7 @@ tracker_done()
 void
 track_write(DSP_SAMPLE *s, int count)
 {
-    SAMPLE16        tmp[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+    SAMPLE16        tmp[MAX_BUFFER_SIZE];
     int             i;
 
     /*
