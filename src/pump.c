@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.58  2006/05/19 10:17:04  alankila
+ * - avoid floating point in input path, especially denormal numbers
+ *
  * Revision 1.57  2006/05/13 10:57:57  alankila
  * - We can get better dynamic range if we don't clip everywhere, but only at
  *   the master gain adjustment, just before output is produced.
@@ -311,13 +314,15 @@ int    bias_n[MAX_CHANNELS];
  * or so. */
 static void
 bias_elimination(data_block_t *db) {
-    int             i;
+    int             i, biasadj;
     int             curr_channel = 0;
 
+    biasadj = bias_s[curr_channel] / bias_n[curr_channel];
+    
     for (i = 0; i < db->len; i += 1) {
         bias_s[curr_channel] += db->data[i];
 	bias_n[curr_channel] += 1;
-        db->data[i] -= bias_s[curr_channel] / bias_n[curr_channel];
+        db->data[i] -= biasadj;
         curr_channel = (curr_channel + 1) % db->channels;
     }
     /* keep bias within computable value */
@@ -701,7 +706,8 @@ pump_start(int argc, char **argv)
     }
 
     memset(bias_s, 0, sizeof(bias_s));
-    memset(bias_n, 0, sizeof(bias_n));
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        bias_n[i] = 10;
 }
 
 void
