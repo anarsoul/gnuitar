@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.59  2006/05/19 11:38:30  alankila
+ * - clip % was always almost identical to gain.
+ * - replace clip control by level control, similar to real tubescreamer
+ *
  * Revision 1.58  2005/11/01 12:32:44  alankila
  * - further reduce the fuzz level to more closely match real TS9
  * - increase bass cut
@@ -356,12 +360,6 @@ update_distort2_treble(GtkAdjustment *adj, struct distort2_params *params)
 }
 
 void
-toggle_distort2_mode(GtkAdjustment *adj, struct distort2_params *params)
-{
-    params->unauthentic = !params->unauthentic;
-}
-
-void
 distort2_init(struct effect *p)
 {
     struct distort2_params *pdistort;
@@ -378,7 +376,7 @@ distort2_init(struct effect *p)
     GtkWidget      *treble_label;
     GtkObject      *adj_treble;
 
-    GtkWidget      *button, *modebutton;
+    GtkWidget      *button;
 
     GtkWidget      *parmTable;
 
@@ -416,7 +414,7 @@ distort2_init(struct effect *p)
 
     adj_mUt = gtk_adjustment_new(pdistort->clip,
 				 0.0, 100.0, 1.0, 5.0, 0);
-    mUt_label = gtk_label_new("Clip\n%");
+    mUt_label = gtk_label_new("Level\n%");
     gtk_label_set_justify(GTK_LABEL(mUt_label), GTK_JUSTIFY_CENTER);
     gtk_table_attach(GTK_TABLE(parmTable), mUt_label, 1, 2, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -454,17 +452,6 @@ distort2_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 3, 0);
 
-    modebutton = gtk_check_button_new_with_label("Authentic");
-    if (! pdistort->unauthentic)
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(modebutton), TRUE);
-    gtk_signal_connect(GTK_OBJECT(modebutton), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_distort2_mode), pdistort);
-
-    gtk_table_attach(GTK_TABLE(parmTable), modebutton, 1, 2, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
-    
     button = gtk_check_button_new_with_label("On");
     if (p->toggle == 1)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -491,10 +478,10 @@ distort2_filter(struct effect *p, struct data_block *db)
     int		        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp = p->params;
-    static double	x,y,x1,x2,f,df,dx,e1,e2,e3,e4;
+    static double	x,y,x1,x2,f,df,dx,e1,e2;
     static double upsample [UPSAMPLE];
     double DRIVE = DRIVE_STATIC + dp->drive / 100.0 * DRIVE_LOG;
-    double mUt = (20.0 + 100 - dp->clip) * 1e-3;
+    double mUt = (20.0 + 100 - 70) * 1e-3;
     /* correct Is with mUt to approximately keep drive the
      * same. Original parameters said Is is 10e-12 and mUt 30e-3.
      * If mUt grows, Is must shrink. 0.39 is experimental */
@@ -518,19 +505,10 @@ distort2_filter(struct effect *p, struct data_block *db)
         return;
     }
 
-    if (dp->unauthentic) {
-        set_rc_lowpass_biquad(sample_rate,
-                (3200 + 720) / 2 + (3200 - 720) / 2 * dp->treble / 6.0,
-                &dp->rolloff);
-    } else {
-        set_rc_lowpass_biquad(sample_rate,
-                720,
-                &dp->rolloff);
-    }
+    set_rc_lowpass_biquad(sample_rate, 720, &dp->rolloff);
     /*
      * process signal; x - input, in the range -1, 1
      */
-    e3 = 0; e4 = 0;
     while (count) {
 
 	/* scale down to -1..1 range */
@@ -557,9 +535,6 @@ distort2_filter(struct effect *p, struct data_block *db)
 	    x2 = do_biquad(x, &dp->feedback_minus_loop, curr_channel);
             
             x1 = (x - x2) / RC_FEEDBACK_R;
-            /* This is unphysical but softens the sound */
-            if (dp->unauthentic)
-                x = x2;
             
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
@@ -570,16 +545,12 @@ distort2_filter(struct effect *p, struct data_block *db)
                 /* e^3 ~ 20 */
                 e1 = exp((x - y) / mUt);
                 e2 = 1.0 / e1;
-                if (dp->unauthentic) {
-                    e3 = exp(3*(x - y) / mUt);
-                    e4 = 1.0 / e3;
-                }
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
-		f = x1 + (x - y) / DRIVE + Is * (e1 - e2 + (e3 - e4) / 20);
+		f = x1 + (x - y) / DRIVE + Is * (e1 - e2);
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
-		df = -1.0 / DRIVE - Is / mUt * (e1 + e2 + 3*(e3 + e4) / 20);
+		df = -1.0 / DRIVE - Is / mUt * (e1 + e2);
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
@@ -601,11 +572,10 @@ distort2_filter(struct effect *p, struct data_block *db)
         y = do_biquad(y, &dp->rolloff, curr_channel);
         /* treble control + other final output filtering */
         y += (y - do_biquad(y, &dp->treble_highpass, curr_channel)) * dp->treble / 3.0;
-        if (! dp->unauthentic)
-            y = do_biquad(y, &dp->output_bass_cut, curr_channel);
+        y = do_biquad(y, &dp->output_bass_cut, curr_channel);
 	
         /* scale up from -1..1 range */
-	*s = y * DIST2_UPSCALE;
+	*s = y * DIST2_UPSCALE * (dp->clip / 100.0);
 
 	/*if(*s > MAX_SAMPLE)
 	    *s=MAX_SAMPLE;
@@ -638,7 +608,6 @@ distort2_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("drive", params->drive);
     SAVE_DOUBLE("clip", params->clip);
     SAVE_DOUBLE("treble", params->treble);
-    SAVE_INT("unauthentic", params->unauthentic);
 }
 
 void
@@ -649,7 +618,6 @@ distort2_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("drive", params->drive);
     LOAD_DOUBLE("clip", params->clip);
     LOAD_DOUBLE("treble", params->treble);
-    LOAD_INT("unauthentic", params->unauthentic);
 }
 
 effect_t *
@@ -669,9 +637,8 @@ distort2_create()
 
     ap = p->params;
     ap->drive = 0.0;
-    ap->clip = 70.0;
+    ap->clip = 100.0;
     ap->treble = 6.0;
-    ap->unauthentic = 0;
 
     /* lowpass Chebyshev filters for resampling */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_down);

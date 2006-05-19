@@ -30,7 +30,6 @@ extern effect_t *distort2_create();
 
 struct distort2_params {
     double      drive, clip, treble;
-    short       unauthentic;
     double 	last[MAX_CHANNELS];
     double	lastupsample[MAX_CHANNELS];
     Biquad_t    cheb_up, cheb_down,
