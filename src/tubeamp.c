@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2006/05/19 07:30:58  alankila
+ * - rebalance to Princeton II that I basically like
+ *
  * Revision 1.19  2006/05/18 22:14:29  alankila
  * - more models (commented out)
  *
@@ -167,6 +170,8 @@ int impulse[512] = {
   -587,   -642,   -689,   -662,   -577,   -485
 };
 */
+
+ /* Princeton II */
 int impulse[512] = {
   2799,  11631,  23881,  32811,  34786,  30693,  22401,  12097,   3608,    333,   1986,
   5050,   5906,   3149,  -2263,  -7957, -11151,  -9808,  -4421,   1179,   2345,  -1974,
@@ -286,7 +291,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 30.0, 45.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 30.0, 40.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -301,7 +306,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->asymmetry, 2000.0, 3500.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->asymmetry, 1000.0, 3000.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_asymmetry), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -332,7 +337,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->biasfactor, 1.0, 40.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->biasfactor, 10.0, 100.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_biasfactor), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -468,7 +473,7 @@ tubeamp_create()
 
     params->stages = 3;
     params->gain = 40.0;
-    params->biasfactor = 13;
+    params->biasfactor = 39;
     params->asymmetry = 2800;
 
     /* configure the various stages */
