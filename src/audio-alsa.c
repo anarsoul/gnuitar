@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2006/05/19 12:19:29  alankila
+ * - write output buffer as soon as input buffer is read -- this hopefully
+ *   avoids the rattle effect I've been getting lately. :-/
+ *
  * Revision 1.25  2006/05/15 19:32:23  alankila
  * - improve error handling that hopefully will help users to decipher errors
  *   from gnuitar
@@ -140,9 +144,11 @@ static void           *
 alsa_audio_thread(void *V)
 {
     int             i, frames, inframes, outframes;
-    struct data_block db; 
+    struct data_block db = { .data = procbuf, .data_swap = procbuf2 };
     SAMPLE16    *rdbuf16 = (SAMPLE16 *) rdbuf;
     SAMPLE32    *rdbuf32 = (SAMPLE32 *) rdbuf;
+    SAMPLE16    *wrbuf16 = (SAMPLE16 *) wrbuf;
+    SAMPLE32    *wrbuf32 = (SAMPLE32 *) wrbuf;
     
     /* frame counts are always the same to both read and write */
     while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
@@ -189,30 +195,17 @@ alsa_audio_thread(void *V)
         }
         if (inframes != frames)
             fprintf(stderr, "Short read from capture device: %d, expecting %d\n", inframes, frames);
-        db.len = inframes * n_input_channels;
-        db.data = procbuf;
-        db.data_swap = procbuf2;
-        db.channels = n_input_channels;
-	if (bits == 32)
-	    for (i = 0; i < db.len; i++)
-		db.data[i] = rdbuf32[i] >> 8;
-	else
-	    for (i = 0; i < db.len; i++)
-		db.data[i] = rdbuf16[i] << 8;
-	pump_sample(&db);
-	if (bits == 32)
-	    for (i = 0; i < db.len; i++)
-		rdbuf32[i] = (SAMPLE32)db.data[i] << 8;
-	else
-	    for (i = 0; i < db.len; i++)
-		rdbuf16[i] = (SAMPLE32)db.data[i] >>  8;
-
-        /* adapting must have worked, and effects must not have changed
-         * frame counts somehow */
-        assert(db.channels == n_output_channels);
-        assert(db.len / n_output_channels == inframes);
         
-        while ((outframes = snd_pcm_writei(playback_handle, rdbuf, inframes)) < 0) {
+        /* prepare output */
+	if (bits == 32)
+	    for (i = 0; i < frames * n_output_channels; i++)
+		wrbuf32[i] = (SAMPLE32) db.data[i] << 8;
+	else
+	    for (i = 0; i < frames * n_output_channels; i++)
+		wrbuf16[i] = (SAMPLE32) db.data[i] >> 8;
+
+        /* write output */
+        while ((outframes = snd_pcm_writei(playback_handle, wrbuf, frames)) < 0) {
             if (outframes == -EAGAIN)
                 continue;
             //fprintf(stderr, "Output buffer underrun\n");
@@ -221,7 +214,23 @@ alsa_audio_thread(void *V)
         }
         if (outframes != frames)
             fprintf(stderr, "Short write to playback device: %d, expecting %d\n", outframes, frames);
+
+        /* now that output is out of the way, we have most time for running effects */ 
+        db.len = frames * n_input_channels;
+        db.channels = n_input_channels;
+	if (bits == 32)
+	    for (i = 0; i < db.len; i++)
+		db.data[i] = rdbuf32[i] >> 8;
+	else
+	    for (i = 0; i < db.len; i++)
+		db.data[i] = rdbuf16[i] << 8;
+	pump_sample(&db);
         
+        /* adapting must have worked, and effects must not have changed
+         * frame counts somehow */
+        assert(db.channels == n_output_channels);
+        assert(db.len / n_output_channels == frames);
+
         my_unlock_mutex(snd_open);
     }
     return NULL;
