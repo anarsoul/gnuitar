@@ -49,7 +49,7 @@ struct tubeamp_params {
     int         bufidx[MAX_CHANNELS];
     
     /* user tunable tone control */
-    Biquad_t    final_highpass, final_lowpass;
+    Biquad_t    decimation_filter1, decimation_filter2;
 };
 
 #endif
