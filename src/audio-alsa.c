@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2006/05/20 09:56:58  alankila
+ * - move audio_driver_str and audio_driver_enabled into driver structure
+ * - Win32 drivers are ugly, with the need to differentiate between
+ *   DirectX and MMSystem operation through dsound variable. The driver
+ *   should probably be split with dsound-specific parts in its own driver.
+ *
  * Revision 1.27  2006/05/19 15:12:54  alankila
  * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
  * know when to swap buffers or allows write to go on too easily. I
@@ -273,6 +279,7 @@ alsa_finish_sound(void)
 {
     state = STATE_PAUSE;
     my_lock_mutex(snd_open);
+    alsa_driver.enabled = 0;
     snd_pcm_drop(playback_handle);
     snd_pcm_close(playback_handle);
     snd_pcm_drop(capture_handle);
@@ -465,6 +472,7 @@ alsa_init_sound(void)
     restarting = 1;
     
     state = STATE_PROCESS;
+    alsa_driver.enabled = 1;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
@@ -489,11 +497,14 @@ static struct audio_driver_channels alsa_channels_cfg[] = {
 static unsigned int alsa_bits_cfg[] = { 16, 32, 0 };
 
 audio_driver_t alsa_driver = {
-    alsa_init_sound,
-    alsa_finish_sound,
-    alsa_audio_thread,
-    alsa_channels_cfg,
-    alsa_bits_cfg
+    .str = "ALSA",
+    .enabled = 0,
+    .channels = alsa_channels_cfg,
+    .bits = alsa_bits_cfg,
+    
+    .init = alsa_init_sound,
+    .finish = alsa_finish_sound,
+    .thread = alsa_audio_thread
 };
 
 #endif /* HAVE_ALSA */

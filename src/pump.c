@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.60  2006/05/20 09:56:58  alankila
+ * - move audio_driver_str and audio_driver_enabled into driver structure
+ * - Win32 drivers are ugly, with the need to differentiate between
+ *   DirectX and MMSystem operation through dsound variable. The driver
+ *   should probably be split with dsound-specific parts in its own driver.
+ *
  * Revision 1.59  2006/05/19 15:12:54  alankila
  * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
  * know when to swap buffers or allows write to go on too easily. I
@@ -316,7 +322,6 @@ int             n = 0;
 volatile unsigned short  write_track = 0;
 
 /* default settings */
-char           *audio_driver_str = NULL;
 char            alsadevice_str[64];
 unsigned short  n_input_channels = 1;
 unsigned short  n_output_channels = 2;
@@ -389,10 +394,7 @@ adjust_master_volume(data_block_t *db) {
 
     for (i = 0; i < db->len; i += 1) {
 	double val = db->data[i] * volume;
-        if (val < -MAX_SAMPLE)
-            val = -MAX_SAMPLE;
-        if (val > MAX_SAMPLE)
-            val = MAX_SAMPLE;
+        CLIP_SAMPLE(val);
         db->data[i] = val;
     }
 }
@@ -568,18 +570,28 @@ load_settings() {
     error = NULL;
     gstr = g_key_file_get_string(file, "global", "driver", &error);
     if (error == NULL) {
-        /* Avoid associating allocated memory to audio_driver_str.
-         * This can probably be done better somehow... */
+#ifdef HAVE_JACK
         if (strcmp(gstr, "JACK") == 0)
-            audio_driver_str = "JACK";
+            audio_driver = &jack_driver;
+#endif
+#ifdef HAVE_ALSA
         if (strcmp(gstr, "ALSA") == 0)
-            audio_driver_str = "ALSA";
+            audio_driver = &alsa_driver;
+#endif
+#ifdef HAVE_OSS
         if (strcmp(gstr, "OSS") == 0)
-            audio_driver_str = "OSS";
-        if (strcmp(gstr, "MMSystem") == 0)
-            audio_driver_str = "MMSystem";
-        if (strcmp(gstr, "DirectX") == 0)
-            audio_driver_str = "DirectX";
+            audio_driver = &oss_driver;
+#endif
+#ifdef _WIN32
+        if (strcmp(gstr, "MMSystem") == 0) {
+            audio_driver = &windows_driver;
+            dsound = 0;
+        }
+        if (strcmp(gstr, "DirectX") == 0) {
+            audio_driver = &windows_driver;
+            dsound = 1;
+        }
+#endif
         free(gstr);
     }
     
@@ -587,17 +599,7 @@ load_settings() {
     gstr = g_key_file_get_string(file, "global", "alsadevice", &error);
     strcpy(alsadevice_str, "default");
     if (error == NULL) {
-	if (strlen(gstr)>63)
-        {
-	    fprintf(stderr,"alsadevice name too long. device set to default");
-	    strcpy(alsadevice_str,"default");
-	}
-	else
-	{
-	    strcpy(alsadevice_str, gstr);
-	
-	}
-
+        strncpy(alsadevice_str, gstr, sizeof(alsadevice_str)-1);
 	free(gstr);	
     }
     error = NULL;
@@ -648,7 +650,15 @@ save_settings() {
     settingspath = discover_settings_path();
     file = g_key_file_new();
 
-    g_key_file_set_string(file, "global", "driver", audio_driver_str);
+#ifndef _WIN32
+    if (audio_driver)
+        g_key_file_set_string(file, "global", "driver", audio_driver->str);
+#else
+    /* Windows code has "two drivers in one". */
+    if (audio_driver) {
+        g_key_file_set_string(file, "global", "driver", dsound ? "DirectX" : "MMSystem");
+    }
+#endif
     g_key_file_set_string(file, "global", "alsadevice", alsadevice_str);
     g_key_file_set_integer(file, "global", "bits", bits);
     g_key_file_set_integer(file, "global", "n_output_channels", n_output_channels);
@@ -656,7 +666,7 @@ save_settings() {
     g_key_file_set_integer(file, "global", "sample_rate", sample_rate);
 #ifdef _WIN32
     /* align fragment size to the power of 2 */
-    if(strcmp(audio_driver_str,"MMSystem")==0)
+    if (dsound == 0)
         buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
 #endif
     g_key_file_set_integer(file, "global", "buffer_size", buffer_size);

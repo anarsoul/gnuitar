@@ -57,6 +57,11 @@ struct audio_driver_channels {
 };
 
 typedef struct {
+    char    *str;
+    int     enabled;
+    struct audio_driver_channels *channels;
+    unsigned int *bits;
+    
     int     (*init)(void);
     void    (*finish)(void);
 #ifndef _WIN32
@@ -64,8 +69,6 @@ typedef struct {
 #else
     DWORD (WINAPI *audio_proc)(void *);
 #endif
-    struct audio_driver_channels *channels;
-    unsigned int *bits;
 } audio_driver_t;
 
 struct data_block {
@@ -131,7 +134,6 @@ extern int sin_lookup_table[SIN_LOOKUP_SIZE+1];
 extern volatile unsigned short write_track;
 
 extern char alsadevice_str[64];
-extern char *audio_driver_str;
 extern unsigned short n_input_channels;
 extern unsigned short n_output_channels;
 extern unsigned int sample_rate;

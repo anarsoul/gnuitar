@@ -64,7 +64,6 @@ extern char version[];
 
 extern volatile int state;
 extern volatile audio_driver_t *audio_driver;
-extern volatile int audio_driver_enabled;
 extern my_mutex         snd_open;
 #ifndef _WIN32
 extern pthread_t        audio_thread;

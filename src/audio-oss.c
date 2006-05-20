@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2006/05/20 09:56:58  alankila
+ * - move audio_driver_str and audio_driver_enabled into driver structure
+ * - Win32 drivers are ugly, with the need to differentiate between
+ *   DirectX and MMSystem operation through dsound variable. The driver
+ *   should probably be split with dsound-specific parts in its own driver.
+ *
  * Revision 1.16  2006/05/20 07:59:39  alankila
  * - patch OSS to use the 16-bit version of the buffer.
  * - make OSS "buffer size" to be the size of one fragment, as with ALSA
@@ -182,6 +188,7 @@ oss_finish_sound(void)
 {
     state = STATE_PAUSE;
     my_lock_mutex(snd_open);
+    oss_driver.enabled = 0;
     close(fd);
 }
 
@@ -261,6 +268,7 @@ oss_init_sound(void)
     }
     
     state = STATE_PROCESS;
+    oss_driver.enabled = 1;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
@@ -283,11 +291,14 @@ static struct audio_driver_channels oss_channels_cfg[] = {
 static unsigned int oss_bits_cfg[] = { 16, 0 };
 
 audio_driver_t oss_driver = {
-    oss_init_sound,
-    oss_finish_sound,
-    oss_audio_thread,
-    oss_channels_cfg,
-    oss_bits_cfg
+    .str = "OSS",
+    .enabled = 0,
+    .channels = oss_channels_cfg,
+    .bits = oss_bits_cfg,
+
+    .init = oss_init_sound,
+    .finish = oss_finish_sound,
+    .thread = oss_audio_thread
 };
 
 #endif /* HAVE_OSS */

@@ -21,6 +21,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2006/05/20 09:56:58  alankila
+ * - move audio_driver_str and audio_driver_enabled into driver structure
+ * - Win32 drivers are ugly, with the need to differentiate between
+ *   DirectX and MMSystem operation through dsound variable. The driver
+ *   should probably be split with dsound-specific parts in its own driver.
+ *
  * Revision 1.12  2006/05/20 08:01:22  alankila
  * - patch Windows also to use the 16-bit version of sample buffer
  *
@@ -509,6 +515,7 @@ windows_finish_sound(void)
 
     state = STATE_PAUSE;
     my_lock_mutex(snd_open);
+    windows_driver.enabled = 0;
     SuspendThread(audio_thread);
 
     if(!dsound) {
@@ -842,6 +849,7 @@ windows_init_sound(void)
 	    state = STATE_START;
     }
 
+    windows_driver.enabled = 1;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
@@ -906,10 +914,13 @@ struct audio_driver_channels windows_channels_cfg[]={
 int windows_bits_cfg[1] = { 16 };
 
 audio_driver_t windows_driver = {
-    windows_init_sound,
-    windows_finish_sound,
-    windows_audio_thread,
-    windows_channels_cfg,
-    windows_bits_cfg
+    .str = "Windows",
+    .enabled = 0,
+    .bits = windows_bits_cfg,
+    .channels = windows_channels_cfg,
+    
+    .init = windows_init_sound,
+    .finish = windows_finish_sound,
+    .thread = windows_audio_thread,
 };
 

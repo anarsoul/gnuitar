@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.54  2006/05/20 09:56:58  alankila
+ * - move audio_driver_str and audio_driver_enabled into driver structure
+ * - Win32 drivers are ugly, with the need to differentiate between
+ *   DirectX and MMSystem operation through dsound variable. The driver
+ *   should probably be split with dsound-specific parts in its own driver.
+ *
  * Revision 1.53  2006/05/19 15:12:54  alankila
  * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
  * know when to swap buffers or allows write to go on too easily. I
@@ -254,7 +260,6 @@
 #include "gui.h"
 
 volatile audio_driver_t  *audio_driver = NULL;
-volatile int    audio_driver_enabled = 0;
 volatile int    state;
 char            version[13] = "GNUitar "VERSION;
 
@@ -308,40 +313,25 @@ main(int argc, char **argv)
 #ifndef _WIN32
     state = STATE_PAUSE;
     /* choose audio driver if not given in config */
-    if (audio_driver_str == NULL) {
+    if (audio_driver == NULL) {
         fprintf(stderr, "Discovering audio driver.\n");
 #    ifdef HAVE_JACK
         if (jack_available()) {
-            audio_driver_str = "JACK";
+            audio_driver = &jack_driver;
         } else
 #    endif
 #    ifdef HAVE_ALSA
         if (alsa_available()) {
-            audio_driver_str = "ALSA";
+            audio_driver = &alsa_driver;
         } else
 #    endif
 #    ifdef HAVE_OSS
         if (oss_available()) {
-            audio_driver_str = "OSS";
+            audio_driver = &oss_driver;
         } else
 #    endif
             printf("warning: no usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
     }
-#    ifdef HAVE_JACK
-    if (strcmp(audio_driver_str, "JACK") == 0) {
-        audio_driver = &jack_driver;
-    } else
-#    endif
-#    ifdef HAVE_ALSA
-    if (strcmp(audio_driver_str, "ALSA") == 0) {
-        audio_driver = &alsa_driver;
-    } else
-#    endif
-#    ifdef HAVE_OSS
-    if (strcmp(audio_driver_str, "OSS") == 0) {
-        audio_driver = &oss_driver;
-    }
-#    endif
     g_thread_init(NULL);
     my_create_mutex(&snd_open);
     my_lock_mutex(snd_open);
@@ -355,8 +345,8 @@ main(int argc, char **argv)
 #else
     state = STATE_START_PAUSE;
 
-    audio_driver = &windows_driver;
-    if (strcmp(audio_driver_str, "DirectX") == 0) {
+    if (audio_driver == NULL) {
+        audio_driver = &windows_driver;
         dsound=1;
     }
     my_create_mutex(&snd_open);
@@ -383,37 +373,32 @@ main(int argc, char **argv)
 #endif
     pump_start(argc, argv);    
 
-    if (audio_driver) {
-        if ((error = audio_driver->init()) != ERR_NOERROR) {
-            fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
-            audio_driver_enabled = 0;
-        } else {
-            audio_driver_enabled = 1;
-        }
+    if (audio_driver && (error = audio_driver->init()) != ERR_NOERROR) {
+        fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
     }
 
     init_gui();
-
-    
-    
     gtk_main();
-
 #ifndef _WIN32
     /* wait for audio thread to finish */
     if (state == STATE_PAUSE || state == STATE_ATHREAD_RESTART) {
         state = STATE_EXIT;
         my_unlock_mutex(snd_open);
-        pthread_join(audio_thread, NULL);
+        if (audio_thread)
+            pthread_join(audio_thread, NULL);
     } else {
         state = STATE_EXIT;
-        pthread_join(audio_thread, NULL);
-        audio_driver->finish();
+        if (audio_thread)
+            pthread_join(audio_thread, NULL);
+        if (audio_driver)
+            audio_driver->finish();
         my_unlock_mutex(snd_open);
     }
 #else
     state = STATE_EXIT;
     my_unlock_mutex(snd_open);
-    audio_driver->finish();
+    if (audio_driver)
+        audio_driver->finish();
 #endif
     pump_stop();
     save_settings();

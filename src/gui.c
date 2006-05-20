@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.78  2006/05/20 09:56:58  alankila
+ * - move audio_driver_str and audio_driver_enabled into driver structure
+ * - Win32 drivers are ugly, with the need to differentiate between
+ *   DirectX and MMSystem operation through dsound variable. The driver
+ *   should probably be split with dsound-specific parts in its own driver.
+ *
  * Revision 1.77  2006/05/20 08:49:35  alankila
  * - squash various memory leaks in GTK+ interfacing code
  * - make sampling parameter dialog more dynamic.
@@ -1137,7 +1143,7 @@ populate_sparams_channels(GtkWidget *w)
     gchar *defchoice = NULL;
 
     /* OSS can't do asymmetric in/out */
-    if (strcmp(audio_driver_str, "OSS") == 0) {
+    if (audio_driver && strcmp(audio_driver->str, "OSS") == 0) {
         n_output_channels = n_input_channels;
     }
     defchoice = g_strdup_printf("%d in - %d out", n_input_channels, n_output_channels);
@@ -1182,25 +1188,21 @@ update_driver(GtkWidget *widget, gpointer data)
 #ifdef HAVE_ALSA
     if (strcmp(tmp,"ALSA")==0) {
         audio_driver = &alsa_driver;
-        audio_driver_str = "ALSA";
     }
 #endif
 #ifdef HAVE_OSS
     if (strcmp(tmp,"OSS")==0) {
         audio_driver = &oss_driver;
-        audio_driver_str = "OSS";
     }
 #endif
 #ifdef _WIN32
     if(strcmp(tmp,"MMSystem")==0) {
         audio_driver = &windows_driver;
-        audio_driver_str = "MMSystem";
         dsound=0;
         buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
     }
     if(strcmp(tmp,"DirectX")==0) {
         audio_driver = &windows_driver;
-        audio_driver_str = "DirectX";
         dsound=1;
     }
 #endif
@@ -1283,8 +1285,8 @@ sample_dlg(GtkWidget *widget, gpointer data)
     alsadevice_list = g_list_append(alsadevice_list, "default");
     alsadevice_list = g_list_append(alsadevice_list, "guitar");
     alsadevice_list = g_list_append(alsadevice_list, "surround40");
-    
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.alsadevice), alsadevice_list);
+    g_list_free(alsadevice_list);
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.alsadevice)->entry), alsadevice_str);
 		       //g_strdup_printf("%d", sample_rate));
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.alsadevice)->entry), TRUE);
@@ -1307,6 +1309,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     sample_rates = g_list_append(sample_rates, "22050");
     sample_rates = g_list_append(sample_rates, "16000");
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.rate), sample_rates);
+    g_list_free(sample_rates);
     gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.rate)->entry),
 		       g_strdup_printf("%d", sample_rate));
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.rate)->entry), FALSE);
@@ -1356,6 +1359,9 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_table_attach(GTK_TABLE(sp_table), driver_label, 0, 1, 2, 3,
                      TBLOPT, TBLOPT, 3, 3);
     sparams.driver = gtk_combo_new();
+#ifdef HAVE_JACK
+    drivers_list = g_list_append(drivers_list, "OSS");
+#endif
 #ifdef HAVE_OSS
     drivers_list = g_list_append(drivers_list, "OSS");
 #endif
@@ -1368,7 +1374,15 @@ sample_dlg(GtkWidget *widget, gpointer data)
 #endif
 
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.driver), drivers_list);
-    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry), audio_driver_str);
+    g_list_free(drivers_list);
+    
+#ifndef _WIN32
+    if (audio_driver)
+        gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry), audio_driver->str);
+#else
+    if (audio_driver)
+        gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry), dsound ? "DirectX" : "MMSystem");
+#endif
 
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
 			   FALSE);
@@ -1465,7 +1479,7 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
     if (tmp == NULL || strlen(tmp) == 0) {
 	strcpy(alsadevice_str, "default");
     } else {
-	strcpy(alsadevice_str, tmp);
+	strncpy(alsadevice_str, tmp, sizeof(alsadevice_str)-1);
 
         /* XXX debug why this doesn't work at some point */
         if (strcmp(alsadevice_str, "surround40") == 0) {
@@ -1478,11 +1492,16 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
     buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sparams->latency));
     /* for certain audio drivers, make the fragment size to be a multiple
      * of the MIN_BUFFER_SIZE */
-    if (strcmp(audio_driver_str,"OSS")==0 ||
-        strcmp(audio_driver_str,"MMSystem")==0) {
-        buffer_size -= buffer_size % MIN_BUFFER_SIZE;
-	gtk_adjustment_set_value(gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(sparams->latency)),
-								buffer_size);
+    if (audio_driver) {
+        if (strcmp(audio_driver->str, "OSS")==0
+#ifdef _WIN32
+            || (strcmp(audio_driver->str, "Windows")==0 && !dsound)
+#endif
+            ) {
+            buffer_size -= buffer_size % MIN_BUFFER_SIZE;
+            gtk_adjustment_set_value(gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(sparams->latency)),
+                                                                    buffer_size);
+        }
     }
     bits = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->bits)->entry)));
     sscanf(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->channels)->entry)),
@@ -1507,16 +1526,23 @@ update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
 static void
 start_stop(GtkWidget *widget, gpointer data)
 {
-    int             error;
-    if (! audio_driver_enabled) {
-        /* don't allow user to press us into active state */
+    /* without audio driver, we can't allow user to proceed */
+    if (! audio_driver) {
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
+        return;
+    }
+    
+    if (! audio_driver->enabled) {
+        /* don't allow user to press us into active state if we can't play */
         if (! GTK_TOGGLE_BUTTON(widget)->active) {
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
+            /* GTK+ will call us again in response of set_active event */
             return;
         }
     }
 
     if (GTK_TOGGLE_BUTTON(widget)->active) {
+        int error;
 #ifdef _WIN32
 	ResumeThread(audio_thread);
 	if(state != STATE_ATHREAD_RESTART)
@@ -1551,18 +1577,18 @@ start_stop(GtkWidget *widget, gpointer data)
 
 	if ((error = audio_driver->init()) != ERR_NOERROR) {
             fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
-            audio_driver_enabled = 0;
+            audio_driver->enabled = 0;
         } else {
-            audio_driver_enabled = 1;
+            audio_driver->enabled = 1;
         }
 
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
 				  (item_factory, "/Options/Options")),
-				 !audio_driver_enabled);
+				 !audio_driver->enabled);
 	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
-                    audio_driver_enabled ? "Stop" : "ERROR");
-        if (!audio_driver_enabled)
+                    audio_driver->enabled ? "Stop" : "ERROR");
+        if (!audio_driver->enabled)
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
     } else {
 	audio_driver->finish();
@@ -1728,7 +1754,7 @@ init_gui(void)
     gtk_tooltips_set_tip(tooltips,add,"Add the selected effect to Current Effects.", NULL);
     tracker = gtk_check_button_new_with_label("Record audio...");
     gtk_tooltips_set_tip(tooltips,tracker,"Toggle to begin recording audio.", NULL);
-    if (audio_driver_enabled) {
+    if (audio_driver && audio_driver->enabled) {
         start = gtk_toggle_button_new_with_label("Stop");
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(start), 1);
     } else {
