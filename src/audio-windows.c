@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2006/05/20 08:01:22  alankila
+ * - patch Windows also to use the 16-bit version of sample buffer
+ *
  * Revision 1.11  2005/09/28 19:51:27  fonin
  * - Rewritten Windows audio driver, in particular -
  *   DirectSound part.
@@ -570,6 +573,8 @@ windows_init_sound(void)
 {
     int             i;
     WAVEFORMATEX    format;	/* wave format */
+    SAMPLE16       *rdbuf16 = rdbuf;
+    SAMPLE16       *wrbuf16 = wrbuf;
 
     /*
      * set audio parameters - sampling rate, number of channels etc.
@@ -619,7 +624,7 @@ windows_init_sound(void)
 	    return ERR_WAVEOUTOPEN;
 	}
 	for (i = 0; i < nbuffers; i++) {
-	    write_header[i].lpData = wrbuf + i * buffer_size;
+	    write_header[i].lpData = wrbuf16 + i * buffer_size;
 	    /*
 	     * Fill in WAVEHDR fields for buffer starting address and size.
 	     * Leave other WAVEHDR fields at 0.
@@ -645,7 +650,7 @@ windows_init_sound(void)
 
         for (i = 0; i < nbuffers; i++) {
 	    wave_header[i].dwBufferLength = buffer_size;
-	    wave_header[i].lpData = rdbuf + i * buffer_size;
+	    wave_header[i].lpData = rdbuf16 + i * buffer_size;
 
             /*
 	     * Fill in WAVEHDR fields for buffer starting address. We've
