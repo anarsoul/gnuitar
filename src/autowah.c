@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2006/05/20 17:30:29  alankila
+ * - use parameters that better demonstrate the "wahness" of the effect
+ *
  * Revision 1.35  2006/05/07 10:25:17  alankila
  * - I misspelled Antti's name.
  *
@@ -478,7 +481,7 @@ autowah_filter(struct effect *p, struct data_block *db)
 
         for (i = 0; i < db->len; i += 1) {
 
-#define PARAM_V (MAX_SAMPLE * 2.0) /* the sound gets dirtier if the factor gets small */
+#define PARAM_V (MAX_SAMPLE * 2.5) /* the sound gets dirtier if the factor gets small */
             float g = 1 - exp(-2 * M_PI * freq / sample_rate);
             ap->ya[curr_channel] += PARAM_V * g *
                 (tanh( (db->data[i] - 4 * ap->res/100.0 * ap->yd[curr_channel]) / PARAM_V )
@@ -561,15 +564,15 @@ autowah_create()
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;
     ap->fd = calloc(1, sizeof(struct filter_data));
-    RC_setup(3, 1.48, ap->fd);
+    RC_setup(2, 1.48, ap->fd);
     ap->history = new_Backbuf(MAX_SAMPLE_RATE * AUTOWAH_HISTORY_LENGTH / 1000);
     
-    ap->freq_low = 130;
-    ap->freq_high = 1700;
-    ap->sweep_time = 3000;
+    ap->freq_low = 280;
+    ap->freq_high = 900;
+    ap->sweep_time = 500;
     ap->drywet = 100;
     ap->continuous = 0;
-    ap->res = 80;
+    ap->res = 75;
 
     return p;
 }
