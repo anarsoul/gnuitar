@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2006/05/20 10:22:31  alankila
+ * - simplify the convolution loop to extreme
+ *   (it doesn't appear to vectorize no matter what I do, though)
+ *
  * Revision 1.21  2006/05/19 16:16:18  alankila
  * - make the gui scale properly
  *
@@ -93,7 +97,7 @@
 
 /*
  * Marshall Pro Jr
-int impulse[256] = {
+DSP_SAMPLE impulse[256] = {
   4138,  14611,  26189,  34250,  37102,  34071,  26597,  16581,   7236,   2504,   1816,
   1633,    800,   -196,  -1047,   -969,    137,   1698,   3159,   3497,   2204,    399,
  -1583,  -4201,  -7083, -10054, -13786, -17384, -18258, -15413, -10370,  -5328,  -1841,
@@ -123,7 +127,7 @@ int impulse[256] = {
 
  /*
   * Marshall G15R
-int impulse[512] = {
+DSP_SAMPLE impulse[512] = {
   4405,  17364,  30475,  33517,  28810,  20846,   9309,  -4045, -13421, -13737,  -6939,
   -644,   2381,   4726,   4890,   -577,  -8708, -13224, -11835,  -6840,   -805,   5847,
  11158,  10895,   3963,  -5524, -11923, -13616, -12717,  -9577,  -4247,   -180,    568,
@@ -175,7 +179,7 @@ int impulse[512] = {
 */
 
  /* Princeton II */
-int impulse[512] = {
+DSP_SAMPLE impulse[512] = {
   2799,  11631,  23881,  32811,  34786,  30693,  22401,  12097,   3608,    333,   1986,
   5050,   5906,   3149,  -2263,  -7957, -11151,  -9808,  -4421,   1179,   2345,  -1974,
  -8064, -11426, -10826,  -7845,  -4476,  -2085,  -1307,  -1743,  -2306,  -2291,  -1539,
@@ -225,7 +229,7 @@ int impulse[512] = {
   -870,   -939,   -708,   -263,    109,    199
 };
 
-#define IMPULSE_SIZE (sizeof(impulse) / sizeof(impulse[0]))
+#define IMPULSE_SIZE (sizeof(impulse) / sizeof(impulse[0])) /* <= MAX_IMPULSE_SIZE */
 
 static void
 update_stages(GtkAdjustment *adj, struct tubeamp_params *params)
@@ -379,6 +383,7 @@ static void
 tubeamp_filter(struct effect *p, struct data_block *db)
 {
     int i, j, k, curr_channel = 0;
+    DSP_SAMPLE *ptr1, *ptr2, val;
     struct tubeamp_params *params = p->params;
     float gain;
 
@@ -412,18 +417,23 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             result = do_biquad(result, &params->decimation_filter1, curr_channel);
             result = do_biquad(result, &params->decimation_filter2, curr_channel);
         }
-        DSP_SAMPLE *ptr = params->buf[curr_channel];
-        int bufidx = params->bufidx[curr_channel];
-        /* convolve the output */
-        ptr[bufidx] = result / 250 * (MAX_SAMPLE >> 12);
-        DSP_SAMPLE val = 0;
-        for (j = 0; j < IMPULSE_SIZE; j += 1) {
-            val += ptr[(bufidx - j) & (IMPULSE_SIZE-1)] * impulse[j];
-        }
+        ptr1 = params->buf[curr_channel] + params->bufidx[curr_channel];
+        ptr2 = impulse;
+        
+        /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
+        ptr1[IMPULSE_SIZE] = ptr1[0] = result / 250 * (MAX_SAMPLE >> 12);
+        
+        /* compute convolution with as simple for loop as possible. I hope this will
+         * be vectorized by the compiler. */
+        val = 0;
+        for (j = 0; j < IMPULSE_SIZE; j += 1)
+            val += *(ptr1++) * *(ptr2++);
         db->data[i] = val >> 6;
-        params->bufidx[curr_channel] += 1;
-        if (params->bufidx[curr_channel] == IMPULSE_SIZE)
-            params->bufidx[curr_channel] = 0;
+        
+        params->bufidx[curr_channel] -= 1;
+        if (params->bufidx[curr_channel] < 0)
+            params->bufidx[curr_channel] += IMPULSE_SIZE;
+        
         curr_channel = (curr_channel + 1) % db->channels;
     }
     //for (i = 0; i < params->stages; i += 1)

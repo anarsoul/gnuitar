@@ -29,6 +29,7 @@
 extern effect_t *tubeamp_create();
 
 #define MAX_STAGES 4
+#define MAX_IMPULSE_LENGTH 512
 
 struct tubeamp_params {
     int         stages;
@@ -45,7 +46,7 @@ struct tubeamp_params {
     float       r_i[MAX_STAGES], r_k[MAX_STAGES], r_p[MAX_STAGES];
 
     /* convolution buffer */
-    DSP_SAMPLE  buf[MAX_CHANNELS][512];
+    DSP_SAMPLE  buf[MAX_CHANNELS][MAX_IMPULSE_LENGTH * 2];
     int         bufidx[MAX_CHANNELS];
     
     /* user tunable tone control */
