@@ -19,6 +19,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.20  2006/05/20 14:28:04  alankila
+ * - restore mono-phaser back to earlier design
+ * - fix hilbert transform's allpass delay
+ * - need to figure out what is the proper name for the phasor allpass
+ *
  * Revision 1.19  2006/05/13 17:10:06  alankila
  * - move hilbert transform into biquad.c
  * - implement stereo phaser using hilbert transform
@@ -139,16 +144,15 @@ set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
     f->a2 = (1 - alpha)  / a0;
 }
 
-/* 1st order allpass filter, delay can vary from 0 to 1 */
+/* 2nd order allpass filter, delay can vary from 0 to 1 */
 void
-set_allpass_biquad(double a, Biquad_t *f)
+set_phaser_biquad(double a, Biquad_t *f)
 {
-    a = a * a;
     f->b0 = a;
-    f->b1 = 1;
-    f->b2 = 0;
-    f->a1 = a;
-    f->a2 = 0;
+    f->b1 = 0;
+    f->b2 = 1;
+    f->a1 = 0;
+    f->a2 = a;
 }
 
 /* A 2nd order allpass, delay can vary from 0 to 1 */
@@ -158,9 +162,9 @@ set_2nd_allpass_biquad(double a, Biquad_t *f)
     a = a * a;
     f->b0 = a;
     f->b1 = 0;
-    f->b2 = 1;
+    f->b2 = -1;
     f->a1 = 0;
-    f->a2 = a;
+    f->a2 = -a;
 }
 
 void

@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2006/05/20 14:28:04  alankila
+ * - restore mono-phaser back to earlier design
+ * - fix hilbert transform's allpass delay
+ * - need to figure out what is the proper name for the phasor allpass
+ *
  * Revision 1.34  2006/05/14 21:20:14  alankila
  * - make dry/wet work for stereo phaser
  *
@@ -152,6 +157,7 @@
 #endif
 
 #define PHASOR_UPDATE_INTERVAL 8
+#define PHASOR_SHAPE 0.7
  
 static void
 update_phasor_speed(GtkAdjustment *adj, struct phasor_params *params)
@@ -317,7 +323,7 @@ phasor_filter_mono(struct effect *p, struct data_block *db)
     Dry = 1 - params->drywet / 100.0;
     Wet =     params->drywet / 100.0;
     f = params->f;
-    
+
     while (count) {
         if (curr_channel == 0 && count % PHASOR_UPDATE_INTERVAL == 0) { 
             f += 1000.0 / params->sweep_time / sample_rate * PHASOR_UPDATE_INTERVAL;
@@ -325,17 +331,18 @@ phasor_filter_mono(struct effect *p, struct data_block *db)
                 f -= 1.0;
             delay = (sin_lookup(f) + 1) / 2;
             delay *= params->depth / 100.0;
-            delay = 1.0 - delay;
+            delay = 1.0-delay;
+            delay = ((exp(PHASOR_SHAPE * delay) - 1) / (exp(PHASOR_SHAPE) - 1));
 
             for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
-                set_2nd_allpass_biquad(delay, &params->allpass[i]);
+                set_phaser_biquad(delay, &params->allpass[i]);
         }
         
         tmp = *s;
         for (i = 0; i < MAX_PHASOR_FILTERS; i += 1)
             tmp = do_biquad(tmp, &params->allpass[i], curr_channel);
         *s = *s * Dry + tmp * Wet;
-
+        
         curr_channel = (curr_channel + 1) % db->channels;
         *s++;
         count--;
@@ -374,8 +381,8 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
         y0 = cosval * x0 + sinval * x1;
         y1 = cosval * x0 - sinval * x1;
 
-        db->data_swap[i*2+0] = Dry * x0 + Wet * y0;
-        db->data_swap[i*2+1] = Dry * x0 + Wet * y1;
+        db->data_swap[i*2+0] = Dry * x1 + Wet * y0;
+        db->data_swap[i*2+1] = Dry * x1 + Wet * y1;
     }
     /* swap to processed buffer for next effect */
     DSP_SAMPLE *tmp = db->data;

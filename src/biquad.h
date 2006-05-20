@@ -18,6 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.18  2006/05/20 14:28:04  alankila
+ * - restore mono-phaser back to earlier design
+ * - fix hilbert transform's allpass delay
+ * - need to figure out what is the proper name for the phasor allpass
+ *
  * Revision 1.17  2006/05/13 17:10:06  alankila
  * - move hilbert transform into biquad.c
  * - implement stereo phaser using hilbert transform
@@ -116,7 +121,7 @@ extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
 			       Biquad_t *f);
 extern void     set_bpf_biquad(double Fs, double Fc, double BW,
 			       Biquad_t *f);
-extern void     set_allpass_biquad(double delay, Biquad_t *f);
+extern void     set_phaser_biquad(double delay, Biquad_t *f);
 extern void     set_2nd_allpass_biquad(double delay, Biquad_t *f);
 extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
