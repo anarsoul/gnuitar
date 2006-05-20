@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2006/05/20 07:59:39  alankila
+ * - patch OSS to use the 16-bit version of the buffer.
+ * - make OSS "buffer size" to be the size of one fragment, as with ALSA
+ *
  * Revision 1.15  2005/11/05 12:18:38  alankila
  * - pepper the code with static declarations for all private funcs and vars
  *
@@ -100,20 +104,27 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <math.h>
-
+#include <assert.h>
+ 
 #include "pump.h"
 #include "main.h"
 #include "utils.h"
 
-int             fd;
+static int fd;
 
-static void           *
+static void *
 oss_audio_thread(void *V)
 {
     int             count, i;
-    struct data_block db;
+    struct data_block db = {
+        .data = procbuf,
+        .data_swap = procbuf2,
+        .len = buffer_size * 2 * n_output_channels
+    };
     fd_set read_fds;
     struct timeval read_timeout;
+    SAMPLE16 *rdbuf16 = (SAMPLE16 *) rdbuf;
+    SAMPLE16 *wrbuf16 = (SAMPLE16 *) wrbuf;
 
     while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
 	if (state == STATE_PAUSE) {
@@ -133,31 +144,32 @@ oss_audio_thread(void *V)
 	read_timeout.tv_sec  = 0;
 	read_timeout.tv_usec = 0;
         do {
-	    count = read(fd, rdbuf, buffer_size);
+	    count = read(fd, rdbuf16, buffer_size * n_input_channels * 2);
             if (count < 0) {
                 perror("error reading from sound device: ");
                 break;
-            } else if (count != buffer_size) {
+            } else if (count != buffer_size * n_input_channels * 2) {
                 fprintf(stderr, "warning: short read (%d/%d) from sound device\n", count, buffer_size);
                 break;
 	    }
 	} while (select(fd+1, &read_fds, NULL, NULL, &read_timeout) != 0);
 	
-	count /= bits / 8;
-        db.data = procbuf;
-        db.data_swap = procbuf2;
-        db.len = count;
+        db.len = buffer_size * n_input_channels;
         db.channels = n_input_channels;
 
 	/* 16 bits is the only possible for OSS */
-	for (i = 0; i < count; i++)
-	    db.data[i] = rdbuf[i] << 8;
+	for (i = 0; i < db.len; i++)
+	    db.data[i] = rdbuf16[i] << 8;
 	pump_sample(&db);
-	for (i = 0; i < count; i++)
-	    rdbuf[i] = (SAMPLE32)db.data[i] >> 8;
 
-	count = write(fd, rdbuf, buffer_size);
-	if (count != buffer_size)
+        /* Ensure that pump adapted us to output */
+        assert(db.channels == n_output_channels);
+        assert(db.len == buffer_size * n_output_channels);
+	for (i = 0; i < db.len; i++)
+	    wrbuf16[i] = (SAMPLE32) db.data[i] >> 8;
+
+	count = write(fd, wrbuf16, buffer_size * n_output_channels * 2);
+	if (count != buffer_size * n_output_channels * 2)
 	    fprintf(stderr, "warning: short write (%d/%d) to sound device\n", count, buffer_size);
         my_unlock_mutex(snd_open);
     }
@@ -197,7 +209,7 @@ oss_init_sound(void)
      *                           9 for 512
      *                           etc.
      */
-    i = 0x7fff0000 + (int) (log(buffer_size) / log(2));
+    i = 0x7fff0000 + (int) (log(buffer_size * 2 * n_input_channels) / log(2));
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
 	fprintf(stderr, "Cannot setup fragments!\n");
 	close(fd);
