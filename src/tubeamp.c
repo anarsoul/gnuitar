@@ -8,6 +8,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2006/05/20 12:18:48  alankila
+ * - tabularize the nonlinearity
+ * - new asymmetric nonlinearity based on solving x - y = exp(y) - exp(-y)
+ *   type equation
+ *
  * Revision 1.22  2006/05/20 10:22:31  alankila
  * - simplify the convolution loop to extreme
  *   (it doesn't appear to vectorize no matter what I do, though)
@@ -229,6 +234,8 @@ DSP_SAMPLE impulse[512] = {
   -870,   -939,   -708,   -263,    109,    199
 };
 
+static float nonlinearity[1000];
+
 #define IMPULSE_SIZE (sizeof(impulse) / sizeof(impulse[0])) /* <= MAX_IMPULSE_SIZE */
 
 static void
@@ -298,7 +305,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 30.0, 40.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 25.0, 45.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -307,13 +314,13 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
-
+    
     w = gtk_label_new("Absolute bias");
     gtk_table_attach(GTK_TABLE(parmTable), w, 2, 3, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->asymmetry, 1000.0, 3000.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->asymmetry, 250.0, 2500.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_asymmetry), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -322,6 +329,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
+    
     /*
     w = gtk_label_new("Middle cut\n(dB)");
     gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 0, 1,
@@ -339,12 +347,13 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      3, 0);
     */
+    
     w = gtk_label_new("Dynamic bias");
     gtk_table_attach(GTK_TABLE(parmTable), w, 4, 5, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->biasfactor, 10.0, 100.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->biasfactor, 1.0, 50.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_biasfactor), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -371,12 +380,27 @@ tubeamp_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-/* no decent waveshaping at the moment */
+/* waveshaper based on generic lookup table */
 static float
 F_tube(float in, float r_i)
 {
+    float pos;
+    int idx;
+
     r_i /= 3000;
-    return tanh(in / r_i) * r_i;
+    pos = (in / r_i) * 50 + 500;
+    //printf("%f ", pos);
+    
+    /* This safety catch should be made unnecessary. */
+    if (pos <= 0)
+        pos = 0;
+    if (pos >= 999)
+        pos = 998;
+    idx = pos;
+    pos -= idx;
+
+    return (nonlinearity[idx] * (1.0-pos) + nonlinearity[idx+1] * pos) * r_i;
+    // return tanh(in / r_i) * r_i;
 }
 
 static void
@@ -436,8 +460,8 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         
         curr_channel = (curr_channel + 1) % db->channels;
     }
-    //for (i = 0; i < params->stages; i += 1)
-    //    printf("%d. bias=%.1f\n", i, params->bias[i]);
+//    for (i = 0; i < params->stages; i += 1)
+//        printf("%d. bias=%.1f\n", i, params->bias[i]);
 }
 
 static void
@@ -453,6 +477,8 @@ tubeamp_save(struct effect *p, SAVE_ARGS)
 {
     struct tubeamp_params *params = p->params;
     SAVE_INT("stages", params->stages);
+    SAVE_INT("biasfactor", params->biasfactor);
+    SAVE_INT("asymmetry", params->asymmetry);
     SAVE_DOUBLE("gain", params->gain);
     SAVE_DOUBLE("middlefreq", params->middlefreq);
 }
@@ -462,6 +488,8 @@ tubeamp_load(struct effect *p, LOAD_ARGS)
 {
     struct tubeamp_params *params = p->params;
     LOAD_INT("stages", params->stages);
+    LOAD_INT("biasfactor", params->biasfactor);
+    LOAD_INT("asymmetry", params->asymmetry);
     LOAD_DOUBLE("gain", params->gain);
     LOAD_DOUBLE("middlefreq", params->middlefreq);
 }
@@ -469,6 +497,7 @@ tubeamp_load(struct effect *p, LOAD_ARGS)
 effect_t *
 tubeamp_create()
 {
+    int i;
     effect_t   *p;
     struct tubeamp_params *params;
 
@@ -482,9 +511,9 @@ tubeamp_create()
     p->proc_done = tubeamp_done;
 
     params->stages = 3;
-    params->gain = 40.0;
-    params->biasfactor = 10;
-    params->asymmetry = 2500;
+    params->gain = 37.0;
+    params->biasfactor = 5;
+    params->asymmetry = 1000;
 
     /* configure the various stages */
     params->r_i[0] = 68e3;
@@ -518,6 +547,26 @@ tubeamp_create()
     /* 10 kHz decimation IIR -- we should be 24 dB down by 20 kHz */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 10000, 5.0, TRUE, &params->decimation_filter1);
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 11000, 5.0, TRUE, &params->decimation_filter2);
-    
+
+    for (i = 0; i < 1000; i += 1) {
+        /* Solve implicit equation
+         * x - y = e^(-y / 10) / 10
+         * for x values from -250 to 250. */
+        float y = 0.0;
+        float x = i - 500;
+        while (TRUE) {
+            float value = x - y - 1e-1 * exp(1e-1 * y) + 1e-5 * exp(1e-1 * -y);
+            float dvalue_y = -1 - 1e-2 * exp(1e-1 * y) - 1e-6 * exp(1e-1 * -y);
+            float dy = value / dvalue_y;
+            y -= dy;
+
+            if (fabs(dy) < 1e-5)
+                break;
+        }
+        nonlinearity[i] = y / 90;
+        //nonlinearity[i] = tanh(x / 50.0);
+        //printf("%d %f\n", i, nonlinearity[i]);
+    }
+
     return p;
 }
