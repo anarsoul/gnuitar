@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.77  2006/05/20 08:49:35  alankila
+ * - squash various memory leaks in GTK+ interfacing code
+ * - make sampling parameter dialog more dynamic.
+ *   When user updates audio driver, the bits and channels dialogs are
+ *   rebuilt to reflect settings available for that driver.
+ * - I still couldn't protect user against choosing surround40 and
+ *   using less than 4 channels for output. My attempts were rewarded by
+ *   a segfault from GTK+. :-(
+ *
  * Revision 1.76  2006/05/19 15:12:54  alankila
  * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
  * know when to swap buffers or allows write to go on too easily. I
@@ -1076,11 +1085,11 @@ timeout_update_vumeter(gpointer vumeter) {
 
     if (vumeter_power != 0.0) {
         power = log(vumeter_power) / log(10) * 10;
-        /* 16 bits hold ~91 dB resolution */
+        /* 16 bits hold ~96 dB resolution */
         if (power > 0)
             power = 0;
-        if (power < -91)
-            power = -91;
+        if (power < -96)
+            power = -96;
     }
 
     gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
@@ -1097,16 +1106,67 @@ update_input_volume(GtkAdjustment *adj, void *nothing) {
     input_volume = adj->value;
 }
 
+static void
+populate_sparams_bits(GtkWidget *w)
+{
+    GList *bits_list = NULL, *iter = NULL;
+    gchar *defchoice = g_strdup_printf("%d", bits);
+    
+    if (audio_driver) {
+        int i;
+        for (i = 0; audio_driver->bits[i] != 0; i += 1) {
+            gchar *gtmp = g_strdup_printf("%d", audio_driver->bits[i]);
+            bits_list = g_list_append(bits_list, gtmp);
+        }
+    }
+    gtk_combo_set_popdown_strings(GTK_COMBO(w), bits_list);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(w)->entry), defchoice);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(w)->entry),
+			   FALSE);
+    
+    for (iter = g_list_first(bits_list); iter != NULL; iter = g_list_next(iter))
+        g_free(iter->data);
+    
+    g_list_free(bits_list);
+}
+
+static void
+populate_sparams_channels(GtkWidget *w)
+{
+    GList *channels_list = NULL, *iter = NULL;
+    gchar *defchoice = NULL;
+
+    /* OSS can't do asymmetric in/out */
+    if (strcmp(audio_driver_str, "OSS") == 0) {
+        n_output_channels = n_input_channels;
+    }
+    defchoice = g_strdup_printf("%d in - %d out", n_input_channels, n_output_channels);
+
+    if (audio_driver) {
+        int i;
+        for (i = 0; audio_driver->channels[i].in != 0; i += 1) {
+            gchar *gtmp = g_strdup_printf("%d in - %d out", audio_driver->channels[i].in, audio_driver->channels[i].out);
+            channels_list = g_list_append(channels_list, gtmp);
+        }
+    }
+    gtk_combo_set_popdown_strings(GTK_COMBO(w), channels_list);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(w)->entry), defchoice);
+
+    for (iter = g_list_first(channels_list); iter != NULL; iter = g_list_next(iter))
+        g_free(iter->data);
+    g_list_free(channels_list);
+    g_free(defchoice);
+}
 
 static void
 update_latency_label(GtkWidget *widget, gpointer data)
 {
     gchar          *gtmp;
-    sample_params  *sp = data;
+    sample_params  *sparams = data;
 
     update_sampling_params(widget, data);
     gtmp = g_strdup_printf("%.2f ms", 1000.0 * (buffer_size * (fragments-1)) / sample_rate);
-    gtk_label_set_text(GTK_LABEL(sp->latency_label), gtmp);
+    gtk_label_set_text(GTK_LABEL(sparams->latency_label), gtmp);
     free(gtmp);
 }
 
@@ -1114,9 +1174,9 @@ static void
 update_driver(GtkWidget *widget, gpointer data)
 {
     const char *tmp=NULL;
-    sample_params *sp = (sample_params *) data;
+    sample_params *sparams = (sample_params *) data;
 
-    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->driver)->entry));
+    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->driver)->entry));
     if(tmp == NULL)
 	return;
 #ifdef HAVE_ALSA
@@ -1144,6 +1204,8 @@ update_driver(GtkWidget *widget, gpointer data)
         dsound=1;
     }
 #endif
+    populate_sparams_bits(sparams->bits);
+    populate_sparams_channels(sparams->channels);
     /* XXX we should now reopen the dialog because changing audio driver
      * updates bits & channels settings */
     state = STATE_ATHREAD_RESTART;
@@ -1164,8 +1226,6 @@ static void
 sample_dlg(GtkWidget *widget, gpointer data)
 {
     static sample_params sparams;
-    int             i;
-    gchar          *gtmp;
     GtkWidget      *sp_table;
 #ifdef _WIN32
     GtkWidget      *threshold;
@@ -1186,8 +1246,6 @@ sample_dlg(GtkWidget *widget, gpointer data)
                    *buttons_pack;
     GList          *sample_rates = NULL;
     GList          *alsadevice_list = NULL;
-    GList          *bits_list = NULL;
-    GList          *channels_list = NULL;
     GList          *drivers_list = NULL;
     GtkObject      *latency_adj;
     GtkSpinButton  *dummy1;
@@ -1262,18 +1320,9 @@ sample_dlg(GtkWidget *widget, gpointer data)
                      TBLOPT, TBLOPT, 3, 3);
     sparams.channels = gtk_combo_new();
 
-    if (audio_driver) {
-        for (i = 0; audio_driver->channels[i].in != 0; i += 1) {
-            gtmp = g_strdup_printf("%d in - %d out", audio_driver->channels[i].in, audio_driver->channels[i].out);
-            channels_list = g_list_append(channels_list, gtmp);
-        }
-    }
-    gtk_combo_set_popdown_strings(GTK_COMBO(sparams.channels),
-				  channels_list);
+    populate_sparams_channels(sparams.channels);
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.channels)->entry),
 			   FALSE);
-    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.channels)->entry),
-		       g_strdup_printf("%d in - %d out", n_input_channels, n_output_channels));
     gtk_table_attach(GTK_TABLE(sp_table), sparams.channels, 3, 4, 0, 1,
                      TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.channels)->entry,"Mono/Stereo/Quadrophonic",NULL);
@@ -1281,22 +1330,12 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_misc_set_alignment(GTK_MISC(bits_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), bits_label, 0, 1, 1, 2,
                      TBLOPT, TBLOPT, 3, 3);
-    sparams.bits = gtk_combo_new();
 
-    if (audio_driver) {
-        for (i = 0; audio_driver->bits[i] != 0; i += 1) {
-            gtmp = g_strdup_printf("%d", audio_driver->bits[i]);
-            bits_list = g_list_append(bits_list, gtmp);
-        }
-    }
-    gtk_combo_set_popdown_strings(GTK_COMBO(sparams.bits), bits_list);
-    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
-		       g_strdup_printf("%d", bits));
-    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.bits)->entry),
-			   FALSE);
-    gtk_table_attach(GTK_TABLE(sp_table), sparams.bits, 1, 2, 1, 2,
-                     TBLOPT, TBLOPT, 3, 3);
-    gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.bits)->entry, "ALSA can do 32-bit input with some cards", NULL);
+    sparams.bits = gtk_combo_new();
+    populate_sparams_bits(sparams.bits);
+    gtk_tooltips_set_tip(tooltips, GTK_COMBO(sparams.bits)->entry,
+                         "ALSA can do 32-bit input with some cards", NULL);
+    gtk_table_attach(GTK_TABLE(sp_table), sparams.bits, 1, 2, 1, 2, TBLOPT, TBLOPT, 3, 3);
 
     latency_label = gtk_label_new("Fragment size:");
     gtk_misc_set_alignment(GTK_MISC(latency_label), 0, 0.5);
@@ -1418,45 +1457,51 @@ static void
 update_sampling_params(GtkWidget * dialog, gpointer data)
 {
     int             tmp1, tmp2;
-    sample_params  *sp = data;
+    sample_params  *sparams = data;
 
     const char *tmp=NULL;
 
-    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->alsadevice)->entry));
-    if (tmp == NULL)
-    {
+    tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->alsadevice)->entry));
+    if (tmp == NULL || strlen(tmp) == 0) {
 	strcpy(alsadevice_str, "default");
-    }
-    else
-    {
+    } else {
 	strcpy(alsadevice_str, tmp);
+
+        /* XXX debug why this doesn't work at some point */
+        if (strcmp(alsadevice_str, "surround40") == 0) {
+            n_output_channels = 4;
+            //instant segfault if we try to update the channels dialog accordingly ;-/
+            //populate_sparams_channels(sparams->channels);
+        }
     }
     
-    buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sp->latency));
+    buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sparams->latency));
     /* for certain audio drivers, make the fragment size to be a multiple
      * of the MIN_BUFFER_SIZE */
-    if(strcmp(audio_driver_str,"OSS")==0 ||
-	    strcmp(audio_driver_str,"MMSystem")==0) {
-        buffer_size=(buffer_size/MIN_BUFFER_SIZE)*MIN_BUFFER_SIZE;
-	gtk_adjustment_set_value(gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(sp->latency)),
+    if (strcmp(audio_driver_str,"OSS")==0 ||
+        strcmp(audio_driver_str,"MMSystem")==0) {
+        buffer_size -= buffer_size % MIN_BUFFER_SIZE;
+	gtk_adjustment_set_value(gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(sparams->latency)),
 								buffer_size);
     }
-    bits = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->bits)->entry)));
-    sscanf(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->channels)->entry)),
+    bits = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->bits)->entry)));
+    sscanf(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->channels)->entry)),
            "%d in - %d out", &tmp1, &tmp2);
     n_input_channels = tmp1;
     n_output_channels = tmp2;
 
-    sample_rate = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sp->rate)->entry)));
+    sample_rate = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->rate)->entry)));
 }
+
+    
 
 static void
 update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
 {
-    sample_params  *sp = data;
+    sample_params  *sparams = data;
 
     update_sampling_params(dialog, data);
-    gtk_widget_destroy(GTK_WIDGET(sp->dialog));
+    gtk_widget_destroy(GTK_WIDGET(sparams->dialog));
 }
 
 static void
