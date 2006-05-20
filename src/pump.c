@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.61  2006/05/20 17:32:02  alankila
+ * - rename Tremolo effect as Tremolo Bar.
+ * - I think about changing Vibrato into what Tremolo used to be. This way the
+ *   source file names again make sense.
+ *
  * Revision 1.60  2006/05/20 09:56:58  alankila
  * - move audio_driver_str and audio_driver_enabled into driver structure
  * - Win32 drivers are ugly, with the need to differentiate between
@@ -519,7 +524,7 @@ struct effect_creator effect_list[] = {
     {"Distort", distort_create},
     {"Delay", delay_create},
     {"Reverb", reverb_create},
-    {"Tremolo", vibrato_create},
+    {"Tremolo bar", vibrato_create},
     {"Chorus / Flanger", chorus_create},
     {"Echo", echo_create},
     {"Phaser", phasor_create},
