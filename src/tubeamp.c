@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2006/05/20 22:19:04  alankila
+ * - rebalance 4th stage
+ *
  * Revision 1.23  2006/05/20 12:18:48  alankila
  * - tabularize the nonlinearity
  * - new asymmetric nonlinearity based on solving x - y = exp(y) - exp(-y)
@@ -512,7 +515,7 @@ tubeamp_create()
 
     params->stages = 3;
     params->gain = 37.0;
-    params->biasfactor = 5;
+    params->biasfactor = 3;
     params->asymmetry = 1000;
 
     /* configure the various stages */
@@ -539,9 +542,9 @@ tubeamp_create()
     
     params->r_i[3] = 250e3;
     params->r_p[3] = 100000;
-    params->r_k[3] = 810;
+    params->r_k[3] = 450;
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[3]);
-    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 194, &params->biaslowpass[3]);
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 250, &params->biaslowpass[3]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[3]);
 
     /* 10 kHz decimation IIR -- we should be 24 dB down by 20 kHz */
