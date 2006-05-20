@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2006/05/20 16:59:19  alankila
+ * - more exciting tremolo bar effect with pitch shifting.
+ * - if you want to have old-style amplitude modulation, try using
+ *   rotary speaker instead.
+ *
  * Revision 1.31  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -174,8 +179,7 @@ vibrato_init(struct effect *p)
     parmTable = gtk_table_new(2, 8, FALSE);
 
     adj_speed =
-	gtk_adjustment_new(pvibrato->vibrato_speed, 10.0,
-			   3000.0, 1.0, 1.0, 0.0);
+	gtk_adjustment_new(pvibrato->vibrato_speed, 50.0, 3000.0, 1.0, 1.0, 0.0);
     speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
@@ -197,8 +201,8 @@ vibrato_init(struct effect *p)
 
     adj_ampl =
 	gtk_adjustment_new(pvibrato->vibrato_amplitude,
-			   0.0, 100.0, 1.0, 1.0, 0.0);
-    ampl_label = gtk_label_new("Amplitude\n%");
+			   0.0, 50.0, 1.0, 1.0, 0.0);
+    ampl_label = gtk_label_new("Amplitude\n(Hz)");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -231,7 +235,7 @@ vibrato_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Tremolo"));
+    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Tremolo bar"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
@@ -251,14 +255,33 @@ vibrato_filter(struct effect *p, struct data_block *db)
 
     vp = p->params;
 
+    /* the vibrato effect is based on hilbert transform that allows us to reconstruct
+     * shifted frequency spectra. However, the shifting effect does not preserve
+     * frequency relationships because it implements f' = f - f_mod. On the other
+     * hand, neither does the genuine guitar tremolo bar, so there is some emulation
+     * accuracy.
+     *
+     * The f_mod is the speed of modulation, stored in variables speed. The speed
+     * itself is modulated by the period and depth parameters. */
+    
     while (count) {
-	*s *= (1 + sin_lookup(vp->vibrato_phase) * vp->vibrato_amplitude / 100.0) / 2;
+        DSP_SAMPLE x0, x1;
+        float sinval, cosval;
 
+        hilbert_transform(*s, &x0, &x1, &vp->hilbert);
+
+        sinval = sin_lookup(vp->phase);
+        cosval = sin_lookup(vp->phase >= 0.75 ? vp->phase - 0.75 : vp->phase + 0.25);
+        *s = sinval * x0 + cosval * x1;
+        
         curr_channel = (curr_channel + 1) % db->channels;
 	if (curr_channel == 0) {
 	    vp->vibrato_phase += 1000.0 / vp->vibrato_speed / sample_rate;
             if (vp->vibrato_phase >= 1.0)
                 vp->vibrato_phase -= 1.0;
+	    vp->phase += (vp->vibrato_amplitude + sin_lookup(vp->vibrato_phase) * vp->vibrato_amplitude) / 2 / sample_rate;
+            if (vp->phase >= 1.0)
+                vp->phase -= 1.0;
         }
 
 	s++;
@@ -309,7 +332,8 @@ vibrato_create()
     p->proc_save = vibrato_save;
 
     pvibrato = p->params;
-    pvibrato->vibrato_amplitude = 50;
+    hilbert_init(&pvibrato->hilbert);
+    pvibrato->vibrato_amplitude = 10;
     pvibrato->vibrato_speed = 200;
     pvibrato->vibrato_phase = 0;
 

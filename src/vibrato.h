@@ -23,6 +23,7 @@
 #ifndef _VIBRATO_H_
 #define _VIBRATO_H_ 1
 
+#include "biquad.h"
 #include "pump.h"
 
 #define MAX_VIBRATO_BUFSIZE 16384
@@ -32,7 +33,9 @@ extern effect_t *   vibrato_create();
 struct vibrato_params {
     float           vibrato_amplitude,
        		    vibrato_speed,
-                    vibrato_phase;
+                    vibrato_phase,
+                    phase;
+    Hilbert_t       hilbert;
 };
 
 #endif
