@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2006/05/23 15:28:45  alankila
+ * - allow negative parameters for more sound. Positive parameters largerly
+ *   distort only treble, while negatives also distort bass.
+ *
  * Revision 1.24  2006/05/20 22:19:04  alankila
  * - rebalance 4th stage
  *
@@ -323,7 +327,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->asymmetry, 250.0, 2500.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->asymmetry, -2000.0, 2000.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_asymmetry), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -356,7 +360,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->biasfactor, 1.0, 50.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->biasfactor, -25.0, 25.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_biasfactor), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -448,14 +452,14 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         ptr2 = impulse;
         
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
-        ptr1[IMPULSE_SIZE] = ptr1[0] = result / 250 * (MAX_SAMPLE >> 12);
+        ptr1[IMPULSE_SIZE] = ptr1[0] = result / 1200 * (MAX_SAMPLE >> 13);
         
         /* compute convolution with as simple for loop as possible. I hope this will
          * be vectorized by the compiler. */
         val = 0;
         for (j = 0; j < IMPULSE_SIZE; j += 1)
             val += *(ptr1++) * *(ptr2++);
-        db->data[i] = val >> 6;
+        db->data[i] = val >> 5;
         
         params->bufidx[curr_channel] -= 1;
         if (params->bufidx[curr_channel] < 0)
@@ -515,8 +519,8 @@ tubeamp_create()
 
     params->stages = 3;
     params->gain = 37.0;
-    params->biasfactor = 3;
-    params->asymmetry = 1000;
+    params->biasfactor = -5;
+    params->asymmetry = 500;
 
     /* configure the various stages */
     params->r_i[0] = 68e3;
@@ -551,22 +555,28 @@ tubeamp_create()
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 10000, 5.0, TRUE, &params->decimation_filter1);
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 11000, 5.0, TRUE, &params->decimation_filter2);
 
+#define STEEPNESS   1e-3
+#define SCALE       1e3
     for (i = 0; i < 1000; i += 1) {
+        int iter = 1000;
         /* Solve implicit equation
          * x - y = e^(-y / 10) / 10
          * for x values from -250 to 250. */
         float y = 0.0;
         float x = i - 500;
-        while (TRUE) {
-            float value = x - y - 1e-1 * exp(1e-1 * y) + 1e-5 * exp(1e-1 * -y);
-            float dvalue_y = -1 - 1e-2 * exp(1e-1 * y) - 1e-6 * exp(1e-1 * -y);
+        while (--iter) {
+            float value = x - y - SCALE * exp(STEEPNESS * y);
+            float dvalue_y = -1 - (SCALE * STEEPNESS) * exp(STEEPNESS * y);
             float dy = value / dvalue_y;
-            y -= dy;
+            y = (y + (y - dy)) / 2; /* average damp */
 
-            if (fabs(dy) < 1e-5)
+            if (fabs(value) < 1e-3)
                 break;
         }
-        nonlinearity[i] = y / 90;
+        if (iter == 0) {
+            fprintf(stderr, "Failed to solve the nonlinearity equation for %f!\n", x);
+        }
+        nonlinearity[i] = y / 50 + 10;
         //nonlinearity[i] = tanh(x / 50.0);
         //printf("%d %f\n", i, nonlinearity[i]);
     }
