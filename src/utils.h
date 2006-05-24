@@ -45,6 +45,7 @@ typedef HANDLE  my_mutex;
 #else
 #    define FILESEP "/"
 
+#include <math.h>
 #include <glib.h>
 typedef GMutex* my_mutex;
 
