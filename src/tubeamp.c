@@ -8,6 +8,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2006/05/24 19:49:45  alankila
+ * - save some CPU by using only float as the DSP accuracy. We can do this
+ *   because even floats give us > 100 dB SNR -- that simply has to be enough.
+ * - implement tubeamp.c convolution with SSE where available. The floats are
+ *   not one bit faster than the integer version of the code, though, but
+ *   SSE2 should do the convolution bit faster. I'll see what I can do to
+ *   optimize it further.
+ *
  * Revision 1.25  2006/05/23 15:28:45  alankila
  * - allow negative parameters for more sound. Positive parameters largerly
  *   distort only treble, while negatives also distort bass.
@@ -410,6 +418,10 @@ F_tube(float in, float r_i)
     // return tanh(in / r_i) * r_i;
 }
 
+#if defined(__SSE2__) && defined(FLOAT_DSP)
+typedef float v4sf __attribute__((vector_size(16)));
+#endif
+
 static void
 tubeamp_filter(struct effect *p, struct data_block *db)
 {
@@ -454,12 +466,27 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
         ptr1[IMPULSE_SIZE] = ptr1[0] = result / 1200 * (MAX_SAMPLE >> 13);
         
+        val = 0;
+#if defined(__SSE2__) && defined(FLOAT_DSP)
+        /* compute series of dot products and then sum them */
+        for (j = 0; j < IMPULSE_SIZE; j += 4) {
+            float dot[4];
+            v4sf r;
+            v4sf av = __builtin_ia32_loadups(ptr1+j);
+            v4sf bv = __builtin_ia32_loadups(ptr2+j);
+            r = __builtin_ia32_mulps(av, bv);
+            r = __builtin_ia32_addps(__builtin_ia32_movhlps(r, r), r);
+            r = __builtin_ia32_addss(__builtin_ia32_shufps(r, r, 1), r) ;
+            __builtin_ia32_storeups(dot, r);
+            val += dot[0];
+        }
+#else
         /* compute convolution with as simple for loop as possible. I hope this will
          * be vectorized by the compiler. */
-        val = 0;
         for (j = 0; j < IMPULSE_SIZE; j += 1)
-            val += *(ptr1++) * *(ptr2++);
-        db->data[i] = val >> 5;
+            val += ptr1[j] * ptr2[j];
+#endif
+        db->data[i] = val / 32;
         
         params->bufidx[curr_channel] -= 1;
         if (params->bufidx[curr_channel] < 0)

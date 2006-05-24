@@ -33,7 +33,7 @@
 #include "glib12-compat.h"
 
 #ifdef FLOAT_DSP
-typedef double	DSP_SAMPLE;
+typedef float	DSP_SAMPLE;
 #else
 typedef gint32	DSP_SAMPLE;
 #endif
