@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.62  2006/05/24 20:06:15  alankila
+ * - save some CPU by avoiding the very expensive pow() call on every input.
+ *   Use floats because their accuracy suffices for the work.
+ *
  * Revision 1.61  2006/05/20 17:32:02  alankila
  * - rename Tremolo effect as Tremolo Bar.
  * - I think about changing Vibrato into what Tremolo used to be. This way the
@@ -375,11 +379,11 @@ static void
 vu_meter(data_block_t *db) {
     int             i;
     DSP_SAMPLE      sample, max_sample = 0;
-    double          peak, power = 0;
+    float           peak, power = 0;
 
     for (i = 0; i < db->len; i += 1) {
         sample = db->data[i];
-        power += pow(sample, 2);
+        power += (float) sample * (float) sample;
         if (sample < 0)
             sample = -sample;
         if (sample > max_sample)
@@ -387,7 +391,7 @@ vu_meter(data_block_t *db) {
     }
     /* energy per sample scaled down to 0.0 - 1.0 */
     power = power / db->len / MAX_SAMPLE / MAX_SAMPLE;
-    peak = (double) max_sample / MAX_SAMPLE;
+    peak = (float) max_sample / MAX_SAMPLE;
     set_vumeter_value(peak, power);
 }
 
