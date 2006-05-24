@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.19  2006/05/24 20:17:05  alankila
+ * - make inlining actually possible / working
+ *
  * Revision 1.18  2006/05/20 14:28:04  alankila
  * - restore mono-phaser back to earlier design
  * - fix hilbert transform's allpass delay
@@ -142,11 +145,10 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
  * place where called works with MS Visual C . Other compilers ? 
  */
 
-#if defined(_MSC_VER)
 #include "utils.h"      /* for isnan() */
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
-__inline double
+__inline double static
 do_biquad(double x, Biquad_t *f, int c)
 {				
 				 
@@ -163,12 +165,4 @@ do_biquad(double x, Biquad_t *f, int c)
     f->mem[c][2] = y;
     return y;
 }
-#elif defined(__GNUC__)
-extern __inline double do_biquad(double x, Biquad_t *f, int c);
-#else
-/* otherwise declare a standard function */
-extern double do_biquad(double x, Biquad_t *f, int c);
-#endif
-
-
 #endif

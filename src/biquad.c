@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.21  2006/05/24 20:17:05  alankila
+ * - make inlining actually possible / working
+ *
  * Revision 1.20  2006/05/20 14:28:04  alankila
  * - restore mono-phaser back to earlier design
  * - fix hilbert transform's allpass delay
@@ -313,28 +316,3 @@ hilbert_init(Hilbert_t *h)
     set_2nd_allpass_biquad(0.9722910, &h->a2[2]);
     set_2nd_allpass_biquad(0.9952885, &h->a2[3]);
 }
-
-#if !defined(_MSC_VER)
-#if defined(__GNUC__)
-/* check if the compiler is not Visual C so we must declare the fuction here */
-__inline double
-do_biquad(double x, Biquad_t *f, int c)
-#else
-double
-do_biquad(double x, Biquad_t *f, int c)
-#endif
-{
-    double          y;
-    if(isnan(x))
-	x=0;
-    y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
-        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2 + DENORMAL_BIAS;
-    if(isnan(y))
-	y=0;
-    f->mem[c][1] = f->mem[c][0];
-    f->mem[c][0] = x;
-    f->mem[c][3] = f->mem[c][2];
-    f->mem[c][2] = y;
-    return y;
-}
-#endif
