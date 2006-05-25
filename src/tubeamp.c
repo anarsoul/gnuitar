@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2006/05/25 17:14:30  alankila
+ * - rebalance against new waveshaper equation
+ *
  * Revision 1.29  2006/05/25 16:54:12  alankila
  * - use 12 dB/oct lowpass filter between stages to help with our treble
  *   problem. Sounds less aliased now.
@@ -348,7 +351,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->asymmetry, -2000.0, 2000.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->asymmetry, -5000.0, 5000.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_asymmetry), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -422,7 +425,7 @@ F_tube(float in, float r_i)
     /* This safety catch should be made unnecessary. */
     if (pos <= 0)
         pos = 0;
-    if (pos >= 999)
+    if (pos >= 998)
         pos = 998;
     idx = pos;
     pos -= idx;
@@ -534,7 +537,7 @@ tubeamp_create()
     params->stages = 3;
     params->gain = 37.0;
     params->biasfactor = -5;
-    params->asymmetry = 500;
+    params->asymmetry = -4000;
 
     /* configure the various stages */
     params->r_i[0] = 68e3;
