@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2006/05/25 11:32:51  alankila
+ * - the simulated tube "hit bottom". Apply waveshaping on both sides of
+ *   waveform, but differently.
+ *
  * Revision 1.27  2006/05/25 09:03:05  alankila
  * - replace the SSE code with even faster version. Tubeamp effect now runs
  *   20 % faster on my computer. Add some alignment directives to make future
@@ -325,7 +329,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 25.0, 45.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 35.0, 50.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -420,7 +424,6 @@ F_tube(float in, float r_i)
     pos -= idx;
 
     return (nonlinearity[idx] * (1.0-pos) + nonlinearity[idx+1] * pos) * r_i;
-    // return tanh(in / r_i) * r_i;
 }
 
 static void
@@ -464,7 +467,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         ptr1 = params->buf[curr_channel] + params->bufidx[curr_channel];
         
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
-        ptr1[IMPULSE_SIZE] = ptr1[0] = result / 1200 * (MAX_SAMPLE >> 13);
+        ptr1[IMPULSE_SIZE] = ptr1[0] = result / 500 * (MAX_SAMPLE >> 13);
         db->data[i] = convolve(ptr1, impulse, IMPULSE_SIZE) / 32;
         
         params->bufidx[curr_channel] -= 1;
@@ -511,6 +514,7 @@ effect_t *
 tubeamp_create()
 {
     int i;
+    float tmp;
     effect_t   *p;
     struct tubeamp_params *params;
 
@@ -562,7 +566,9 @@ tubeamp_create()
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 11000, 5.0, TRUE, &params->decimation_filter2);
 
 #define STEEPNESS   1e-3
-#define SCALE       1e3
+#define SCALE       2e3
+#define STEEPNESS2  1e-2
+#define SCALE2      5e-1
     for (i = 0; i < 1000; i += 1) {
         int iter = 1000;
         /* Solve implicit equation
@@ -571,8 +577,8 @@ tubeamp_create()
         float y = 0.0;
         float x = i - 500;
         while (--iter) {
-            float value = x - y - SCALE * exp(STEEPNESS * y);
-            float dvalue_y = -1 - (SCALE * STEEPNESS) * exp(STEEPNESS * y);
+            float value = x - y - SCALE * exp(STEEPNESS * y) + SCALE2 * exp(STEEPNESS2 * -y);
+            float dvalue_y = -1 - (SCALE * STEEPNESS) * exp(STEEPNESS * y) - (SCALE2 * STEEPNESS2) * exp(STEEPNESS2 * -y);
             float dy = value / dvalue_y;
             y = (y + (y - dy)) / 2; /* average damp */
 
@@ -582,10 +588,13 @@ tubeamp_create()
         if (iter == 0) {
             fprintf(stderr, "Failed to solve the nonlinearity equation for %f!\n", x);
         }
-        nonlinearity[i] = y / 50 + 10;
-        //nonlinearity[i] = tanh(x / 50.0);
-        //printf("%d %f\n", i, nonlinearity[i]);
+        nonlinearity[i] = y / 50;
+        // printf("%d %f\n", i, nonlinearity[i]);
     }
+    /* balance median to 0 */
+    tmp = nonlinearity[500];
+    for (i = 0; i < 1000; i += 1)
+        nonlinearity[i] -= tmp;
 
     return p;
 }
