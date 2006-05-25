@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.22  2006/05/25 10:30:41  alankila
+ * - use SSE for biquad computations.
+ *
  * Revision 1.21  2006/05/24 20:17:05  alankila
  * - make inlining actually possible / working
  *
@@ -126,8 +129,8 @@ set_peq_biquad(double Fs, double Fc, double BW, double G, Biquad_t *f)
     f->b0 = (1 + alpha * k) / a0;
     f->b1 = -2 * cos(om)    / a0;
     f->b2 = (1 - alpha * k) / a0;
-    f->a1 = f->b1;
-    f->a2 = (1 - alpha / k) / a0;
+    f->a1 = -f->b1;
+    f->a2 = -(1 - alpha / k) / a0;
 }
 
 /* band pass filter */
@@ -143,8 +146,8 @@ set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
     f->b0 = alpha        / a0;
     f->b1 = 0;
     f->b2 = -f->b0;
-    f->a1 = -2 * cos(om) / a0;
-    f->a2 = (1 - alpha)  / a0;
+    f->a1 = 2 * cos(om) / a0;
+    f->a2 = -(1 - alpha)  / a0;
 }
 
 /* 2nd order allpass filter, delay can vary from 0 to 1 */
@@ -155,7 +158,7 @@ set_phaser_biquad(double a, Biquad_t *f)
     f->b1 = 0;
     f->b2 = 1;
     f->a1 = 0;
-    f->a2 = a;
+    f->a2 = -a;
 }
 
 /* A 2nd order allpass, delay can vary from 0 to 1 */
@@ -167,7 +170,7 @@ set_2nd_allpass_biquad(double a, Biquad_t *f)
     f->b1 = 0;
     f->b2 = -1;
     f->a1 = 0;
-    f->a2 = -a;
+    f->a2 = a;
 }
 
 void
@@ -177,8 +180,10 @@ set_rc_lowpass_biquad(double sample_rate, double freq, Biquad_t *f)
     double ts = 1.0 / sample_rate;
 
     f->b0 = ts / (ts + rc);
-    f->a1 = -rc / (ts + rc);
     f->b1 = f->b2 = f->a2 = 0;
+    f->b2 = 0;
+    f->a1 = rc / (ts + rc);
+    f->a2 = 0;
 }
 
 void
@@ -189,19 +194,9 @@ set_rc_highpass_biquad(double sample_rate, double freq, Biquad_t *f)
 
     f->b0 = 1;
     f->b1 = -1;
-    f->a1 = -rc / (ts + rc);
     f->b2 = f->a2 = 0;
-}
-
-void
-set_rc_highboost_biquad(double sample_rate, double freq, Biquad_t *f)
-{
-    double rc = 1 / (2 * M_PI * freq);
-    double ts = 1.0 / sample_rate;
-
     f->a1 = rc / (ts + rc);
-    f->b0 = 1 + f->a1;
-    f->b1 = f->b2 = f->a2 = 0;
+    f->a2 = 0;
 }
 
 void
@@ -242,8 +237,8 @@ set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t
     f->b0 = (x0 - k * (2 - k) * x0)             / a0;
     f->b1 = 2 * f->b0;
     f->b2 =     f->b0;
-    f->a1 = -(k * (2 + y1p * k - 2 * y2) + y1p) / a0;
-    f->a2 = -(-k * (k + y1p) + y2)              / a0;
+    f->a1 = (k * (2 + y1p * k - 2 * y2) + y1p) / a0;
+    f->a2 = (-k * (k + y1p) + y2)              / a0;
     if (!lowpass) {
         f->b1 = -f->b1;
         f->a1 = -f->a1;
@@ -271,8 +266,8 @@ set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f)
     f->b0 = b0 / a0;
     f->b1 = b1 / a0;
     f->b2 = b2 / a0;
-    f->a1 = a1 / a0;
-    f->a2 = a2 / a0;
+    f->a1 = -a1 / a0;
+    f->a2 = -a2 / a0;
 }
 
 /* input is input, output is x0 and x1 with 90° phase separation between them */

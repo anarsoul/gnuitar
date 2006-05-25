@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.22  2006/05/25 10:30:41  alankila
+ * - use SSE for biquad computations.
+ *
  * Revision 1.21  2006/05/25 09:10:54  alankila
  * - move biquad arithmetic to floats to obtain small performance gain
  *
@@ -112,14 +115,19 @@
 #include "pump.h"
 #include "utils.h"
 
-/* Denormals are small numbers that force FPU into slow mode.
- * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
-#define DENORMAL_BIAS   1E-5
-
+/* empty are used to align the structure to 16 byte boundary */
+#ifdef __SSE__
 typedef struct {
-    float          b0, b1, b2, a1, a2;
-    float          mem[MAX_CHANNELS][4];
+    float       b1, b2, a1, a2;
+    float       mem[MAX_CHANNELS][4];
+    float       b0, empty1, empty2, empty3;
+} Biquad_t __attribute__((aligned(16)));
+#else
+typedef struct {
+    float       b0, b1, b2, a1, a2;
+    float       mem[MAX_CHANNELS][4];
 } Biquad_t;
+#endif
 
 typedef struct {
     Biquad_t        a1[4], a2[4];
@@ -137,7 +145,6 @@ extern void     set_phaser_biquad(double delay, Biquad_t *f);
 extern void     set_2nd_allpass_biquad(double delay, Biquad_t *f);
 extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
-extern void     set_rc_highboost_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f);
 
 extern void     hilbert_transform(DSP_SAMPLE in, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h);
@@ -156,26 +163,39 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
-__inline float static
-do_biquad(float x, Biquad_t *f, int c)
-{				
-				 
-    float          y;
-    if(isnan(x))
-	x=0;
-    y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
-        - f->mem[c][2] * f->a1 - f->mem[c][3] * f->a2 + DENORMAL_BIAS;
-    if(isnan(y))
-	y=0;
-    f->mem[c][1] = f->mem[c][0];
-    f->mem[c][0] = x;
-    f->mem[c][3] = f->mem[c][2];
-    f->mem[c][2] = y;
-    return y;
-}
-
 #if defined(__SSE__) && defined(FLOAT_DSP)
 #include <xmmintrin.h>
+
+static inline float
+do_biquad(float x, Biquad_t *f, int c)
+{
+    __m128          r;
+    float           y;
+    float           *mem = f->mem[c];
+    float           *b1 = &f->b1;
+
+    /* use SSE to calculate 4 of the biquad terms */
+    asm("movaps     (%%edx), %%xmm0             \n"
+"        mulps      (%%ecx), %%xmm0             \n"
+"        movaps     %%xmm0, %[r]                \n"
+        :
+        : "d"(b1), "c"(mem), [r]"m"(r)
+        : "cc", "xmm0");
+    
+    r = _mm_add_ps(_mm_movehl_ps(r, r), r);
+    r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
+    _mm_store_ss(&y, r);
+
+    /* add the last term */
+    y += f->b0 * x;
+    
+    mem[1] = mem[0];
+    mem[0] = x;
+    mem[3] = mem[2];
+    mem[2] = y;
+
+    return y;
+}
 
 static inline float
 convolve(const float *a, const float *b, int len) {
@@ -221,6 +241,29 @@ convolve(const float *a, const float *b, int len) {
     return dot;
 }
 #else
+
+/* Denormals are small numbers that force FPU into slow mode.
+ * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
+#define DENORMAL_BIAS   1E-5
+
+__inline float static
+do_biquad(float x, Biquad_t *f, int c)
+{				
+				 
+    float          y;
+    if(isnan(x))
+	x=0;
+    y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
+        + f->mem[c][2] * f->a1 + f->mem[c][3] * f->a2 + DENORMAL_BIAS;
+    if(isnan(y))
+	y=0;
+    f->mem[c][1] = f->mem[c][0];
+    f->mem[c][0] = x;
+    f->mem[c][3] = f->mem[c][2];
+    f->mem[c][2] = y;
+    return y;
+}
+
 static inline DSP_SAMPLE
 convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
     int i, dot = 0;
@@ -228,6 +271,7 @@ convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
             dot += a[i] * b[i];
     return dot;
 }
+
 #endif
 
 #endif
