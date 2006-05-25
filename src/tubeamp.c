@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2006/05/25 16:54:12  alankila
+ * - use 12 dB/oct lowpass filter between stages to help with our treble
+ *   problem. Sounds less aliased now.
+ *
  * Revision 1.28  2006/05/25 11:32:51  alankila
  * - the simulated tube "hit bottom". Apply waveshaping on both sides of
  *   waveform, but differently.
@@ -122,7 +126,7 @@
 #include "biquad.h"
 #include "tubeamp.h"
 
-#define UPSAMPLE_RATIO 8
+#define UPSAMPLE_RATIO 7
 
 /*
  * Marshall Pro Jr
@@ -536,28 +540,28 @@ tubeamp_create()
     params->r_i[0] = 68e3;
     params->r_p[0] = 100000;
     params->r_k[0] = 2700;
-    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 22570, &params->lowpass[0]);
+    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 22570, 2.0, &params->lowpass[0]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 86, &params->biaslowpass[0]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[0]);
     
     params->r_i[1] = 250e3;
     params->r_p[1] = 100000;
     params->r_k[1] = 1500;
-    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[1]);
+    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 2.0, &params->lowpass[1]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 132, &params->biaslowpass[1]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[1]);
     
     params->r_i[2] = 250e3;
     params->r_p[2] = 100000;
     params->r_k[2] = 820;
-    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[2]);
+    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 2.0, &params->lowpass[2]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 194, &params->biaslowpass[2]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[2]);
     
     params->r_i[3] = 250e3;
     params->r_p[3] = 100000;
     params->r_k[3] = 450;
-    set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 6531, &params->lowpass[3]);
+    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 2.0, &params->lowpass[3]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 250, &params->biaslowpass[3]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[3]);
 

@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.23  2006/05/25 16:54:12  alankila
+ * - use 12 dB/oct lowpass filter between stages to help with our treble
+ *   problem. Sounds less aliased now.
+ *
  * Revision 1.22  2006/05/25 10:30:41  alankila
  * - use SSE for biquad computations.
  *
@@ -140,6 +144,8 @@ typedef struct {
 extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
 			       Biquad_t *f);
 extern void     set_bpf_biquad(double Fs, double Fc, double BW,
+			       Biquad_t *f);
+extern void     set_lpf_biquad(double Fs, double Fc, double BW,
 			       Biquad_t *f);
 extern void     set_phaser_biquad(double delay, Biquad_t *f);
 extern void     set_2nd_allpass_biquad(double delay, Biquad_t *f);

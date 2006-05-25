@@ -19,6 +19,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.23  2006/05/25 16:54:12  alankila
+ * - use 12 dB/oct lowpass filter between stages to help with our treble
+ *   problem. Sounds less aliased now.
+ *
  * Revision 1.22  2006/05/25 10:30:41  alankila
  * - use SSE for biquad computations.
  *
@@ -131,6 +135,23 @@ set_peq_biquad(double Fs, double Fc, double BW, double G, Biquad_t *f)
     f->b2 = (1 - alpha * k) / a0;
     f->a1 = -f->b1;
     f->a2 = -(1 - alpha / k) / a0;
+}
+
+/* low pass filter */
+void
+set_lpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
+{
+    double om, alpha, a0;
+    
+    om = 2 * M_PI * Fc / Fs;
+    alpha = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);
+    
+    a0 = 1 + alpha;
+    f->b0 = (1 - cos(om)) / 2 / a0;
+    f->b1 = 1 - cos(om);
+    f->b2 = f->b0;
+    f->a1 = 2 * cos(om) / a0;
+    f->a2 = -(1 - alpha)  / a0;
 }
 
 /* band pass filter */
