@@ -34,27 +34,25 @@
 
 #define MAX_REVERB_SIZE  300 /* ms */
 
-void            reverb_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_reverb_drywet(GtkAdjustment *adj, struct reverb_params *params)
 {
     params->drywet = adj->value;
 }
 
-void
+static void
 update_reverb_delay(GtkAdjustment *adj, struct reverb_params *params)
 {
     params->delay = adj->value;
 }
 
-void
+static void
 update_reverb_regen(GtkAdjustment *adj, struct reverb_params *params)
 {
     params->regen = adj->value;
 }
 
-void
+static void
 reverb_init(struct effect *p)
 {
     struct reverb_params *preverb;
@@ -173,7 +171,7 @@ reverb_init(struct effect *p)
 
 /* backbuf-based allpass filter for longer than 1 or 2 sample delays.
  * This */
-double
+static double
 allpass_filter(double input, double factor, int delay, Backbuf_t *history)
 {
     double tmp, output;
@@ -187,7 +185,7 @@ allpass_filter(double input, double factor, int delay, Backbuf_t *history)
     return output;
 }
 
-double
+static double
 comb_filter(double input, double factor, int delay, Backbuf_t *history)
 {
     double output;
@@ -196,21 +194,21 @@ comb_filter(double input, double factor, int delay, Backbuf_t *history)
     return output;
 }
 
-void
+static void
 reverb_filter(struct effect *p, struct data_block *db)
 {
     struct reverb_params *params = p->params;
     DSP_SAMPLE     *s;
     int             count,
                     c = 0; /* curr_channel */
-    double          input, a, mono, Dry, Wet, Rgn, Delay;
+    float           input, a, mono, Dry, Wet, Rgn, Delay, fsr;
 
     s = db->data;
     count = db->len;
 
     Delay = params->delay / 1000.0 * sample_rate;
-    Dry = 1 - params->drywet / 100.0;
-    Wet =     params->drywet / 100.0;
+    Wet = params->drywet / 100.0;
+    Dry = 1 - Wet;
     Rgn = params->regen / 100.0;
     
     /* This is a John Chowning reverberator, explained here:
@@ -242,24 +240,26 @@ reverb_filter(struct effect *p, struct data_block *db)
      * For stereo output, the channels 1, 2 and 3, 4 are averaged.
      */
 
+    fsr = sample_rate / 44100;
     while (count) {
         input = *s;
 
         /* change from original: infinite reverb through history */
         input += params->history[c]->get(params->history[c], Delay) * Rgn;
         
-        a = allpass_filter(input, 0.7, 1051, params->ap[c][0]);
-        a = allpass_filter(a,     0.7,  337, params->ap[c][1]);
-        a = allpass_filter(a,     0.7,  113, params->ap[c][2]);
+        a = allpass_filter(input, 0.7, 1051 * fsr, params->ap[c][0]);
+        a = allpass_filter(a,     0.7,  337 * fsr, params->ap[c][1]);
+        a = allpass_filter(a,     0.7,  113 * fsr, params->ap[c][2]);
         
-        mono  = comb_filter(a, 0.742, 4799, params->comb[c]);
-        mono += comb_filter(a, 0.733, 4999, params->comb[c]);
-        mono += comb_filter(a, 0.715, 5399, params->comb[c]);
-        mono += comb_filter(a, 0.697, 5801, params->comb[c]);
+        mono  = comb_filter(a, 0.742, 4799 * fsr, params->comb[c]);
+        mono += comb_filter(a, 0.733, 4999 * fsr, params->comb[c]);
+        mono += comb_filter(a, 0.715, 5399 * fsr, params->comb[c]);
+        mono += comb_filter(a, 0.697, 5801 * fsr, params->comb[c]);
+        /* change from original: some more reverb terms */
+        mono += comb_filter(a, 0.75, 3533 * fsr, params->comb[c]);
+        mono += comb_filter(a, 0.65, 6521 * fsr, params->comb[c]);
         
-        mono /= 4.0;
-        
-        params->history[c]->add(params->history[c], mono);
+        params->history[c]->add(params->history[c], mono / 6.0);
         
         *s = *s * Dry + mono * Wet;
 
@@ -334,8 +334,8 @@ reverb_create()
         dr->ap[i][2] = new_Backbuf(2048);
         dr->comb[i] = new_Backbuf(8192);
     }
-    dr->delay  = 150;    /* ms */
-    dr->drywet = 50.0;
-    dr->regen  = 15.0;
+    dr->delay  = 130;    /* ms */
+    dr->drywet = 25.0;
+    dr->regen  = 25.0;
     return p;
 }
