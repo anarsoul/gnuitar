@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.55  2006/05/25 09:03:05  alankila
+ * - replace the SSE code with even faster version. Tubeamp effect now runs
+ *   20 % faster on my computer. Add some alignment directives to make future
+ *   use of SSE potentially easier.
+ *
  * Revision 1.54  2006/05/20 09:56:58  alankila
  * - move audio_driver_str and audio_driver_enabled into driver structure
  * - Win32 drivers are ugly, with the need to differentiate between
@@ -269,8 +274,8 @@ pthread_t       audio_thread = 0;
 
 SAMPLE32        wrbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 SAMPLE32        rdbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
+DSP_SAMPLE_ALIGN procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+DSP_SAMPLE_ALIGN procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
 HANDLE          audio_thread = 0;
 

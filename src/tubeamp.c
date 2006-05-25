@@ -8,6 +8,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2006/05/25 09:03:05  alankila
+ * - replace the SSE code with even faster version. Tubeamp effect now runs
+ *   20 % faster on my computer. Add some alignment directives to make future
+ *   use of SSE potentially easier.
+ *
  * Revision 1.26  2006/05/24 19:49:45  alankila
  * - save some CPU by using only float as the DSP accuracy. We can do this
  *   because even floats give us > 100 dB SNR -- that simply has to be enough.
@@ -199,7 +204,7 @@ DSP_SAMPLE impulse[512] = {
 */
 
  /* Princeton II */
-DSP_SAMPLE impulse[512] = {
+DSP_SAMPLE_ALIGN impulse[512] = {
   2799,  11631,  23881,  32811,  34786,  30693,  22401,  12097,   3608,    333,   1986,
   5050,   5906,   3149,  -2263,  -7957, -11151,  -9808,  -4421,   1179,   2345,  -1974,
  -8064, -11426, -10826,  -7845,  -4476,  -2085,  -1307,  -1743,  -2306,  -2291,  -1539,
@@ -418,15 +423,11 @@ F_tube(float in, float r_i)
     // return tanh(in / r_i) * r_i;
 }
 
-#if defined(__SSE2__) && defined(FLOAT_DSP)
-typedef float v4sf __attribute__((vector_size(16)));
-#endif
-
 static void
 tubeamp_filter(struct effect *p, struct data_block *db)
 {
     int i, j, k, curr_channel = 0;
-    DSP_SAMPLE *ptr1, *ptr2, val;
+    DSP_SAMPLE *ptr1;
     struct tubeamp_params *params = p->params;
     float gain;
 
@@ -434,7 +435,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
     for (j = 0; j < params->stages; j += 1)
         set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 720, 500.0, params->middlefreq, &params->middlecut[j]);
     */
-    gain = pow(10, params->gain / 20);
+    gain = powf(10, params->gain / 20);
     
     /* highpass -> low shelf eq -> lowpass -> waveshaper */
     for (i = 0; i < db->len; i += 1) {
@@ -461,32 +462,10 @@ tubeamp_filter(struct effect *p, struct data_block *db)
             result = do_biquad(result, &params->decimation_filter2, curr_channel);
         }
         ptr1 = params->buf[curr_channel] + params->bufidx[curr_channel];
-        ptr2 = impulse;
         
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
         ptr1[IMPULSE_SIZE] = ptr1[0] = result / 1200 * (MAX_SAMPLE >> 13);
-        
-        val = 0;
-#if defined(__SSE2__) && defined(FLOAT_DSP)
-        /* compute series of dot products and then sum them */
-        for (j = 0; j < IMPULSE_SIZE; j += 4) {
-            float dot[4];
-            v4sf r;
-            v4sf av = __builtin_ia32_loadups(ptr1+j);
-            v4sf bv = __builtin_ia32_loadups(ptr2+j);
-            r = __builtin_ia32_mulps(av, bv);
-            r = __builtin_ia32_addps(__builtin_ia32_movhlps(r, r), r);
-            r = __builtin_ia32_addss(__builtin_ia32_shufps(r, r, 1), r) ;
-            __builtin_ia32_storeups(dot, r);
-            val += dot[0];
-        }
-#else
-        /* compute convolution with as simple for loop as possible. I hope this will
-         * be vectorized by the compiler. */
-        for (j = 0; j < IMPULSE_SIZE; j += 1)
-            val += ptr1[j] * ptr2[j];
-#endif
-        db->data[i] = val / 32;
+        db->data[i] = convolve(ptr1, impulse, IMPULSE_SIZE) / 32;
         
         params->bufidx[curr_channel] -= 1;
         if (params->bufidx[curr_channel] < 0)

@@ -18,6 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.20  2006/05/25 09:03:05  alankila
+ * - replace the SSE code with even faster version. Tubeamp effect now runs
+ *   20 % faster on my computer. Add some alignment directives to make future
+ *   use of SSE potentially easier.
+ *
  * Revision 1.19  2006/05/24 20:17:05  alankila
  * - make inlining actually possible / working
  *
@@ -102,6 +107,7 @@
 #define _BIQUAD_H_ 1
 
 #include "pump.h"
+#include "utils.h"
 
 /* Denormals are small numbers that force FPU into slow mode.
  * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
@@ -145,7 +151,6 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
  * place where called works with MS Visual C . Other compilers ? 
  */
 
-#include "utils.h"      /* for isnan() */
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
 __inline double static
@@ -165,4 +170,61 @@ do_biquad(double x, Biquad_t *f, int c)
     f->mem[c][2] = y;
     return y;
 }
+
+#if defined(__SSE__) && defined(FLOAT_DSP)
+#include <xmmintrin.h>
+
+static inline float
+convolve(const float *a, const float *b, int len) {
+    __m128 r;
+    float dot = 0.0;
+    int i;
+    
+    i = (len / 4) * 2;
+    if (i) {
+        /* The assembly code does the convolution as fast as possible. Modelled after
+         * the algorithm in Mmmath library by Ville Tuulos, GPL license.
+         *
+         * There is a small optimizing we could make. If we knew for sure that
+         * the a and b pointers were 16-byte aligned, we could use the movaps
+         * instruction instead of movups. In this code, however, we can not assume
+         * that it is true. A small performance gain might be realized by testing
+         * for alignment and using the faster version, though. */
+        asm("   xorps  %%xmm0, %%xmm0               \n"
+            ".Lloop%=:                              \n"
+            "   decl   %[i]                         \n"
+            "   decl   %[i]                         \n"
+            "   movups (%%edx, %[i], 8), %%xmm2     \n"
+            "   mulps  (%%ecx, %[i], 8), %%xmm2     \n"
+            "   addps  %%xmm2, %%xmm0               \n"
+            "   cmpl   $0, %[i]                     \n"
+            "   jnz    .Lloop%=                     \n"
+            "   movaps %%xmm0, %[r]                 \n"
+            : 
+            : "d"(a), "c"(b), [r]"m"(r), [i]"a"(i)
+            : "cc", "xmm0", "xmm2");
+
+        r = _mm_add_ps(_mm_movehl_ps(r, r), r);
+        r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
+        _mm_store_ss(&dot, r);
+    }
+    
+    switch (len % 4) {
+        case 3: dot += a[len - 3] * b[len - 3];
+        case 2: dot += a[len - 2] * b[len - 2];
+        case 1: dot += a[len - 1] * b[len - 1];
+    }
+    
+    return dot;
+}
+#else
+static inline DSP_SAMPLE
+convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
+    int i, dot = 0;
+    for (i = 0; i < len; i += 1)
+            dot += a[i] * b[i];
+    return dot;
+}
+#endif
+
 #endif

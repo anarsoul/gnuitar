@@ -35,7 +35,6 @@ struct tubeamp_params {
     int         stages;
     float       gain, middlefreq;
     float       asymmetry, biasfactor;
-    float       in[MAX_CHANNELS];
     
     /* internal state variables */
     Biquad_t    highpass[MAX_STAGES];
@@ -45,6 +44,7 @@ struct tubeamp_params {
     float       bias[MAX_STAGES];
     float       r_i[MAX_STAGES], r_k[MAX_STAGES], r_p[MAX_STAGES];
 
+    float       in[MAX_CHANNELS];
     /* convolution buffer */
     DSP_SAMPLE  buf[MAX_CHANNELS][MAX_IMPULSE_LENGTH * 2];
     int         bufidx[MAX_CHANNELS];

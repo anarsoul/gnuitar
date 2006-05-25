@@ -38,6 +38,15 @@ typedef float	DSP_SAMPLE;
 typedef gint32	DSP_SAMPLE;
 #endif
 
+#ifndef _WIN32
+typedef DSP_SAMPLE DSP_SAMPLE_ALIGN __attribute__((aligned(16)));
+#else
+/* XXX -- if windows compiler triggers the SSE2 code then it will crash
+ * unless DSP code arguments are properly aligned. But how to ask for
+ * memory alignment for MS compilers? */
+typedef DSP_SAMPLE DSP_SAMPLE_ALIGN
+#endif
+    
 typedef gint16  SAMPLE16;
 typedef gint32  SAMPLE32;
 
