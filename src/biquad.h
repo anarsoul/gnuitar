@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.21  2006/05/25 09:10:54  alankila
+ * - move biquad arithmetic to floats to obtain small performance gain
+ *
  * Revision 1.20  2006/05/25 09:03:05  alankila
  * - replace the SSE code with even faster version. Tubeamp effect now runs
  *   20 % faster on my computer. Add some alignment directives to make future
@@ -114,8 +117,8 @@
 #define DENORMAL_BIAS   1E-5
 
 typedef struct {
-    double          b0, b1, b2, a1, a2;
-    double          mem[MAX_CHANNELS][4];
+    float          b0, b1, b2, a1, a2;
+    float          mem[MAX_CHANNELS][4];
 } Biquad_t;
 
 typedef struct {
@@ -153,11 +156,11 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 
 /* check if the compiler is Visual C or GCC so we can use inline function in C,
  * declared here */
-__inline double static
-do_biquad(double x, Biquad_t *f, int c)
+__inline float static
+do_biquad(float x, Biquad_t *f, int c)
 {				
 				 
-    double          y;
+    float          y;
     if(isnan(x))
 	x=0;
     y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
