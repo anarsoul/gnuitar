@@ -42,15 +42,14 @@ struct tubeamp_params {
     Biquad_t    biaslowpass[MAX_STAGES];
     Biquad_t    middlecut[MAX_STAGES];
     float       bias[MAX_STAGES];
-    float       r_i[MAX_STAGES], r_k[MAX_STAGES], r_p[MAX_STAGES];
-
+    float       r_i[MAX_STAGES], r_k_p[MAX_STAGES];
+    
     float       in[MAX_CHANNELS];
     /* convolution buffer */
     DSP_SAMPLE  buf[MAX_CHANNELS][MAX_IMPULSE_LENGTH * 2];
     int         bufidx[MAX_CHANNELS];
     
-    /* user tunable tone control */
-    Biquad_t    decimation_filter1, decimation_filter2;
+    Biquad_t    decimation_filter;
 };
 
 #endif

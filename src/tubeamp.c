@@ -8,6 +8,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2006/05/26 13:45:33  alankila
+ * - use chebyshev instead of stock lpf
+ * - remove 2nd decimation filter, make the 1st stronger instead
+ * - build larger nonlinearity table, with good SNR we can skip doing
+ *   linear interpolation. CPU usage is reduced to almost third of what it
+ *   was a week ago.
+ *
  * Revision 1.30  2006/05/25 17:14:30  alankila
  * - rebalance against new waveshaper equation
  *
@@ -265,7 +272,9 @@ DSP_SAMPLE_ALIGN impulse[512] = {
   -870,   -939,   -708,   -263,    109,    199
 };
 
-static float nonlinearity[1000];
+#define NONLINEARITY_SIZE 4096
+#define NONLINEARITY_SCALE 16
+static float nonlinearity[NONLINEARITY_SIZE];
 
 #define IMPULSE_SIZE (sizeof(impulse) / sizeof(impulse[0])) /* <= MAX_IMPULSE_SIZE */
 
@@ -415,22 +424,21 @@ tubeamp_init(struct effect *p)
 static float
 F_tube(float in, float r_i)
 {
-    float pos;
-    int idx;
-
-    r_i /= 3000;
-    pos = (in / r_i) * 50 + 500;
-    //printf("%f ", pos);
+    int pos;
+    //int idx;
+    
+    pos = (in / r_i) * (NONLINEARITY_SIZE / NONLINEARITY_SCALE) + NONLINEARITY_SIZE / 2;
     
     /* This safety catch should be made unnecessary. */
-    if (pos <= 0)
+    if (pos < 0)
         pos = 0;
-    if (pos >= 998)
-        pos = 998;
-    idx = pos;
-    pos -= idx;
+    if (pos > NONLINEARITY_SIZE - 2)
+        pos = NONLINEARITY_SIZE - 2;
 
-    return (nonlinearity[idx] * (1.0-pos) + nonlinearity[idx+1] * pos) * r_i;
+    return nonlinearity[pos] * r_i;
+//    idx = pos;
+//    pos -= idx;
+//    return (nonlinearity[idx] * (1.0-pos) + nonlinearity[idx+1] * pos) * r_i;
 }
 
 static void
@@ -462,20 +470,19 @@ tubeamp_filter(struct effect *p, struct data_block *db)
                 /* add feedback bias current for "punch" simulation for waveshaper */
                 result = F_tube(params->bias[j] - result, params->r_i[j]);
                 /* feedback bias */
-                params->bias[j] = do_biquad((params->asymmetry - params->biasfactor * result) * params->r_k[j] / params->r_p[j], &params->biaslowpass[j], curr_channel);
+                params->bias[j] = do_biquad((params->asymmetry - params->biasfactor * result) * params->r_k_p[j], &params->biaslowpass[j], curr_channel);
                 /* high pass filter to remove bias from the current stage */
                 result = do_biquad(result, &params->highpass[j], curr_channel);
                 /* middlecut for user tone control, for the "metal crunch" sound */
                 //result = do_biquad(result, &params->middlecut[j], curr_channel);
             }
-            result = do_biquad(result, &params->decimation_filter1, curr_channel);
-            result = do_biquad(result, &params->decimation_filter2, curr_channel);
+            result = do_biquad(result, &params->decimation_filter, curr_channel);
         }
         ptr1 = params->buf[curr_channel] + params->bufidx[curr_channel];
         
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
         ptr1[IMPULSE_SIZE] = ptr1[0] = result / 500 * (MAX_SAMPLE >> 13);
-        db->data[i] = convolve(ptr1, impulse, IMPULSE_SIZE) / 32;
+        db->data[i] = convolve(impulse, ptr1, IMPULSE_SIZE) / 32;
         
         params->bufidx[curr_channel] -= 1;
         if (params->bufidx[curr_channel] < 0)
@@ -540,67 +547,62 @@ tubeamp_create()
     params->asymmetry = -4000;
 
     /* configure the various stages */
-    params->r_i[0] = 68e3;
-    params->r_p[0] = 100000;
-    params->r_k[0] = 2700;
-    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 22570, 2.0, &params->lowpass[0]);
+    params->r_i[0] = 68e3 / 3000;
+    params->r_k_p[0] = 2700 / 100000.0;
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 22570, 0.0, TRUE, &params->lowpass[0]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 86, &params->biaslowpass[0]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[0]);
     
-    params->r_i[1] = 250e3;
-    params->r_p[1] = 100000;
-    params->r_k[1] = 1500;
-    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 2.0, &params->lowpass[1]);
+    params->r_i[1] = 250e3 / 3000;
+    params->r_k_p[1] = 1500 / 100000.0;
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 0.0, TRUE, &params->lowpass[1]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 132, &params->biaslowpass[1]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[1]);
     
-    params->r_i[2] = 250e3;
-    params->r_p[2] = 100000;
-    params->r_k[2] = 820;
-    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 2.0, &params->lowpass[2]);
+    params->r_i[2] = 250e3 / 3000;
+    params->r_k_p[2] = 820 / 1000000.0;
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 0.0, TRUE, &params->lowpass[2]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 194, &params->biaslowpass[2]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[2]);
     
-    params->r_i[3] = 250e3;
-    params->r_p[3] = 100000;
-    params->r_k[3] = 450;
-    set_lpf_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 2.0, &params->lowpass[3]);
+    params->r_i[3] = 250e3 / 3000;
+    params->r_k_p[3] = 450 / 100000.0;
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 0.0, TRUE, &params->lowpass[3]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 250, &params->biaslowpass[3]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[3]);
 
     /* 10 kHz decimation IIR -- we should be 24 dB down by 20 kHz */
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 10000, 5.0, TRUE, &params->decimation_filter1);
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 11000, 5.0, TRUE, &params->decimation_filter2);
+    set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 12000, 10.0, TRUE, &params->decimation_filter);
 
 #define STEEPNESS   1e-3
 #define SCALE       2e3
 #define STEEPNESS2  1e-2
 #define SCALE2      5e-1
-    for (i = 0; i < 1000; i += 1) {
+    for (i = 0; i < NONLINEARITY_SIZE; i += 1) {
         int iter = 1000;
         /* Solve implicit equation
          * x - y = e^(-y / 10) / 10
          * for x values from -250 to 250. */
-        float y = 0.0;
-        float x = i - 500;
+        double y = 0.0;
+        double x = i - NONLINEARITY_SIZE / 2;
         while (--iter) {
-            float value = x - y - SCALE * exp(STEEPNESS * y) + SCALE2 * exp(STEEPNESS2 * -y);
-            float dvalue_y = -1 - (SCALE * STEEPNESS) * exp(STEEPNESS * y) - (SCALE2 * STEEPNESS2) * exp(STEEPNESS2 * -y);
-            float dy = value / dvalue_y;
+            double value = x - y - SCALE * exp(STEEPNESS * y) + SCALE2 * exp(STEEPNESS2 * -y);
+            double dvalue_y = -1 - (SCALE * STEEPNESS) * exp(STEEPNESS * y) - (SCALE2 * STEEPNESS2) * exp(STEEPNESS2 * -y);
+            double dy = value / dvalue_y;
             y = (y + (y - dy)) / 2; /* average damp */
 
-            if (fabs(value) < 1e-3)
+            if (fabs(value) < 1e-4)
                 break;
         }
         if (iter == 0) {
             fprintf(stderr, "Failed to solve the nonlinearity equation for %f!\n", x);
         }
-        nonlinearity[i] = y / 50;
+        nonlinearity[i] = y / (NONLINEARITY_SIZE / NONLINEARITY_SCALE);
         // printf("%d %f\n", i, nonlinearity[i]);
     }
     /* balance median to 0 */
-    tmp = nonlinearity[500];
-    for (i = 0; i < 1000; i += 1)
+    tmp = nonlinearity[NONLINEARITY_SIZE / 2];
+    for (i = 0; i < NONLINEARITY_SIZE; i += 1)
         nonlinearity[i] -= tmp;
 
     return p;
