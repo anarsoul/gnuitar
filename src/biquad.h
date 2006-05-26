@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.24  2006/05/26 13:45:54  alankila
+ * - check that we can use movaps and use it for SSE.
+ *
  * Revision 1.23  2006/05/25 16:54:12  alankila
  * - use 12 dB/oct lowpass filter between stages to help with our treble
  *   problem. Sounds less aliased now.
@@ -212,18 +215,18 @@ convolve(const float *a, const float *b, int len) {
     i = (len / 4) * 2;
     if (i) {
         /* The assembly code does the convolution as fast as possible. Modelled after
-         * the algorithm in Mmmath library by Ville Tuulos, GPL license.
-         *
-         * There is a small optimizing we could make. If we knew for sure that
-         * the a and b pointers were 16-byte aligned, we could use the movaps
-         * instruction instead of movups. In this code, however, we can not assume
-         * that it is true. A small performance gain might be realized by testing
-         * for alignment and using the faster version, though. */
+         * the algorithm in Mmmath library by Ville Tuulos, GPL license. */
+
+        if ((long) a & 0xf) {
+            fprintf(stderr, "The memory passed on pointer a to convolve() is not aligned to 16 bytes!\n");
+            return;
+        }
+        
         asm("   xorps  %%xmm0, %%xmm0               \n"
             ".Lloop%=:                              \n"
             "   decl   %[i]                         \n"
             "   decl   %[i]                         \n"
-            "   movups (%%edx, %[i], 8), %%xmm2     \n"
+            "   movaps (%%edx, %[i], 8), %%xmm2     \n"
             "   mulps  (%%ecx, %[i], 8), %%xmm2     \n"
             "   addps  %%xmm2, %%xmm0               \n"
             "   cmpl   $0, %[i]                     \n"
