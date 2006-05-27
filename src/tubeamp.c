@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2006/05/27 11:27:20  alankila
+ * - make the 4th stage less noisy
+ * - add resolution to nonlinearity table, we are too thin
+ *
  * Revision 1.31  2006/05/26 13:45:33  alankila
  * - use chebyshev instead of stock lpf
  * - remove 2nd decimation filter, make the 1st stronger instead
@@ -272,7 +276,7 @@ DSP_SAMPLE_ALIGN impulse[512] = {
   -870,   -939,   -708,   -263,    109,    199
 };
 
-#define NONLINEARITY_SIZE 4096
+#define NONLINEARITY_SIZE 8192
 #define NONLINEARITY_SCALE 16
 static float nonlinearity[NONLINEARITY_SIZE];
 
@@ -566,12 +570,11 @@ tubeamp_create()
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[2]);
     
     params->r_i[3] = 250e3 / 3000;
-    params->r_k_p[3] = 450 / 100000.0;
+    params->r_k_p[3] = 820 / 100000.0;
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 6531, 0.0, TRUE, &params->lowpass[3]);
     set_rc_lowpass_biquad(sample_rate * UPSAMPLE_RATIO, 250, &params->biaslowpass[3]);
     set_rc_highpass_biquad(sample_rate * UPSAMPLE_RATIO, 37, &params->highpass[3]);
 
-    /* 10 kHz decimation IIR -- we should be 24 dB down by 20 kHz */
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 12000, 10.0, TRUE, &params->decimation_filter);
 
 #define STEEPNESS   1e-3
