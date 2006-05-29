@@ -34,6 +34,9 @@
 #    ifdef HAVE_OSS
 #        include "audio-oss.h"
 #    endif
+#    ifdef HAVE_JACK
+#        include "audio-jack.h"
+#    endif
 #else
 #    include "audio-windows.h"
 #endif

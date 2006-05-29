@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.79  2006/05/29 18:36:54  anarsoul
+ * Initial JACK support
+ *
  * Revision 1.78  2006/05/20 09:56:58  alankila
  * - move audio_driver_str and audio_driver_enabled into driver structure
  * - Win32 drivers are ugly, with the need to differentiate between
@@ -1195,6 +1198,13 @@ update_driver(GtkWidget *widget, gpointer data)
         audio_driver = &oss_driver;
     }
 #endif
+#ifdef HAVE_JACK
+    if (strcmp(tmp,"JACK")==0) {
+        audio_driver = &jack_driver;
+    }
+#endif
+
+
 #ifdef _WIN32
     if(strcmp(tmp,"MMSystem")==0) {
         audio_driver = &windows_driver;
@@ -1360,7 +1370,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
                      TBLOPT, TBLOPT, 3, 3);
     sparams.driver = gtk_combo_new();
 #ifdef HAVE_JACK
-    drivers_list = g_list_append(drivers_list, "OSS");
+    drivers_list = g_list_append(drivers_list, "JACK");
 #endif
 #ifdef HAVE_OSS
     drivers_list = g_list_append(drivers_list, "OSS");

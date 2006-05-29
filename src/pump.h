@@ -41,7 +41,7 @@ typedef gint32	DSP_SAMPLE;
 #ifdef __SSE__
 typedef DSP_SAMPLE DSP_SAMPLE_ALIGN __attribute__((aligned(16)));
 #else
-typedef DSP_SAMPLE DSP_SAMPLE_ALIGN
+typedef DSP_SAMPLE DSP_SAMPLE_ALIGN;
 #endif
     
 typedef gint16  SAMPLE16;
