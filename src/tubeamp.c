@@ -8,6 +8,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2006/05/29 23:46:02  alankila
+ * - move _GNU_SOURCE into Makefile
+ * - align memory for x86-32; x86-64 already aligned memory for us in glibc
+ *   so we didn't crash. This is done through new gnuitar_memalign().
+ * - cater to further restrictions in SSE instructions for x86 arhictecture:
+ *   it appears that mulps memory must be aligned to 16 too. This crashed
+ *   all biquad-using functions and tubeamp. :-(
+ *
  * Revision 1.32  2006/05/27 11:27:20  alankila
  * - make the 4th stage less noisy
  * - add resolution to nonlinearity table, we are too thin
@@ -537,7 +545,7 @@ tubeamp_create()
     struct tubeamp_params *params;
 
     p = calloc(1, sizeof(effect_t)); 
-    params = p->params = calloc(1, sizeof(struct tubeamp_params));
+    params = p->params = gnuitar_memalign(1, sizeof(struct tubeamp_params));
     p->proc_init = tubeamp_init;
     p->proc_filter = tubeamp_filter;
     p->proc_save = tubeamp_save;

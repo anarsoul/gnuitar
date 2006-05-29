@@ -18,6 +18,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.25  2006/05/29 23:46:02  alankila
+ * - move _GNU_SOURCE into Makefile
+ * - align memory for x86-32; x86-64 already aligned memory for us in glibc
+ *   so we didn't crash. This is done through new gnuitar_memalign().
+ * - cater to further restrictions in SSE instructions for x86 arhictecture:
+ *   it appears that mulps memory must be aligned to 16 too. This crashed
+ *   all biquad-using functions and tubeamp. :-(
+ *
  * Revision 1.24  2006/05/26 13:45:54  alankila
  * - check that we can use movaps and use it for SSE.
  *
@@ -217,17 +225,12 @@ convolve(const float *a, const float *b, int len) {
         /* The assembly code does the convolution as fast as possible. Modelled after
          * the algorithm in Mmmath library by Ville Tuulos, GPL license. */
 
-        if ((long) a & 0xf) {
-            fprintf(stderr, "The memory passed on pointer a to convolve() is not aligned to 16 bytes!\n");
-            return;
-        }
-        
         asm("   xorps  %%xmm0, %%xmm0               \n"
             ".Lloop%=:                              \n"
             "   decl   %[i]                         \n"
             "   decl   %[i]                         \n"
-            "   movaps (%%edx, %[i], 8), %%xmm2     \n"
-            "   mulps  (%%ecx, %[i], 8), %%xmm2     \n"
+            "   movups (%%ecx, %[i], 8), %%xmm2     \n"
+            "   mulps  (%%edx, %[i], 8), %%xmm2     \n"
             "   addps  %%xmm2, %%xmm0               \n"
             "   cmpl   $0, %[i]                     \n"
             "   jnz    .Lloop%=                     \n"

@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2006/05/29 23:46:02  alankila
+ * - move _GNU_SOURCE into Makefile
+ * - align memory for x86-32; x86-64 already aligned memory for us in glibc
+ *   so we didn't crash. This is done through new gnuitar_memalign().
+ * - cater to further restrictions in SSE instructions for x86 arhictecture:
+ *   it appears that mulps memory must be aligned to 16 too. This crashed
+ *   all biquad-using functions and tubeamp. :-(
+ *
  * Revision 1.32  2006/05/20 16:59:19  alankila
  * - more exciting tremolo bar effect with pitch shifting.
  * - if you want to have old-style amplitude modulation, try using
@@ -323,7 +331,7 @@ vibrato_create()
     struct vibrato_params *pvibrato;
 
     p = calloc(1, sizeof(effect_t));
-    p->params = calloc(1, sizeof(struct vibrato_params));
+    p->params = gnuitar_memalign(1, sizeof(struct vibrato_params));
     p->proc_init = vibrato_init;
     p->proc_filter = vibrato_filter;
     p->toggle = 0;

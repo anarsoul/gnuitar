@@ -2,7 +2,6 @@
  * Licensed under the LGPL. Mostly lifted off from glib-2.0 and massaged
  * a bit to compile */
 
-#define _GNU_SOURCE /* for vasprintf */
 #include "glib12-compat.h"
 
 /* substitute locale versions for glib1.2 */

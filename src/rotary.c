@@ -164,7 +164,7 @@ rotary_create()
     struct rotary_params *params;
 
     p = calloc(1, sizeof(effect_t)); 
-    params = p->params = calloc(1, sizeof(struct rotary_params));
+    params = p->params = gnuitar_memalign(1, sizeof(struct rotary_params));
     p->proc_init = rotary_init;
     p->proc_filter = rotary_filter;
     p->proc_save = rotary_save;

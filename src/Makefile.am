@@ -15,7 +15,7 @@ gnuitar_SOURCES =  amp.c main.c pump.c chorus.c delay.c echo.c tracker.c tremolo
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 
 INCLUDES = \
-	-DG_LOG_DOMAIN=\"gnuitar\" \
+	-DG_LOG_DOMAIN=\"gnuitar\" -D_GNU_SOURCE \
 	$(GTK_CFLAGS) $(GLIB_CFLAGS) $(CONFIG_DEFS) \
 	-I$(includedir) -Wall -ffast-math
 

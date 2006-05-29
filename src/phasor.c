@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2006/05/29 23:46:02  alankila
+ * - move _GNU_SOURCE into Makefile
+ * - align memory for x86-32; x86-64 already aligned memory for us in glibc
+ *   so we didn't crash. This is done through new gnuitar_memalign().
+ * - cater to further restrictions in SSE instructions for x86 arhictecture:
+ *   it appears that mulps memory must be aligned to 16 too. This crashed
+ *   all biquad-using functions and tubeamp. :-(
+ *
  * Revision 1.35  2006/05/20 14:28:04  alankila
  * - restore mono-phaser back to earlier design
  * - fix hilbert transform's allpass delay
@@ -444,7 +452,7 @@ phasor_create()
     struct phasor_params *params;
 
     p = calloc(1, sizeof(effect_t));
-    p->params = calloc(1, sizeof(struct phasor_params));
+    p->params = gnuitar_memalign(1, sizeof(struct phasor_params));
     p->proc_init = phasor_init;
     p->proc_filter = phasor_filter;
     p->proc_done = phasor_done;

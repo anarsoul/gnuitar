@@ -23,6 +23,10 @@
 #ifndef PUMP_H
 #define PUMP_H 1
 
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+
 #include <gtk/gtk.h>
 #include <sys/types.h>
 #include <stdio.h>
@@ -40,8 +44,35 @@ typedef gint32	DSP_SAMPLE;
 
 #ifdef __SSE__
 typedef DSP_SAMPLE DSP_SAMPLE_ALIGN __attribute__((aligned(16)));
+
+/* for SSE we need aligned memory */
+static inline void *
+gnuitar_memalign(size_t num, size_t bytes) {
+    void *mem = NULL;
+    if (posix_memalign(&mem, 16, num * bytes)) {
+        fprintf(stderr, "failed to allocate aligned memory.\n");
+        exit(1);
+    }
+    assert(mem != NULL);
+
+    memset(mem, 0, num * bytes);
+    return mem;
+}
+
 #else
 typedef DSP_SAMPLE DSP_SAMPLE_ALIGN;
+
+/* without SSE we just wrap calloc */
+static inline void *
+gnuitar_memalign(unsigned int num, size_t bytes)
+{
+    void *mem = calloc(num, bytes);
+    if (mem == NULL) {
+        fprintf(stderr, "failed to allocate aligned memory.\n");
+        exit(1);
+    }
+    return mem;
+}
 #endif
     
 typedef gint16  SAMPLE16;

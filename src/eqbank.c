@@ -20,6 +20,14 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.26  2006/05/29 23:46:02  alankila
+ * - move _GNU_SOURCE into Makefile
+ * - align memory for x86-32; x86-64 already aligned memory for us in glibc
+ *   so we didn't crash. This is done through new gnuitar_memalign().
+ * - cater to further restrictions in SSE instructions for x86 arhictecture:
+ *   it appears that mulps memory must be aligned to 16 too. This crashed
+ *   all biquad-using functions and tubeamp. :-(
+ *
  * Revision 1.25  2005/09/10 10:53:38  alankila
  * - remove the need to reserve biquad's mem in caller's side
  *
@@ -369,7 +377,7 @@ eqbank_create()
     p->proc_done = eqbank_done;
 
     peq = p->params;
-    peq->filters = calloc(FB_NB, sizeof(peq->filters[0]));
+    peq->filters = gnuitar_memalign(FB_NB, sizeof(peq->filters[0]));
     peq->boosts  = calloc(FB_NB, sizeof(peq->boosts[0]));
     for (i = 0; i < FB_NB; i++)
 	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], peq->boosts[i], &peq->filters[i]);
