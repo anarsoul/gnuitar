@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/05/30 08:48:41  anarsoul
+ * Fixed crash if GNUitar exited without stopping sound processing
+ *
  * Revision 1.1  2006/05/29 18:36:54  anarsoul
  * Initial JACK support
  *
@@ -43,12 +46,12 @@ static jack_status_t status;
 static jack_client_t *client;
 static jack_port_t *input_ports[4]; //capture ports
 static jack_port_t *output_ports[4]; //playback ports
-volatile static unsigned short buf_ready;
+//volatile static unsigned short buf_ready;
 
 int 
 process (jack_nframes_t nframes, void *arg)
 {
-    if (state == STATE_EXIT) return 0;
+    if (state != STATE_PROCESS) return 0;
     if (!jack_driver.enabled) return 0;
 
     jack_default_audio_sample_t *in[4], *out[4], *buf;
@@ -132,18 +135,6 @@ process (jack_nframes_t nframes, void *arg)
 
 }
 
-static void *
-jack_audio_thread(void *V)
-{
-    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
-	
-	usleep(1000);
-    }
-    
-    jack_client_close(client);
-    
-    return NULL;
-}
 
 
 /*
@@ -157,6 +148,19 @@ jack_finish_sound(void)
     jack_driver.enabled = 0;
     jack_client_close (client);
 }
+
+static void *
+jack_audio_thread(void *V)
+{
+    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
+	
+	usleep(1000);
+    }
+    jack_driver.enabled = 0;
+    
+    return NULL;
+}
+
 
 static void
 jack_shutdown (void *arg)
@@ -177,7 +181,7 @@ jack_init_sound(void)
     const char **ports;
     char portname[256];
     
-    buf_ready = 0;
+    //buf_ready = 0;
     options = JackNullOption;
 
     //creating jack client
