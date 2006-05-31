@@ -4,7 +4,7 @@
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=gnuitar - Win32 Demo
+CFG=gnuitar - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
@@ -13,11 +13,10 @@ CFG=gnuitar - Win32 Demo
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "gnuitar.mak" CFG="gnuitar - Win32 Demo"
+!MESSAGE NMAKE /f "gnuitar.mak" CFG="gnuitar - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "gnuitar - Win32 Demo" (based on "Win32 (x86) Console Application")
 !MESSAGE "gnuitar - Win32 Release" (based on "Win32 (x86) Console Application")
 !MESSAGE "gnuitar - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE "gnuitar - Win32 Release 586" (based on "Win32 (x86) Console Application")
@@ -30,35 +29,7 @@ CFG=gnuitar - Win32 Demo
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "gnuitar - Win32 Demo"
-
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir ".\Demo"
-# PROP BASE Intermediate_Dir ".\Demo"
-# PROP BASE Target_Dir ""
-# PROP Use_MFC 0
-# PROP Use_Debug_Libraries 0
-# PROP Output_Dir ".\Demo"
-# PROP Intermediate_Dir ".\Demo"
-# PROP Target_Dir ""
-MTL=midl.exe
-# ADD BASE MTL /nologo /tlb".\Demo\gnuitar.tlb" /win32
-# ADD MTL /nologo /tlb".\Demo\gnuitar.tlb" /win32
-# ADD BASE CPP /nologo /G6 /MT /W3 /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D DEMO=1 /D "_MBCS" /D "HAVE_GTK" /YX /GF /D FLOAT_DSP/GX /c
-# ADD CPP /nologo /G6 /MT /W3 /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D DEMO=1 /D "_MBCS" /D "HAVE_GTK" /YX /GF /D FLOAT_DSP/GX /c
-# ADD BASE RSC /l 0x419 /d "NDEBUG"
-# ADD RSC /l 0x419 /d "NDEBUG"
-BSC32=bscmake.exe
-# ADD BASE BSC32 /nologo
-# ADD BSC32 /nologo
-LINK32=link.exe
-# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /subsystem:console /machine:I386 /pdbtype:sept
-# SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /subsystem:console /machine:I386 /pdbtype:sept
-# SUBTRACT LINK32 /pdb:none
-
-!ELSEIF  "$(CFG)" == "gnuitar - Win32 Release"
+!IF  "$(CFG)" == "gnuitar - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -69,12 +40,14 @@ LINK32=link.exe
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir ".\Release"
 # PROP Intermediate_Dir ".\Release"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 MTL=midl.exe
 # ADD BASE MTL /nologo /tlb".\Release\gnuitar.tlb" /win32
 # ADD MTL /nologo /tlb".\Release\gnuitar.tlb" /win32
 # ADD BASE CPP /nologo /G6 /MT /W3 /Ot /Oi /Op /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /YX /GF /D FLOAT_DSP/GX /c
-# ADD CPP /nologo /G6 /MT /W3 /Ot /Oi /Op /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /YX /GF /D FLOAT_DSP/GX /c
+# ADD CPP /nologo /G6 /MT /W3 /Ot /Oi /Op /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /GF /D FLOAT_DSP/GX /c
+# SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x419 /d "NDEBUG"
 # ADD RSC /l 0x419 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -83,8 +56,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib dsound.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib /nologo /subsystem:console /machine:I386 /pdbtype:sept
 # SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib dsound.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib /nologo /subsystem:console /machine:I386 /pdbtype:sept
-# SUBTRACT LINK32 /pdb:none
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib dxguid.lib /nologo /subsystem:console /pdb:none /machine:I386
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Debug"
 
@@ -103,8 +75,8 @@ MTL=midl.exe
 # ADD BASE MTL /nologo /tlb".\Debug\gnuitar.tlb" /win32
 # ADD MTL /nologo /tlb".\Debug\gnuitar.tlb" /win32
 # ADD BASE CPP /nologo /MTd /W3 /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /FR /YX /GZ /D FLOAT_DSP/GX /c
-# ADD CPP /nologo /MTd /W3 /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /FR /GZ /D FLOAT_DSP/GX /c
-# SUBTRACT CPP /YX
+# ADD CPP /nologo /MTd /W3 /Gm /GR /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /D "FLOAT_DSP" /GZ /D FLOAT_DSP/GX /c
+# SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x419 /d "_DEBUG"
 # ADD RSC /l 0x419 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -113,8 +85,8 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /version:0.20 /subsystem:console /debug /machine:I386 /pdbtype:sept
 # SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 libcmt.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /version:0.20 /subsystem:console /debug /machine:I386 /nodefaultlib:"libcmtd" /pdbtype:sept
-# SUBTRACT LINK32 /pdb:none
+# ADD LINK32 libcmt.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib dxguid.lib /nologo /version:0.20 /subsystem:console /pdb:none /debug /machine:I386 /nodefaultlib:"libcmtd"
+# SUBTRACT LINK32 /verbose /map
 
 !ELSEIF  "$(CFG)" == "gnuitar - Win32 Release 586"
 
@@ -127,12 +99,14 @@ LINK32=link.exe
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir ".\Release_586"
 # PROP Intermediate_Dir ".\Release_586"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 MTL=midl.exe
 # ADD BASE MTL /nologo /tlb".\Release_586\gnuitar.tlb" /win32
 # ADD MTL /nologo /tlb".\Release_586\gnuitar.tlb" /win32
 # ADD BASE CPP /nologo /G5 /MT /W3 /Ot /Oi /Op /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /YX /GF /D FLOAT_DSP/GX /c
-# ADD CPP /nologo /G5 /MT /W3 /Ot /Oi /Op /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /YX /GF /D FLOAT_DSP/GX /c
+# ADD CPP /nologo /G5 /MT /W3 /Ot /Oi /Op /Ob2 /Gy /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_GTK" /GF /D FLOAT_DSP/GX /c
+# SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x419 /d "NDEBUG"
 # ADD RSC /l 0x419 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -141,14 +115,12 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /subsystem:console /machine:I386 /pdbtype:sept
 # SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib /nologo /subsystem:console /machine:I386 /pdbtype:sept
-# SUBTRACT LINK32 /pdb:none
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gdk.lib gtk.lib winmm.lib dsound.lib dxguid.lib /nologo /subsystem:console /pdb:none /machine:I386
 
 !ENDIF 
 
 # Begin Target
 
-# Name "gnuitar - Win32 Demo"
 # Name "gnuitar - Win32 Release"
 # Name "gnuitar - Win32 Debug"
 # Name "gnuitar - Win32 Release 586"
@@ -157,12 +129,968 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=.\src\amp.c
+DEP_CPP_AMP_C=\
+	".\src\amp.h"\
+	".\src\glib12-compat.h"\
+	".\src\gui.h"\
+	".\src\pump.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-alsa.c"
+DEP_CPP_AUDIO=\
+	".\src\audio-alsa.h"\
+	".\src\audio-jack.h"\
+	".\src\audio-oss.h"\
+	".\src\audio-windows.h"\
+	".\src\glib12-compat.h"\
+	".\src\main.h"\
+	".\src\pump.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-jack.c"
+DEP_CPP_AUDIO_=\
+	".\src\audio-alsa.h"\
+	".\src\audio-jack.h"\
+	".\src\audio-oss.h"\
+	".\src\audio-windows.h"\
+	".\src\glib12-compat.h"\
+	".\src\main.h"\
+	".\src\pump.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-oss.c"
+DEP_CPP_AUDIO_O=\
+	".\src\audio-alsa.h"\
+	".\src\audio-jack.h"\
+	".\src\audio-oss.h"\
+	".\src\audio-windows.h"\
+	".\src\glib12-compat.h"\
+	".\src\main.h"\
+	".\src\pump.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-windows.c"
+DEP_CPP_AUDIO_W=\
+	".\src\audio-alsa.h"\
+	".\src\audio-jack.h"\
+	".\src\audio-oss.h"\
+	".\src\audio-windows.h"\
+	".\src\glib12-compat.h"\
+	".\src\gui.h"\
+	".\src\main.h"\
+	".\src\pump.h"\
+	".\src\tracker.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\autowah.c
 DEP_CPP_AUTOW=\
 	".\src\autowah.h"\
+	".\src\backbuf.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\rcfilter.h"\
+	".\src\utils.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
 	{$(INCLUDE)}"gdk\gdkcc.h"\
 	{$(INCLUDE)}"gdk\gdkcolor.h"\
@@ -347,6 +1275,7 @@ DEP_CPP_AUTOW=\
 SOURCE=.\src\backbuf.c
 DEP_CPP_BACKB=\
 	".\src\backbuf.h"\
+	".\src\glib12-compat.h"\
 	".\src\pump.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
 	{$(INCLUDE)}"gdk\gdkcc.h"\
@@ -532,6 +1461,7 @@ DEP_CPP_BACKB=\
 SOURCE=.\src\biquad.c
 DEP_CPP_BIQUA=\
 	".\src\biquad.h"\
+	".\src\glib12-compat.h"\
 	".\src\pump.h"\
 	".\src\utils.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
@@ -719,9 +1649,9 @@ SOURCE=.\src\chorus.c
 DEP_CPP_CHORU=\
 	".\src\backbuf.h"\
 	".\src\chorus.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
-	".\src\utils.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
 	{$(INCLUDE)}"gdk\gdkcc.h"\
 	{$(INCLUDE)}"gdk\gdkcolor.h"\
@@ -905,7 +1835,9 @@ DEP_CPP_CHORU=\
 
 SOURCE=.\src\delay.c
 DEP_CPP_DELAY=\
+	".\src\backbuf.h"\
 	".\src\delay.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
@@ -1092,6 +2024,7 @@ DEP_CPP_DELAY=\
 SOURCE=.\src\distort.c
 DEP_CPP_DISTO=\
 	".\src\distort.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\rcfilter.h"\
@@ -1281,9 +2214,9 @@ SOURCE=.\src\distort2.c
 DEP_CPP_DISTOR=\
 	".\src\biquad.h"\
 	".\src\distort2.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
-	".\src\rcfilter.h"\
 	".\src\utils.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
 	{$(INCLUDE)}"gdk\gdkcc.h"\
@@ -1468,7 +2401,9 @@ DEP_CPP_DISTOR=\
 
 SOURCE=.\src\echo.c
 DEP_CPP_ECHO_=\
+	".\src\backbuf.h"\
 	".\src\echo.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
@@ -1656,6 +2591,7 @@ SOURCE=.\src\eqbank.c
 DEP_CPP_EQBAN=\
 	".\src\biquad.h"\
 	".\src\eqbank.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\utils.h"\
@@ -1840,10 +2776,255 @@ DEP_CPP_EQBAN=\
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\fft.c
+DEP_CPP_FFT_C=\
+	".\src\fft.h"\
+	".\src\glib12-compat.h"\
+	".\src\pump.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\glib12-compat.c"
+DEP_CPP_GLIB1=\
+	".\src\glib12-compat.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\gui.c
 DEP_CPP_GUI_C=\
+	".\src\audio-alsa.h"\
+	".\src\audio-jack.h"\
+	".\src\audio-oss.h"\
+	".\src\audio-windows.h"\
+	".\src\glib12-compat.h"\
 	".\src\gnuitar.xpm"\
 	".\src\gui.h"\
+	".\src\main.h"\
 	".\src\pump.h"\
 	".\src\resource.h"\
 	".\src\tracker.h"\
@@ -2031,7 +3212,13 @@ DEP_CPP_GUI_C=\
 
 SOURCE=.\src\main.c
 DEP_CPP_MAIN_=\
+	".\src\audio-alsa.h"\
+	".\src\audio-jack.h"\
+	".\src\audio-oss.h"\
+	".\src\audio-windows.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
+	".\src\main.h"\
 	".\src\pump.h"\
 	".\src\tracker.h"\
 	".\src\utils.h"\
@@ -2218,6 +3405,7 @@ DEP_CPP_MAIN_=\
 
 SOURCE=.\src\noise.c
 DEP_CPP_NOISE=\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\noise.h"\
 	".\src\pump.h"\
@@ -2404,10 +3592,200 @@ DEP_CPP_NOISE=\
 
 SOURCE=.\src\phasor.c
 DEP_CPP_PHASO=\
+	".\src\biquad.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\phasor.h"\
 	".\src\pump.h"\
-	".\src\rcfilter.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\pitch.c
+DEP_CPP_PITCH=\
+	".\src\backbuf.h"\
+	".\src\glib12-compat.h"\
+	".\src\gui.h"\
+	".\src\pitch.h"\
+	".\src\pump.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
 	{$(INCLUDE)}"gdk\gdkcc.h"\
 	{$(INCLUDE)}"gdk\gdkcolor.h"\
@@ -2591,6 +3969,11 @@ DEP_CPP_PHASO=\
 
 SOURCE=.\src\pump.c
 DEP_CPP_PUMP_=\
+	".\src\amp.h"\
+	".\src\audio-alsa.h"\
+	".\src\audio-jack.h"\
+	".\src\audio-oss.h"\
+	".\src\audio-windows.h"\
 	".\src\autowah.h"\
 	".\src\backbuf.h"\
 	".\src\biquad.h"\
@@ -2600,15 +3983,20 @@ DEP_CPP_PUMP_=\
 	".\src\distort2.h"\
 	".\src\echo.h"\
 	".\src\eqbank.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
+	".\src\main.h"\
 	".\src\noise.h"\
 	".\src\phasor.h"\
+	".\src\pitch.h"\
 	".\src\pump.h"\
 	".\src\rcfilter.h"\
 	".\src\reverb.h"\
+	".\src\rotary.h"\
 	".\src\sustain.h"\
 	".\src\tracker.h"\
 	".\src\tremolo.h"\
+	".\src\tubeamp.h"\
 	".\src\tuner.h"\
 	".\src\utils.h"\
 	".\src\vibrato.h"\
@@ -2795,6 +4183,7 @@ DEP_CPP_PUMP_=\
 
 SOURCE=.\src\rcfilter.c
 DEP_CPP_RCFIL=\
+	".\src\glib12-compat.h"\
 	".\src\pump.h"\
 	".\src\rcfilter.h"\
 	".\src\utils.h"\
@@ -2981,6 +4370,8 @@ DEP_CPP_RCFIL=\
 
 SOURCE=.\src\reverb.c
 DEP_CPP_REVER=\
+	".\src\backbuf.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\reverb.h"\
@@ -3165,8 +4556,199 @@ DEP_CPP_REVER=\
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\rotary.c
+DEP_CPP_ROTAR=\
+	".\src\biquad.h"\
+	".\src\fft.h"\
+	".\src\glib12-compat.h"\
+	".\src\gui.h"\
+	".\src\pump.h"\
+	".\src\rotary.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\sustain.c
 DEP_CPP_SUSTA=\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\sustain.h"\
@@ -3353,6 +4935,7 @@ DEP_CPP_SUSTA=\
 
 SOURCE=.\src\tracker.c
 DEP_CPP_TRACK=\
+	".\src\glib12-compat.h"\
 	".\src\pump.h"\
 	".\src\tracker.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
@@ -3539,6 +5122,7 @@ DEP_CPP_TRACK=\
 SOURCE=.\src\tremolo.c
 DEP_CPP_TREMO=\
 	".\src\backbuf.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\tremolo.h"\
@@ -3724,9 +5308,199 @@ DEP_CPP_TREMO=\
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\tubeamp.c
+DEP_CPP_TUBEA=\
+	".\src\biquad.h"\
+	".\src\glib12-compat.h"\
+	".\src\gui.h"\
+	".\src\pump.h"\
+	".\src\tubeamp.h"\
+	".\src\utils.h"\
+	{$(INCLUDE)}"gdk\gdk.h"\
+	{$(INCLUDE)}"gdk\gdkcc.h"\
+	{$(INCLUDE)}"gdk\gdkcolor.h"\
+	{$(INCLUDE)}"gdk\gdkcompat.h"\
+	{$(INCLUDE)}"gdk\gdkcursor.h"\
+	{$(INCLUDE)}"gdk\gdkcursors.h"\
+	{$(INCLUDE)}"gdk\gdkdnd.h"\
+	{$(INCLUDE)}"gdk\gdkdrawable.h"\
+	{$(INCLUDE)}"gdk\gdkevents.h"\
+	{$(INCLUDE)}"gdk\gdkfont.h"\
+	{$(INCLUDE)}"gdk\gdkgc.h"\
+	{$(INCLUDE)}"gdk\gdkim.h"\
+	{$(INCLUDE)}"gdk\gdkimage.h"\
+	{$(INCLUDE)}"gdk\gdkinput.h"\
+	{$(INCLUDE)}"gdk\gdkpixmap.h"\
+	{$(INCLUDE)}"gdk\gdkproperty.h"\
+	{$(INCLUDE)}"gdk\gdkregion.h"\
+	{$(INCLUDE)}"gdk\gdkrgb.h"\
+	{$(INCLUDE)}"gdk\gdkselection.h"\
+	{$(INCLUDE)}"gdk\gdktypes.h"\
+	{$(INCLUDE)}"gdk\gdkvisual.h"\
+	{$(INCLUDE)}"gdk\gdkwindow.h"\
+	{$(INCLUDE)}"gdkconfig.h"\
+	{$(INCLUDE)}"glib.h"\
+	{$(INCLUDE)}"glib\galloca.h"\
+	{$(INCLUDE)}"glib\garray.h"\
+	{$(INCLUDE)}"glib\gasyncqueue.h"\
+	{$(INCLUDE)}"glib\gbacktrace.h"\
+	{$(INCLUDE)}"glib\gcache.h"\
+	{$(INCLUDE)}"glib\gcompletion.h"\
+	{$(INCLUDE)}"glib\gconvert.h"\
+	{$(INCLUDE)}"glib\gdataset.h"\
+	{$(INCLUDE)}"glib\gdate.h"\
+	{$(INCLUDE)}"glib\gdir.h"\
+	{$(INCLUDE)}"glib\gerror.h"\
+	{$(INCLUDE)}"glib\gfileutils.h"\
+	{$(INCLUDE)}"glib\ghash.h"\
+	{$(INCLUDE)}"glib\ghook.h"\
+	{$(INCLUDE)}"glib\giochannel.h"\
+	{$(INCLUDE)}"glib\glist.h"\
+	{$(INCLUDE)}"glib\gmacros.h"\
+	{$(INCLUDE)}"glib\gmain.h"\
+	{$(INCLUDE)}"glib\gmarkup.h"\
+	{$(INCLUDE)}"glib\gmem.h"\
+	{$(INCLUDE)}"glib\gmessages.h"\
+	{$(INCLUDE)}"glib\gnode.h"\
+	{$(INCLUDE)}"glib\gpattern.h"\
+	{$(INCLUDE)}"glib\gprimes.h"\
+	{$(INCLUDE)}"glib\gqsort.h"\
+	{$(INCLUDE)}"glib\gquark.h"\
+	{$(INCLUDE)}"glib\gqueue.h"\
+	{$(INCLUDE)}"glib\grand.h"\
+	{$(INCLUDE)}"glib\grel.h"\
+	{$(INCLUDE)}"glib\gscanner.h"\
+	{$(INCLUDE)}"glib\gshell.h"\
+	{$(INCLUDE)}"glib\gslist.h"\
+	{$(INCLUDE)}"glib\gspawn.h"\
+	{$(INCLUDE)}"glib\gstrfuncs.h"\
+	{$(INCLUDE)}"glib\gstring.h"\
+	{$(INCLUDE)}"glib\gthread.h"\
+	{$(INCLUDE)}"glib\gthreadpool.h"\
+	{$(INCLUDE)}"glib\gtimer.h"\
+	{$(INCLUDE)}"glib\gtree.h"\
+	{$(INCLUDE)}"glib\gtypes.h"\
+	{$(INCLUDE)}"glib\gunicode.h"\
+	{$(INCLUDE)}"glib\gutils.h"\
+	{$(INCLUDE)}"glib\gwin32.h"\
+	{$(INCLUDE)}"glibconfig.h"\
+	{$(INCLUDE)}"gtk\gtk.h"\
+	{$(INCLUDE)}"gtk\gtkaccelgroup.h"\
+	{$(INCLUDE)}"gtk\gtkaccellabel.h"\
+	{$(INCLUDE)}"gtk\gtkadjustment.h"\
+	{$(INCLUDE)}"gtk\gtkalignment.h"\
+	{$(INCLUDE)}"gtk\gtkarg.h"\
+	{$(INCLUDE)}"gtk\gtkarrow.h"\
+	{$(INCLUDE)}"gtk\gtkaspectframe.h"\
+	{$(INCLUDE)}"gtk\gtkbbox.h"\
+	{$(INCLUDE)}"gtk\gtkbin.h"\
+	{$(INCLUDE)}"gtk\gtkbindings.h"\
+	{$(INCLUDE)}"gtk\gtkbox.h"\
+	{$(INCLUDE)}"gtk\gtkbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcalendar.h"\
+	{$(INCLUDE)}"gtk\gtkcheckbutton.h"\
+	{$(INCLUDE)}"gtk\gtkcheckmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkclist.h"\
+	{$(INCLUDE)}"gtk\gtkcolorsel.h"\
+	{$(INCLUDE)}"gtk\gtkcombo.h"\
+	{$(INCLUDE)}"gtk\gtkcompat.h"\
+	{$(INCLUDE)}"gtk\gtkcontainer.h"\
+	{$(INCLUDE)}"gtk\gtkctree.h"\
+	{$(INCLUDE)}"gtk\gtkcurve.h"\
+	{$(INCLUDE)}"gtk\gtkdata.h"\
+	{$(INCLUDE)}"gtk\gtkdebug.h"\
+	{$(INCLUDE)}"gtk\gtkdialog.h"\
+	{$(INCLUDE)}"gtk\gtkdnd.h"\
+	{$(INCLUDE)}"gtk\gtkdrawingarea.h"\
+	{$(INCLUDE)}"gtk\gtkeditable.h"\
+	{$(INCLUDE)}"gtk\gtkentry.h"\
+	{$(INCLUDE)}"gtk\gtkenums.h"\
+	{$(INCLUDE)}"gtk\gtkeventbox.h"\
+	{$(INCLUDE)}"gtk\gtkfilesel.h"\
+	{$(INCLUDE)}"gtk\gtkfixed.h"\
+	{$(INCLUDE)}"gtk\gtkfontsel.h"\
+	{$(INCLUDE)}"gtk\gtkframe.h"\
+	{$(INCLUDE)}"gtk\gtkgamma.h"\
+	{$(INCLUDE)}"gtk\gtkgc.h"\
+	{$(INCLUDE)}"gtk\gtkhandlebox.h"\
+	{$(INCLUDE)}"gtk\gtkhbbox.h"\
+	{$(INCLUDE)}"gtk\gtkhbox.h"\
+	{$(INCLUDE)}"gtk\gtkhpaned.h"\
+	{$(INCLUDE)}"gtk\gtkhruler.h"\
+	{$(INCLUDE)}"gtk\gtkhscale.h"\
+	{$(INCLUDE)}"gtk\gtkhscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkhseparator.h"\
+	{$(INCLUDE)}"gtk\gtkimage.h"\
+	{$(INCLUDE)}"gtk\gtkinputdialog.h"\
+	{$(INCLUDE)}"gtk\gtkitem.h"\
+	{$(INCLUDE)}"gtk\gtkitemfactory.h"\
+	{$(INCLUDE)}"gtk\gtklabel.h"\
+	{$(INCLUDE)}"gtk\gtklayout.h"\
+	{$(INCLUDE)}"gtk\gtklist.h"\
+	{$(INCLUDE)}"gtk\gtklistitem.h"\
+	{$(INCLUDE)}"gtk\gtkmain.h"\
+	{$(INCLUDE)}"gtk\gtkmarshal.h"\
+	{$(INCLUDE)}"gtk\gtkmenu.h"\
+	{$(INCLUDE)}"gtk\gtkmenubar.h"\
+	{$(INCLUDE)}"gtk\gtkmenufactory.h"\
+	{$(INCLUDE)}"gtk\gtkmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkmenushell.h"\
+	{$(INCLUDE)}"gtk\gtkmisc.h"\
+	{$(INCLUDE)}"gtk\gtknotebook.h"\
+	{$(INCLUDE)}"gtk\gtkobject.h"\
+	{$(INCLUDE)}"gtk\gtkoptionmenu.h"\
+	{$(INCLUDE)}"gtk\gtkpacker.h"\
+	{$(INCLUDE)}"gtk\gtkpaned.h"\
+	{$(INCLUDE)}"gtk\gtkpixmap.h"\
+	{$(INCLUDE)}"gtk\gtkplug.h"\
+	{$(INCLUDE)}"gtk\gtkpreview.h"\
+	{$(INCLUDE)}"gtk\gtkprogress.h"\
+	{$(INCLUDE)}"gtk\gtkprogressbar.h"\
+	{$(INCLUDE)}"gtk\gtkradiobutton.h"\
+	{$(INCLUDE)}"gtk\gtkradiomenuitem.h"\
+	{$(INCLUDE)}"gtk\gtkrange.h"\
+	{$(INCLUDE)}"gtk\gtkrc.h"\
+	{$(INCLUDE)}"gtk\gtkruler.h"\
+	{$(INCLUDE)}"gtk\gtkscale.h"\
+	{$(INCLUDE)}"gtk\gtkscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkscrolledwindow.h"\
+	{$(INCLUDE)}"gtk\gtkselection.h"\
+	{$(INCLUDE)}"gtk\gtkseparator.h"\
+	{$(INCLUDE)}"gtk\gtksignal.h"\
+	{$(INCLUDE)}"gtk\gtksocket.h"\
+	{$(INCLUDE)}"gtk\gtkspinbutton.h"\
+	{$(INCLUDE)}"gtk\gtkstatusbar.h"\
+	{$(INCLUDE)}"gtk\gtkstyle.h"\
+	{$(INCLUDE)}"gtk\gtktable.h"\
+	{$(INCLUDE)}"gtk\gtktearoffmenuitem.h"\
+	{$(INCLUDE)}"gtk\gtktext.h"\
+	{$(INCLUDE)}"gtk\gtkthemes.h"\
+	{$(INCLUDE)}"gtk\gtktipsquery.h"\
+	{$(INCLUDE)}"gtk\gtktogglebutton.h"\
+	{$(INCLUDE)}"gtk\gtktoolbar.h"\
+	{$(INCLUDE)}"gtk\gtktooltips.h"\
+	{$(INCLUDE)}"gtk\gtktree.h"\
+	{$(INCLUDE)}"gtk\gtktreeitem.h"\
+	{$(INCLUDE)}"gtk\gtktypebuiltins.h"\
+	{$(INCLUDE)}"gtk\gtktypeutils.h"\
+	{$(INCLUDE)}"gtk\gtkvbbox.h"\
+	{$(INCLUDE)}"gtk\gtkvbox.h"\
+	{$(INCLUDE)}"gtk\gtkviewport.h"\
+	{$(INCLUDE)}"gtk\gtkvpaned.h"\
+	{$(INCLUDE)}"gtk\gtkvruler.h"\
+	{$(INCLUDE)}"gtk\gtkvscale.h"\
+	{$(INCLUDE)}"gtk\gtkvscrollbar.h"\
+	{$(INCLUDE)}"gtk\gtkvseparator.h"\
+	{$(INCLUDE)}"gtk\gtkwidget.h"\
+	{$(INCLUDE)}"gtk\gtkwindow.h"\
+	
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\tuner.c
 DEP_CPP_TUNER=\
 	".\src\backbuf.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\tuner.h"\
@@ -3913,6 +5687,7 @@ DEP_CPP_TUNER=\
 
 SOURCE=.\src\utils.c
 DEP_CPP_UTILS=\
+	".\src\glib12-compat.h"\
 	".\src\pump.h"\
 	".\src\utils.h"\
 	{$(INCLUDE)}"gdk\gdk.h"\
@@ -4098,6 +5873,8 @@ DEP_CPP_UTILS=\
 
 SOURCE=.\src\vibrato.c
 DEP_CPP_VIBRA=\
+	".\src\biquad.h"\
+	".\src\glib12-compat.h"\
 	".\src\gui.h"\
 	".\src\pump.h"\
 	".\src\utils.h"\
@@ -4287,6 +6064,26 @@ DEP_CPP_VIBRA=\
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
+SOURCE=.\src\amp.h
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-alsa.h"
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-jack.h"
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-oss.h"
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\audio-windows.h"
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\autowah.h
 # End Source File
 # Begin Source File
@@ -4323,7 +6120,19 @@ SOURCE=.\src\eqbank.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\fft.h
+# End Source File
+# Begin Source File
+
+SOURCE=".\src\glib12-compat.h"
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\gui.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\main.h
 # End Source File
 # Begin Source File
 
@@ -4332,6 +6141,10 @@ SOURCE=.\src\noise.h
 # Begin Source File
 
 SOURCE=.\src\phasor.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\pitch.h
 # End Source File
 # Begin Source File
 
@@ -4351,6 +6164,10 @@ SOURCE=.\src\reverb.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\rotary.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\sustain.h
 # End Source File
 # Begin Source File
@@ -4360,6 +6177,10 @@ SOURCE=.\src\tracker.h
 # Begin Source File
 
 SOURCE=.\src\tremolo.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\tubeamp.h
 # End Source File
 # Begin Source File
 
