@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.24  2006/05/31 13:52:18  fonin
+ * powf() does not exist on Windows, replaced with pow(); fixed C++ style variable declarations+init for Windows sanity.
+ *
  * Revision 1.23  2006/05/25 16:54:12  alankila
  * - use 12 dB/oct lowpass filter between stages to help with our treble
  *   problem. Sounds less aliased now.
@@ -271,7 +274,7 @@ set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f)
 {
     double b0, b1, b2, a0, a1, a2, omega, cs, sn, beta, A;
 
-    A = powf(10, G / 40);
+    A = pow(10, G / 40);
     omega = 2 * M_PI * Fc / Fs;
     cs = cos(omega);
     sn = sin(omega);
@@ -296,6 +299,7 @@ void
 hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h)
 {
     int i;
+    DSP_SAMPLE x0_tmp;
 
     *x0 = input;
     *x1 = *x0;
@@ -304,7 +308,7 @@ hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h
         *x1 = do_biquad(*x1, &h->a2[i], 0);
     }
     /* delay x0 by 1 sample */
-    DSP_SAMPLE x0_tmp = *x0;
+    x0_tmp = *x0;
     *x0 = h->x0_tmp;
     h->x0_tmp = x0_tmp;
 }
