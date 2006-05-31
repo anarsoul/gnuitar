@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.80  2006/05/31 13:48:00  fonin
+ * Alsa device dropdown code is now ifdef'ed. Someone broke the windows code in update_latency_label(), fixed too.
+ *
  * Revision 1.79  2006/05/29 18:36:54  anarsoul
  * Initial JACK support
  *
@@ -1050,10 +1053,10 @@ typedef struct SAMPLE_PARAMS {
     GtkWidget      *channels;
     GtkWidget      *bits;
     GtkWidget      *latency;
-    
+#ifdef HAVE_ALSA
     GtkWidget      *alsadevice;
     GtkWidget      *alsadevice_label;
-    
+#endif
     GtkWidget      *dialog;
     GtkWidget      *latency_label;
     GtkWidget      *driver;
@@ -1174,7 +1177,11 @@ update_latency_label(GtkWidget *widget, gpointer data)
     sample_params  *sparams = data;
 
     update_sampling_params(widget, data);
+#ifndef _WIN32
     gtmp = g_strdup_printf("%.2f ms", 1000.0 * (buffer_size * (fragments-1)) / sample_rate);
+#else
+    gtmp = g_strdup_printf("%.2f ms", 1000.0 * buffer_size / sample_rate);
+#endif
     gtk_label_set_text(GTK_LABEL(sparams->latency_label), gtmp);
     free(gtmp);
 }
@@ -1257,7 +1264,9 @@ sample_dlg(GtkWidget *widget, gpointer data)
     GtkWidget      *vpack,
                    *buttons_pack;
     GList          *sample_rates = NULL;
+#ifdef HAVE_ALSA
     GList          *alsadevice_list = NULL;
+#endif
     GList          *drivers_list = NULL;
     GtkObject      *latency_adj;
     GtkSpinButton  *dummy1;
@@ -1283,7 +1292,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_misc_set_alignment(GTK_MISC(rate_label), 0, 0.5);
     gtk_table_attach(GTK_TABLE(sp_table), rate_label, 0, 1, 0, 1,
                      TBLOPT, TBLOPT, 3, 3);
-
+#ifdef HAVE_ALSA
     sparams.alsadevice_label = gtk_label_new("Alsa Device:");
     gtk_misc_set_alignment(GTK_MISC(sparams.alsadevice_label), 0, 0.5);
     
@@ -1308,7 +1317,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
 		     
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.alsadevice)->entry,
         "Name of ALSA output device. (Used only with ALSA driver)", NULL);
-
+#endif
     
     sparams.rate = gtk_combo_new();
     /* these may also be driver dependant but let's leave them as is for now */
@@ -1485,6 +1494,7 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
 
     const char *tmp=NULL;
 
+#ifdef HAVE_ALSA
     tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->alsadevice)->entry));
     if (tmp == NULL || strlen(tmp) == 0) {
 	strcpy(alsadevice_str, "default");
@@ -1498,7 +1508,7 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
             //populate_sparams_channels(sparams->channels);
         }
     }
-    
+#endif    
     buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sparams->latency));
     /* for certain audio drivers, make the fragment size to be a multiple
      * of the MIN_BUFFER_SIZE */
