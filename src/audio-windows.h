@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/05/31 14:00:13  fonin
+ * dsound extern declaration for sanity
+ *
  * Revision 1.3  2005/09/03 20:20:42  alankila
  * - create audio_driver type and write all the driver stuff into it. This
  *   faciliates carrying configuration data about the capabilities of
@@ -43,6 +46,8 @@
 
 #include <windows.h>
 audio_driver_t windows_driver;
+
+extern short dsound;
 
 #endif
 
