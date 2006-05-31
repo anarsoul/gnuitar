@@ -80,8 +80,8 @@ extern HANDLE	        audio_thread;	/* defined in main.c */
 
 extern char             wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 extern char             rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
-extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE];
-extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE];
+extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
+extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern unsigned short   overrun_threshold;
 extern DWORD            thread_id;
 #endif
