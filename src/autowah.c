@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2006/05/31 14:05:10  fonin
+ * Added #include for sanity
+ *
  * Revision 1.36  2006/05/20 17:30:29  alankila
  * - use parameters that better demonstrate the "wahness" of the effect
  *
@@ -164,6 +167,7 @@
 #    include <unistd.h>
 #else
 #    include <io.h>
+#    include "utils.h"
 #endif
 #include <string.h>
 #include <gtk/gtk.h>
