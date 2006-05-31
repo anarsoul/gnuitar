@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2006/05/31 13:53:58  fonin
+ * powf() does not exist on Windows; replaced with pow()
+ *
  * Revision 1.33  2006/05/29 23:46:02  alankila
  * - move _GNU_SOURCE into Makefile
  * - align memory for x86-32; x86-64 already aligned memory for us in glibc
@@ -465,7 +468,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
     for (j = 0; j < params->stages; j += 1)
         set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 720, 500.0, params->middlefreq, &params->middlecut[j]);
     */
-    gain = powf(10, params->gain / 20);
+    gain = pow(10, params->gain / 20);
     
     /* highpass -> low shelf eq -> lowpass -> waveshaper */
     for (i = 0; i < db->len; i += 1) {
