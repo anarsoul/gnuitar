@@ -9,7 +9,7 @@
  */
 
 #include <math.h>
-#include <gui.h>
+#include "gui.h"
 #include <stdlib.h>
 
 #include "biquad.h"
@@ -79,6 +79,7 @@ rotary_filter(struct effect *p, struct data_block *db)
     struct rotary_params *params = p->params;
     int i;
     float pha, sinval = 0, cosval = 0;
+    DSP_SAMPLE *tmp;
     
     if (db->channels != 1 || n_output_channels < 2)
         return;
@@ -129,7 +130,7 @@ rotary_filter(struct effect *p, struct data_block *db)
     }
     
     /* swap to processed buffer for next effect */
-    DSP_SAMPLE *tmp = db->data;
+    tmp = db->data;
     db->data = db->data_swap;
     db->data_swap = tmp;
 }

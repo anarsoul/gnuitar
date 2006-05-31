@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2006/05/31 14:03:59  fonin
+ * Fixed C++ style var declaration and init
+ *
  * Revision 1.36  2006/05/29 23:46:02  alankila
  * - move _GNU_SOURCE into Makefile
  * - align memory for x86-32; x86-64 already aligned memory for us in glibc
@@ -363,6 +366,7 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
     struct phasor_params *params = p->params;
     float f, Dry, Wet, sinval=0, cosval=0;
     int i;
+    DSP_SAMPLE *tmp;
     
     db->channels = 2;
     db->len *= 2;
@@ -393,7 +397,7 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
         db->data_swap[i*2+1] = Dry * x1 + Wet * y1;
     }
     /* swap to processed buffer for next effect */
-    DSP_SAMPLE *tmp = db->data;
+    tmp = db->data;
     db->data = db->data_swap;
     db->data_swap = tmp;
 }
