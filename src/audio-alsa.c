@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2006/05/31 12:35:01  anarsoul
+ * Fixed using default alsa device for capture
+ *
  * Revision 1.28  2006/05/20 09:56:58  alankila
  * - move audio_driver_str and audio_driver_enabled into driver structure
  * - Win32 drivers are ugly, with the need to differentiate between
@@ -422,8 +425,8 @@ alsa_init_sound(void)
 	state = STATE_EXIT;
 	return ERR_WAVEOUTOPEN;
     }
-    if ((err = snd_pcm_open(&capture_handle, snd_device_in, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
-	fprintf(stderr, "can't open input audio device %s: %s\n", snd_device_in, snd_strerror(err));
+    if ((err = snd_pcm_open(&capture_handle, alsadevice_str, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+	fprintf(stderr, "can't open input audio device %s: %s\n", alsadevice_str, snd_strerror(err));
         snd_pcm_close(playback_handle);
 	state = STATE_EXIT;
 	return ERR_WAVEINOPEN;
