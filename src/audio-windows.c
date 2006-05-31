@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2006/05/31 13:56:36  fonin
+ * GCC-style typedef'd structure init does not work in MSVC6.0; also few #includes for sanity
+ *
  * Revision 1.13  2006/05/20 09:56:58  alankila
  * - move audio_driver_str and audio_driver_enabled into driver structure
  * - Win32 drivers are ugly, with the need to differentiate between
@@ -98,6 +101,7 @@
 #include "tracker.h"
 #include "gui.h"
 #include "utils.h"
+#include "audio-windows.h"
 
 
 HANDLE          input_bufs_done,
@@ -914,13 +918,11 @@ struct audio_driver_channels windows_channels_cfg[]={
 int windows_bits_cfg[1] = { 16 };
 
 audio_driver_t windows_driver = {
-    .str = "Windows",
-    .enabled = 0,
-    .bits = windows_bits_cfg,
-    .channels = windows_channels_cfg,
-    
-    .init = windows_init_sound,
-    .finish = windows_finish_sound,
-    .thread = windows_audio_thread,
+    "Windows",              /* str */
+    0,                      /* enabled */
+    windows_channels_cfg,   /* channels */
+    windows_bits_cfg,       /* bits */
+    windows_init_sound,     /* init */
+    windows_finish_sound,   /* finish */
+    windows_audio_thread    /* audio_proc */
 };
-
