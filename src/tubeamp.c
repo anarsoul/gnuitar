@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2006/06/01 16:12:19  fonin
+ * Fixed wrong include quotes
+ *
  * Revision 1.34  2006/05/31 13:53:58  fonin
  * powf() does not exist on Windows; replaced with pow()
  *
@@ -144,7 +147,7 @@
  */
 
 #include <math.h>
-#include <gui.h>
+#include "gui.h"
 #include <stdlib.h>
 
 #include "pump.h"
