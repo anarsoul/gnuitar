@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.81  2006/06/01 16:16:11  fonin
+ * How many times can I fix the same bug ? strftime() must not use locale params, because it gives slashes in the date which is not ok by the filesystem
+ *
  * Revision 1.80  2006/05/31 13:48:00  fonin
  * Alsa device dropdown code is now ifdef'ed. Someone broke the windows code in update_latency_label(), fixed too.
  *
@@ -1022,7 +1025,7 @@ tracker_pressed(GtkWidget * widget, gpointer data)
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
         time(&t);
-        strftime(defaultname, 80, "%x-%X."
+        strftime(defaultname, 80, "%d-%m-%Y_%H.%M.%S."
 #if defined(HAVE_SNDFILE) || defined(_WIN32)
 	    "wav"
 #else
