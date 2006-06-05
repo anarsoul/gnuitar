@@ -114,6 +114,30 @@ on 0.4.0 or maybe even 0.5.0.
 
 0.5.0
 0.6.0
+Autowah:
+- I more liked the initial version of the effect. I miss the old 
+power of the effect, it was more bright; I cannot achieve the 
+same sound with the current version. I'm wondering are there 
+presets which make your algo sound like the older one ?
+
+Tremolo:
+- does not sound like it was before. I do not see the recent 
+changes but I think it was more bright before. Currently it 
+sounds more like vibrato.
+
+Reverb:
+- I more liked the reverb which was in the very first versions of 
+the program. It allowed me to sound like Another Brick in the 
+Wall part 1 -- large number and volume of repeats, currently it 
+is impossible.
+
+Phaser:
+- I hear no effect at all. How it should sound ?
+
+Rotary speaker:
+- no effect. I hear nothing. I know it is stereo, I tried in both 
+mono and stereo input modes.
+
 - ALSA is still broken on my laptop - 2Antti
 - fix version and copyrights in about dialog; maybe create a tabbed window
   with sections "authors", "license" etc. - 2Vasily
