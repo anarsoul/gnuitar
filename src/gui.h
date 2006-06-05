@@ -44,6 +44,9 @@
 #define COPYRIGHT   "GNUitar "VERSION"\n" \
 		    "Copyright (C) 2000,2001,2003,2004 Max Rudensky <fonin@omnistaronline.com>\n" \
 		    "http://www.omnistaronline.com/~fonin/\n"
+
+#define LICENSE     "GPL license"
+
 void		init_gui(void);
 gint            delete_event(GtkWidget *, GdkEvent *, gpointer);
 void            toggle_effect(GtkWidget *, effect_t *);

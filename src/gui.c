@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.82  2006/06/05 13:41:46  anarsoul
+ * Added tabbed about dialog
+ *
  * Revision 1.81  2006/06/01 16:16:11  fonin
  * How many times can I fix the same bug ? strftime() must not use locale params, because it gives slashes in the date which is not ok by the filesystem
  *
@@ -374,6 +377,9 @@
 #endif
 
 #include "gui.h"
+#include "authors_text.h"
+#include "about_text.h"
+#include "license_text.h"
 #include "pump.h"
 #include "main.h"
 #include "tracker.h"
@@ -472,9 +478,12 @@ about_dlg(void)
     GtkWidget      *about;
     GtkWidget      *about_label;
     GtkWidget      *vbox;
-    GtkWidget      *scrolledwin;
-    GtkWidget      *text;
+    GtkWidget      *about_scrolledwin, *license_scrolledwin, *authors_scrolledwin;
+    GtkWidget      *about_text, *license_text, *authors_text;
+    GtkWidget      *about_plabel, *license_plabel, *authors_plabel;
     GtkWidget      *ok_button;
+    GtkWidget      *notebook;
+
 
     about = gtk_window_new(GTK_WINDOW_DIALOG);
 
@@ -487,39 +496,89 @@ about_dlg(void)
     gtk_window_set_default_size(GTK_WINDOW(about), 528, 358);
 #endif
     gtk_window_set_position(GTK_WINDOW(about), GTK_WIN_POS_CENTER);
+    notebook = gtk_notebook_new();
+    gtk_notebook_set_tab_pos (GTK_NOTEBOOK (notebook), GTK_POS_TOP);
+    
     vbox = gtk_vbox_new(FALSE, 8);
     gtk_container_add(GTK_CONTAINER(about), vbox);
     gtk_box_pack_start(GTK_BOX(vbox), about_label, FALSE, FALSE, 0);
 
-    scrolledwin = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwin),
+    about_scrolledwin = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(about_scrolledwin),
 				   GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
-    gtk_box_pack_start(GTK_BOX(vbox), scrolledwin, TRUE, TRUE, 0);
+				 
+    license_scrolledwin = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(license_scrolledwin),
+				   GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
 
-    text = gtk_text_new(gtk_scrolled_window_get_hadjustment
-			(GTK_SCROLLED_WINDOW(scrolledwin)),
+    authors_scrolledwin = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(authors_scrolledwin),
+				   GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
+				 
+    //gtk_box_pack_start(GTK_BOX(vbox), scrolledwin, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
+    //gtk_container_add (GTK_CONTAINER (frame), scrolledwin);
+    
+    about_plabel = gtk_label_new ("About");
+    authors_plabel = gtk_label_new ("Authors");
+    license_plabel = gtk_label_new ("License");
+
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), about_scrolledwin, about_plabel);
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), authors_scrolledwin, authors_plabel);
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), license_scrolledwin, license_plabel);
+    
+    about_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
+			(GTK_SCROLLED_WINDOW(about_scrolledwin)),
 			gtk_scrolled_window_get_vadjustment
-			(GTK_SCROLLED_WINDOW(scrolledwin)));
-    gtk_container_add(GTK_CONTAINER(scrolledwin), text);
+			(GTK_SCROLLED_WINDOW(about_scrolledwin)));
+    gtk_container_add(GTK_CONTAINER(about_scrolledwin), about_text);
 
-    gtk_text_freeze(GTK_TEXT(text));
+    gtk_text_freeze(GTK_TEXT(about_text));
+    
+    gtk_text_thaw(GTK_TEXT(about_text));
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL, DISCLAIMER, -1);
+    gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, "\n GNUitar " VERSION"\n\n", -1);
+    gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, about_txt, -1);
+    
+    authors_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
+			(GTK_SCROLLED_WINDOW(authors_scrolledwin)),
+			gtk_scrolled_window_get_vadjustment
+			(GTK_SCROLLED_WINDOW(authors_scrolledwin)));
+    gtk_container_add(GTK_CONTAINER(authors_scrolledwin), authors_text);
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
+    gtk_text_freeze(GTK_TEXT(authors_text));
+    
+    gtk_text_thaw(GTK_TEXT(authors_text));
+
+    gtk_text_insert(GTK_TEXT(authors_text), NULL, NULL, NULL, authors_txt, -1);
+    
+    license_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
+			(GTK_SCROLLED_WINDOW(license_scrolledwin)),
+			gtk_scrolled_window_get_vadjustment
+			(GTK_SCROLLED_WINDOW(license_scrolledwin)));
+    gtk_container_add(GTK_CONTAINER(license_scrolledwin), license_text);
+
+    gtk_text_freeze(GTK_TEXT(license_text));
+
+
+    gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL, license_txt, -1);
+    /*gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL, DISCLAIMER, -1);
+
+    gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL,
 		    "This program is distributed in the hope that it will be useful,\n"
 		    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
 		    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 		    "See the GNU General Public License for more details.\n\n",
 		    -1);
 
-    gtk_text_insert(GTK_TEXT(text), NULL, NULL, NULL,
+    gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL,
 		    "You should have received a copy of the GNU General Public License\n"
 		    "along with this program; if not, write to the Free Software\n"
 		    "Foundation, Inc., 59 Temple Place - Suite 330, Boston,\n"
 		    "MA 02111-1307, USA.", -1);
+    */
 
-    gtk_text_thaw(GTK_TEXT(text));
+    gtk_text_thaw(GTK_TEXT(license_text));
 
     ok_button = gtk_button_new_with_label("OK");
     gtk_box_pack_end(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
