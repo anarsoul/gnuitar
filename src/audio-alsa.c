@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2006/06/10 22:12:56  alankila
+ * - surround40 doesn't work as capture device; we must use default if
+ *   the choice is surround40. This is a temporary fix, we'll really have to
+ *   move the capture device dialog into the UI as well.
+ *
  * Revision 1.29  2006/05/31 12:35:01  anarsoul
  * Fixed using default alsa device for capture
  *
@@ -171,7 +176,6 @@
 #define MAX_TRIES 8
 
 // XXX: these should be made changeable in the UI
-static const char     *snd_device_in       = "default";
 static const char     *snd_test_device_out = "default";
 
 static short   restarting;
@@ -417,6 +421,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 static int
 alsa_init_sound(void)
 {
+    char           *alsadevice_in_str;
     int             err;
     unsigned int    frames, fragments_try, tries;
 
@@ -425,7 +430,12 @@ alsa_init_sound(void)
 	state = STATE_EXIT;
 	return ERR_WAVEOUTOPEN;
     }
-    if ((err = snd_pcm_open(&capture_handle, alsadevice_str, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+
+    alsadevice_in_str = alsadevice_str;
+    if (strcmp(alsadevice_str, "surround40") == 0)
+        alsadevice_in_str = "default";
+    
+    if ((err = snd_pcm_open(&capture_handle, alsadevice_in_str, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
 	fprintf(stderr, "can't open input audio device %s: %s\n", alsadevice_str, snd_strerror(err));
         snd_pcm_close(playback_handle);
 	state = STATE_EXIT;
