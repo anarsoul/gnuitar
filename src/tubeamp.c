@@ -8,6 +8,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2006/06/16 17:03:09  alankila
+ * - there was some blocking distortion, so I had to enlarge the table range
+ * - on 4-stage operation the system showed noise due to the nearest value
+ *   approximation of the lookup table. I had to move back to interpolating
+ *   the table.
+ * - I reduced oversampling slightly to compensate for added CPU drain.
+ *
  * Revision 1.35  2006/06/01 16:12:19  fonin
  * Fixed wrong include quotes
  *
@@ -154,7 +161,7 @@
 #include "biquad.h"
 #include "tubeamp.h"
 
-#define UPSAMPLE_RATIO 7
+#define UPSAMPLE_RATIO 6
 
 /*
  * Marshall Pro Jr
@@ -290,8 +297,10 @@ DSP_SAMPLE_ALIGN impulse[512] = {
   -870,   -939,   -708,   -263,    109,    199
 };
 
-#define NONLINEARITY_SIZE 8192
-#define NONLINEARITY_SCALE 16
+#define NONLINEARITY_SIZE 16384      /* the bigger the table, the louder before hardclip */
+#define NONLINEARITY_PRECISION (1/16.0)   /* the bigger the value, the lower the noise */
+
+#define NONLINEARITY_SCALE 1024     /* this variable works like gain */
 static float nonlinearity[NONLINEARITY_SIZE];
 
 #define IMPULSE_SIZE (sizeof(impulse) / sizeof(impulse[0])) /* <= MAX_IMPULSE_SIZE */
@@ -363,7 +372,7 @@ tubeamp_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->gain, 35.0, 50.0, 0.1, 1, 0);
+    o = gtk_adjustment_new(params->gain, 30.0, 50.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -442,21 +451,26 @@ tubeamp_init(struct effect *p)
 static float
 F_tube(float in, float r_i)
 {
-    int pos;
-    //int idx;
+    float pos;
+    int idx;
     
-    pos = (in / r_i) * (NONLINEARITY_SIZE / NONLINEARITY_SCALE) + NONLINEARITY_SIZE / 2;
+    pos = (in / r_i) * NONLINEARITY_SCALE * NONLINEARITY_PRECISION + NONLINEARITY_SIZE / 2;
     
-    /* This safety catch should be made unnecessary. */
-    if (pos < 0)
+    /* This safety catch should be made unnecessary.
+     * But it may require us to extend the nonlinearity table to ridiculously far.
+     * Besides, hard blocking distortion is fairly ok as effect when you go too loud. */
+    if (pos < 0) {
+        //printf("pos < 0!");
         pos = 0;
-    if (pos > NONLINEARITY_SIZE - 2)
+    }
+    if (pos > NONLINEARITY_SIZE - 2) {
+        //printf("pos > size!");
         pos = NONLINEARITY_SIZE - 2;
+    }
 
-    return nonlinearity[pos] * r_i;
-//    idx = pos;
-//    pos -= idx;
-//    return (nonlinearity[idx] * (1.0-pos) + nonlinearity[idx+1] * pos) * r_i;
+    idx = pos;
+    pos -= idx;
+    return (nonlinearity[idx] * (1.0-pos) + nonlinearity[idx+1] * pos) * r_i;
 }
 
 static void
@@ -559,10 +573,10 @@ tubeamp_create()
     p->toggle = 0;
     p->proc_done = tubeamp_done;
 
-    params->stages = 3;
-    params->gain = 37.0;
-    params->biasfactor = -5;
-    params->asymmetry = -4000;
+    params->stages = 4;
+    params->gain = 32.0;
+    params->biasfactor = -7;
+    params->asymmetry = -3500;
 
     /* configure the various stages */
     params->r_i[0] = 68e3 / 3000;
@@ -591,17 +605,18 @@ tubeamp_create()
 
     set_chebyshev1_biquad(sample_rate * UPSAMPLE_RATIO, 12000, 10.0, TRUE, &params->decimation_filter);
 
-#define STEEPNESS   1e-3
-#define SCALE       2e3
+#define STEEPNESS   3e-3
+#define SCALE       1e2
 #define STEEPNESS2  1e-2
 #define SCALE2      5e-1
+#define NONLINEARITY_MAX 1024           /* normalize table between -1 .. 1 */
+    double y = 0.0;
     for (i = 0; i < NONLINEARITY_SIZE; i += 1) {
-        int iter = 1000;
+        int iter = 10000;
         /* Solve implicit equation
          * x - y = e^(-y / 10) / 10
          * for x values from -250 to 250. */
-        double y = 0.0;
-        double x = i - NONLINEARITY_SIZE / 2;
+        double x = (i - NONLINEARITY_SIZE / 2) / (float) NONLINEARITY_PRECISION;
         while (--iter) {
             double value = x - y - SCALE * exp(STEEPNESS * y) + SCALE2 * exp(STEEPNESS2 * -y);
             double dvalue_y = -1 - (SCALE * STEEPNESS) * exp(STEEPNESS * y) - (SCALE2 * STEEPNESS2) * exp(STEEPNESS2 * -y);
@@ -614,7 +629,7 @@ tubeamp_create()
         if (iter == 0) {
             fprintf(stderr, "Failed to solve the nonlinearity equation for %f!\n", x);
         }
-        nonlinearity[i] = y / (NONLINEARITY_SIZE / NONLINEARITY_SCALE);
+        nonlinearity[i] = y / NONLINEARITY_MAX;
         // printf("%d %f\n", i, nonlinearity[i]);
     }
     /* balance median to 0 */
