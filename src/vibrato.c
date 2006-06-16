@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2006/06/16 14:43:42  alankila
+ * - add static base pitch shift
+ *
  * Revision 1.33  2006/05/29 23:46:02  alankila
  * - move _GNU_SOURCE into Makefile
  * - align memory for x86-32; x86-64 already aligned memory for us in glibc
@@ -159,6 +162,13 @@ update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 }
 
 void
+update_vibrato_base(GtkAdjustment * adj, struct vibrato_params *params)
+{
+    params->vibrato_base = adj->value;
+}
+
+
+void
 vibrato_init(struct effect *p)
 {
     struct vibrato_params *pvibrato;
@@ -210,7 +220,28 @@ vibrato_init(struct effect *p)
     adj_ampl =
 	gtk_adjustment_new(pvibrato->vibrato_amplitude,
 			   0.0, 50.0, 1.0, 1.0, 0.0);
-    ampl_label = gtk_label_new("Amplitude\n(Hz)");
+    ampl_label = gtk_label_new("Depth\n(Hz)");
+    gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 2, 3, 0, 1,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
+					GTK_SHRINK), 0, 0);
+
+    gtk_signal_connect(GTK_OBJECT(adj_ampl), "value_changed",
+		       GTK_SIGNAL_FUNC(update_vibrato_ampl), pvibrato);
+
+    ampl = gtk_vscale_new(GTK_ADJUSTMENT(adj_ampl));
+
+    gtk_table_attach(GTK_TABLE(parmTable), ampl, 2, 3, 1, 2,
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS
+		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+
+    adj_ampl =
+	gtk_adjustment_new(pvibrato->vibrato_base,
+			   -50.0, 50.0, 1.0, 1.0, 0.0);
+    ampl_label = gtk_label_new("Base\n(Hz)");
     gtk_table_attach(GTK_TABLE(parmTable), ampl_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
@@ -219,7 +250,7 @@ vibrato_init(struct effect *p)
 
 
     gtk_signal_connect(GTK_OBJECT(adj_ampl), "value_changed",
-		       GTK_SIGNAL_FUNC(update_vibrato_ampl), pvibrato);
+		       GTK_SIGNAL_FUNC(update_vibrato_base), pvibrato);
 
     ampl = gtk_vscale_new(GTK_ADJUSTMENT(adj_ampl));
 
@@ -233,7 +264,7 @@ vibrato_init(struct effect *p)
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
 
-    gtk_table_attach(GTK_TABLE(parmTable), button, 3, 4, 2, 3,
+    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS
@@ -275,19 +306,21 @@ vibrato_filter(struct effect *p, struct data_block *db)
     while (count) {
         DSP_SAMPLE x0, x1;
         float sinval, cosval;
-
         hilbert_transform(*s, &x0, &x1, &vp->hilbert);
-
+        
         sinval = sin_lookup(vp->phase);
         cosval = sin_lookup(vp->phase >= 0.75 ? vp->phase - 0.75 : vp->phase + 0.25);
-        *s = sinval * x0 + cosval * x1;
+        if (vp->vibrato_base > 0)
+            *s = cosval * x0 + sinval * x1;
+        else
+            *s = cosval * x0 - sinval * x1;
         
         curr_channel = (curr_channel + 1) % db->channels;
 	if (curr_channel == 0) {
 	    vp->vibrato_phase += 1000.0 / vp->vibrato_speed / sample_rate;
             if (vp->vibrato_phase >= 1.0)
                 vp->vibrato_phase -= 1.0;
-	    vp->phase += (vp->vibrato_amplitude + sin_lookup(vp->vibrato_phase) * vp->vibrato_amplitude) / 2 / sample_rate;
+	    vp->phase += (fabs(vp->vibrato_base) + (vp->vibrato_amplitude + sin_lookup(vp->vibrato_phase) * vp->vibrato_amplitude) / 2) / sample_rate;
             if (vp->phase >= 1.0)
                 vp->phase -= 1.0;
         }
@@ -312,7 +345,7 @@ vibrato_save(struct effect *p, SAVE_ARGS)
     struct vibrato_params *params = p->params;
 
     SAVE_DOUBLE("vibrato_speed", params->vibrato_speed);
-    SAVE_DOUBLE("vibrato_amplitude", params->vibrato_amplitude);
+    SAVE_DOUBLE("vibrato_base", params->vibrato_base);
 }
 
 void
@@ -322,6 +355,7 @@ vibrato_load(struct effect *p, LOAD_ARGS)
 
     LOAD_DOUBLE("vibrato_speed", params->vibrato_speed);
     LOAD_DOUBLE("vibrato_amplitude", params->vibrato_amplitude);
+    LOAD_DOUBLE("vibrato_base", params->vibrato_base);
 }
 
 effect_t *
@@ -341,6 +375,7 @@ vibrato_create()
 
     pvibrato = p->params;
     hilbert_init(&pvibrato->hilbert);
+    pvibrato->vibrato_base = 0;
     pvibrato->vibrato_amplitude = 10;
     pvibrato->vibrato_speed = 200;
     pvibrato->vibrato_phase = 0;

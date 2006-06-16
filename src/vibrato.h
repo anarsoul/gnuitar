@@ -31,7 +31,7 @@
 extern effect_t *   vibrato_create();
 
 struct vibrato_params {
-    float           vibrato_amplitude,
+    float           vibrato_amplitude, vibrato_base,
        		    vibrato_speed,
                     vibrato_phase,
                     phase;
