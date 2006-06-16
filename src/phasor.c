@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2006/06/16 14:45:12  alankila
+ * - require mono input for stereo switch
+ *
  * Revision 1.37  2006/05/31 14:03:59  fonin
  * Fixed C++ style var declaration and init
  *
@@ -301,7 +304,7 @@ phasor_init(struct effect *p)
 		     (GTK_EXPAND | GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
 
-    if (n_output_channels > 1) {
+    if (n_output_channels > 1 && n_input_channels == 1) {
         button = gtk_check_button_new_with_label("Stereo");
         if (params->stereo)
 	    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
