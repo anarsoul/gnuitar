@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.63  2006/06/16 12:32:19  alankila
+ * - the reasonably trivial vibrato effect is now reinstated as tremolo
+ *   in a file with proper name. Old vibrato can be achieved through 1-voice
+ *   100% wet chorus.
+ *
  * Revision 1.62  2006/05/24 20:06:15  alankila
  * - save some CPU by avoiding the very expensive pow() call on every input.
  *   Use floats because their accuracy suffices for the work.
@@ -532,7 +537,7 @@ struct effect_creator effect_list[] = {
     {"Chorus / Flanger", chorus_create},
     {"Echo", echo_create},
     {"Phaser", phasor_create},
-    {"Vibrato", tremolo_create},
+    {"Tremolo", tremolo_create},
     {"Sustain", sustain_create},
     {"Overdrive", distort2_create},
     {"Tube amplifier", tubeamp_create},

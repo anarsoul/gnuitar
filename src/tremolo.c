@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2006/06/16 12:32:20  alankila
+ * - the reasonably trivial vibrato effect is now reinstated as tremolo
+ *   in a file with proper name. Old vibrato can be achieved through 1-voice
+ *   100% wet chorus.
+ *
  * Revision 1.26  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -103,7 +108,6 @@
  */
 
 #include "tremolo.h"
-#include "backbuf.h"
 #include <math.h>
 #include <stdlib.h>
 #ifndef _WIN32
@@ -160,7 +164,7 @@ tremolo_init(struct effect *p)
     parmTable = gtk_table_new(2, 8, FALSE);
 
     adj_speed = gtk_adjustment_new(ptremolo->tremolo_speed,
-				   1.0, 5000.0, 1.0,
+				   20.0, 2000.0, 1.0,
 				   1.0, 0.0);
     speed_label = gtk_label_new("Period\nms");
     gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
@@ -218,7 +222,7 @@ tremolo_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     }
 
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Vibrato"));
+    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Tremolo"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
     gtk_widget_show_all(p->control);
@@ -229,7 +233,7 @@ void
 tremolo_filter(struct effect *p, struct data_block *db)
 {
     struct tremolo_params *tp;
-    double          pos, speed;
+    double          vol, speed;
     int             count,
                     currchannel = 0;
     DSP_SAMPLE     *s;
@@ -241,15 +245,12 @@ tremolo_filter(struct effect *p, struct data_block *db)
     speed = tp->tremolo_speed / 1000.0 * sample_rate;
     
     while (count) {
-        tp->history[currchannel]->add(tp->history[currchannel], *s);
-	
 	if (tp->tremolo_phase >= speed)
 	    tp->tremolo_phase = 0;
 
-	pos = tp->tremolo_amplitude / 100.0 * MAX_TREMOLO_BUFSIZE *
-		sample_rate / MAX_SAMPLE_RATE *
+	vol = 1.0 - tp->tremolo_amplitude / 100.0 *
 	    (1.0 + sin_lookup(tp->tremolo_phase / speed)) / 2.0;
-	*s = tp->history[currchannel]->get_interpolated(tp->history[currchannel], pos);
+	*s *= vol;
 
 	currchannel = (currchannel + 1) % db->channels;
 	if (currchannel == 0)
@@ -264,12 +265,7 @@ void
 tremolo_done(struct effect *p)
 {
     struct tremolo_params *tp;
-    int             i;
-
     tp = (struct tremolo_params *) p->params;
-
-    for (i = 0; i < MAX_CHANNELS; i++)
-	del_Backbuf(tp->history[i]);
 
     free(tp);
     gtk_widget_destroy(p->control);
@@ -299,7 +295,6 @@ tremolo_create()
 {
     effect_t       *p;
     struct tremolo_params *ptremolo;
-    int             i;
 
     p = calloc(1, sizeof(effect_t));
     p->params = calloc(1, sizeof(struct tremolo_params));
@@ -312,9 +307,7 @@ tremolo_create()
 
     ptremolo = p->params;
     ptremolo->tremolo_amplitude = 25;
-    ptremolo->tremolo_speed = 1000;
-    for (i = 0; i < MAX_CHANNELS; i++)
-        ptremolo->history[i] = new_Backbuf(MAX_TREMOLO_BUFSIZE);
+    ptremolo->tremolo_speed = 200;
     ptremolo->tremolo_phase = 0;
 
     return p;
