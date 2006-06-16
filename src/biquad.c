@@ -19,6 +19,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.25  2006/06/16 14:44:14  alankila
+ * - use full precision for allpass constants
+ * - remove SSE version of biquad code, it was buggy.
+ *
  * Revision 1.24  2006/05/31 13:52:18  fonin
  * powf() does not exist on Windows, replaced with pow(); fixed C++ style variable declarations+init for Windows sanity.
  *
@@ -189,12 +193,11 @@ set_phaser_biquad(double a, Biquad_t *f)
 void
 set_2nd_allpass_biquad(double a, Biquad_t *f)
 {
-    a = a * a;
-    f->b0 = a;
+    f->b0 = a * a;
     f->b1 = 0;
     f->b2 = -1;
     f->a1 = 0;
-    f->a2 = a;
+    f->a2 = f->b0;
 }
 
 void
@@ -299,18 +302,18 @@ void
 hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h)
 {
     int i;
-    DSP_SAMPLE x0_tmp;
+    DSP_SAMPLE x0i, x1i;
 
-    *x0 = input;
-    *x1 = *x0;
+    x0i = h->x0_tmp;
+    h->x0_tmp = input;
+    x1i = input;
+
     for (i = 0; i < 4; i += 1) {
-        *x0 = do_biquad(*x0, &h->a1[i], 0);
-        *x1 = do_biquad(*x1, &h->a2[i], 0);
+        x0i = do_biquad(x0i, &h->a1[i], 0);
+        x1i = do_biquad(x1i, &h->a2[i], 0);
     }
-    /* delay x0 by 1 sample */
-    x0_tmp = *x0;
-    *x0 = h->x0_tmp;
-    h->x0_tmp = x0_tmp;
+    *x0 = x0i;
+    *x1 = x1i;
 }
 
 /* Setup allpass sections to produce hilbert transform.
@@ -326,13 +329,13 @@ hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h
 void
 hilbert_init(Hilbert_t *h)
 {
-    set_2nd_allpass_biquad(0.6923878, &h->a1[0]);
-    set_2nd_allpass_biquad(0.9306054, &h->a1[1]);
-    set_2nd_allpass_biquad(0.9882295, &h->a1[2]);
-    set_2nd_allpass_biquad(0.9987488, &h->a1[3]);
+    set_2nd_allpass_biquad(0.6923877778065, &h->a1[0]);
+    set_2nd_allpass_biquad(0.9360654322959, &h->a1[1]);
+    set_2nd_allpass_biquad(0.9882295226860, &h->a1[2]);
+    set_2nd_allpass_biquad(0.9987488452737, &h->a1[3]);
 
-    set_2nd_allpass_biquad(0.4021921, &h->a2[0]);
-    set_2nd_allpass_biquad(0.8561711, &h->a2[1]);
-    set_2nd_allpass_biquad(0.9722910, &h->a2[2]);
-    set_2nd_allpass_biquad(0.9952885, &h->a2[3]);
+    set_2nd_allpass_biquad(0.4021921162426, &h->a2[0]);
+    set_2nd_allpass_biquad(0.8561710882420, &h->a2[1]);
+    set_2nd_allpass_biquad(0.9722909545651, &h->a2[2]);
+    set_2nd_allpass_biquad(0.9952884791278, &h->a2[3]);
 }

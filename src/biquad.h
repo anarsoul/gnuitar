@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.26  2006/06/16 14:44:14  alankila
+ * - use full precision for allpass constants
+ * - remove SSE version of biquad code, it was buggy.
+ *
  * Revision 1.25  2006/05/29 23:46:02  alankila
  * - move _GNU_SOURCE into Makefile
  * - align memory for x86-32; x86-64 already aligned memory for us in glibc
@@ -183,6 +187,7 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 #if defined(__SSE__) && defined(FLOAT_DSP)
 #include <xmmintrin.h>
 
+/*
 static inline float
 do_biquad(float x, Biquad_t *f, int c)
 {
@@ -191,7 +196,7 @@ do_biquad(float x, Biquad_t *f, int c)
     float           *mem = f->mem[c];
     float           *b1 = &f->b1;
 
-    /* use SSE to calculate 4 of the biquad terms */
+    // use SSE to calculate 4 of the biquad terms
     asm("movaps     (%%edx), %%xmm0             \n"
 "        mulps      (%%ecx), %%xmm0             \n"
 "        movaps     %%xmm0, %[r]                \n"
@@ -203,7 +208,7 @@ do_biquad(float x, Biquad_t *f, int c)
     r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
     _mm_store_ss(&y, r);
 
-    /* add the last term */
+    // add the last term
     y += f->b0 * x;
     
     mem[1] = mem[0];
@@ -213,6 +218,7 @@ do_biquad(float x, Biquad_t *f, int c)
 
     return y;
 }
+*/
 
 static inline float
 convolve(const float *a, const float *b, int len) {
@@ -254,6 +260,17 @@ convolve(const float *a, const float *b, int len) {
 }
 #else
 
+static inline DSP_SAMPLE
+convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
+    int i, dot = 0;
+    for (i = 0; i < len; i += 1)
+            dot += a[i] * b[i];
+    return dot;
+}
+
+#endif
+
+
 /* Denormals are small numbers that force FPU into slow mode.
  * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
 #define DENORMAL_BIAS   1E-5
@@ -275,15 +292,5 @@ do_biquad(float x, Biquad_t *f, int c)
     f->mem[c][2] = y;
     return y;
 }
-
-static inline DSP_SAMPLE
-convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
-    int i, dot = 0;
-    for (i = 0; i < len; i += 1)
-            dot += a[i] * b[i];
-    return dot;
-}
-
-#endif
 
 #endif
