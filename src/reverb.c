@@ -32,7 +32,7 @@
 #include "reverb.h"
 #include "gui.h"
 
-#define MAX_REVERB_SIZE  300 /* ms */
+#define MAX_REVERB_SIZE  3000 /* ms */
 
 static void
 update_reverb_drywet(GtkAdjustment *adj, struct reverb_params *params)
@@ -127,7 +127,7 @@ reverb_init(struct effect *p)
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
 
-    adj_regen = gtk_adjustment_new(preverb->regen, 0.0, 40.0, 1.0, 1.0, 0.0);
+    adj_regen = gtk_adjustment_new(preverb->regen, 0.0, 100.0, 1.0, 1.0, 0.0);
     regen_label = gtk_label_new("regen\n%");
     gtk_table_attach(GTK_TABLE(parmTable), regen_label, 3, 4, 0, 1,
 		     __GTKATTACHOPTIONS

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.83  2006/06/20 20:41:06  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.82  2006/06/05 13:41:46  anarsoul
  * Added tabbed about dialog
  *
@@ -377,6 +380,7 @@
 #endif
 
 #include "gui.h"
+#include "stdarg.h"
 #include "authors_text.h"
 #include "about_text.h"
 #include "license_text.h"
@@ -440,7 +444,8 @@ static GtkWidget      *start;
 static GtkTooltips    *tooltips;
 static GtkWidget      *volume_label;
 static GtkWidget      *input_label;
-
+static GtkWidget      *status_text = 0;
+static GtkWidget      *status_window = 0;
 
 /* some public GUI widgets */
 GtkWidget      *processor;
@@ -462,6 +467,98 @@ static gint            effects_row = -1;
 static gint            bank_row = -1;
 extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
                                  * MSVC 6.0 complains: identifier effectlist_lock: */
+
+static char longbuf[16384]="Gnuitar " VERSION "\n\nDebug info.\n";
+
+
+//function for printing debuging messages
+//if GUI isn't created, text will be buffered
+void 
+gnuitar_printf(char *frm, ...)
+{
+    va_list args;
+    char buf[2048];
+    
+#ifdef HAVE_GTK2    
+    GtkTextBuffer  *textbuf;
+    GtkTextIter    iter;
+    GtkAdjustment *adj;
+    gdouble new_value;
+#endif
+
+    strcpy(buf, "Error in snprintf\n");
+
+
+    va_start(args, frm);
+    
+    vsnprintf(buf, 2048, frm, args);
+    
+    va_end(args);
+    
+    if (!status_text)
+    {
+	if (strlen(longbuf) + strlen(buf) > 16382) return;
+	
+	strcat(longbuf, buf);
+	
+	return;
+    }
+    
+#ifdef HAVE_GTK2
+    textbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(status_text));
+
+#ifndef APPEND
+					    
+#define APPEND(s) do { \
+gtk_text_buffer_get_end_iter(textbuf, &iter); \
+gtk_text_buffer_insert(textbuf, &iter, (s), -1); \
+} while(0)
+
+#endif
+						    
+    if (strlen(longbuf)!=0)
+    {
+        APPEND(longbuf);
+	longbuf[0] = 0;
+    }
+    
+    APPEND(buf);
+
+    adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(status_window));
+    
+    new_value = adj -> upper-adj -> page_size;
+    
+    if (new_value < adj -> lower) new_value = adj -> lower;
+    
+    if (new_value > adj -> upper) new_value = adj -> upper;
+    
+    if (new_value != adj -> value)
+    {
+	gtk_adjustment_set_value(adj, new_value);
+    }
+#endif
+
+#ifdef HAVE_GTK
+
+#ifndef APPEND
+
+#define APPEND(s) gtk_text_insert(GTK_TEXT(status_text), NULL, NULL, NULL, (s), -1);
+
+#endif
+
+    if (strlen(longbuf)!=0)
+    {
+        APPEND(longbuf);
+	longbuf[0] = 0;
+    }
+    
+    APPEND(buf);
+    
+
+#endif
+
+
+}
 
 /*
  * Cleaning and quit from application
@@ -704,7 +801,7 @@ delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
             break;
     }
     if (i == n) {
-        fprintf(stderr, "hmm, can't find effect to destroy in subwindow delete\n");
+        gnuitar_printf("hmm, can't find effect to destroy in subwindow delete\n");
         return TRUE;
     }
     effects[i]->proc_done(effects[i]);
@@ -1611,6 +1708,12 @@ start_stop(GtkWidget *widget, gpointer data)
     /* without audio driver, we can't allow user to proceed */
     if (! audio_driver) {
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
+	gtk_widget_set_sensitive(GTK_WIDGET
+				 (gtk_item_factory_get_widget
+				  (item_factory, "/Options/Options")),
+				 !audio_driver->enabled);
+	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
+                    audio_driver->enabled ? "Stop" : "ERROR");
         return;
     }
     
@@ -1619,6 +1722,12 @@ start_stop(GtkWidget *widget, gpointer data)
         if (! GTK_TOGGLE_BUTTON(widget)->active) {
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
             /* GTK+ will call us again in response of set_active event */
+	    gtk_widget_set_sensitive(GTK_WIDGET
+				 (gtk_item_factory_get_widget
+				  (item_factory, "/Options/Options")),
+				 !audio_driver->enabled);
+            gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
+                    audio_driver->enabled ? "Stop" : "ERROR");
             return;
         }
     }
@@ -1637,7 +1746,7 @@ start_stop(GtkWidget *widget, gpointer data)
                 pthread_join(audio_thread, NULL);
 	    state = STATE_PAUSE;
 	    if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
-		fprintf(stderr, "Audio thread restart failed!\n");
+		gnuitar_printf("Audio thread restart failed!\n");
 		state = STATE_EXIT;
 	    }
 #else
@@ -1651,14 +1760,14 @@ start_stop(GtkWidget *widget, gpointer data)
 	     * set realtime priority to the thread
     	     */
 	    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL))
-		fprintf(stderr,
+		gnuitar_printf(
 		    "\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
 			GetLastError());
 #endif
 	}
 
 	if ((error = audio_driver->init()) != ERR_NOERROR) {
-            fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
+            gnuitar_printf("warning: unable to begin audio processing (code %d)\n", error);
             audio_driver->enabled = 0;
         } else {
             audio_driver->enabled = 1;
@@ -1689,6 +1798,9 @@ init_gui(void)
     GtkWidget      *vumeter;
     GtkWidget	   *master;
     GtkWidget      *input;
+
+
+    
     int             i;
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
@@ -1709,10 +1821,11 @@ init_gui(void)
     GdkBitmap      *mask;
 #endif
     GtkStyle       *style;
+    
 
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(mainWnd, 700, 450);
-    tbl = gtk_table_new(5, 6, FALSE);
+    tbl = gtk_table_new(7, 6, FALSE);
     gtk_signal_connect(GTK_OBJECT(mainWnd), "destroy",
 		       GTK_SIGNAL_FUNC(quit), NULL);
 
@@ -1740,6 +1853,7 @@ init_gui(void)
         gtk_widget_set_sensitive(GTK_WIDGET
                                  (gtk_item_factory_get_widget
                                   (item_factory, "/Options/Options")), FALSE);
+
 
 
     tooltips=gtk_tooltips_new();
@@ -1864,6 +1978,52 @@ init_gui(void)
     
     volume_label = gtk_label_new("Master volume:");
     input_label = gtk_label_new("Input volume:");
+    
+    status_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(status_window),
+				   GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
+
+    gtk_container_set_border_width(GTK_CONTAINER(status_window), 10);
+    
+    
+    
+#ifdef HAVE_GTK2
+    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(status_window), GTK_SHADOW_IN);
+
+    status_text = gtk_text_view_new();
+    
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(status_text), FALSE);
+
+#endif
+
+#ifdef HAVE_GTK
+
+    status_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
+			(GTK_SCROLLED_WINDOW(status_window)),
+			gtk_scrolled_window_get_vadjustment
+			(GTK_SCROLLED_WINDOW(status_window)));
+
+    gtk_text_freeze(GTK_TEXT(status_text));
+    
+    gtk_text_thaw(GTK_TEXT(status_text));
+
+#endif
+    
+    gtk_container_add(GTK_CONTAINER(status_window), status_text);
+    
+    //pushing out buffered text
+    gnuitar_printf("");
+    
+    gtk_widget_set_sensitive(GTK_WIDGET
+				 (gtk_item_factory_get_widget
+				  (item_factory, "/Options/Options")),
+				 !audio_driver->enabled);
+    gtk_label_set_text(GTK_LABEL(GTK_BIN(start)->child),
+                    audio_driver->enabled ? "Stop" : "ERROR");
+    
+    gtk_table_attach(GTK_TABLE(tbl), status_window, 0 ,7, 7, 9,
+    		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL),
+		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL), 5, 5);
 
     gtk_table_attach(GTK_TABLE(tbl), bank_add, 0, 1, 1, 2,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);

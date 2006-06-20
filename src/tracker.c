@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2006/06/20 20:41:08  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.18  2006/05/19 15:12:54  alankila
  * I keep on getting rattles with ALSA playback, seems like ALSA doesn't
  * know when to swap buffers or allows write to go on too easily. I
@@ -156,7 +159,7 @@ tracker_out(const char *outfile)
     
     fout = sf_open(outfile, SFM_WRITE, &sfinfo);
     if (! fout)
-        fprintf(stderr, "Error: unable to open output file: %s",
+        gnuitar_printf( "Error: unable to open output file: %s",
                         sf_strerror(fout));
 #else
     fout = open(outfile, O_NONBLOCK | O_WRONLY | O_CREAT, 0644);
@@ -177,12 +180,12 @@ tracker_out(const char *outfile)
 	riff.fccType = mmioFOURCC('W', 'A', 'V', 'E');
 	if (mmioCreateChunk(fout, &riff, MMIO_CREATERIFF) !=
 	    MMSYSERR_NOERROR) {
-	    fprintf(stderr, "\nCreating RIFF chunk failed.");
+	    gnuitar_printf( "\nCreating RIFF chunk failed.");
 	    return;
 	}
 	fmt.ckid = mmioStringToFOURCC("fmt", 0);
 	if (mmioCreateChunk(fout, &fmt, 0) != MMSYSERR_NOERROR) {
-	    fprintf(stderr, "\nCreating FMT chunk failed.");
+	    gnuitar_printf( "\nCreating FMT chunk failed.");
 	    return;
 	}
 	format.wFormatTag = WAVE_FORMAT_PCM;
@@ -199,7 +202,7 @@ tracker_out(const char *outfile)
 	ZeroMemory(&data, sizeof(MMCKINFO));
 	data.ckid = mmioFOURCC('d', 'a', 't', 'a');
 	if (mmioCreateChunk(fout, &data, 0) != MMSYSERR_NOERROR) {
-	    fprintf(stderr, "\nCreating data chunk failed.");
+	    gnuitar_printf( "\nCreating data chunk failed.");
 	    return;
 	}
     }
@@ -241,7 +244,7 @@ track_write(DSP_SAMPLE *s, int count)
 #ifndef _WIN32
 #ifdef HAVE_SNDFILE
     if (sf_write_short(fout, tmp, count) != count)
-        fprintf(stderr, "Error writing samples: %s\n", sf_strerror(fout));
+        gnuitar_printf( "Error writing samples: %s\n", sf_strerror(fout));
 #else
     write(fout, tmp, sizeof(SAMPLE16) * count);
 #endif

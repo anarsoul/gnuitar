@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.56  2006/06/20 20:41:07  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.55  2006/05/25 09:03:05  alankila
  * - replace the SSE code with even faster version. Tubeamp effect now runs
  *   20 % faster on my computer. Add some alignment directives to make future
@@ -259,7 +262,6 @@
 #include <pthread.h>
 #endif
 
-#include "pump.h"
 #include "main.h"
 #include "tracker.h"
 #include "gui.h"
@@ -298,7 +300,7 @@ main(int argc, char **argv)
     p.sched_priority = max_priority/2;
 
     if (sched_setscheduler(0, SCHED_FIFO, &p)) {
-	fprintf(stderr, "warning: unable to set realtime priority (needs root privileges)\n");
+	gnuitar_printf("warning: unable to set realtime priority (needs root privileges)\n");
     }
 
     /*
@@ -319,7 +321,7 @@ main(int argc, char **argv)
     state = STATE_PAUSE;
     /* choose audio driver if not given in config */
     if (audio_driver == NULL) {
-        fprintf(stderr, "Discovering audio driver.\n");
+        gnuitar_printf("Discovering audio driver.\n");
 #    ifdef HAVE_JACK
         if (jack_available()) {
             audio_driver = &jack_driver;
@@ -343,7 +345,7 @@ main(int argc, char **argv)
 
     if (audio_driver) {
         if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
-            fprintf(stderr, "Audio thread creation failed!\n");
+            gnuitar_printf("Audio thread creation failed!\n");
             return ERR_THREAD;
         }
     }
@@ -362,7 +364,7 @@ main(int argc, char **argv)
 	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->audio_proc, 0,
 		     0, &thread_id);
     if (!audio_thread) {
-	fprintf(stderr, "Can't create WAVE recording thread! -- %08X\n",
+	gnuitar_printf("Can't create WAVE recording thread! -- %08X\n",
 		GetLastError());
 	return ERR_THREAD;
     }
@@ -371,7 +373,7 @@ main(int argc, char **argv)
      * set realtime priority to the thread
      */
     if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
-	fprintf(stderr,
+	gnuitar_printf(
 		"\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
 		GetLastError());
     }
@@ -379,7 +381,8 @@ main(int argc, char **argv)
     pump_start(argc, argv);    
 
     if (audio_driver && (error = audio_driver->init()) != ERR_NOERROR) {
-        fprintf(stderr, "warning: unable to begin audio processing (code %d)\n", error);
+	state = STATE_PAUSE;
+        gnuitar_printf("warning: unable to begin audio processing (code %d)\n", error);
     }
 
     init_gui();

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2006/06/20 20:41:05  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.30  2006/06/10 22:12:56  alankila
  * - surround40 doesn't work as capture device; we must use default if
  *   the choice is surround40. This is a temporary fix, we'll really have to
@@ -222,7 +225,7 @@ alsa_audio_thread(void *V)
             snd_pcm_prepare(capture_handle);
             snd_pcm_prepare(playback_handle);
 
-            //fprintf(stderr, "Resyncing input/output\n");
+            //gnuitar_printf( "Resyncing input/output\n");
             /* Prefill 2 playback buffer fragments. Normally this is the
              * maximum amount of fragments, and it ensures there's something
              * to play while we come up with more data to play. */
@@ -233,12 +236,12 @@ alsa_audio_thread(void *V)
         }
 
         while ((inframes = snd_pcm_readi(capture_handle, rdbuf, buffer_size)) < 0) {
-            //fprintf(stderr, "Input buffer overrun\n");
+            //gnuitar_printf( "Input buffer overrun\n");
             restarting = 1;
             snd_pcm_prepare(capture_handle);
         }
         if (inframes != buffer_size)
-            fprintf(stderr, "Short read from capture device: %d, expecting %d\n", inframes, buffer_size);
+            gnuitar_printf( "Short read from capture device: %d, expecting %d\n", inframes, buffer_size);
         
         /* prepare output */
 	if (bits == 32)
@@ -250,12 +253,12 @@ alsa_audio_thread(void *V)
 
         /* write output */
         while ((outframes = snd_pcm_writei(playback_handle, wrbuf, buffer_size)) < 0) {
-            //fprintf(stderr, "Output buffer underrun\n");
+            //gnuitar_printf( "Output buffer underrun\n");
             restarting = 1;
             snd_pcm_prepare(playback_handle);
         }
         if (outframes != buffer_size)
-            fprintf(stderr, "Short write to playback device: %d, expecting %d\n", outframes, buffer_size);
+            gnuitar_printf( "Short write to playback device: %d, expecting %d\n", outframes, buffer_size);
 
         /* now that output is out of the way, we have most time for running effects */ 
         db.len = buffer_size * n_input_channels;
@@ -300,29 +303,29 @@ alsa_finish_sound(void)
 static int
 alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *frames, int channels, int adapting)
 {
-    /*fprintf(stderr,"So we want to have:\n");
-    fprintf(stderr,"Fragments: %d\n", *fragments);
-    fprintf(stderr,"Frames: %d\n", *frames);
-    fprintf(stderr,"Channels: %d\n", channels);*/
+    /*gnuitar_printf("So we want to have:\n");
+    gnuitar_printf("Fragments: %d\n", *fragments);
+    gnuitar_printf("Frames: %d\n", *frames);
+    gnuitar_printf("Channels: %d\n", channels);*/
     snd_pcm_hw_params_t *hw_params;
     int                 err;
     unsigned int        tmp;
     
     if ((err = snd_pcm_hw_params_malloc(&hw_params)) < 0) {
-        fprintf (stderr, "can't allocate parameter structure: %s\n",
+        gnuitar_printf( "can't allocate parameter structure: %s\n",
                  snd_strerror(err));
 	return 1;
     }
     
     if ((err = snd_pcm_hw_params_any(device, hw_params)) < 0) {
-        fprintf (stderr, "can't initialize parameter structure: %s\n",
+        gnuitar_printf( "can't initialize parameter structure: %s\n",
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
     }
 
     if ((err = snd_pcm_hw_params_set_access(device, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-        fprintf (stderr, "can't set access type RW_INTERLEAVE (try using plughw): %s\n",
+        gnuitar_printf( "can't set access type RW_INTERLEAVE (try using plughw): %s\n",
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -335,7 +338,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 	bits = 16;
     }
     if ((err = snd_pcm_hw_params_set_format(device, hw_params, tmp)) < 0) {
-        fprintf (stderr, "can't set sample format %d bits: %s\n", bits,
+        gnuitar_printf( "can't set sample format %d bits: %s\n", bits,
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -345,18 +348,18 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     if ((err = adapting
             ? snd_pcm_hw_params_set_rate_near(device, hw_params, &tmp, 0)
             : snd_pcm_hw_params_set_rate(device, hw_params, tmp, 0)) < 0) {
-        fprintf (stderr, "can't set sample rate %d: %s\n", tmp,
+        gnuitar_printf( "can't set sample rate %d: %s\n", tmp,
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
     }
     if (tmp != sample_rate) {
-        fprintf(stderr, "can't set requested sample rate, asked for %d got %d\n", sample_rate, tmp);
+        gnuitar_printf( "can't set requested sample rate, asked for %d got %d\n", sample_rate, tmp);
         sample_rate = tmp;
     }
 
     if ((err = snd_pcm_hw_params_set_channels(device, hw_params, channels)) < 0) {
-        fprintf (stderr, "can't set channel count %d: %s\n", channels,
+        gnuitar_printf( "can't set channel count %d: %s\n", channels,
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -368,35 +371,35 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
         tmp = (float) (*frames * *fragments) / sample_rate * 1E6;
 
         if ((err = snd_pcm_hw_params_set_buffer_time_near(device, hw_params, &tmp, NULL)) < 0) {
-            fprintf(stderr, "can't set buffer time near %d: %s\n", tmp,
+            gnuitar_printf( "can't set buffer time near %d: %s\n", tmp,
                     snd_strerror(err));
             snd_pcm_hw_params_free(hw_params);
             return 1;
         }
         /* obtain the frames and fragments chosen by ALSA */
         if ((err = snd_pcm_hw_params_get_period_size(hw_params, &alsa_frames, NULL)) < 0) {
-	    fprintf(stderr, "can't get period size value from ALSA (read: %d): %s\n",
+	    gnuitar_printf( "can't get period size value from ALSA (read: %d): %s\n",
                     (int) alsa_frames, snd_strerror(err));
             snd_pcm_hw_params_free(hw_params);
             return 1;
         }
         *frames = alsa_frames;
         if ((err = snd_pcm_hw_params_get_periods(hw_params, fragments, NULL)) < 0) {
-	    fprintf(stderr, "can't get fragments value from ALSA (read: %d): %s\n",
+	    gnuitar_printf( "can't get fragments value from ALSA (read: %d): %s\n",
                     *fragments, snd_strerror(err));
             snd_pcm_hw_params_free(hw_params);
             return 1;
         }
     } else {
         if ((err = snd_pcm_hw_params_set_period_size(device, hw_params, *frames, 0)) < 0) {
-            fprintf(stderr, "can't set period size to %d frames: %s\n",
+            gnuitar_printf( "can't set period size to %d frames: %s\n",
                     (int) *frames, snd_strerror(err));
             snd_pcm_hw_params_free(hw_params);
             return 1;
         }
         
         if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
-            fprintf(stderr, "can't set periods to %d: %s\n", *fragments,
+            gnuitar_printf( "can't set periods to %d: %s\n", *fragments,
                     snd_strerror(err));
 
             snd_pcm_hw_params_free(hw_params);
@@ -405,7 +408,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     }
 
     if ((err = snd_pcm_hw_params(device, hw_params)) < 0) {
-        fprintf(stderr, "Error setting HW params: %s\n",
+        gnuitar_printf( "Error setting HW params: %s\n",
                 snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -426,7 +429,7 @@ alsa_init_sound(void)
     unsigned int    frames, fragments_try, tries;
 
     if ((err = snd_pcm_open(&playback_handle, alsadevice_str, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-	fprintf(stderr, "can't open output audio device %s: %s\n", alsadevice_str, snd_strerror(err));
+	gnuitar_printf( "can't open output audio device %s: %s\n", alsadevice_str, snd_strerror(err));
 	state = STATE_EXIT;
 	return ERR_WAVEOUTOPEN;
     }
@@ -436,7 +439,7 @@ alsa_init_sound(void)
         alsadevice_in_str = "default";
     
     if ((err = snd_pcm_open(&capture_handle, alsadevice_in_str, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
-	fprintf(stderr, "can't open input audio device %s: %s\n", alsadevice_str, snd_strerror(err));
+	gnuitar_printf( "can't open input audio device %s: %s\n", alsadevice_str, snd_strerror(err));
         snd_pcm_close(playback_handle);
 	state = STATE_EXIT;
 	return ERR_WAVEINOPEN;

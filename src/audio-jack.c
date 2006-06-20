@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2006/06/20 20:41:05  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.2  2006/05/30 08:48:41  anarsoul
  * Fixed crash if GNUitar exited without stopping sound processing
  *
@@ -71,7 +74,7 @@ process (jack_nframes_t nframes, void *arg)
     
     if (nframes != buffer_size)
     {
-	fprintf(stderr,"Buffer size and nframes are different\n");
+	gnuitar_printf("Buffer size and nframes are different\n");
 	buffer_size = nframes;
     }
     
@@ -189,7 +192,7 @@ jack_init_sound(void)
     
     if (client == 0)
     {
-	fprintf (stderr, "jack_client_new() failed\n");
+	gnuitar_printf ("jack_client_new() failed\n");
 //	    "status = 0x%2.0x\n", status);
 //	if (status & JackServerFailed) 
 //	{
@@ -215,7 +218,7 @@ jack_init_sound(void)
     
     if (temp_rate != sample_rate)
     {
-	fprintf(stderr, "Adapting to JACK's sample rate: %d\n", temp_rate);
+	gnuitar_printf("Adapting to JACK's sample rate: %d\n", temp_rate);
 	sample_rate = temp_rate;
     }
     
@@ -223,25 +226,25 @@ jack_init_sound(void)
     
     if (temp_buffersize != buffer_size)
     {
-	fprintf(stderr, "Adapting to JACK's buffer size: %d\n", temp_buffersize);
+	gnuitar_printf("Adapting to JACK's buffer size: %d\n", temp_buffersize);
 	buffer_size = temp_buffersize;
     }
     
     if (sizeof(jack_default_audio_sample_t) == 4 && bits != 32)
     {
 	bits = sizeof(jack_default_audio_sample_t) << 3;
-	fprintf(stderr, "Adapting to JACK's bits: %d\n", bits);
+	gnuitar_printf("Adapting to JACK's bits: %d\n", bits);
 
     }
     
     if (sizeof(jack_default_audio_sample_t) == 2 && bits != 16)
     {
 	bits = sizeof(jack_default_audio_sample_t) << 3;
-	fprintf(stderr, "Adapting to JACK's bits: %d\n", bits);
+	gnuitar_printf("Adapting to JACK's bits: %d\n", bits);
 
     }
     
-    fprintf(stderr, "Bits: %d\n", bits);
+    //gnuitar_printf(stderr, "Bits: %d\n", bits);
     //registering input\output ports
     if (n_input_channels > 4) n_input_channels = 4;
     if (n_output_channels > 4) n_output_channels = 4;
@@ -254,7 +257,7 @@ jack_init_sound(void)
 					    JackPortIsInput, 0);
 	if (input_ports[i] == NULL) 
 	{
-	    fprintf(stderr, "no more JACK ports available\n");
+	    gnuitar_printf("no more JACK ports available\n");
 	    jack_client_close(client);
 	    return ERR_WAVEINOPEN;
 	}
@@ -269,7 +272,7 @@ jack_init_sound(void)
 					    JackPortIsOutput, 0);
 	if (output_ports[i] == NULL) 
 	{
-	    fprintf(stderr, "no more JACK ports available\n");
+	    gnuitar_printf("no more JACK ports available\n");
 	    jack_client_close(client);
 	    return ERR_WAVEOUTOPEN;
 	}
@@ -281,7 +284,7 @@ jack_init_sound(void)
     
     if (jack_activate (client))
     {
-	fprintf (stderr, "Cannot activate client");
+	gnuitar_printf ("Cannot activate client");
 	jack_client_close(client);
 	return ERR_WAVEOUTOPEN;
     }
@@ -297,24 +300,24 @@ jack_init_sound(void)
 		
     if (ports == NULL)
     {
-	fprintf(stderr, "no physical capture ports\n");
+	gnuitar_printf("no physical capture ports\n");
 	jack_client_close(client);
 	return ERR_WAVEINOPEN;
     }
     
     for (i = 0; i < n_input_channels; i++)
     {
-	fprintf(stderr, "physical capture port: %s\n", ports[i]);
+	gnuitar_printf("physical capture port: %s\n", ports[i]);
 	if (ports[i] == 0)
 	{
-	    fprintf(stderr, "No such ports\n");
+	    gnuitar_printf("No such ports\n");
 	    //jack_client_close(client);
 	    //return ERR_WAVEINOPEN;
 	}
 
 	if (jack_connect(client, ports[i], jack_port_name (input_ports[i]))) 
 	{
-	    fprintf(stderr, "Cannot connect capture ports\n");
+	    gnuitar_printf("Cannot connect capture ports\n");
 	    jack_client_close(client);
 	    return ERR_WAVEINOPEN;
 	}
@@ -329,25 +332,25 @@ jack_init_sound(void)
 		
     if (ports == NULL)
     {
-	fprintf(stderr, "no physical playback ports\n");
+	gnuitar_printf("no physical playback ports\n");
 	jack_client_close(client);
 	return ERR_WAVEINOPEN;
     }
     
     for (i = 0; i < n_output_channels; i++)
     {
-	fprintf(stderr, "physical playback port: %s\n", ports[i]);    
+	gnuitar_printf("physical playback port: %s\n", ports[i]);    
 	
 	if (ports[i] == 0)
 	{
-	    fprintf(stderr, "No such ports\n");
+	    gnuitar_printf("No such ports\n");
 	    //jack_client_close(client);
 	    //return ERR_WAVEOUTOPEN;
 	}
 	
 	if (jack_connect(client , jack_port_name (output_ports[i]), ports[i])) 
 	{
-	    fprintf(stderr, "Cannot connect playback ports\n");
+	    gnuitar_printf( "Cannot connect playback ports\n");
 	    //jack_client_close(client);
 	    //return ERR_WAVEOUTOPEN;
 	}
@@ -378,9 +381,9 @@ jack_available() {
     //if client creation failed	    
     if (client == NULL) {
 
-	fprintf (stderr, "jack_client_new() failed\n");
+	gnuitar_printf ("jack_client_new() failed\n");
 	//if (status & JackServerFailed) {
-	//    fprintf(stderr, "Unable to connect to JACK server \n");
+	//    gnuitar_printf( "Unable to connect to JACK server \n");
 	//    }
 	return 1;
     }
@@ -388,7 +391,7 @@ jack_available() {
     //all is OK, JACK available, closing client
 
     jack_client_close (client);
-    fprintf (stderr, "connected to JACK server!\n");
+    gnuitar_printf ("connected to JACK server!\n");
     
     return 0;
     

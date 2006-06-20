@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2006/06/20 20:41:06  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.14  2006/05/31 13:56:36  fonin
  * GCC-style typedef'd structure init does not work in MSVC6.0; also few #includes for sanity
  *
@@ -242,7 +245,7 @@ windows_audio_thread(void *V)
 		        /* this condition handles buffer wrap around */
 		        read_pos-rbufpos > buffer_size*overrun_threshold &&
 		        read_pos-rbufpos < buffer_size*nbuffers/2) {
-		    fprintf(stderr,"\ncapture buffer overrun: real position=%u, calculated=%u",read_pos,rbufpos);
+		    gnuitar_printf("\ncapture buffer overrun: real position=%u, calculated=%u",read_pos,rbufpos);
 		    rbufpos=read_pos;
 		}
 		else rbufpos += buffer_size;
@@ -325,7 +328,7 @@ windows_audio_thread(void *V)
 		        /* this condition handles buffer wrap around */
 		        abs(write_pos-wbufpos)>buffer_size*overrun_threshold &&
 		        abs(write_pos-wbufpos)<buffer_size*100) {
-		    fprintf(stderr,"\nplayback buffer overrun: real position=%u, calculated=%u",
+		    gnuitar_printf("\nplayback buffer overrun: real position=%u, calculated=%u",
                             write_pos,wbufpos);
 		    wbufpos=write_pos+buffer_size;
 		}
@@ -436,9 +439,9 @@ windows_audio_thread(void *V)
 			} else
 			    active_out_buffers++;
 		    } else
-		        fprintf(stderr,"\nbuffer overrun.");
+		        gnuitar_printf("\nbuffer overrun.");
 	        } else
-	            fprintf(stderr,"\nbuffer underrun.");
+	            gnuitar_printf("\nbuffer underrun.");
 
                 /*
 		 * Now we need to requeue this buffer so the driver can
@@ -648,7 +651,7 @@ windows_init_sound(void)
 	    if ((err =
 		 waveOutPrepareHeader(out, &write_header[i],
 				      sizeof(WAVEHDR)))) {
-		fprintf(stderr, "ERROR: preparing WAVEHDR %d! -- %08X\n",
+		gnuitar_printf( "ERROR: preparing WAVEHDR %d! -- %08X\n",
 			i, err);
 		state = STATE_EXIT;
 		windows_finish_sound();
@@ -739,7 +742,7 @@ windows_init_sound(void)
 	 */
 	if (DirectSoundCreate(NULL, &snd, NULL) != DS_OK) {
 	    state = STATE_EXIT;
-	    fprintf(stderr, "\nError opening DirectSound rendering device !");
+	    gnuitar_printf( "\nError opening DirectSound rendering device !");
 	    TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
 	    return ERR_DSOUNDOPEN;
 	}
@@ -747,7 +750,7 @@ windows_init_sound(void)
 	if (IDirectSound_CreateSoundBuffer(snd, &buffer_desc, &pbuffer, NULL) != DS_OK) {
 	    state = STATE_EXIT;
 	    windows_finish_sound();
-	    fprintf(stderr, "\nError creating DirectSound rendering buffer !");
+	    gnuitar_printf( "\nError creating DirectSound rendering buffer !");
 	    TerminateThread(audio_thread, ERR_WAVEOUTHDR);
 	    return ERR_DSOUNDBUFFER;
 	}
@@ -787,7 +790,7 @@ windows_init_sound(void)
             if(res=IDirectSoundCaptureBuffer_QueryInterface(cbuffer,&IID_IDirectSoundNotify,(LPVOID*)&notify)!=S_OK) {
                 state = STATE_EXIT;
 	        windows_finish_sound();
-	        fprintf(stderr, "\nError creating DirectSound notifier !");
+	        gnuitar_printf( "\nError creating DirectSound notifier !");
 	        TerminateThread(audio_thread, ERR_WAVEOUTHDR);
 	        return ERR_DSOUNDBUFFER;
             }
@@ -867,44 +870,44 @@ serror(DWORD err, TCHAR * str)
 {
     char            buffer[128];
 
-    fprintf(stderr, "ERROR 0x%08X: %s", err, str);
+    gnuitar_printf( "ERROR 0x%08X: %s", err, str);
     if (mciGetErrorString(err, &buffer[0], sizeof(buffer))) {
-	fprintf(stderr, "%s\r\n", &buffer[0]);
+	gnuitar_printf( "%s\r\n", &buffer[0]);
     } else {
-	fprintf(stderr, "0x%08X returned!\r\n", err);
+	gnuitar_printf( "0x%08X returned!\r\n", err);
     }
 }
 
 /* DirectSound Error */
 void dserror(HRESULT res, char *s) {
-    fprintf(stderr,s);
+    gnuitar_printf(s);
     switch (res) {
 	case DSERR_ALLOCATED:{
-	    fprintf(stderr, "DSERR_ALLOCATED");
+	    gnuitar_printf( "DSERR_ALLOCATED");
 	    break;
 	}
 	case DSERR_INVALIDPARAM:{
-	    fprintf(stderr, "DSERR_INVALIDPARAM");
+	    gnuitar_printf( "DSERR_INVALIDPARAM");
 	    break;
 	}
 	case DSERR_UNINITIALIZED:{
-	    fprintf(stderr, "DSERR_UNINITIALIZED");
+	    gnuitar_printf( "DSERR_UNINITIALIZED");
 	    break;
         }
         case DSERR_UNSUPPORTED:{
-	    fprintf(stderr, "DSERR_UNSUPPORTED");
+	    gnuitar_printf( "DSERR_UNSUPPORTED");
 	    break;
         }
         case DSERR_INVALIDCALL:{
-            fprintf(stderr,"DSERR_INVALIDCALL");
+            gnuitar_printf("DSERR_INVALIDCALL");
             break;
         }
         case DSERR_BUFFERLOST:{
-            fprintf(stderr,"DSERR_BUFFERLOST");
+            gnuitar_printf("DSERR_BUFFERLOST");
             break;
 	}
         case DSERR_PRIOLEVELNEEDED:{
-            fprintf(stderr,"DSERR_PRIOLEVELNEEDED ");
+            gnuitar_printf("DSERR_PRIOLEVELNEEDED ");
             break;
 	}
     }

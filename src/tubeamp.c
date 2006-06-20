@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2006/06/20 20:41:08  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.36  2006/06/16 17:03:09  alankila
  * - there was some blocking distortion, so I had to enlarge the table range
  * - on 4-stage operation the system showed noise due to the nearest value
@@ -627,7 +630,7 @@ tubeamp_create()
                 break;
         }
         if (iter == 0) {
-            fprintf(stderr, "Failed to solve the nonlinearity equation for %f!\n", x);
+            gnuitar_printf( "Failed to solve the nonlinearity equation for %f!\n", x);
         }
         nonlinearity[i] = y / NONLINEARITY_MAX;
         // printf("%d %f\n", i, nonlinearity[i]);

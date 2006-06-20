@@ -30,6 +30,7 @@
 #include <gtk/gtk.h>
 #include <sys/types.h>
 #include <stdio.h>
+
 #ifdef _WIN32
 #  include <windows.h>      /* for DWORD */
 #endif
@@ -44,6 +45,10 @@ typedef gint32	DSP_SAMPLE;
 
 #ifdef __SSE__
 typedef DSP_SAMPLE DSP_SAMPLE_ALIGN __attribute__((aligned(16)));
+
+
+
+
 
 /* for SSE we need aligned memory */
 static inline void *
@@ -74,7 +79,7 @@ gnuitar_memalign(unsigned int num, size_t bytes)
     return mem;
 }
 #endif
-    
+
 typedef gint16  SAMPLE16;
 typedef gint32  SAMPLE32;
 
@@ -88,6 +93,8 @@ typedef gint32  SAMPLE32;
 #define MAX_CHANNELS 4
 #define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
 #define MAX_EFFECTS 50
+
+extern void gnuitar_printf(char *, ...);
 
 struct audio_driver_channels {
     unsigned int in, out;
@@ -144,7 +151,7 @@ typedef struct effect effect_t;
 #define LOAD_DOUBLE(name, param) \
     param = g_key_file_get_double(preset, group, name, error); \
     if (*error != NULL) { \
-	fprintf(stderr, "warning: couldn't read '%s', '%s'\n", group, name); \
+	gnuitar_printf("warning: couldn't read '%s', '%s'\n", group, name); \
 	*error = NULL; \
     }
 #define SAVE_INT(name, param) \
@@ -152,7 +159,7 @@ typedef struct effect effect_t;
 #define LOAD_INT(name, param) \
     param = g_key_file_get_integer(preset, group, name, error); \
     if (*error != NULL) { \
-	fprintf(stderr, "warning: couldn't read '%s', '%s'\n", group, name); \
+	gnuitar_printf("warning: couldn't read '%s', '%s'\n", group, name); \
 	*error = NULL; \
     }
 

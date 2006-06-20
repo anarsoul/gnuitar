@@ -58,4 +58,6 @@ extern GtkObject* adj_input;
 extern GtkObject* adj_master;
 extern void set_vumeter_value(double peak, double power);
 
+
+
 #endif

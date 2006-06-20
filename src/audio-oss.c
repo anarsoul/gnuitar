@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2006/06/20 20:41:05  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.17  2006/05/20 09:56:58  alankila
  * - move audio_driver_str and audio_driver_enabled into driver structure
  * - Win32 drivers are ugly, with the need to differentiate between
@@ -155,7 +158,7 @@ oss_audio_thread(void *V)
                 perror("error reading from sound device: ");
                 break;
             } else if (count != buffer_size * n_input_channels * 2) {
-                fprintf(stderr, "warning: short read (%d/%d) from sound device\n", count, buffer_size);
+                gnuitar_printf( "warning: short read (%d/%d) from sound device\n", count, buffer_size);
                 break;
 	    }
 	} while (select(fd+1, &read_fds, NULL, NULL, &read_timeout) != 0);
@@ -176,7 +179,7 @@ oss_audio_thread(void *V)
 
 	count = write(fd, wrbuf16, buffer_size * n_output_channels * 2);
 	if (count != buffer_size * n_output_channels * 2)
-	    fprintf(stderr, "warning: short write (%d/%d) to sound device\n", count, buffer_size);
+	    gnuitar_printf( "warning: short write (%d/%d) to sound device\n", count, buffer_size);
         my_unlock_mutex(snd_open);
     }
 
@@ -218,26 +221,26 @@ oss_init_sound(void)
      */
     i = 0x7fff0000 + (int) (log(buffer_size * 2 * n_input_channels) / log(2));
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
-	fprintf(stderr, "Cannot setup fragments!\n");
+	gnuitar_printf( "Cannot setup fragments!\n");
 	close(fd);
 	return ERR_WAVEFRAGMENT;
     }
 
     if (ioctl(fd, SNDCTL_DSP_GETCAPS, &i) == -1) {
-	fprintf(stderr, "Cannot get soundcard capabilities!\n");
+	gnuitar_printf( "Cannot get soundcard capabilities!\n");
 	close(fd);
 	return ERR_WAVEGETCAPS;
     }
 
     if (!(i & DSP_CAP_DUPLEX)) {
-	fprintf(stderr,
+	gnuitar_printf(
 		"Sorry but your soundcard isn't full duplex capable!\n");
 	close(fd);
 	exit(ERR_WAVENOTDUPLEX);
     }
 
     if (ioctl(fd, SNDCTL_DSP_SETDUPLEX, 0) == -1) {
-	fprintf(stderr, "Cannot setup fullduplex audio!\n");
+	gnuitar_printf( "Cannot setup fullduplex audio!\n");
 	close(fd);
 	return ERR_WAVEDUPLEX;
     }
@@ -246,7 +249,7 @@ oss_init_sound(void)
     i = AFMT_S16_NE;
     bits = 16;
     if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
-	fprintf(stderr, "Cannot setup %d bit audio!\n", bits);
+	gnuitar_printf( "Cannot setup %d bit audio!\n", bits);
 	close(fd);
 	return ERR_WAVESETBIT;
     }
@@ -255,14 +258,14 @@ oss_init_sound(void)
     /* doesn't support asymmetric in/out */
     n_output_channels = n_input_channels;
     if (ioctl(fd, SNDCTL_DSP_CHANNELS, &i) == -1) {
-	fprintf(stderr, "Cannot setup mono audio!\n");
+	gnuitar_printf( "Cannot setup mono audio!\n");
 	close(fd);
 	return ERR_WAVESETCHANNELS;
     }
 
     i = sample_rate;
     if (ioctl(fd, SNDCTL_DSP_SPEED, &i) == -1) {
-	fprintf(stderr, "Cannot setup sampling frequency %d Hz!\n", i);
+	gnuitar_printf( "Cannot setup sampling frequency %d Hz!\n", i);
 	close(fd);
 	return ERR_WAVESETRATE;
     }

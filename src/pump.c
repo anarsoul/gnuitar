@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.64  2006/06/20 20:41:07  anarsoul
+ * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
+ *
  * Revision 1.63  2006/06/16 12:32:19  alankila
  * - the reasonably trivial vibrato effect is now reinstated as tremolo
  *   in a file with proper name. Old vibrato can be achieved through 1-voice
@@ -490,7 +493,7 @@ adapt_to_output(data_block_t *db)
     /* we shouldn't have more than 2 channels coming in, and we don't support
      * generating to 5 channels, so error out */
 
-    fprintf(stderr, "unknown channel combination: %d in and %d out",
+    gnuitar_printf( "unknown channel combination: %d in and %d out",
             db->channels, n_output_channels);
 }
 
@@ -835,20 +838,20 @@ load_pump(const char *fname)
     g_key_file_load_from_file(preset, fname, G_KEY_FILE_NONE, NULL);
     gtmp = g_key_file_get_string(preset, "global", "version", &error);
     if (error != NULL) {
-	fprintf(stderr, "error: failed to read file version.\n");
+	gnuitar_printf( "error: failed to read file version.\n");
 	g_key_file_free(preset);
 	return;
     }
 
     /* we should adapt the keyfile between version changes */
     if (strncmp(gtmp, version, 13) != 0) {
-	fprintf(stderr, "warning: version number mismatch: %s vs. %s\n", version, gtmp);
+	gnuitar_printf( "warning: version number mismatch: %s vs. %s\n", version, gtmp);
     }
     free(gtmp);
 
     n_effects = g_key_file_get_integer(preset, "global", "effects", &error);
     if (error != NULL) {
-	fprintf(stderr, "error: failed to read effect count.\n");
+	gnuitar_printf( "error: failed to read effect count.\n");
 	g_key_file_free(preset);
 	return;
     }
@@ -864,7 +867,7 @@ load_pump(const char *fname)
 	gtmp = g_strdup_printf("effect%d", i+1);
 	effect_name = g_key_file_get_string(preset, "global", gtmp, &error);
 	if (error != NULL) {
-	    fprintf(stderr, "warning: effect tag '%s' not found\n", gtmp);
+	    gnuitar_printf( "warning: effect tag '%s' not found\n", gtmp);
 	    error = NULL;
 	    free(gtmp);
 	    continue;
@@ -874,7 +877,7 @@ load_pump(const char *fname)
 		break;
 	}
 	if (effect_list[j].str == NULL) {
-	    fprintf(stderr, "warning: no effect called '%s'\n", effect_name);
+	    gnuitar_printf( "warning: no effect called '%s'\n", effect_name);
 	    free(effect_name);
 	    free(gtmp);
 	    continue;
@@ -885,7 +888,7 @@ load_pump(const char *fname)
 	/* read enabled flag */
 	effects[n]->toggle = g_key_file_get_integer(preset, gtmp, "enabled", &error);
 	if (error != NULL) {
-	    fprintf(stderr, "warning: no state flag in '%s'\n", effect_name);
+	    gnuitar_printf( "warning: no state flag in '%s'\n", effect_name);
 	    error = NULL;
 	    free(effect_name);
 	    free(gtmp);
