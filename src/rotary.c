@@ -41,7 +41,7 @@ rotary_init(struct effect *p)
     w = gtk_label_new("Period\n(ms)");
     gtk_table_attach(GTK_TABLE(parmTable), w, 0, 1, 0, 1,
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
     o = gtk_adjustment_new(params->speed, 250, 5000, 1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
@@ -106,27 +106,22 @@ rotary_filter(struct effect *p, struct data_block *db)
         /* update the approximation of sin and cos values to avoid
          * discontinuities between audio blocks */
         if (i % 16 == 0) {
-            float phatmp;
             sinval = sin_lookup(pha);
-            phatmp = pha + 0.25;
-            if (phatmp >= 1.0)
-                phatmp -= 1.0;
-            cosval = sin_lookup(phatmp);
+            cosval = sin_lookup(pha >= 0.75 ? pha - 0.75 : pha + 0.25);
             pha += (float) 16 / sample_rate * 1000.0 / params->speed;
+            // params->speed;
             if (pha >= 1.0)
                 pha -= 1.0;
         }
 
-        /* run the input through allpass delay lines */
-        hilbert_transform(db->data[i], &x0, &x1, &params->hilb);
-        
         /* compute separate f + fc and f - fc outputs */
+        hilbert_transform(db->data[i], &x0, &x1, &params->hilb);
         y0 = cosval * x0 + sinval * x1;
         y1 = cosval * x0 - sinval * x1;
 
         /* factor and biquad estimate hrtf */
-        db->data_swap[i*2+0] = 0.68 * y0 + 0.32 * do_biquad(y1, &params->ld, 0);
-        db->data_swap[i*2+1] = 0.68 * y1 + 0.32 * do_biquad(y0, &params->rd, 0);
+        db->data_swap[i*2+0] = 0.60 * y0 + 0.40 * do_biquad(y1, &params->ld, 0);
+        db->data_swap[i*2+1] = 0.60 * y1 + 0.40 * do_biquad(y0, &params->rd, 0);
     }
     
     /* swap to processed buffer for next effect */
@@ -176,8 +171,8 @@ rotary_create()
     params->speed = 1000;
     params->unread_output = 0;
 
-    set_rc_lowpass_biquad(sample_rate, 4000, &params->ld);
-    set_rc_lowpass_biquad(sample_rate, 4000, &params->rd);
+    set_rc_lowpass_biquad(sample_rate, 2000, &params->ld);
+    set_rc_lowpass_biquad(sample_rate, 2000, &params->rd);
 
     hilbert_init(&params->hilb);
     

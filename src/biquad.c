@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.26  2006/06/20 16:49:52  alankila
+ * - make rotary and phaser more powerful
+ *
  * Revision 1.25  2006/06/16 14:44:14  alankila
  * - use full precision for allpass constants
  * - remove SSE version of biquad code, it was buggy.
@@ -182,11 +185,11 @@ set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
 void
 set_phaser_biquad(double a, Biquad_t *f)
 {
-    f->b0 = a;
-    f->b1 = 0;
+    f->b0 = a * a;
+    f->b1 = a;
     f->b2 = 1;
-    f->a1 = 0;
-    f->a2 = -a;
+    f->a1 = -a;
+    f->a2 = -a * a;
 }
 
 /* A 2nd order allpass, delay can vary from 0 to 1 */
