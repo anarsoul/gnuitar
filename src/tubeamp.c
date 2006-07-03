@@ -8,6 +8,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2006/07/03 12:08:15  alankila
+ * - remove alignment requirement from DSP_SAMPLE; it's not likely we can ever
+ *   really make significant use of the procbuf's alignment due to channel
+ *   interleaving issues.
+ * - move aligned(16) from the datatype to variable declaration; this seems to
+ *   work or at least it didn't crash on me when I tried it on x86-32.
+ *
  * Revision 1.37  2006/06/20 20:41:08  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -250,7 +257,7 @@ DSP_SAMPLE impulse[512] = {
 */
 
  /* Princeton II */
-DSP_SAMPLE_ALIGN impulse[512] = {
+DSP_SAMPLE __attribute__((aligned(16))) impulse[512] = {
   2799,  11631,  23881,  32811,  34786,  30693,  22401,  12097,   3608,    333,   1986,
   5050,   5906,   3149,  -2263,  -7957, -11151,  -9808,  -4421,   1179,   2345,  -1974,
  -8064, -11426, -10826,  -7845,  -4476,  -2085,  -1307,  -1743,  -2306,  -2291,  -1539,

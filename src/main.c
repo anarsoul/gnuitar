@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.57  2006/07/03 12:08:15  alankila
+ * - remove alignment requirement from DSP_SAMPLE; it's not likely we can ever
+ *   really make significant use of the procbuf's alignment due to channel
+ *   interleaving issues.
+ * - move aligned(16) from the datatype to variable declaration; this seems to
+ *   work or at least it didn't crash on me when I tried it on x86-32.
+ *
  * Revision 1.56  2006/06/20 20:41:07  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -276,8 +283,8 @@ pthread_t       audio_thread = 0;
 
 SAMPLE32        wrbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 SAMPLE32        rdbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-DSP_SAMPLE_ALIGN procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-DSP_SAMPLE_ALIGN procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
+DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
+DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
 HANDLE          audio_thread = 0;
 

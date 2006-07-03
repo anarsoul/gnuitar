@@ -44,11 +44,6 @@ typedef gint32	DSP_SAMPLE;
 #endif
 
 #ifdef __SSE__
-typedef DSP_SAMPLE DSP_SAMPLE_ALIGN __attribute__((aligned(16)));
-
-
-
-
 
 /* for SSE we need aligned memory */
 static inline void *
@@ -65,8 +60,6 @@ gnuitar_memalign(size_t num, size_t bytes) {
 }
 
 #else
-typedef DSP_SAMPLE DSP_SAMPLE_ALIGN;
-
 /* without SSE we just wrap calloc */
 static inline void *
 gnuitar_memalign(unsigned int num, size_t bytes)
