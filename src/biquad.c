@@ -19,6 +19,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.27  2006/07/08 16:28:16  alankila
+ * - extend hilbert transform with channel information for effects that could
+ *   be used on channels separately. We've already allocated space in biquads
+ *   for them.
+ *
  * Revision 1.26  2006/06/20 16:49:52  alankila
  * - make rotary and phaser more powerful
  *
@@ -302,7 +307,7 @@ set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f)
 
 /* input is input, output is x0 and x1 with 90° phase separation between them */
 void
-hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h)
+hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h, int curr_channel)
 {
     int i;
     DSP_SAMPLE x0i, x1i;
@@ -312,8 +317,8 @@ hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h
     x1i = input;
 
     for (i = 0; i < 4; i += 1) {
-        x0i = do_biquad(x0i, &h->a1[i], 0);
-        x1i = do_biquad(x1i, &h->a2[i], 0);
+        x0i = do_biquad(x0i, &h->a1[i], curr_channel);
+        x1i = do_biquad(x1i, &h->a2[i], curr_channel);
     }
     *x0 = x0i;
     *x1 = x1i;
@@ -341,4 +346,84 @@ hilbert_init(Hilbert_t *h)
     set_2nd_allpass_biquad(0.8561710882420, &h->a2[1]);
     set_2nd_allpass_biquad(0.9722909545651, &h->a2[2]);
     set_2nd_allpass_biquad(0.9952884791278, &h->a2[3]);
+}
+
+/* Kaiser window with beta=3 used to derive a resampling FIR with flat passband to 40 %,
+ * steep transition band and aliasing down to about 40 % of passband. In practical terms,
+ * this should avoid distortion to 20 kHz for 48 kHz.
+ * 
+ * 0 0.0
+ * 1 -0.0298334888156
+ * 2 0.0
+ * 3 0.0761511273017
+ * 4 0.0
+ * 5 -0.178057362918
+ * 6 0.0
+ * 7 0.624614329241
+ * 8 1.0
+ * 9 0.624614329241
+ * 10 0.0
+ * 11 -0.178057362918
+ * 12 0.0
+ * 13 0.0761511273017
+ * 14 0.0
+ * 15 -0.0298334888156
+ */
+
+/* Obtains two interpolated samples in out1 and out2. You need to imagine that the
+ * signal entering this function is upsampled by injecting 0s between input samples
+ * and then lowpass-filtered by the FIR coefficients given above. Two FIR convolutions
+ * are calculated, one for out1 and out2.
+ * 
+ * For out1 calculation, only the even coefficients matter, because the samples at the
+ * odd coefficients are zero by upsampling. Only the 8th coefficient is 1 and
+ * therefore it consists of only one value, the input delayed by 3 samples.
+ *
+ * For out2 calculation, the sample itself is zero by decimation, so 8th term is
+ * ignored, however the other terms now evaluate to real input samples. Therefore
+ * computing it is more complicated and all the other FIR terms are needed.
+ * out2 is "delayed" by 3.5 samples.
+ */
+void
+fir_interpolate_2x(DSP_SAMPLE *history, DSP_SAMPLE in, DSP_SAMPLE *out1, DSP_SAMPLE *out2)
+{
+    *out1 = history[2];
+    *out2 = 0.6246143292410 * (history[2] + history[3])
+          - 0.1780573629180 * (history[1] + history[4])
+          + 0.0761511273017 * (history[0] + history[5])
+          - 0.0298334888156 * (in         + history[6]);
+
+    /* might be possible to optimize this, but I'm not sure it's worth it. */
+    history[6] = history[5];
+    history[5] = history[4];
+    history[3] = history[3];
+    history[2] = history[1];
+    history[1] = history[0];
+    history[0] = in;
+}
+
+/* The same coefficients as before can be used to calculate the decimation. In
+ * decimating direction, the input consists of two samples and the output is one sample.
+ * The two samples enter the history buffer, and are expected to follow this sequence:
+ * 
+ *   in1, in2, history[0], history[1], history[2], history[3], ...
+ * 
+ * It would also be possible to calculate decimator by reusing the interpolator code
+ * and ignoring out1, but this is more efficient. The decimator also delays input by
+ * 1.5 samples in output rate. */
+void
+fir_decimate_2x(DSP_SAMPLE *history, DSP_SAMPLE in1, DSP_SAMPLE in2, DSP_SAMPLE *out)
+{
+    *out = 0.6246143292410 * (history[1] + history[2])
+         - 0.1780573629180 * (history[0] + history[3])
+         + 0.0761511273017 * (in2        + history[4])
+         - 0.0298334888156 * (in1        + history[5]);
+    
+    history[4] = history[2];
+    history[2] = history[0];
+    history[0] = in1;
+    
+    history[5] = history[3];
+    history[3] = history[1];
+    history[1] = in2;
 }

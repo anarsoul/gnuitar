@@ -115,7 +115,7 @@ rotary_filter(struct effect *p, struct data_block *db)
         }
 
         /* compute separate f + fc and f - fc outputs */
-        hilbert_transform(db->data[i], &x0, &x1, &params->hilb);
+        hilbert_transform(db->data[i], &x0, &x1, &params->hilb, 0);
         y0 = cosval * x0 + sinval * x1;
         y1 = cosval * x0 - sinval * x1;
 

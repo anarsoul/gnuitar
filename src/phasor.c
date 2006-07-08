@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2006/07/08 16:28:16  alankila
+ * - extend hilbert transform with channel information for effects that could
+ *   be used on channels separately. We've already allocated space in biquads
+ *   for them.
+ *
  * Revision 1.38  2006/06/16 14:45:12  alankila
  * - require mono input for stereo switch
  *
@@ -392,7 +397,7 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
             cosval = sin_lookup(ftmp);
         }
 
-        hilbert_transform(db->data[i], &x0, &x1, &params->hilb);
+        hilbert_transform(db->data[i], &x0, &x1, &params->hilb, 0);
         y0 = cosval * x0 + sinval * x1;
         y1 = cosval * x0 - sinval * x1;
 

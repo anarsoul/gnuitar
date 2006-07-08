@@ -18,6 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.27  2006/07/08 16:28:16  alankila
+ * - extend hilbert transform with channel information for effects that could
+ *   be used on channels separately. We've already allocated space in biquads
+ *   for them.
+ *
  * Revision 1.26  2006/06/16 14:44:14  alankila
  * - use full precision for allpass constants
  * - remove SSE version of biquad code, it was buggy.
@@ -168,7 +173,7 @@ extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
 extern void     set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f);
 
-extern void     hilbert_transform(DSP_SAMPLE in, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h);
+extern void     hilbert_transform(DSP_SAMPLE in, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h, int curr_channel);
 extern void     hilbert_init(Hilbert_t *h);
 
 /*

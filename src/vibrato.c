@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2006/07/08 16:28:16  alankila
+ * - extend hilbert transform with channel information for effects that could
+ *   be used on channels separately. We've already allocated space in biquads
+ *   for them.
+ *
  * Revision 1.34  2006/06/16 14:43:42  alankila
  * - add static base pitch shift
  *
@@ -306,7 +311,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
     while (count) {
         DSP_SAMPLE x0, x1;
         float sinval, cosval;
-        hilbert_transform(*s, &x0, &x1, &vp->hilbert);
+        hilbert_transform(*s, &x0, &x1, &vp->hilbert, curr_channel);
         
         sinval = sin_lookup(vp->phase);
         cosval = sin_lookup(vp->phase >= 0.75 ? vp->phase - 0.75 : vp->phase + 0.25);
