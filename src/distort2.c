@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.61  2006/07/08 18:11:33  alankila
+ * - reduce overdrive effect cpu drain by implementing low-pass filtering
+ *   in resampler and reusing the static 720 Hz lowpass filter as decimating
+ *   filter. Should be 10-20 % faster.
+ *
  * Revision 1.60  2006/05/29 23:46:02  alankila
  * - move _GNU_SOURCE into Makefile
  * - align memory for x86-32; x86-64 already aligned memory for us in glibc
@@ -332,8 +337,8 @@
 #define DRIVE_STATIC           50e3     /* ohms */
 #define DRIVE_LOG              500e3    /* ohms */
  
-#define UPSAMPLE	4
-#define MAX_NEWTON_ITERATIONS   50
+#define MAX_NEWTON_ITERATIONS   20      /* limits the time looking for convergence */
+#define UPSAMPLING_RATE         4       /* you can't change this, see upsample[] */
  
 /* the effect is defined in -1.0 .. 1.0 range */
 #define DIST2_DOWNSCALE		(1.0 / MAX_SAMPLE)
@@ -487,7 +492,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp = p->params;
     static double	x,y,x1,x2,f,df,dx,e1,e2;
-    static double upsample [UPSAMPLE];
+    DSP_SAMPLE upsample[UPSAMPLING_RATE];
     double DRIVE = DRIVE_STATIC + dp->drive / 100.0 * DRIVE_LOG;
     double mUt = (20.0 + 100 - 70) * 1e-3;
     /* correct Is with mUt to approximately keep drive the
@@ -508,37 +513,31 @@ distort2_filter(struct effect *p, struct data_block *db)
 	  s[buffer_size-1]==0) {
         for (i = 0; i < MAX_CHANNELS; i += 1) {
             dp->last[i] = 0;
-            dp->lastupsample[i] = 0;
         }
         return;
     }
 
-    set_rc_lowpass_biquad(sample_rate, 720, &dp->rolloff);
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLING_RATE, 720, &dp->rolloff);
     /*
      * process signal; x - input, in the range -1, 1
      */
     while (count) {
-
 	/* scale down to -1..1 range */
 	x = *s ;
 	x *= DIST2_DOWNSCALE ;
-	
-	/* first we prepare the lineary interpoled upsamples */
-	y = 0;
-	upsample[0] = dp->lastupsample[curr_channel];
-	y = 1.0 / UPSAMPLE;  /* temporary usage of y */
-	for (i=1; i< UPSAMPLE; i++)
-	{
-	    upsample[i] = dp->lastupsample[curr_channel] + ( x - dp->lastupsample[curr_channel]) *y;
-	    y += 1.0 / UPSAMPLE;
-	}
-	dp->lastupsample[curr_channel] = x;
-	/* Now the actual upsampled processing */
-	for (i=0; i<UPSAMPLE; i++)
-	{
-            /* XXX bandlimiting should be integrated with the upsampling */
-	    x = do_biquad(upsample[i], &dp->cheb_up, curr_channel);
 
+        /* "properly" interpolate previous input at positions 0 and 2 */
+        fir_interpolate_2x(dp->interpolate_firmem[curr_channel],
+                           x, &upsample[2], &upsample[0]);
+        /* estimate the rest, this should be good enough for our purposes. */
+        upsample[1] = (upsample[0] + upsample[2]) / 2;
+        /* looking into firmem is a gross violation of interface. This will
+         * go away once I design fir_interpolate_4x. */
+        upsample[3] = (3 * upsample[2] + dp->interpolate_firmem[curr_channel][2]) / 4;
+
+	/* Now the actual upsampled processing */
+	for (i = 0; i < UPSAMPLING_RATE; i++)
+	{
 	    /* first compute the linear rc filter current output */
 	    x2 = do_biquad(x, &dp->feedback_minus_loop, curr_channel);
             
@@ -573,11 +572,10 @@ distort2_filter(struct effect *p, struct data_block *db)
                 y = 0;
             
 	    dp->last[curr_channel] = y;
-            /* decimation filter; values are thrown away except for last */
-	    y = do_biquad(y, &dp->cheb_down, curr_channel);
+            /* static lowpass filtering -- this doubles as our decimation filter
+             * the rolloff is at 720 Hz, but is only 6 dB/oct. */
+            y = do_biquad(y, &dp->rolloff, curr_channel);
 	}
-        /* static lowpass filtering */
-        y = do_biquad(y, &dp->rolloff, curr_channel);
         /* treble control + other final output filtering */
         y += (y - do_biquad(y, &dp->treble_highpass, curr_channel)) * dp->treble / 3.0;
         y = do_biquad(y, &dp->output_bass_cut, curr_channel);
@@ -648,12 +646,9 @@ distort2_create()
     ap->clip = 100.0;
     ap->treble = 6.0;
 
-    /* lowpass Chebyshev filters for resampling */
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_down);
-    set_chebyshev1_biquad(sample_rate * UPSAMPLE, sample_rate/2, 0.5, 1, &ap->cheb_up);
     /* static shapers */
     set_rc_lowpass_biquad(sample_rate, 3200, &ap->treble_highpass);
-    set_rc_lowpass_biquad(sample_rate * UPSAMPLE,
+    set_rc_lowpass_biquad(sample_rate * UPSAMPLING_RATE, 
             1 / (2 * M_PI * RC_FEEDBACK_R * RC_FEEDBACK_C),
             &ap->feedback_minus_loop);
     set_rc_highpass_biquad(sample_rate, 160, &ap->output_bass_cut);

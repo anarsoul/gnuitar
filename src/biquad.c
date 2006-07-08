@@ -19,6 +19,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.28  2006/07/08 18:11:33  alankila
+ * - reduce overdrive effect cpu drain by implementing low-pass filtering
+ *   in resampler and reusing the static 720 Hz lowpass filter as decimating
+ *   filter. Should be 10-20 % faster.
+ *
  * Revision 1.27  2006/07/08 16:28:16  alankila
  * - extend hilbert transform with channel information for effects that could
  *   be used on channels separately. We've already allocated space in biquads
@@ -348,28 +353,6 @@ hilbert_init(Hilbert_t *h)
     set_2nd_allpass_biquad(0.9952884791278, &h->a2[3]);
 }
 
-/* Kaiser window with beta=3 used to derive a resampling FIR with flat passband to 40 %,
- * steep transition band and aliasing down to about 40 % of passband. In practical terms,
- * this should avoid distortion to 20 kHz for 48 kHz.
- * 
- * 0 0.0
- * 1 -0.0298334888156
- * 2 0.0
- * 3 0.0761511273017
- * 4 0.0
- * 5 -0.178057362918
- * 6 0.0
- * 7 0.624614329241
- * 8 1.0
- * 9 0.624614329241
- * 10 0.0
- * 11 -0.178057362918
- * 12 0.0
- * 13 0.0761511273017
- * 14 0.0
- * 15 -0.0298334888156
- */
-
 /* Obtains two interpolated samples in out1 and out2. You need to imagine that the
  * signal entering this function is upsampled by injecting 0s between input samples
  * and then lowpass-filtered by the FIR coefficients given above. Two FIR convolutions
@@ -379,24 +362,25 @@ hilbert_init(Hilbert_t *h)
  * odd coefficients are zero by upsampling. Only the 8th coefficient is 1 and
  * therefore it consists of only one value, the input delayed by 3 samples.
  *
- * For out2 calculation, the sample itself is zero by decimation, so 8th term is
+ * For out2 calculation, the sample itself is zero by upsampling, so 8th term is
  * ignored, however the other terms now evaluate to real input samples. Therefore
- * computing it is more complicated and all the other FIR terms are needed.
+ * computing it looks more complicated and all the other FIR terms are needed.
  * out2 is "delayed" by 3.5 samples.
  */
 void
 fir_interpolate_2x(DSP_SAMPLE *history, DSP_SAMPLE in, DSP_SAMPLE *out1, DSP_SAMPLE *out2)
 {
     *out1 = history[2];
-    *out2 = 0.6246143292410 * (history[2] + history[3])
-          - 0.1780573629180 * (history[1] + history[4])
-          + 0.0761511273017 * (history[0] + history[5])
-          - 0.0298334888156 * (in         + history[6]);
+    *out2 = 0.6147129043790 * (history[2] + history[3])
+          - 0.1534261286990 * (history[1] + history[4])
+          + 0.0485966537018 * (history[0] + history[5])
+          - 0.0103402076432 * (in         + history[6]);
 
     /* might be possible to optimize this, but I'm not sure it's worth it. */
     history[6] = history[5];
     history[5] = history[4];
-    history[3] = history[3];
+    history[4] = history[3];
+    history[3] = history[2];
     history[2] = history[1];
     history[1] = history[0];
     history[0] = in;
@@ -411,13 +395,15 @@ fir_interpolate_2x(DSP_SAMPLE *history, DSP_SAMPLE in, DSP_SAMPLE *out1, DSP_SAM
  * It would also be possible to calculate decimator by reusing the interpolator code
  * and ignoring out1, but this is more efficient. The decimator also delays input by
  * 1.5 samples in output rate. */
-void
-fir_decimate_2x(DSP_SAMPLE *history, DSP_SAMPLE in1, DSP_SAMPLE in2, DSP_SAMPLE *out)
+DSP_SAMPLE
+fir_decimate_2x(DSP_SAMPLE *history, DSP_SAMPLE in1, DSP_SAMPLE in2)
 {
-    *out = 0.6246143292410 * (history[1] + history[2])
-         - 0.1780573629180 * (history[0] + history[3])
-         + 0.0761511273017 * (in2        + history[4])
-         - 0.0298334888156 * (in1        + history[5]);
+    DSP_SAMPLE out;
+    
+    out = 0.6147129043790 * (history[1] + history[2])
+        - 0.1534261286990 * (history[0] + history[3])
+        + 0.0485966537018 * (in2        + history[4])
+        - 0.0103402076432 * (in1        + history[5]);
     
     history[4] = history[2];
     history[2] = history[0];
@@ -426,4 +412,6 @@ fir_decimate_2x(DSP_SAMPLE *history, DSP_SAMPLE in1, DSP_SAMPLE in2, DSP_SAMPLE 
     history[5] = history[3];
     history[3] = history[1];
     history[1] = in2;
+
+    return out;
 }

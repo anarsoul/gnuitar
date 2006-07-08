@@ -31,9 +31,9 @@ extern effect_t *distort2_create();
 struct distort2_params {
     double      drive, clip, treble;
     double 	last[MAX_CHANNELS];
-    double	lastupsample[MAX_CHANNELS];
-    Biquad_t    cheb_up, cheb_down,
-                feedback_minus_loop, output_bass_cut,
+
+    DSP_SAMPLE  interpolate_firmem[MAX_CHANNELS][8];
+    Biquad_t    feedback_minus_loop, output_bass_cut,
                 rolloff, treble_highpass;
 };
 
