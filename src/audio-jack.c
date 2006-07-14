@@ -20,6 +20,14 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2006/07/14 23:11:41  alankila
+ * - set jack buffer size from gnuitar (this might not be the most friendly
+ *   thing to do, but we can do it and I think we should).
+ * - add 1,4 and 2,4 channel pairs to the config. To make these work you need
+ *   an asym surroud40 type .asoundrc configuration, though.
+ * - add sample rate adjustment callback. I'd prefer to be able to force
+ *   sample_rate myself, but this will have to do.
+ *
  * Revision 1.4  2006/07/14 21:24:18  alankila
  * - fix English, normalise spacing
  * - add tests to ensure that input and output ports do exist
@@ -67,11 +75,13 @@ process (jack_nframes_t nframes, void *arg)
         .data = procbuf,
         .data_swap = procbuf2,
     };
+
+    if (state != STATE_PROCESS)
+        return 0;
     
     if (nframes != buffer_size)
     {
-	gnuitar_printf("JACK gave %d frames instead of expected %d\n",
-                       nframes, buffer_size);
+	gnuitar_printf("Adapting to JACK buffer size of %d frames\n", nframes);
 	buffer_size = nframes;
     }
     
@@ -147,6 +157,12 @@ jack_shutdown (void *arg)
     jack_finish_sound();
 }
 
+static int
+update_sample_rate(jack_nframes_t nframes, void *args)
+{
+    sample_rate = nframes;
+    return 0;
+}
 
 /*
  * sound initialization
@@ -154,7 +170,7 @@ jack_shutdown (void *arg)
 static int
 jack_init_sound(void)
 {
-    unsigned int temp_rate, temp_buffersize;
+    unsigned int temp_rate;
     int i;
     const char **ports;
     char portname[20];
@@ -168,11 +184,11 @@ jack_init_sound(void)
     }
     
     // This function is called as soon as data becomes available.
-    jack_set_process_callback (client, process, 0);
+    jack_set_process_callback(client, process, NULL);
     
     // Tell the JACK server to call jack_shutdown() if if it shuts down
-    jack_on_shutdown(client, jack_shutdown, 0);
-    
+    jack_on_shutdown(client, jack_shutdown, NULL);
+        
     // adapting to JACK's sample rate and buffer size
     temp_rate = jack_get_sample_rate(client);
     if (temp_rate != sample_rate)
@@ -180,14 +196,9 @@ jack_init_sound(void)
 	gnuitar_printf("Adapting to JACK's sample rate: %d\n", temp_rate);
 	sample_rate = temp_rate;
     }
-    
-    temp_buffersize = jack_get_buffer_size (client);
-    if (temp_buffersize != buffer_size)
-    {
-	gnuitar_printf("Adapting to JACK's buffer size: %d\n", temp_buffersize);
-	buffer_size = temp_buffersize;
-    }
+    jack_set_sample_rate_callback(client, update_sample_rate, NULL);
    
+    
     // register I/O ports
     if (n_input_channels > MAX_CHANNELS) n_input_channels = MAX_CHANNELS;
     if (n_output_channels > MAX_CHANNELS) n_output_channels = MAX_CHANNELS;
@@ -233,6 +244,9 @@ jack_init_sound(void)
 	return ERR_WAVEOUTOPEN;
     }
    
+    /* Try to set buffer size for JACK.
+     * Whether this succeeds or not will be found out in the next call to process(). */ 
+    jack_set_buffer_size(client, buffer_size);
     
     // Connecting capture ports to our ports
     ports = jack_get_ports(client, NULL, NULL,
@@ -326,7 +340,9 @@ jack_available()
 static struct audio_driver_channels jack_channels_cfg[] = {
     { 1, 1 },
     { 1, 2 },
+    { 1, 4 },
     { 2, 2 },
+    { 2, 4 },
     { 0, 0 }
 };
 
