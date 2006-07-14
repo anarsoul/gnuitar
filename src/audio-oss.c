@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2006/07/14 14:19:50  alankila
+ * - gui: OSS now supports 1-in 2-out mode.
+ * - alsa: try to use recorded settings values before adapting attempts
+ * - alsa: log adapt attempts and results
+ *
  * Revision 1.18  2006/06/20 20:41:05  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -153,11 +158,11 @@ oss_audio_thread(void *V)
 	read_timeout.tv_sec  = 0;
 	read_timeout.tv_usec = 0;
         do {
-	    count = read(fd, rdbuf16, buffer_size * n_input_channels * 2);
+	    count = read(fd, rdbuf16, buffer_size * n_output_channels * 2);
             if (count < 0) {
                 perror("error reading from sound device: ");
                 break;
-            } else if (count != buffer_size * n_input_channels * 2) {
+            } else if (count != buffer_size * n_output_channels * 2) {
                 gnuitar_printf( "warning: short read (%d/%d) from sound device\n", count, buffer_size);
                 break;
 	    }
@@ -166,9 +171,15 @@ oss_audio_thread(void *V)
         db.len = buffer_size * n_input_channels;
         db.channels = n_input_channels;
 
-	/* 16 bits is the only possible for OSS */
-	for (i = 0; i < db.len; i++)
-	    db.data[i] = rdbuf16[i] << 8;
+        if (n_input_channels == n_output_channels) {
+            /* 16 bits is the only possible for OSS */
+            for (i = 0; i < db.len; i++)
+                db.data[i] = rdbuf16[i] << 8;
+        } else {
+            /* 1 in, 2 out -- discard the right channel */
+            for (i = 0; i < db.len; i ++)
+                db.data[i] = rdbuf16[i * 2] << 8;
+        }
 	pump_sample(&db);
 
         /* Ensure that pump adapted us to output */
@@ -219,7 +230,7 @@ oss_init_sound(void)
      *                           9 for 512
      *                           etc.
      */
-    i = 0x7fff0000 + (int) (log(buffer_size * 2 * n_input_channels) / log(2));
+    i = 0x7fff0000 + (int) (log(buffer_size * 2 * n_output_channels) / log(2));
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
 	gnuitar_printf( "Cannot setup fragments!\n");
 	close(fd);
@@ -254,11 +265,9 @@ oss_init_sound(void)
 	return ERR_WAVESETBIT;
     }
 
-    i = n_input_channels;
-    /* doesn't support asymmetric in/out */
-    n_output_channels = n_input_channels;
+    i = n_output_channels;
     if (ioctl(fd, SNDCTL_DSP_CHANNELS, &i) == -1) {
-	gnuitar_printf( "Cannot setup mono audio!\n");
+	gnuitar_printf( "Cannot setup %d-channel audio!\n", i);
 	close(fd);
 	return ERR_WAVESETCHANNELS;
     }
@@ -287,6 +296,7 @@ oss_available() {
 
 static struct audio_driver_channels oss_channels_cfg[] = {
     { 1, 1 },
+    { 1, 2 },
     { 2, 2 },
     { 0, 0 }
 };

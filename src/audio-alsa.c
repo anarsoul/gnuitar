@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2006/07/14 14:19:50  alankila
+ * - gui: OSS now supports 1-in 2-out mode.
+ * - alsa: try to use recorded settings values before adapting attempts
+ * - alsa: log adapt attempts and results
+ *
  * Revision 1.31  2006/06/20 20:41:05  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -299,7 +304,7 @@ alsa_finish_sound(void)
 /* The adapting flag allows the first invocation to change sampling parameters.
  * On the second call, adapting is disabled. This is done to force identical
  * parameters on the two devices, which may not even be same physical
- * hardware. */
+ * hardware. The return code from this function is an error code. */
 static int
 alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *frames, int channels, int adapting)
 {
@@ -310,6 +315,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     snd_pcm_hw_params_t *hw_params;
     int                 err;
     unsigned int        tmp;
+    snd_pcm_uframes_t   alsa_frames;
     
     if ((err = snd_pcm_hw_params_malloc(&hw_params)) < 0) {
         gnuitar_printf( "can't allocate parameter structure: %s\n",
@@ -344,20 +350,6 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 	return 1;
     }
 
-    tmp = sample_rate;    
-    if ((err = adapting
-            ? snd_pcm_hw_params_set_rate_near(device, hw_params, &tmp, 0)
-            : snd_pcm_hw_params_set_rate(device, hw_params, tmp, 0)) < 0) {
-        gnuitar_printf( "can't set sample rate %d: %s\n", tmp,
-                 snd_strerror(err));
-        snd_pcm_hw_params_free(hw_params);
-	return 1;
-    }
-    if (tmp != sample_rate) {
-        gnuitar_printf( "can't set requested sample rate, asked for %d got %d\n", sample_rate, tmp);
-        sample_rate = tmp;
-    }
-
     if ((err = snd_pcm_hw_params_set_channels(device, hw_params, channels)) < 0) {
         gnuitar_printf( "can't set channel count %d: %s\n", channels,
                  snd_strerror(err));
@@ -366,8 +358,29 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     }
 
     if (adapting) {
-        /* let the sound driver pick something that we agree to be happy with */
-        snd_pcm_uframes_t alsa_frames;
+        /* Adapting path: choose values for the tunables:
+         * sampling rate, fragment size, number of fragments. */
+        tmp = sample_rate;
+        if ((err = snd_pcm_hw_params_set_rate_near(device, hw_params, &tmp, 0)) < 0) {
+            gnuitar_printf("can't set sample rate %d: %s\n", tmp,
+                     snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
+        }
+        if (tmp != sample_rate) {
+            gnuitar_printf( "can't set requested sample rate, asked for %d got %d\n", sample_rate, tmp);
+            sample_rate = tmp;
+        }
+
+        /* tell alsa how many periods we would like to have */
+        if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
+	    gnuitar_printf("can't set fragments %d value on ALSA device: %s\n",
+                           *fragments, snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
+        }
+
+        /* let the sound driver pick period size as appropriate. */
         tmp = (float) (*frames * *fragments) / sample_rate * 1E6;
 
         if ((err = snd_pcm_hw_params_set_buffer_time_near(device, hw_params, &tmp, NULL)) < 0) {
@@ -391,6 +404,14 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
             return 1;
         }
     } else {
+        /* use the fixed values given before */
+        tmp = sample_rate;
+        if ((err = snd_pcm_hw_params_set_rate(device, hw_params, tmp, 0)) < 0) {
+            gnuitar_printf("can't set sample rate %d: %s\n", tmp,
+                     snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+            return 1;
+        }
         if ((err = snd_pcm_hw_params_set_period_size(device, hw_params, *frames, 0)) < 0) {
             gnuitar_printf( "can't set period size to %d frames: %s\n",
                     (int) *frames, snd_strerror(err));
@@ -399,7 +420,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
         }
         
         if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
-            gnuitar_printf( "can't set periods to %d: %s\n", *fragments,
+            gnuitar_printf("can't set periods to %d: %s\n", *fragments,
                     snd_strerror(err));
 
             snd_pcm_hw_params_free(hw_params);
@@ -408,7 +429,7 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     }
 
     if ((err = snd_pcm_hw_params(device, hw_params)) < 0) {
-        gnuitar_printf( "Error setting HW params: %s\n",
+        gnuitar_printf("Error setting HW params: %s\n",
                 snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
@@ -426,7 +447,7 @@ alsa_init_sound(void)
 {
     char           *alsadevice_in_str;
     int             err;
-    unsigned int    frames, fragments_try, tries;
+    unsigned int    bs_try, fragments_try, tries;
 
     if ((err = snd_pcm_open(&playback_handle, alsadevice_str, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 	gnuitar_printf( "can't open output audio device %s: %s\n", alsadevice_str, snd_strerror(err));
@@ -445,48 +466,65 @@ alsa_init_sound(void)
 	return ERR_WAVEINOPEN;
     }
 
-    tries = 0;
-    fragments = 2;
-    while (tries < MAX_TRIES) {
-	/* since the parameters could take a different form depending on which is
-         * configured first, try configuring both ways before incrementing
-         * fragments */ 
-	frames = buffer_size;
-	fragments_try = fragments;
-        
-	if (
-(alsa_configure_audio(capture_handle, &fragments, &frames, n_input_channels, 1)
-|| alsa_configure_audio(playback_handle, &fragments, &frames, n_output_channels, 0))
-        ) {
-	    /* no go; try the other way */
+    /* try to configure the same parameters as recorded in the config file.
+     * If it works, we're done and skip the entire adapting attempt. */
+    bs_try = buffer_size;
+    fragments_try = fragments;
+    if (
+  (alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  0)
+|| alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, 0))
+    ) {
+        gnuitar_printf("trying to find working period size and number configuration.\n");
+        /* no go -- we'll have to try to perturb the user settings
+         * and find a working arrangement. */
+        tries = 0;
+        fragments = 2;
+        while (tries < MAX_TRIES) {
+            /* since the parameters could take a different form depending on which is
+             * configured first, try configuring both ways before incrementing
+             * fragments */ 
+            bs_try = buffer_size;
             fragments_try = fragments;
-            frames = buffer_size;
-            
+        
             if (
-(alsa_configure_audio(playback_handle, &fragments_try, &frames, n_output_channels, 1)
-|| alsa_configure_audio(capture_handle, &fragments_try, &frames, n_input_channels, 0))
+  (alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  1)
+|| alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, 0))
             ) {
-                /* no go -- try with more fragments */
-		fragments += 1;
-                /* XXX should we try perturbing buffer size too? */
+                /* no go; try the other way */
+                bs_try = buffer_size;
+                fragments_try = fragments;
+            
+                if (
+  (alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, 1)
+|| alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  0))
+                ) {
+                    /* no go; try with more fragments */
+                    fragments += 1;
+                    /* XXX: we should try perturbing the buffer size, too. */
+                } else {
+                    break;
+                }
             } else {
                 break;
             }
-	} else {
-            break;
+            tries++;
         }
-        tries++;
-    }
-    /* if reached max we failed to find anything workable */
-    if (tries == MAX_TRIES) {
-        snd_pcm_close(playback_handle);
-        snd_pcm_close(capture_handle);
-	return ERR_WAVEFRAGMENT;
+        /* if reached max we failed to find anything workable */
+        if (tries == MAX_TRIES) {
+            snd_pcm_close(playback_handle);
+            snd_pcm_close(capture_handle);
+            
+            gnuitar_printf("audio device open failed -- max reconfigure attempts reached.\n");
+            return ERR_WAVEFRAGMENT;
+        }
+        gnuitar_printf("alsa device configured for %d period size and %d periods\n", bs_try, fragments_try);
     }
     
-    buffer_size = frames;
+    /* the adapting step may have altered these settings, so copy them back. */
+    fragments = fragments_try;
+    buffer_size = bs_try;
+    
     restarting = 1;
-    
     state = STATE_PROCESS;
     alsa_driver.enabled = 1;
     my_unlock_mutex(snd_open);

@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.84  2006/07/14 14:19:50  alankila
+ * - gui: OSS now supports 1-in 2-out mode.
+ * - alsa: try to use recorded settings values before adapting attempts
+ * - alsa: log adapt attempts and results
+ *
  * Revision 1.83  2006/06/20 20:41:06  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -405,7 +410,7 @@ static void     quit(GtkWidget *, gpointer);
 static void     about_dlg(void);
 static void     help_contents(void);
 
-static gchar *effects_dir = ".";
+static gchar *effects_dir = NULL;
 
 static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_File", "<alt>F", NULL, 0, "<Branch>"},
@@ -1051,7 +1056,8 @@ bank_add_pressed(GtkWidget * widget, gpointer data)
     GtkWidget      *filesel;
 
     filesel = gtk_file_selection_new("Select preset to add");
-    gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
+    if (effects_dir)
+        gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_add),
 		       filesel);
@@ -1112,7 +1118,8 @@ bank_start_save(GtkWidget * widget, gpointer data)
     GtkWidget      *filesel;
 
     filesel = gtk_file_selection_new("Save current effect settings");
-    gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
+    if (effects_dir)
+        gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_save),
 		       filesel);
@@ -1141,7 +1148,8 @@ bank_start_load(GtkWidget * widget, gpointer data)
     GtkWidget      *filesel;
 
     filesel = gtk_file_selection_new("Load effect settings");
-    gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
+    if (effects_dir)
+        gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), effects_dir);
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(filesel)->ok_button),
 		       "clicked", GTK_SIGNAL_FUNC(bank_perform_load),
 		       filesel);
@@ -1307,10 +1315,6 @@ populate_sparams_channels(GtkWidget *w)
     GList *channels_list = NULL, *iter = NULL;
     gchar *defchoice = NULL;
 
-    /* OSS can't do asymmetric in/out */
-    if (audio_driver && strcmp(audio_driver->str, "OSS") == 0) {
-        n_output_channels = n_input_channels;
-    }
     defchoice = g_strdup_printf("%d in - %d out", n_input_channels, n_output_channels);
 
     if (audio_driver) {
@@ -1822,7 +1826,6 @@ init_gui(void)
 #endif
     GtkStyle       *style;
     
-
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(mainWnd, 700, 450);
     tbl = gtk_table_new(7, 6, FALSE);
