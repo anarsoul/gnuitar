@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/07/14 21:24:18  alankila
+ * - fix English, normalise spacing
+ * - add tests to ensure that input and output ports do exist
+ * - force the driver to give up if all specified input/output ports can not
+ *   be registered.
+ * - don't leak memory on failed JACK initialisations.
+ *
  * Revision 1.3  2006/06/20 20:41:05  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -43,99 +50,71 @@
 #include "pump.h"
 #include "main.h"
 
+static char *jack_server_name = NULL; /* in the future, maybe something else? */
 static jack_options_t options = JackNullOption;
 
 static jack_status_t status;
 static jack_client_t *client;
-static jack_port_t *input_ports[4]; //capture ports
-static jack_port_t *output_ports[4]; //playback ports
-//volatile static unsigned short buf_ready;
+static jack_port_t *input_ports[MAX_CHANNELS];  // capture ports
+static jack_port_t *output_ports[MAX_CHANNELS]; // playback ports
 
-int 
+static int 
 process (jack_nframes_t nframes, void *arg)
 {
-    if (state != STATE_PROCESS) return 0;
-    if (!jack_driver.enabled) return 0;
-
-    jack_default_audio_sample_t *in[4], *out[4], *buf;
     int i,j,k;
-//    size_t size =  sizeof (jack_default_audio_sample_t) * nframes;
-//    SAMPLE16    *rdbuf16 = (SAMPLE16 *) rdbuf;
-    SAMPLE32    *rdbuf32 = (SAMPLE32 *) rdbuf;
-//    SAMPLE16    *wrbuf16 = (SAMPLE16 *) wrbuf;
-    SAMPLE32    *wrbuf32 = (SAMPLE32 *) wrbuf;
-
-    
-    static struct data_block db;
-    
-    db.data = procbuf;
-    db.data_swap = procbuf2;
-    db.len = buffer_size * n_output_channels;
+    jack_default_audio_sample_t *in[MAX_CHANNELS], *out[MAX_CHANNELS];
+    static struct data_block db = {
+        .data = procbuf,
+        .data_swap = procbuf2,
+    };
     
     if (nframes != buffer_size)
     {
-	gnuitar_printf("Buffer size and nframes are different\n");
+	gnuitar_printf("JACK gave %d frames instead of expected %d\n",
+                       nframes, buffer_size);
 	buffer_size = nframes;
     }
     
     my_lock_mutex(snd_open);
     
     //capturing
-    buf = (jack_default_audio_sample_t *)rdbuf;
     db.len = buffer_size * n_input_channels;
     db.channels = n_input_channels;
     
-    for (k = 0; k < n_input_channels; k++)
-    {
-	in[k] = jack_port_get_buffer (input_ports[k], nframes);
+    for (k = 0; k < n_input_channels; k++) {
+        jack_default_audio_sample_t *buf = jack_port_get_buffer(input_ports[k], nframes);
+        assert(buf != NULL);
+        in[k] = buf;
     }
     
-	
     k = 0;
     for (i = 0; i < nframes; i++)
     {
 	for (j = 0; j < n_input_channels; j++)
-	{
-	    if (in[j][i]>0) rdbuf32[k] = (SAMPLE32) (in[j][i]*8388607.0);
-	    else rdbuf32[k] = (SAMPLE32) (in[j][i]*8388608.0);
-	    k++;
-	}
+            db.data[k++] = in[j][i] * (1 << 23);
     }
-	
-    
-    for (i = 0; i < db.len; i++)
-	db.data[i] = rdbuf32[i];
     
     pump_sample(&db);
     
     assert(db.channels == n_output_channels);
     assert(db.len / n_output_channels == buffer_size);
     
-    //playback
-    for (i = 0; i < db.len; i++)
-	wrbuf32[i] = (SAMPLE32) db.data[i];
-    
-    for (k = 0; k < n_output_channels; k++)
-    {
-	out[k] = jack_port_get_buffer (output_ports[k], nframes);
+    for (k = 0; k < n_output_channels; k++) {
+        jack_default_audio_sample_t *buf = jack_port_get_buffer(output_ports[k], nframes);
+        assert(buf != NULL);
+        out[k] = buf;
     }
+    
     k = 0;	
     for (i = 0; i < nframes; i++)
     {
 	for (j = 0; j < n_output_channels; j++)
-	{
-	    if (wrbuf[k] > 0) out[j][i] = (jack_default_audio_sample_t) wrbuf[k]/8388607.0;
-	    else
-    	    out[j][i] = (jack_default_audio_sample_t) wrbuf[k]/8388608.0;
-	    k++;
-	}	
-    
+            out[j][i] = (jack_default_audio_sample_t) db.data[k++] / (1 << 23);
     }
     
     my_unlock_mutex(snd_open);
 
     return 0;
-
 }
 
 
@@ -149,18 +128,15 @@ jack_finish_sound(void)
     state = STATE_PAUSE;
     my_lock_mutex(snd_open);
     jack_driver.enabled = 0;
-    jack_client_close (client);
+    jack_client_close(client);
+    client = NULL;
 }
 
+/* The audio thread is unnecessary for JACK.
+ * It's still started, but it exits as soon as it starts. */
 static void *
 jack_audio_thread(void *V)
 {
-    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
-	
-	usleep(1000);
-    }
-    jack_driver.enabled = 0;
-    
     return NULL;
 }
 
@@ -178,44 +154,27 @@ jack_shutdown (void *arg)
 static int
 jack_init_sound(void)
 {
-    const char *server_name = NULL;
     unsigned int temp_rate, temp_buffersize;
     int i;
     const char **ports;
-    char portname[256];
+    char portname[20];
     
-    //buf_ready = 0;
-    options = JackNullOption;
-
     //creating jack client
-    client = jack_client_open ("GNUitar", options, &status, server_name);
-    
-    if (client == 0)
+    client = jack_client_open ("GNUitar", options, &status, jack_server_name);
+    if (client == NULL)
     {
-	gnuitar_printf ("jack_client_new() failed\n");
-//	    "status = 0x%2.0x\n", status);
-//	if (status & JackServerFailed) 
-//	{
-//	    fprintf(stderr, "Unable to connect to JACK server \n");
-//	}
-	
+	gnuitar_printf ("jack_client_new() failed (status=%d)\n", status);
 	return ERR_WAVEOUTOPEN;
     }
     
-    //thread_info.client = client;
-    //thread_info.can_process = 0;
-    //setting up callback function
+    // This function is called as soon as data becomes available.
     jack_set_process_callback (client, process, 0);
     
-    //tell the JACK server to call 'jack_shutdown()' if
-    //if ever shuts down
-    jack_on_shutdown (client, jack_shutdown, 0);
+    // Tell the JACK server to call jack_shutdown() if if it shuts down
+    jack_on_shutdown(client, jack_shutdown, 0);
     
-    
-    //adapting to JACK's sample rate and buffer size
-    //'cos we have no own resampler :)
-    temp_rate = jack_get_sample_rate (client);
-    
+    // adapting to JACK's sample rate and buffer size
+    temp_rate = jack_get_sample_rate(client);
     if (temp_rate != sample_rate)
     {
 	gnuitar_printf("Adapting to JACK's sample rate: %d\n", temp_rate);
@@ -223,144 +182,121 @@ jack_init_sound(void)
     }
     
     temp_buffersize = jack_get_buffer_size (client);
-    
     if (temp_buffersize != buffer_size)
     {
 	gnuitar_printf("Adapting to JACK's buffer size: %d\n", temp_buffersize);
 	buffer_size = temp_buffersize;
     }
-    
-    if (sizeof(jack_default_audio_sample_t) == 4 && bits != 32)
-    {
-	bits = sizeof(jack_default_audio_sample_t) << 3;
-	gnuitar_printf("Adapting to JACK's bits: %d\n", bits);
-
-    }
-    
-    if (sizeof(jack_default_audio_sample_t) == 2 && bits != 16)
-    {
-	bits = sizeof(jack_default_audio_sample_t) << 3;
-	gnuitar_printf("Adapting to JACK's bits: %d\n", bits);
-
-    }
-    
-    //gnuitar_printf(stderr, "Bits: %d\n", bits);
-    //registering input\output ports
-    if (n_input_channels > 4) n_input_channels = 4;
-    if (n_output_channels > 4) n_output_channels = 4;
+   
+    // register I/O ports
+    if (n_input_channels > MAX_CHANNELS) n_input_channels = MAX_CHANNELS;
+    if (n_output_channels > MAX_CHANNELS) n_output_channels = MAX_CHANNELS;
     
     for (i = 0; i < n_input_channels; i++)
     {
 	sprintf(portname, "input_%d", i);
-	input_ports[i] = jack_port_register (client, portname,
+	input_ports[i] = jack_port_register(client, portname,
 					    JACK_DEFAULT_AUDIO_TYPE,
 					    JackPortIsInput, 0);
 	if (input_ports[i] == NULL) 
 	{
-	    gnuitar_printf("no more JACK ports available\n");
+	    gnuitar_printf("Registering input ports: tried to register %s but failed.\n",
+                           portname);
 	    jack_client_close(client);
 	    return ERR_WAVEINOPEN;
 	}
     
     }
     
-    for (i = 0; i< n_output_channels; i++)
+    for (i = 0; i < n_output_channels; i++)
     {
 	sprintf(portname, "output_%d", i);
-	output_ports[i] = jack_port_register (client, portname,					    
-					    JACK_DEFAULT_AUDIO_TYPE,
-					    JackPortIsOutput, 0);
+	output_ports[i] = jack_port_register(client, portname,
+					     JACK_DEFAULT_AUDIO_TYPE,
+					     JackPortIsOutput, 0);
 	if (output_ports[i] == NULL) 
 	{
-	    gnuitar_printf("no more JACK ports available\n");
+	    gnuitar_printf("Registering output ports: tried to register %s but failed.\n",
+                           portname);
 	    jack_client_close(client);
 	    return ERR_WAVEOUTOPEN;
 	}
     
     }
     
-    //Tell the JACK server that we are ready to roll. Out process()
-    //callback will start running now
-    
-    if (jack_activate (client))
+    // Tell the JACK server that we are ready to roll. Our process()
+    // callback will start running now.
+    if (jack_activate(client))
     {
-	gnuitar_printf ("Cannot activate client");
+	gnuitar_printf("failed to active client -- unknown reason, see STDERR output\n");
 	jack_client_close(client);
 	return ERR_WAVEOUTOPEN;
     }
+   
     
-    //Connect the ports. We can't do this before the client is
-    //activated
-    
-
-    
-    //connecting capture ports;
-    ports = jack_get_ports (client, NULL, NULL,
-		JackPortIsPhysical|JackPortIsOutput);
+    // Connecting capture ports to our ports
+    ports = jack_get_ports(client, NULL, NULL,
+                           JackPortIsPhysical|JackPortIsOutput);
 		
     if (ports == NULL)
     {
-	gnuitar_printf("no physical capture ports\n");
+	gnuitar_printf("No physical capture ports!\n");
 	jack_client_close(client);
 	return ERR_WAVEINOPEN;
     }
     
     for (i = 0; i < n_input_channels; i++)
     {
-	gnuitar_printf("physical capture port: %s\n", ports[i]);
-	if (ports[i] == 0)
+	if (ports[i] == NULL)
 	{
-	    gnuitar_printf("No such ports\n");
-	    //jack_client_close(client);
-	    //return ERR_WAVEINOPEN;
-	}
-
-	if (jack_connect(client, ports[i], jack_port_name (input_ports[i]))) 
-	{
-	    gnuitar_printf("Cannot connect capture ports\n");
+	    gnuitar_printf("No physical capture port for channel %d!\n", i+1);
 	    jack_client_close(client);
+            free(ports);
 	    return ERR_WAVEINOPEN;
 	}
-    
+        gnuitar_printf("Reading channel %d input from port: %s\n", i+1, ports[i]);
+
+	if (jack_connect(client, ports[i], jack_port_name(input_ports[i]))) 
+	{
+	    gnuitar_printf("Cannot connect capture port %s to %s\n", ports[i], jack_port_name(input_ports[i]));
+	    jack_client_close(client);
+            free(ports);
+	    return ERR_WAVEINOPEN;
+	}
     }
+    free(ports);
     
-    free (ports);
-    
-    //connecting playback ports;
-    ports = jack_get_ports (client, NULL, NULL,
-		JackPortIsPhysical|JackPortIsInput);
+    // Connecting our ports to playback ports
+    ports = jack_get_ports(client, NULL, NULL,
+		           JackPortIsPhysical|JackPortIsInput);
 		
     if (ports == NULL)
     {
-	gnuitar_printf("no physical playback ports\n");
+	gnuitar_printf("No physical playback ports.\n");
 	jack_client_close(client);
 	return ERR_WAVEINOPEN;
     }
     
     for (i = 0; i < n_output_channels; i++)
     {
-	gnuitar_printf("physical playback port: %s\n", ports[i]);    
-	
-	if (ports[i] == 0)
+	if (ports[i] == NULL)
 	{
-	    gnuitar_printf("No such ports\n");
-	    //jack_client_close(client);
-	    //return ERR_WAVEOUTOPEN;
+	    gnuitar_printf("No physical playback port for channel %d.\n", i+1);
+	    jack_client_close(client);
+	    free(ports);
+            return ERR_WAVEOUTOPEN;
 	}
+        gnuitar_printf("Sending channel %d output to port: %s\n", i+1, ports[i]);
 	
-	if (jack_connect(client , jack_port_name (output_ports[i]), ports[i])) 
+	if (jack_connect(client, jack_port_name(output_ports[i]), ports[i])) 
 	{
-	    gnuitar_printf( "Cannot connect playback ports\n");
-	    //jack_client_close(client);
-	    //return ERR_WAVEOUTOPEN;
+	    gnuitar_printf("Cannot connect playback port %s to %s\n", jack_port_name(output_ports[i]), ports[i]);
+	    jack_client_close(client);
+            free(ports);
+	    return ERR_WAVEOUTOPEN;
 	}
-    
     }
-    
     free (ports);
-
-    
-    //done :)
     
     state = STATE_PROCESS;
     jack_driver.enabled = 1;
@@ -369,29 +305,19 @@ jack_init_sound(void)
 }
 
 int
-jack_available() {
+jack_available()
+{
+    client = jack_client_open("GNUitar", options, &status, jack_server_name);
 
-    //try to create client and connect it to server
-    const char *server_name = NULL;
-    options = JackNullOption;
-    
-    
-    client = jack_client_open ("GNUitar", options, &status, server_name);
-
-    //if client creation failed	    
+    // if client creation failed	    
     if (client == NULL) {
-
-	gnuitar_printf ("jack_client_new() failed\n");
-	//if (status & JackServerFailed) {
-	//    gnuitar_printf( "Unable to connect to JACK server \n");
-	//    }
+	gnuitar_printf("JACK sound server couldn't be opened -- skipping JACK driver\n");
 	return 1;
     }
     
-    //all is OK, JACK available, closing client
-
-    jack_client_close (client);
-    gnuitar_printf ("connected to JACK server!\n");
+    // test ok: JACK available, closing client
+    jack_client_close(client);
+    client = NULL;
     
     return 0;
     
