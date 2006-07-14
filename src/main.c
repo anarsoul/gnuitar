@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.58  2006/07/14 14:20:52  alankila
+ * - move g_thread_init() early
+ *
  * Revision 1.57  2006/07/03 12:08:15  alankila
  * - remove alignment requirement from DSP_SAMPLE; it's not likely we can ever
  *   really make significant use of the procbuf's alignment due to channel
@@ -321,6 +324,12 @@ main(int argc, char **argv)
        "This program is a free software under the GPL;\n"
        "see Help->About for details.\n");
 
+    /* GTK+ manual suggests this regarding threads:
+     * http://developer.gimp.org/api/2.0/gdk/gdk-Threads.html
+     *
+     * We shouldn't need to initialize gtk/gdk mutex because our audio thread does
+     * not participate in the GUI. */
+    g_thread_init(NULL);
     gtk_init(&argc, &argv);
     load_settings();
 
@@ -346,7 +355,6 @@ main(int argc, char **argv)
 #    endif
             printf("warning: no usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
     }
-    g_thread_init(NULL);
     my_create_mutex(&snd_open);
     my_lock_mutex(snd_open);
 
@@ -394,6 +402,7 @@ main(int argc, char **argv)
 
     init_gui();
     gtk_main();
+
 #ifndef _WIN32
     /* wait for audio thread to finish */
     if (state == STATE_PAUSE || state == STATE_ATHREAD_RESTART) {
