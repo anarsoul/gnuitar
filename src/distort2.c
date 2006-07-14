@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.62  2006/07/14 14:21:30  alankila
+ * - forgot to use the interpolated values in the actual loop.
+ *
  * Revision 1.61  2006/07/08 18:11:33  alankila
  * - reduce overdrive effect cpu drain by implementing low-pass filtering
  *   in resampler and reusing the static 720 Hz lowpass filter as decimating
@@ -522,13 +525,9 @@ distort2_filter(struct effect *p, struct data_block *db)
      * process signal; x - input, in the range -1, 1
      */
     while (count) {
-	/* scale down to -1..1 range */
-	x = *s ;
-	x *= DIST2_DOWNSCALE ;
-
         /* "properly" interpolate previous input at positions 0 and 2 */
         fir_interpolate_2x(dp->interpolate_firmem[curr_channel],
-                           x, &upsample[2], &upsample[0]);
+                           *s, &upsample[2], &upsample[0]);
         /* estimate the rest, this should be good enough for our purposes. */
         upsample[1] = (upsample[0] + upsample[2]) / 2;
         /* looking into firmem is a gross violation of interface. This will
@@ -538,6 +537,9 @@ distort2_filter(struct effect *p, struct data_block *db)
 	/* Now the actual upsampled processing */
 	for (i = 0; i < UPSAMPLING_RATE; i++)
 	{
+            /* scale down to -1 .. 1 range */
+            x = upsample[i] * DIST2_DOWNSCALE;
+            
 	    /* first compute the linear rc filter current output */
 	    x2 = do_biquad(x, &dp->feedback_minus_loop, curr_channel);
             
