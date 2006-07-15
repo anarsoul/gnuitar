@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.65  2006/07/15 20:42:56  alankila
+ * - remove global dithering code for now. JACK does its own dithering if
+ *   configured, so the decision to dither in pump is no longer appropriate.
+ *
  * Revision 1.64  2006/06/20 20:41:07  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -428,22 +432,6 @@ adjust_input_volume(data_block_t *db) {
 }
 
 
-/* dithering can be thought of as a procedure where quantization errors
- * are drowned in noise that has the same energy as the errors themselves.
- *
- * More specifically dithering prevents repeatable roundoff errors from
- * accumulating into an audible distortion, instead producing wideband
- * noise rather than distortion */
-static void
-dither_output(data_block_t *db) {
-    int		    i;
-    static unsigned int randseed = 1;
-
-    for (i = 0; i < db->len; i += 1) {
-	db->data[i] += rand_r(&randseed) / (RAND_MAX / 256);
-    }
-}
-
 static void
 adapt_to_output(data_block_t *db)
 {
@@ -518,8 +506,6 @@ pump_sample(data_block_t *db)
 
     adapt_to_output(db);
     adjust_master_volume(db);
-    if (bits == 16)
-	dither_output(db);
     vu_meter(db);
 
     if (write_track) {
