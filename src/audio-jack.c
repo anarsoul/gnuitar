@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2006/07/15 13:29:55  alankila
+ * - fix copypaste error reporting
+ *
  * Revision 1.5  2006/07/14 23:11:41  alankila
  * - set jack buffer size from gnuitar (this might not be the most friendly
  *   thing to do, but we can do it and I think we should).
@@ -288,7 +291,7 @@ jack_init_sound(void)
     {
 	gnuitar_printf("No physical playback ports.\n");
 	jack_client_close(client);
-	return ERR_WAVEINOPEN;
+	return ERR_WAVEOUTOPEN;
     }
     
     for (i = 0; i < n_output_channels; i++)
