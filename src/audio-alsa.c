@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2006/07/15 21:15:47  alankila
+ * - implement triangular dithering on the sound drivers. Triangular dithering
+ *   places more noise at the nyquist frequency so the noise floor is made
+ *   smaller elsewhere.
+ *
  * Revision 1.32  2006/07/14 14:19:50  alankila
  * - gui: OSS now supports 1-in 2-out mode.
  * - alsa: try to use recorded settings values before adapting attempts
@@ -249,12 +254,14 @@ alsa_audio_thread(void *V)
             gnuitar_printf( "Short read from capture device: %d, expecting %d\n", inframes, buffer_size);
         
         /* prepare output */
-	if (bits == 32)
+	if (bits == 32) {
 	    for (i = 0; i < db.len; i++)
 		wrbuf32[i] = (SAMPLE32) db.data[i] << 8;
-	else
+        } else {
+            triangular_dither(&db);
 	    for (i = 0; i < db.len; i++)
 		wrbuf16[i] = (SAMPLE32) db.data[i] >> 8;
+        }
 
         /* write output */
         while ((outframes = snd_pcm_writei(playback_handle, wrbuf, buffer_size)) < 0) {

@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.66  2006/07/15 21:15:47  alankila
+ * - implement triangular dithering on the sound drivers. Triangular dithering
+ *   places more noise at the nyquist frequency so the noise floor is made
+ *   smaller elsewhere.
+ *
  * Revision 1.65  2006/07/15 20:42:56  alankila
  * - remove global dithering code for now. JACK does its own dithering if
  *   configured, so the decision to dither in pump is no longer appropriate.
@@ -360,6 +365,25 @@ int sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
 static double bias_s[MAX_CHANNELS];
 static int    bias_n[MAX_CHANNELS];
+
+/* There are various dithering algorithms. Triangular noise is probably good enough,
+ * and it is very simple to implement. In order to quantize from 24 bits to 16 bits,
+ * two values from range -128 to 128 are added to the signal. This apparently produces
+ * dither noise peak at nyquist frequency, causing most energy to be dissipated there. */
+void
+triangular_dither(data_block_t *db)
+{
+    int i;
+    DSP_SAMPLE tmp;
+    
+    for (i = 0; i < db->len; i += 1) {
+        tmp = db->data[i];
+        tmp += (rand() & 0xff) - 128;
+        tmp += (rand() & 0xff) - 128;
+        CLIP_SAMPLE(tmp);
+        db->data[i] = tmp;
+    }
+}
 
 /* If the long-term average of input data does not exactly equal to 0,
  * compensate. Some soundcards would also need highpass filtering ~20 Hz

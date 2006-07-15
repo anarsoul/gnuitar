@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2006/07/15 21:15:47  alankila
+ * - implement triangular dithering on the sound drivers. Triangular dithering
+ *   places more noise at the nyquist frequency so the noise floor is made
+ *   smaller elsewhere.
+ *
  * Revision 1.19  2006/07/14 14:19:50  alankila
  * - gui: OSS now supports 1-in 2-out mode.
  * - alsa: try to use recorded settings values before adapting attempts
@@ -185,6 +190,7 @@ oss_audio_thread(void *V)
         /* Ensure that pump adapted us to output */
         assert(db.channels == n_output_channels);
         assert(db.len == buffer_size * n_output_channels);
+        triangular_dither(&db);
 	for (i = 0; i < db.len; i++)
 	    wrbuf16[i] = (SAMPLE32) db.data[i] >> 8;
 

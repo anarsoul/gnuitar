@@ -84,7 +84,7 @@ typedef gint32  SAMPLE32;
 #define MIN_BUFFER_SIZE 128
 #define MAX_BUFFER_SIZE 65536
 #define MAX_CHANNELS 4
-#define MAX_SAMPLE_RATE 48000	/* 48000 produces more noise */
+#define MAX_SAMPLE_RATE 48000
 #define MAX_EFFECTS 50
 
 extern void gnuitar_printf(char *, ...);
@@ -194,6 +194,7 @@ extern void     save_pump(const char *fname);
 extern void     load_pump(const char *fname);
 extern void     load_settings(void);
 extern void     save_settings(void);
+extern void     triangular_dither(data_block_t *db);
 
 #endif
 

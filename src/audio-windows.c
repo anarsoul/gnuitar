@@ -21,6 +21,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2006/07/15 21:15:47  alankila
+ * - implement triangular dithering on the sound drivers. Triangular dithering
+ *   places more noise at the nyquist frequency so the noise floor is made
+ *   smaller elsewhere.
+ *
  * Revision 1.15  2006/06/20 20:41:06  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -298,6 +303,7 @@ windows_audio_thread(void *V)
             db.len = count/sizeof(SAMPLE16);
             db.channels = n_input_channels;
             pump_sample(&db);
+            triangular_dither(&db);
 
             /*
 	     * DirectSound output:
@@ -423,6 +429,7 @@ windows_audio_thread(void *V)
                         db.len = count;
                         db.channels = n_input_channels;
 			pump_sample(&db);
+                        triangular_dither(&db);
 
 
 			/*
