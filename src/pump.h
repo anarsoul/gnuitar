@@ -185,7 +185,7 @@ extern int      n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];
 
-extern int      pump_sample(data_block_t *db);
+extern void     pump_sample(data_block_t *db);
 extern void     pump_start(int argc, char **argv);
 extern void     pump_stop(void);
 extern void     save_pump(const char *fname);

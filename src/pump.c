@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.68  2006/07/15 23:21:23  alankila
+ * - show input/output vu meters separately
+ *
  * Revision 1.67  2006/07/15 23:02:45  alankila
  * - remove the bits control -- just use the best available on every driver.
  *
@@ -413,11 +416,11 @@ bias_elimination(data_block_t *db) {
 }
 
 /* accumulate power estimate and monitor clipping */
-static void
+static double
 vu_meter(data_block_t *db) {
     int             i;
     DSP_SAMPLE      sample, max_sample = 0;
-    float           peak, power = 0;
+    float           power = 0;
 
     for (i = 0; i < db->len; i += 1) {
         sample = db->data[i];
@@ -428,9 +431,7 @@ vu_meter(data_block_t *db) {
             max_sample = sample;
     }
     /* energy per sample scaled down to 0.0 - 1.0 */
-    power = power / db->len / MAX_SAMPLE / MAX_SAMPLE;
-    peak = (float) max_sample / MAX_SAMPLE;
-    set_vumeter_value(peak, power);
+    return power / db->len / MAX_SAMPLE / MAX_SAMPLE;
 }
 
 /* adjust master volume according to the main window slider and clip */
@@ -511,7 +512,7 @@ adapt_to_output(data_block_t *db)
             db->channels, n_output_channels);
 }
 
-int
+void
 pump_sample(data_block_t *db)
 {
     int             i;
@@ -520,8 +521,8 @@ pump_sample(data_block_t *db)
      * the noise filter will have been implemented */
      
     bias_elimination(db);
-    
     adjust_input_volume(db);
+    set_vumeter_in_value(vu_meter(db));
 
     my_lock_mutex(effectlist_lock);
     for (i = 0; i < n; i++) {
@@ -530,15 +531,13 @@ pump_sample(data_block_t *db)
     }
     my_unlock_mutex(effectlist_lock);
 
-    adapt_to_output(db);
     adjust_master_volume(db);
-    vu_meter(db);
-
+    set_vumeter_out_value(vu_meter(db));
+    
+    adapt_to_output(db);
     if (write_track) {
 	track_write(db->data, db->len);
     }
-
-    return 0;
 }
 
 /* note that vibrato & tremolo effects are swapped */

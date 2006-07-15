@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.86  2006/07/15 23:21:23  alankila
+ * - show input/output vu meters separately
+ *
  * Revision 1.85  2006/07/15 23:02:45  alankila
  * - remove the bits control -- just use the best available on every driver.
  *
@@ -465,8 +468,8 @@ double		input_volume;
 
 
 /* vumeter state */
-static double vumeter_peak = 0;
-static double vumeter_power = 0;
+static double vumeter_in_power  = -96;
+static double vumeter_out_power = -96;
 /* current row in processor list */
 static gint            curr_row = -1;
 /* current row in known effects list */
@@ -476,7 +479,7 @@ static gint            bank_row = -1;
 extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
                                  * MSVC 6.0 complains: identifier effectlist_lock: */
 
-static char longbuf[16384] = "Gnuitar " VERSION "\n\nDebug info.\n";
+static char longbuf[4096] = "Gnuitar " VERSION "\n\nDebug info.\n";
 
 //function for printing debuging messages
 //if GUI isn't created, text will be buffered
@@ -484,7 +487,7 @@ void
 gnuitar_printf(char *frm, ...)
 {
     va_list args;
-    static char buf[2048];
+    static char buf[1024];
 #ifdef HAVE_GTK2    
     GtkTextBuffer  *textbuf;
     GtkTextIter    iter;
@@ -797,10 +800,6 @@ selectrow_processor(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
     curr_row = row;
-    /* doubleclick highlights the window */
-    //if(event && event->type == GDK_2BUTTON_PRESS) {
-    //    gtk_window_present(GTK_WINDOW(effects[curr_row]->control));
-    //}
 }
 
 static void
@@ -808,10 +807,6 @@ selectrow_bank(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
     bank_row = row;
-//    /* doubleclick highlights the window */
-//    if(event && event->type == GDK_2BUTTON_PRESS) {
-//        gtk_window_present(GTK_WINDOW(effects[curr_row]->control));
-//    }
 }
 
 static void
@@ -1200,47 +1195,45 @@ typedef struct sample_params {
 } sample_params_t;
 
 void
-set_vumeter_value(double peak, double power) {
-    /* accept peaks, decay exponentially otherwise */
-    if (peak > vumeter_peak)
-        vumeter_peak = peak;
-    else
-        vumeter_peak = (7 * vumeter_peak + peak) / 8;
+set_vumeter_in_value(double power) {
+    vumeter_in_power = 3 * (vumeter_in_power + power) / 4;
+}
 
-    vumeter_power = 7 * (vumeter_power + power) / 8;
+void
+set_vumeter_out_value(double power) {
+    vumeter_out_power = 3 * (vumeter_out_power + power) / 4;
 }
 
 static gboolean
-timeout_update_vumeter(gpointer vumeter) {
-    //return TRUE;
-    //GtkRcStyle *rc_style = NULL;
-    GdkColor color;
-    double power = 0.0;
+timeout_update_vumeter_in(gpointer vumeter) {
+    double power  = -96;
 
-    //rc_style = gtk_rc_style_new();
-    if (vumeter_peak >= 1.0) {
-
-        /* indicate distortion due to clipping */
-	color.pixel = 0; /* unused */
-        color.red   = 65535;
-        color.green = 0;
-        color.blue  = 0;
-
-    //    rc_style->bg[GTK_STATE_NORMAL] = color;
-    //    rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG;
-    }
-    //gtk_widget_modify_style(vumeter, rc_style);
-    //gtk_rc_style_unref(rc_style);
-
-    if (vumeter_power != 0.0) {
-        power = log(vumeter_power) / log(10) * 10;
+    if (vumeter_in_power != 0) {
+        power = log(vumeter_in_power) / log(10) * 10;
         /* 16 bits hold ~96 dB resolution */
         if (power > 0)
             power = 0;
         if (power < -96)
             power = -96;
     }
+    
+    gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
+    return TRUE;
+}
 
+static gboolean
+timeout_update_vumeter_out(gpointer vumeter) {
+    double power  = -96;
+
+    if (vumeter_out_power != 0) {
+        power = log(vumeter_out_power) / log(10) * 10;
+        /* 16 bits hold ~96 dB resolution */
+        if (power > 0)
+            power = 0;
+        if (power < -96)
+            power = -96;
+    }
+    
     gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
     return TRUE;
 }
@@ -1728,7 +1721,8 @@ void
 init_gui(void)
 {
     GtkAccelGroup  *accel_group;
-    GtkWidget      *vumeter;
+    GtkWidget      *vumeter_in;
+    GtkWidget      *vumeter_out;
     GtkWidget	   *master;
     GtkWidget      *input;
 
@@ -1889,15 +1883,18 @@ init_gui(void)
         start = gtk_toggle_button_new_with_label("Start\n");
     }
     gtk_tooltips_set_tip(tooltips,start,"Pause and resume audio processing.", NULL);
-    vumeter = gtk_progress_bar_new();
-    gtk_progress_set_format_string(GTK_PROGRESS(vumeter), "%v dB");
-    gtk_progress_configure(GTK_PROGRESS(vumeter), -91, -91, 0);
-    gtk_progress_set_show_text(GTK_PROGRESS(vumeter), TRUE);
+    vumeter_in = gtk_progress_bar_new();
+    gtk_progress_set_format_string(GTK_PROGRESS(vumeter_in), "%v dB");
+    gtk_progress_configure(GTK_PROGRESS(vumeter_in), -96, -96, 0);
+    gtk_progress_set_show_text(GTK_PROGRESS(vumeter_in), TRUE);
+    vumeter_out = gtk_progress_bar_new();
+    gtk_progress_set_format_string(GTK_PROGRESS(vumeter_out), "%v dB");
+    gtk_progress_configure(GTK_PROGRESS(vumeter_out), -96, -96, 0);
+    gtk_progress_set_show_text(GTK_PROGRESS(vumeter_out), TRUE);
     adj_master = gtk_adjustment_new(master_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
     adj_input = gtk_adjustment_new(input_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
     
 
-    
     master = gtk_hscale_new(GTK_ADJUSTMENT(adj_master));
     input = gtk_hscale_new(GTK_ADJUSTMENT(adj_input));
     
@@ -1968,7 +1965,8 @@ init_gui(void)
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 5, 5);
     gtk_table_attach(GTK_TABLE(tbl), tracker, 0, 1, 5, 7,
 		     __GTKATTACHOPTIONS(0), __GTKATTACHOPTIONS(0), 2, 2);
-    gtk_table_attach(GTK_TABLE(tbl), vumeter, 1, 3, 5, 7, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), vumeter_in, 1, 3, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
+    gtk_table_attach(GTK_TABLE(tbl), vumeter_out, 1, 3, 6, 7, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
     gtk_table_attach(GTK_TABLE(tbl), input, 4, 6, 5, 6, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
     gtk_table_attach(GTK_TABLE(tbl), master, 4, 6, 6, 7, __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), __GTKATTACHOPTIONS(0), 2, 2);
 
@@ -2007,7 +2005,8 @@ init_gui(void)
 		       GTK_SIGNAL_FUNC(update_input_volume), NULL);
     gtk_widget_show_all(mainWnd);
 
-    g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter, vumeter);
+    g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter_in,  vumeter_in );
+    g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter_out, vumeter_out);
 
     /*
      * Attach icon to the window

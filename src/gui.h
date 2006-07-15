@@ -56,7 +56,8 @@ extern double master_volume;
 extern double input_volume;
 extern GtkObject* adj_input;
 extern GtkObject* adj_master;
-extern void set_vumeter_value(double peak, double power);
+extern void set_vumeter_in_value(double power);
+extern void set_vumeter_out_value(double power);
 
 
 
