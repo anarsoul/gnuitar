@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2006/07/15 23:02:45  alankila
+ * - remove the bits control -- just use the best available on every driver.
+ *
  * Revision 1.6  2006/07/15 13:29:55  alankila
  * - fix copypaste error reporting
  *
@@ -349,13 +352,10 @@ static struct audio_driver_channels jack_channels_cfg[] = {
     { 0, 0 }
 };
 
-static unsigned int jack_bits_cfg[] = { 16, 32, 0 };
-
 audio_driver_t jack_driver = {
     .str = "JACK",
     .enabled = 0,
     .channels = jack_channels_cfg,
-    .bits = jack_bits_cfg,
     
     .init = jack_init_sound,
     .finish = jack_finish_sound,

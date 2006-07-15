@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.67  2006/07/15 23:02:45  alankila
+ * - remove the bits control -- just use the best available on every driver.
+ *
  * Revision 1.66  2006/07/15 21:15:47  alankila
  * - implement triangular dithering on the sound drivers. Triangular dithering
  *   places more noise at the nyquist frequency so the noise floor is made
@@ -352,7 +355,6 @@ char            alsadevice_str[64];
 unsigned short  n_input_channels = 1;
 unsigned short  n_output_channels = 2;
 unsigned int    sample_rate = 44100;
-unsigned short  bits = 16;
 unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
 my_mutex        effectlist_lock = NULL;
 #ifndef _WIN32
@@ -629,10 +631,6 @@ load_settings() {
         strncpy(alsadevice_str, gstr, sizeof(alsadevice_str)-1);
 	free(gstr);	
     }
-    error = NULL;
-    tmp = g_key_file_get_integer(file, "global", "bits", &error);
-    if (error == NULL)
-        bits = tmp;
 
     error = NULL;
     tmp = g_key_file_get_integer(file, "global", "n_output_channels", &error);
@@ -687,7 +685,6 @@ save_settings() {
     }
 #endif
     g_key_file_set_string(file, "global", "alsadevice", alsadevice_str);
-    g_key_file_set_integer(file, "global", "bits", bits);
     g_key_file_set_integer(file, "global", "n_output_channels", n_output_channels);
     g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
     g_key_file_set_integer(file, "global", "sample_rate", sample_rate);

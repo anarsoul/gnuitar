@@ -97,7 +97,6 @@ typedef struct {
     char    *str;
     int     enabled;
     struct audio_driver_channels *channels;
-    unsigned int *bits;
     
     int     (*init)(void);
     void    (*finish)(void);
@@ -174,7 +173,6 @@ extern char alsadevice_str[64];
 extern unsigned short n_input_channels;
 extern unsigned short n_output_channels;
 extern unsigned int sample_rate;
-extern unsigned short bits;
 extern unsigned int buffer_size;
 
 #ifndef _WIN32

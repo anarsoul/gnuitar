@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2006/07/15 23:02:45  alankila
+ * - remove the bits control -- just use the best available on every driver.
+ *
  * Revision 1.16  2006/07/15 21:15:47  alankila
  * - implement triangular dithering on the sound drivers. Triangular dithering
  *   places more noise at the nyquist frequency so the noise floor is made
@@ -111,7 +114,6 @@
 #include "utils.h"
 #include "audio-windows.h"
 
-
 HANDLE          input_bufs_done,
                 output_bufs_done;
 DWORD           thread_id;
@@ -144,6 +146,8 @@ int             active_in_buffers = 0,
 
 void            serror(DWORD err, TCHAR * str);
 void            dserror(HRESULT res, char *s);
+
+static unsigned int bits = 16;
 
 DWORD           WINAPI
 windows_audio_thread(void *V)
@@ -925,13 +929,11 @@ struct audio_driver_channels windows_channels_cfg[]={
     { 2, 2 },
     { 0, 0 }
 };
-int windows_bits_cfg[1] = { 16 };
 
 audio_driver_t windows_driver = {
     "Windows",              /* str */
     0,                      /* enabled */
     windows_channels_cfg,   /* channels */
-    windows_bits_cfg,       /* bits */
     windows_init_sound,     /* init */
     windows_finish_sound,   /* finish */
     windows_audio_thread    /* audio_proc */

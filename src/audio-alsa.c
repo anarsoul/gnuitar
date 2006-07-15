@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2006/07/15 23:02:45  alankila
+ * - remove the bits control -- just use the best available on every driver.
+ *
  * Revision 1.33  2006/07/15 21:15:47  alankila
  * - implement triangular dithering on the sound drivers. Triangular dithering
  *   places more noise at the nyquist frequency so the noise floor is made
@@ -194,6 +197,8 @@ static const char     *snd_test_device_out = "default";
 static short   restarting;
 static snd_pcm_t *playback_handle;
 static snd_pcm_t *capture_handle;
+static unsigned int capture_bits;
+static unsigned int playback_bits;
 
 static void           *
 alsa_audio_thread(void *V)
@@ -254,7 +259,7 @@ alsa_audio_thread(void *V)
             gnuitar_printf( "Short read from capture device: %d, expecting %d\n", inframes, buffer_size);
         
         /* prepare output */
-	if (bits == 32) {
+	if (playback_bits == 32) {
 	    for (i = 0; i < db.len; i++)
 		wrbuf32[i] = (SAMPLE32) db.data[i] << 8;
         } else {
@@ -275,7 +280,7 @@ alsa_audio_thread(void *V)
         /* now that output is out of the way, we have most time for running effects */ 
         db.len = buffer_size * n_input_channels;
         db.channels = n_input_channels;
-	if (bits == 32)
+	if (capture_bits == 32)
 	    for (i = 0; i < db.len; i++)
 		db.data[i] = rdbuf32[i] >> 8;
 	else
@@ -313,7 +318,7 @@ alsa_finish_sound(void)
  * parameters on the two devices, which may not even be same physical
  * hardware. The return code from this function is an error code. */
 static int
-alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *frames, int channels, int adapting)
+alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *frames, int channels, unsigned int *bits, int adapting)
 {
     /*gnuitar_printf("So we want to have:\n");
     gnuitar_printf("Fragments: %d\n", *fragments);
@@ -344,17 +349,17 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 	return 1;
     }
 
-    if (bits == 32)
-	tmp = SND_PCM_FORMAT_S32;
-    else {
-	tmp = SND_PCM_FORMAT_S16;
-	bits = 16;
-    }
-    if ((err = snd_pcm_hw_params_set_format(device, hw_params, tmp)) < 0) {
-        gnuitar_printf( "can't set sample format %d bits: %s\n", bits,
-                 snd_strerror(err));
-        snd_pcm_hw_params_free(hw_params);
-	return 1;
+    if ((err = snd_pcm_hw_params_set_format(device, hw_params, SND_PCM_FORMAT_S32)) < 0) {
+        if ((err = snd_pcm_hw_params_set_format(device, hw_params, SND_PCM_FORMAT_S16)) < 0) {
+            gnuitar_printf("can't set sample format to neither 32 nor 16 bits: %s\n",
+                            snd_strerror(err));
+            snd_pcm_hw_params_free(hw_params);
+	    return 1;
+        } else {
+            *bits = 16;
+        }
+    } else {
+        *bits = 32;
     }
 
     if ((err = snd_pcm_hw_params_set_channels(device, hw_params, channels)) < 0) {
@@ -478,8 +483,8 @@ alsa_init_sound(void)
     bs_try = buffer_size;
     fragments_try = fragments;
     if (
-  (alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  0)
-|| alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, 0))
+  (alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  &capture_bits,  0)
+|| alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, &playback_bits, 0))
     ) {
         gnuitar_printf("trying to find working period size and number configuration.\n");
         /* no go -- we'll have to try to perturb the user settings
@@ -494,16 +499,16 @@ alsa_init_sound(void)
             fragments_try = fragments;
         
             if (
-  (alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  1)
-|| alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, 0))
+  (alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  &capture_bits,  1)
+|| alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, &playback_bits, 0))
             ) {
                 /* no go; try the other way */
                 bs_try = buffer_size;
                 fragments_try = fragments;
             
                 if (
-  (alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, 1)
-|| alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  0))
+  (alsa_configure_audio(playback_handle, &fragments_try, &bs_try, n_output_channels, &playback_bits, 1)
+|| alsa_configure_audio(capture_handle,  &fragments_try, &bs_try, n_input_channels,  &capture_bits, 0))
                 ) {
                     /* no go; try with more fragments */
                     fragments += 1;
@@ -555,13 +560,10 @@ static struct audio_driver_channels alsa_channels_cfg[] = {
     { 0, 0 }
 };
 
-static unsigned int alsa_bits_cfg[] = { 16, 32, 0 };
-
 audio_driver_t alsa_driver = {
     .str = "ALSA",
     .enabled = 0,
     .channels = alsa_channels_cfg,
-    .bits = alsa_bits_cfg,
     
     .init = alsa_init_sound,
     .finish = alsa_finish_sound,

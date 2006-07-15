@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.85  2006/07/15 23:02:45  alankila
+ * - remove the bits control -- just use the best available on every driver.
+ *
  * Revision 1.84  2006/07/14 14:19:50  alankila
  * - gui: OSS now supports 1-in 2-out mode.
  * - alsa: try to use recorded settings values before adapting attempts
@@ -449,8 +452,8 @@ static GtkWidget      *start;
 static GtkTooltips    *tooltips;
 static GtkWidget      *volume_label;
 static GtkWidget      *input_label;
-static GtkWidget      *status_text = 0;
-static GtkWidget      *status_window = 0;
+static GtkWidget      *status_text = NULL;
+static GtkWidget      *status_window = NULL;
 
 /* some public GUI widgets */
 GtkWidget      *processor;
@@ -473,8 +476,7 @@ static gint            bank_row = -1;
 extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
                                  * MSVC 6.0 complains: identifier effectlist_lock: */
 
-static char longbuf[16384]="Gnuitar " VERSION "\n\nDebug info.\n";
-
+static char longbuf[16384] = "Gnuitar " VERSION "\n\nDebug info.\n";
 
 //function for printing debuging messages
 //if GUI isn't created, text will be buffered
@@ -482,87 +484,56 @@ void
 gnuitar_printf(char *frm, ...)
 {
     va_list args;
-    char buf[2048];
-    
+    static char buf[2048];
 #ifdef HAVE_GTK2    
     GtkTextBuffer  *textbuf;
     GtkTextIter    iter;
     GtkAdjustment *adj;
-    gdouble new_value;
 #endif
 
-    strcpy(buf, "Error in snprintf\n");
-
-
     va_start(args, frm);
-    
-    vsnprintf(buf, 2048, frm, args);
-    
+    vsnprintf(buf, sizeof(buf), frm, args);
     va_end(args);
     
-    if (!status_text)
+    if (status_text == NULL)
     {
-	if (strlen(longbuf) + strlen(buf) > 16382) return;
-	
+	if (strlen(longbuf) + strlen(buf) > sizeof(longbuf) - 2) {
+            printf("error: too much debug output before GUI is even created!\n%s%s",
+                    longbuf, buf);
+            exit(1);
+        }
 	strcat(longbuf, buf);
-	
 	return;
     }
     
+#ifdef HAVE_GTK
+#define APPEND(s)\
+    gtk_text_insert(GTK_TEXT(status_text), NULL, NULL, NULL, (s), -1);
+#endif
+
 #ifdef HAVE_GTK2
     textbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(status_text));
-
-#ifndef APPEND
-					    
-#define APPEND(s) do { \
-gtk_text_buffer_get_end_iter(textbuf, &iter); \
-gtk_text_buffer_insert(textbuf, &iter, (s), -1); \
-} while(0)
-
+#define APPEND(s)\
+    gtk_text_buffer_get_end_iter(textbuf, &iter);\
+    gtk_text_buffer_insert(textbuf, &iter, (s), -1);
 #endif
-						    
-    if (strlen(longbuf)!=0)
+
+    /* append the buffered data */ 
+    if (longbuf[0] != 0)
     {
         APPEND(longbuf);
 	longbuf[0] = 0;
     }
     
+    /* append the given input buffer */
     APPEND(buf);
 
+#ifdef HAVE_GTK2
+    /* scroll to end */
     adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(status_window));
-    
-    new_value = adj -> upper-adj -> page_size;
-    
-    if (new_value < adj -> lower) new_value = adj -> lower;
-    
-    if (new_value > adj -> upper) new_value = adj -> upper;
-    
-    if (new_value != adj -> value)
-    {
-	gtk_adjustment_set_value(adj, new_value);
-    }
+    gtk_adjustment_set_value(adj, adj->upper);
 #endif
-
-#ifdef HAVE_GTK
-
-#ifndef APPEND
-
-#define APPEND(s) gtk_text_insert(GTK_TEXT(status_text), NULL, NULL, NULL, (s), -1);
-
-#endif
-
-    if (strlen(longbuf)!=0)
-    {
-        APPEND(longbuf);
-	longbuf[0] = 0;
-    }
-    
-    APPEND(buf);
-    
-
-#endif
-
-
+#undef APPEND
 }
 
 /*
@@ -1215,10 +1186,9 @@ tracker_pressed(GtkWidget * widget, gpointer data)
     }
 }
 
-typedef struct SAMPLE_PARAMS {
+typedef struct sample_params {
     GtkWidget      *rate;
     GtkWidget      *channels;
-    GtkWidget      *bits;
     GtkWidget      *latency;
 #ifdef HAVE_ALSA
     GtkWidget      *alsadevice;
@@ -1227,7 +1197,7 @@ typedef struct SAMPLE_PARAMS {
     GtkWidget      *dialog;
     GtkWidget      *latency_label;
     GtkWidget      *driver;
-} sample_params;
+} sample_params_t;
 
 void
 set_vumeter_value(double peak, double power) {
@@ -1286,30 +1256,6 @@ update_input_volume(GtkAdjustment *adj, void *nothing) {
 }
 
 static void
-populate_sparams_bits(GtkWidget *w)
-{
-    GList *bits_list = NULL, *iter = NULL;
-    gchar *defchoice = g_strdup_printf("%d", bits);
-    
-    if (audio_driver) {
-        int i;
-        for (i = 0; audio_driver->bits[i] != 0; i += 1) {
-            gchar *gtmp = g_strdup_printf("%d", audio_driver->bits[i]);
-            bits_list = g_list_append(bits_list, gtmp);
-        }
-    }
-    gtk_combo_set_popdown_strings(GTK_COMBO(w), bits_list);
-    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(w)->entry), defchoice);
-    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(w)->entry),
-			   FALSE);
-    
-    for (iter = g_list_first(bits_list); iter != NULL; iter = g_list_next(iter))
-        g_free(iter->data);
-    
-    g_list_free(bits_list);
-}
-
-static void
 populate_sparams_channels(GtkWidget *w)
 {
     GList *channels_list = NULL, *iter = NULL;
@@ -1337,7 +1283,7 @@ static void
 update_latency_label(GtkWidget *widget, gpointer data)
 {
     gchar          *gtmp;
-    sample_params  *sparams = data;
+    sample_params_t *sparams = data;
 
     update_sampling_params(widget, data);
 #ifndef _WIN32
@@ -1352,8 +1298,8 @@ update_latency_label(GtkWidget *widget, gpointer data)
 static void
 update_driver(GtkWidget *widget, gpointer data)
 {
-    const char *tmp=NULL;
-    sample_params *sparams = (sample_params *) data;
+    const char *tmp;
+    sample_params_t *sparams = (sample_params_t *) data;
 
     tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->driver)->entry));
     if(tmp == NULL)
@@ -1374,7 +1320,6 @@ update_driver(GtkWidget *widget, gpointer data)
     }
 #endif
 
-
 #ifdef _WIN32
     if(strcmp(tmp,"MMSystem")==0) {
         audio_driver = &windows_driver;
@@ -1386,7 +1331,6 @@ update_driver(GtkWidget *widget, gpointer data)
         dsound=1;
     }
 #endif
-    populate_sparams_bits(sparams->bits);
     populate_sparams_channels(sparams->channels);
     /* XXX we should now reopen the dialog because changing audio driver
      * updates bits & channels settings */
@@ -1407,7 +1351,7 @@ update_threshold(GtkWidget * widget, gpointer threshold)
 static void
 sample_dlg(GtkWidget *widget, gpointer data)
 {
-    static sample_params sparams;
+    static sample_params_t sparams;
     GtkWidget      *sp_table;
 #ifdef _WIN32
     GtkWidget      *threshold;
@@ -1416,7 +1360,6 @@ sample_dlg(GtkWidget *widget, gpointer data)
     GtkObject      *threshold_adj;
 #endif
     GtkWidget      *rate_label;
-    GtkWidget      *bits_label;
     GtkWidget      *channels_label;
         
     GtkWidget      *latency_label;
@@ -1459,7 +1402,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     sparams.alsadevice_label = gtk_label_new("Alsa Device:");
     gtk_misc_set_alignment(GTK_MISC(sparams.alsadevice_label), 0, 0.5);
     
-    gtk_table_attach(GTK_TABLE(sp_table), sparams.alsadevice_label, 0, 1, 3, 4,
+    gtk_table_attach(GTK_TABLE(sp_table), sparams.alsadevice_label, 0, 1, 2, 3,
                      TBLOPT, TBLOPT, 3, 3);
 		     
     sparams.alsadevice = gtk_combo_new();
@@ -1475,7 +1418,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
     
     //gtk_misc_set_alignment(GTK_MISC(alsadevice), 0, 0.5);
     
-    gtk_table_attach(GTK_TABLE(sp_table),  sparams.alsadevice, 1, 2, 3, 4,
+    gtk_table_attach(GTK_TABLE(sp_table),  sparams.alsadevice, 1, 2, 2, 3,
                      TBLOPT, TBLOPT, 3, 3);
 		     
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.alsadevice)->entry,
@@ -1511,16 +1454,6 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_table_attach(GTK_TABLE(sp_table), sparams.channels, 3, 4, 0, 1,
                      TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.channels)->entry,"Mono/Stereo/Quadrophonic",NULL);
-    bits_label = gtk_label_new("Bits:");
-    gtk_misc_set_alignment(GTK_MISC(bits_label), 0, 0.5);
-    gtk_table_attach(GTK_TABLE(sp_table), bits_label, 0, 1, 1, 2,
-                     TBLOPT, TBLOPT, 3, 3);
-
-    sparams.bits = gtk_combo_new();
-    populate_sparams_bits(sparams.bits);
-    gtk_tooltips_set_tip(tooltips, GTK_COMBO(sparams.bits)->entry,
-                         "ALSA can do 32-bit input with some cards", NULL);
-    gtk_table_attach(GTK_TABLE(sp_table), sparams.bits, 1, 2, 1, 2, TBLOPT, TBLOPT, 3, 3);
 
     latency_label = gtk_label_new("Fragment size:");
     gtk_misc_set_alignment(GTK_MISC(latency_label), 0, 0.5);
@@ -1538,7 +1471,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
 
     driver_label = gtk_label_new("Audio Driver:");
     gtk_misc_set_alignment(GTK_MISC(driver_label), 0, 0.5);
-    gtk_table_attach(GTK_TABLE(sp_table), driver_label, 0, 1, 2, 3,
+    gtk_table_attach(GTK_TABLE(sp_table), driver_label, 0, 1, 1, 2,
                      TBLOPT, TBLOPT, 3, 3);
     sparams.driver = gtk_combo_new();
 #ifdef HAVE_JACK
@@ -1568,7 +1501,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
 
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
 			   FALSE);
-    gtk_table_attach(GTK_TABLE(sp_table), sparams.driver, 1, 2, 2, 3,
+    gtk_table_attach(GTK_TABLE(sp_table), sparams.driver, 1, 2, 1, 2,
                      TBLOPT, TBLOPT, 3, 3);
     gtk_tooltips_set_tip(tooltips,GTK_COMBO(sparams.driver)->entry,
 	"Sound driver is an API that you use to capture/playback sound.",NULL);
@@ -1627,9 +1560,6 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.channels)->entry),
 		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
 		       &sparams);
-    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.bits)->entry),
-		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
-		       &sparams);
     gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sparams.rate)->entry),
 		       "changed", GTK_SIGNAL_FUNC(update_latency_label),
 		       &sparams);
@@ -1653,7 +1583,7 @@ static void
 update_sampling_params(GtkWidget * dialog, gpointer data)
 {
     int             tmp1, tmp2;
-    sample_params  *sparams = data;
+    sample_params_t *sparams = data;
 
     const char *tmp=NULL;
 
@@ -1686,7 +1616,6 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
                                                                     buffer_size);
         }
     }
-    bits = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->bits)->entry)));
     sscanf(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->channels)->entry)),
            "%d in - %d out", &tmp1, &tmp2);
     n_input_channels = tmp1;
@@ -1700,7 +1629,7 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
 static void
 update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
 {
-    sample_params  *sparams = data;
+    sample_params_t *sparams = data;
 
     update_sampling_params(dialog, data);
     gtk_widget_destroy(GTK_WIDGET(sparams->dialog));
@@ -1981,41 +1910,31 @@ init_gui(void)
     
     volume_label = gtk_label_new("Master volume:");
     input_label = gtk_label_new("Input volume:");
-    
+
+    /* debug window creation */    
     status_window = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(status_window),
 				   GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
-
     gtk_container_set_border_width(GTK_CONTAINER(status_window), 10);
-    
-    
     
 #ifdef HAVE_GTK2
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(status_window), GTK_SHADOW_IN);
-
     status_text = gtk_text_view_new();
-    
     gtk_text_view_set_editable(GTK_TEXT_VIEW(status_text), FALSE);
-
 #endif
-
 #ifdef HAVE_GTK
-
     status_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
-			(GTK_SCROLLED_WINDOW(status_window)),
+			GTK_SCROLLED_WINDOW(status_window),
 			gtk_scrolled_window_get_vadjustment
-			(GTK_SCROLLED_WINDOW(status_window)));
-
+			GTK_SCROLLED_WINDOW(status_window));
     gtk_text_freeze(GTK_TEXT(status_text));
-    
     gtk_text_thaw(GTK_TEXT(status_text));
-
 #endif
+    
+    /* Update container data with text buffered before the window existed. */
+    gnuitar_printf("");
     
     gtk_container_add(GTK_CONTAINER(status_window), status_text);
-    
-    //pushing out buffered text
-    gnuitar_printf("");
     
     gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2006/07/15 23:02:45  alankila
+ * - remove the bits control -- just use the best available on every driver.
+ *
  * Revision 1.20  2006/07/15 21:15:47  alankila
  * - implement triangular dithering on the sound drivers. Triangular dithering
  *   places more noise at the nyquist frequency so the noise floor is made
@@ -177,7 +180,6 @@ oss_audio_thread(void *V)
         db.channels = n_input_channels;
 
         if (n_input_channels == n_output_channels) {
-            /* 16 bits is the only possible for OSS */
             for (i = 0; i < db.len; i++)
                 db.data[i] = rdbuf16[i] << 8;
         } else {
@@ -264,9 +266,8 @@ oss_init_sound(void)
 
     /* 16-bit recording is the best available with OSS */
     i = AFMT_S16_NE;
-    bits = 16;
     if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
-	gnuitar_printf( "Cannot setup %d bit audio!\n", bits);
+	gnuitar_printf( "Cannot setup 16-bit native-endian audio!\n");
 	close(fd);
 	return ERR_WAVESETBIT;
     }
@@ -307,13 +308,10 @@ static struct audio_driver_channels oss_channels_cfg[] = {
     { 0, 0 }
 };
 
-static unsigned int oss_bits_cfg[] = { 16, 0 };
-
 audio_driver_t oss_driver = {
     .str = "OSS",
     .enabled = 0,
     .channels = oss_channels_cfg,
-    .bits = oss_bits_cfg,
 
     .init = oss_init_sound,
     .finish = oss_finish_sound,
