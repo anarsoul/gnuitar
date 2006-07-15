@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.59  2006/07/15 16:54:48  alankila
+ * - ignore PIPE to avoid exit on jackd termination
+ *
  * Revision 1.58  2006/07/14 14:20:52  alankila
  * - move g_thread_init() early
  *
@@ -270,6 +273,7 @@
 #ifndef _WIN32
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 #endif
 
 #include "main.h"
@@ -318,6 +322,10 @@ main(int argc, char **argv)
      * Switching to our native user id
      */
     setuid(getuid());
+
+    /* JACK can give us PIPE if the server terminates abruptly,
+     * ignoring it allows us to avoid exit(). */
+    sigignore(SIGPIPE);
 #endif
 
     printf(COPYRIGHT
