@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2006/07/16 20:43:32  alankila
+ * - use non-white triangular noise for slightly better dithering.
+ *
  * Revision 1.34  2006/07/15 23:02:45  alankila
  * - remove the bits control -- just use the best available on every driver.
  *
@@ -207,7 +210,8 @@ alsa_audio_thread(void *V)
     struct data_block db = {
         .data = procbuf,
         .data_swap = procbuf2,
-        .len = buffer_size * n_output_channels
+        .len = buffer_size * n_output_channels,
+        .channels = n_output_channels
     };
     SAMPLE16    *rdbuf16 = (SAMPLE16 *) rdbuf;
     SAMPLE32    *rdbuf32 = (SAMPLE32 *) rdbuf;

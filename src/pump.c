@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.69  2006/07/16 20:43:32  alankila
+ * - use non-white triangular noise for slightly better dithering.
+ *
  * Revision 1.68  2006/07/15 23:21:23  alankila
  * - show input/output vu meters separately
  *
@@ -368,25 +371,33 @@ unsigned int    nbuffers = MAX_BUFFERS;
 
 int sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
-static double bias_s[MAX_CHANNELS];
-static int    bias_n[MAX_CHANNELS];
+/* from JACK -- blindingly fast */
+static inline unsigned int prng() {
+    static unsigned int seed = 22222;
+    seed = (seed * 96314165) + 907633515;
+    return seed;
+}
 
-/* There are various dithering algorithms. Triangular noise is probably good enough,
- * and it is very simple to implement. In order to quantize from 24 bits to 16 bits,
- * two values from range -128 to 128 are added to the signal. This apparently produces
- * dither noise peak at nyquist frequency, causing most energy to be dissipated there. */
+/* This is triangular correlated noise with frequency spectrum that increases
+ * 6 dB per octave, thus most noise occurs at high frequencies. The probability
+ * distribution still looks like triangle. Idea and implementation borrowed from
+ * JACK. */
 void
 triangular_dither(data_block_t *db)
 {
-    int i;
-    DSP_SAMPLE tmp;
+    static int correlated_noise[MAX_CHANNELS] = { 0, 0, 0, 0 };
+    int i, current_channel = 0;
     
     for (i = 0; i < db->len; i += 1) {
-        tmp = db->data[i];
-        tmp += (rand() & 0xff) - 128;
-        tmp += (rand() & 0xff) - 128;
+        DSP_SAMPLE tmp = db->data[i];
+        int noise = (prng() & 0x1ff) - 256; /* -256 to 255 */
+        
+        tmp += noise - correlated_noise[current_channel];
+        correlated_noise[current_channel] = noise;
+        
         CLIP_SAMPLE(tmp);
         db->data[i] = tmp;
+        current_channel = (current_channel + 1) % db->channels;
     }
 }
 
@@ -395,6 +406,9 @@ triangular_dither(data_block_t *db)
  * or so. */
 static void
 bias_elimination(data_block_t *db) {
+    static double bias_s[MAX_CHANNELS] = { 0, 0, 0, 0 };
+    static int    bias_n[MAX_CHANNELS] = { 10, 10, 10, 10 };
+
     int             i, biasadj;
     int             curr_channel = 0;
 
@@ -764,10 +778,6 @@ pump_start(int argc, char **argv)
 	effects[n]->proc_init(effects[n]);
 	n++;
     }
-
-    memset(bias_s, 0, sizeof(bias_s));
-    for (i = 0; i < MAX_CHANNELS; i += 1)
-        bias_n[i] = 10;
 }
 
 void
