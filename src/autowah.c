@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2006/07/16 12:26:38  alankila
+ * - add more wah algorithms, including gnuitar's original
+ *
  * Revision 1.37  2006/05/31 14:05:10  fonin
  * Added #include for sanity
  *
@@ -178,8 +181,15 @@
  * sweep triggers. Data is collected AUTOWAH_HISTORY_LENGTH ms apart. */
 
 #define AUTOWAH_HISTORY_LENGTH  100  /* ms */
-#define AUTOWAH_DISCANT_TRIGGER 0.6 /* dB */
-#define AUTOWAH_BASS_TRIGGER    0.6 /* dB */
+#define AUTOWAH_DISCANT_TRIGGER 0.65 /* dB */
+#define AUTOWAH_BASS_TRIGGER    0.65 /* dB */
+
+static const char *methods[] = {
+    "Lowpass",
+    "Bandpass",
+    "Moog ladder",
+    NULL
+};
 
 static void
 update_wah_speed(GtkAdjustment *adj, struct autowah_params *params)
@@ -218,8 +228,28 @@ update_wah_continuous(GtkAdjustment *adj, struct autowah_params *params)
 }
 
 static void
+update_method(GtkWidget *w, struct autowah_params *params)
+{
+    int i;
+    const char *tmp;
+    
+    tmp = gtk_entry_get_text(GTK_ENTRY(w));
+    if (tmp == NULL)
+        return;
+
+    /* I guess we could also strdup the method from the entry. */ 
+    for (i = 0; methods[i] != NULL; i += 1) {
+	if (strcmp(tmp, methods[i]) == 0) {
+	    params->method = i;
+	    break;
+	}
+    }
+}
+
+static void
 autowah_init(struct effect *p)
 {
+    int i;
     struct autowah_params *params;
 
     GtkWidget      *speed_label;
@@ -243,6 +273,9 @@ autowah_init(struct effect *p)
     GtkObject	   *adj_drywet;
     GtkWidget      *drywet_label;
     GtkWidget      *parmTable;
+
+    GtkWidget      *method;
+    GList          *glist_methods = NULL;
 
     params = (struct autowah_params *) p->params;
 
@@ -316,12 +349,12 @@ autowah_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    continuous = gtk_check_button_new_with_label("Continuous sweep");
+    continuous = gtk_check_button_new_with_label("Repeat sweep");
     if (params->continuous)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(continuous), TRUE);
     gtk_signal_connect(GTK_OBJECT(continuous), "toggled",
 		       GTK_SIGNAL_FUNC(update_wah_continuous), params);
-    gtk_table_attach(GTK_TABLE(parmTable), continuous, 1, 4, 2, 3,
+    gtk_table_attach(GTK_TABLE(parmTable), continuous, 1, 3, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_EXPAND | GTK_FILL | GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
@@ -331,7 +364,6 @@ autowah_init(struct effect *p)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
-
     gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
 		     __GTKATTACHOPTIONS(GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
@@ -361,16 +393,26 @@ autowah_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
     adj_res = gtk_adjustment_new(params->res,
-				    30.0, 110.0, 10, 30, 0.0);
+				    30.0, 100.0, 10, 30, 0.0);
     res = gtk_vscale_new(GTK_ADJUSTMENT(adj_res));
     gtk_signal_connect(GTK_OBJECT(adj_res), "value_changed",
 		       GTK_SIGNAL_FUNC(update_wah_res), params);
     gtk_table_attach(GTK_TABLE(parmTable), res, 3, 4, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
+    for (i = 0; methods[i] != NULL; i += 1)
+        glist_methods = g_list_append(glist_methods, (gchar *) methods[i]);
+    method = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(method), glist_methods);
+    g_list_free(glist_methods);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(method)->entry), FALSE);
+    gtk_table_attach(GTK_TABLE(parmTable), method, 3, 5, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(method)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_method), params);
+    
     gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Wah-wah"));
     gtk_container_add(GTK_CONTAINER(p->control), parmTable);
 
@@ -466,10 +508,23 @@ autowah_filter(struct effect *p, struct data_block *db)
     if (ap->freq_vibrato >= 2 * M_PI)
         ap->freq_vibrato -= 2 * M_PI;
     
-    if (0) {
+    switch (ap->method) {
+      case 0:
+        /* lowpass resonant filter -- we must avoid setting value 0 to resonance */
+        set_lpf_biquad(sample_rate, freq, 1.1 + -ap->res / 100.0, &ap->lpf);
+        for (i = 0; i < db->len; i += 1) {
+            db->data[i] = do_biquad(db->data[i], &ap->lpf, curr_channel);
+            curr_channel = (curr_channel + 1) % db->channels;
+        }
+        break;
+        
+      case 1: 
+        /* old gnuitar bandpass */
         RC_set_freq(freq, ap->fd);
         RC_bandpass(db, ap->fd);
-    } else {
+        break;
+
+      case 2:
         /* Moog ladder filter according to Antti Huovilainen. */
 
 /* I, C, V = electrical parameters
@@ -501,11 +556,14 @@ autowah_filter(struct effect *p, struct data_block *db)
                  - tanh( ap->yd[curr_channel] / PARAM_V ));
 
             /* the wah causes a gain loss of 12 dB which, but due to resonance we
-             * have to be careful in how much gain we adjust back */
-            db->data[i] = ap->yd[curr_channel] * 2;
+             * may clip; regardless I'll adjust 12 dB back. */
+            db->data[i] = ap->yd[curr_channel] * 4;
             curr_channel = (curr_channel + 1) % db->channels;
         }
+        break;
 
+      default:
+        break;
     }
     
     /* mix with dry sound */
@@ -537,6 +595,7 @@ autowah_save(effect_t *p, SAVE_ARGS)
     SAVE_DOUBLE("res", params->res);
     SAVE_DOUBLE("drywet", params->drywet);
     SAVE_INT("continuous", params->continuous);
+    SAVE_INT("method", params->method);
 }
 
 static void
@@ -550,6 +609,7 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_DOUBLE("res", params->res);
     LOAD_DOUBLE("drywet", params->continuous);
     LOAD_INT("continuous", params->continuous);
+    LOAD_INT("method", params->method);
 }
 
 effect_t *
@@ -571,12 +631,13 @@ autowah_create()
     RC_setup(2, 1.48, ap->fd);
     ap->history = new_Backbuf(MAX_SAMPLE_RATE * AUTOWAH_HISTORY_LENGTH / 1000);
     
+    ap->method = 0; /* low-pass resonant filter */
     ap->freq_low = 280;
     ap->freq_high = 900;
     ap->sweep_time = 500;
     ap->drywet = 100;
     ap->continuous = 0;
-    ap->res = 75;
+    ap->res = 85;
 
     return p;
 }

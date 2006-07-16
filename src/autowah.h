@@ -24,8 +24,9 @@
 #define _AUTOWAH_H_ 1
 
 #include "pump.h"
-#include "rcfilter.h"
 #include "backbuf.h"
+#include "biquad.h"
+#include "rcfilter.h"
 
 extern effect_t *   autowah_create();
 
@@ -38,6 +39,7 @@ struct autowah_params {
     double          res;
     double	    drywet;
     int             continuous;
+    int             method;
 
     double          fresh_accum_delta;
     double          fresh_accum_power;
@@ -52,6 +54,8 @@ struct autowah_params {
     double          yb[MAX_CHANNELS];
     double          yc[MAX_CHANNELS];
     double          yd[MAX_CHANNELS];
+
+    Biquad_t        lpf;
 };
 
 #endif
