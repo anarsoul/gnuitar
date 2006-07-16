@@ -215,11 +215,17 @@ The controls and description of the effects follow below.
 </p>
 <h2><a name=autowah>Autowah</a></h2>
 <p>
-    The autowah is implemented using a digital model of the moog ladder filter.
-    The model was designed by Antti Huovilainen, and it was published at DAFx'04.
-    On low resonance values it acts a lot like a 2nd order bandpass filter with some
-    saturation colouring the sound into a warm, bloomy sound. On high resonance
-    values, the wah becomes a sound synthesizer itself.
+    Wah sound is typically implemented by a resonant filter. GNUitar provides three
+    resonant filters to play with: low-pass filter, 2x rc bandpass filter and a
+    digital model of the moog ladder filter (in-between low-pass and bandpass resonant
+    filters but also nonlinear, causing sound "warming" or "dirtying").
+</p>
+<p>
+    The moog filter model was designed by Antti Huovilainen, and it was published at
+    DAFx'04. On low resonance values it acts a lot like a 2nd order bandpass filter with
+    some saturation colouring the sound into a warmer, bloomy sound. On resonance values
+    exceeding 100%, the wah would actually produce self-supporting oscillations, turning
+    into a synthesizer itself.
 </p>
 <dl>
 <dt>period</dt>
@@ -231,15 +237,16 @@ The controls and description of the effects follow below.
 <dt>dry/wet</dt>
 <dd>mix clean sound with processed sound</dd>
 <dt>resonance</dt>
-<dd>choose resonance of the moog ladder filter.
-    Values above 110 % lead to self-supporting oscillations.</dd>
+<dd>choose resonance of the lowpass filter and the moog ladder filter.
+    Values close and exceeding 100% are slightly dangerous and may clip. Adjust volume
+    down if extreme resonances are desired.</dd>
 <dt>continuous sweep</dt>
 <dd>The Wah can be run in two modes, one where it sweeps between the low and high
     frequency in /\/\/\/ type manner, and another where it "listens" to input signal
     and tries to detect guitar picks for triggering the wah sweep synchronously with
     guitar picking. The pick
     detection works best if the wah receives unaltered input signal from the guitar,
-    rather than say distorted input from the overdrive effect.</dd>
+    rather than say distorted input from an overdrive effect.</dd>
 </dl>
 
 <h2><a name=distort>Distortion</a></h2>
@@ -297,7 +304,7 @@ turns choruslike. If the multichannel mode is available and enabled, the effect
 distributes one voice per output channel.
 </p>
 <p><strong>Vibrato</strong> If dry/wet at 100% (fully wet) and 1 voice, this effect
-is a vibrato.
+becomes a vibrato.
 </p>
 <dl>
 <dt>delay</dt><dd>fixed time delay before mixing</dd>
@@ -306,6 +313,7 @@ is a vibrato.
 <dt>voices</dt><dd>number of chorus voices to mix</dd>
 <dt>dry/wet</dt><dd>dry vs. wet mixing ratio</dd>
 <dt>regen</dt><dd>feedbacks some of the output back to input</dd>
+<dt>multichannel</dt><dd>causes the effects to distribute chorus voices around speakers</dd>
 </dl>
 
 <h2><a name=echo>Echo</a></h2>
@@ -359,16 +367,22 @@ approaching.
 <dd>Time for one complete rotation of the cabinet.</dd>
 </dl>
 
-<h2><a name=vibrato>Vibrato</a></h2>
+<h2><a name=tremolobar>Tremolo bar</a></h2>
 <p>
-Slows down and speeds up playback to achieve an effect like old tape. This is
-done by time-delaying the playback in a long sinuous curve.
+Does a pitch shift using single sideband modulation that does not preserve
+harmonious relationships, causing the guitar to appear out of tune at first.
+Larger displacement of tone produce metal bell -type sounds as the harmonic
+components shift into relationships that are not possible for a guitar to make.
 </p>
-<ul>
-<li>period    - length of one cycle of effect</li>
-<li>amplitude - maximum time delay</li>
-</ul>
-
+<dl>
+<dt>period</dt>
+<dd>length of one cycle of effect</dd>
+<dt>depth</dt>
+<dd>dynamic pitch shift depth</dd>
+<dt>base</dt>
+<dd>fixed amount of pitch shift. If this value is 0 or less, the sideband modulation
+occurs downwards. If the value is greater than 0, the switch occurs upwards</dd>
+</dl>
 
 <h2><a name=distort2>Overdrive</a></h2>
 
