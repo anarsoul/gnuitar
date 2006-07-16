@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2006/07/16 12:40:04  alankila
+ * - dirty the moog sound a bit to better justify its existence
+ *
  * Revision 1.38  2006/07/16 12:26:38  alankila
  * - add more wah algorithms, including gnuitar's original
  *
@@ -540,7 +543,7 @@ autowah_filter(struct effect *p, struct data_block *db)
 
         for (i = 0; i < db->len; i += 1) {
 
-#define PARAM_V (MAX_SAMPLE * 2.5) /* the sound gets dirtier if the factor gets small */
+#define PARAM_V (MAX_SAMPLE * 1.0) /* the sound gets dirtier if the factor gets small */
             float g = 1 - exp(-2 * M_PI * freq / sample_rate);
             ap->ya[curr_channel] += PARAM_V * g *
                 (tanh( (db->data[i] - 4 * ap->res/100.0 * ap->yd[curr_channel]) / PARAM_V )
