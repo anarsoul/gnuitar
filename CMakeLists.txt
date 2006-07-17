@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.6  2006/07/17 19:59:51  alankila
+# - first stab at install targets
+#
 # Revision 1.5  2006/07/17 19:06:41  alankila
 # - add some stock optimising settings
 # - fix copypaste snafu that caused jack=asound
@@ -25,7 +28,9 @@
 #
 
 PROJECT(GNUitar)
-INCLUDE(${CMAKE_ROOT}/Modules/UsePkgConfig.cmake)
+SET(CMAKE_INSTALL_PREFIX "/usr/local/")
+
+INCLUDE(UsePkgConfig)
 
 # GTK+ is mandatory
 FIND_PACKAGE(GTK)
@@ -133,3 +138,5 @@ ADD_EXECUTABLE(${CurrentExe}
     src/audio-jack.h src/audio-windows.c)
 TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
 
+INSTALL_TARGETS(bin gnuitar)
+INSTALL_FILES(share/doc/gnuitar FILES docs/devdocs.txt docs/faq.html docs/index.html docs/install.html docs/readme.html)
