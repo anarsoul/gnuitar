@@ -3,6 +3,10 @@
 # $Id$
 #
 # $Log$
+# Revision 1.5  2006/07/17 19:06:41  alankila
+# - add some stock optimising settings
+# - fix copypaste snafu that caused jack=asound
+#
 # Revision 1.4  2006/07/17 14:21:56  alankila
 # - SEPARATE_ARGUMENTS() already does the " " => ";" translation, so I rather
 #   use it. PKGCONFIG macros still suck, though.
@@ -71,7 +75,7 @@ IF (UNIX)
     ENDIF (JACK_LIBRARY)
 
     FIND_LIBRARY(ALSA_LIBRARY
-        NAMES jack
+        NAMES asound
         PATHS
         /usr/local/lib
         /usr/lib)
@@ -107,9 +111,9 @@ ELSE (FFTW3_LIBRARY)
     MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
 ENDIF (FFTW3_LIBRARY)
 
-# SSE + floating point operation -- we probably should export
-# these as CMake options for the automatic cmake gui
-ADD_DEFINITIONS(-DFLOAT_DSP -msse)
+# default to DSP & SSE
+ADD_DEFINITIONS(-DFLOAT_DSP)
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -O2 -fomit-frame-pointer -ffast-math")
 
 SET(Libraries ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 SET(CurrentExe "gnuitar")
