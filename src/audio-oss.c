@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2006/07/17 21:39:38  alankila
+ * - use dynamically allocated sample buffers instead of static ones.
+ *   (Win32 still uses static buffers moved directly into audio-windows.c)
+ *
  * Revision 1.21  2006/07/15 23:02:45  alankila
  * - remove the bits control -- just use the best available on every driver.
  *
@@ -132,6 +136,7 @@
 #include "main.h"
 #include "utils.h"
 
+static SAMPLE16 *rwbuf = NULL;
 static int fd;
 
 static void *
@@ -145,8 +150,6 @@ oss_audio_thread(void *V)
     };
     fd_set read_fds;
     struct timeval read_timeout;
-    SAMPLE16 *rdbuf16 = (SAMPLE16 *) rdbuf;
-    SAMPLE16 *wrbuf16 = (SAMPLE16 *) wrbuf;
 
     while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
 	if (state == STATE_PAUSE) {
@@ -166,7 +169,7 @@ oss_audio_thread(void *V)
 	read_timeout.tv_sec  = 0;
 	read_timeout.tv_usec = 0;
         do {
-	    count = read(fd, rdbuf16, buffer_size * n_output_channels * 2);
+	    count = read(fd, rwbuf, buffer_size * n_output_channels * 2);
             if (count < 0) {
                 perror("error reading from sound device: ");
                 break;
@@ -181,11 +184,11 @@ oss_audio_thread(void *V)
 
         if (n_input_channels == n_output_channels) {
             for (i = 0; i < db.len; i++)
-                db.data[i] = rdbuf16[i] << 8;
+                db.data[i] = rwbuf[i] << 8;
         } else {
             /* 1 in, 2 out -- discard the right channel */
             for (i = 0; i < db.len; i ++)
-                db.data[i] = rdbuf16[i * 2] << 8;
+                db.data[i] = rwbuf[i * 2] << 8;
         }
 	pump_sample(&db);
 
@@ -194,9 +197,9 @@ oss_audio_thread(void *V)
         assert(db.len == buffer_size * n_output_channels);
         triangular_dither(&db);
 	for (i = 0; i < db.len; i++)
-	    wrbuf16[i] = (SAMPLE32) db.data[i] >> 8;
+	    rwbuf[i] = (SAMPLE32) db.data[i] >> 8;
 
-	count = write(fd, wrbuf16, buffer_size * n_output_channels * 2);
+	count = write(fd, rwbuf, buffer_size * n_output_channels * 2);
 	if (count != buffer_size * n_output_channels * 2)
 	    gnuitar_printf( "warning: short write (%d/%d) to sound device\n", count, buffer_size);
         my_unlock_mutex(snd_open);
@@ -210,6 +213,7 @@ oss_finish_sound(void)
 {
     state = STATE_PAUSE;
     my_lock_mutex(snd_open);
+    free(rwbuf);
     oss_driver.enabled = 0;
     close(fd);
 }
@@ -285,6 +289,13 @@ oss_init_sound(void)
 	close(fd);
 	return ERR_WAVESETRATE;
     }
+
+    /* allocate sufficient memory for 16-bit sample buffer depending on
+     *  which has more output channels. */
+    if (n_input_channels > n_output_channels)
+        rwbuf = gnuitar_memalign(n_input_channels * buffer_size, 16 >> 3);
+    else
+        rwbuf = gnuitar_memalign(n_output_channels * buffer_size, 16 >> 3);
     
     state = STATE_PROCESS;
     oss_driver.enabled = 1;

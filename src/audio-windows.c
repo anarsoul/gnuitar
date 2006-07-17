@@ -21,6 +21,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2006/07/17 21:39:38  alankila
+ * - use dynamically allocated sample buffers instead of static ones.
+ *   (Win32 still uses static buffers moved directly into audio-windows.c)
+ *
  * Revision 1.18  2006/07/17 11:21:40  alankila
  * - add a _WIN32 define protecting compile for simplifying cmake build
  *
@@ -153,6 +157,8 @@ void            serror(DWORD err, TCHAR * str);
 void            dserror(HRESULT res, char *s);
 
 static unsigned int bits = 16;
+static SAMPLE16 wrbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
+static SAMPLE16 rdbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
 
 DWORD           WINAPI
 windows_audio_thread(void *V)
@@ -603,8 +609,6 @@ windows_init_sound(void)
 {
     int             i;
     WAVEFORMATEX    format;	/* wave format */
-    SAMPLE16       *rdbuf16 = rdbuf;
-    SAMPLE16       *wrbuf16 = wrbuf;
 
     /*
      * set audio parameters - sampling rate, number of channels etc.

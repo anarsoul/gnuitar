@@ -3,6 +3,10 @@
 # $Id$
 #
 # $Log$
+# Revision 1.9  2006/07/17 21:39:38  alankila
+# - use dynamically allocated sample buffers instead of static ones.
+#   (Win32 still uses static buffers moved directly into audio-windows.c)
+#
 # Revision 1.8  2006/07/17 20:23:06  alankila
 # - set a default build type
 #
@@ -121,7 +125,7 @@ ENDIF (FFTW3_LIBRARY)
 
 # default to DSP & SSE
 ADD_DEFINITIONS(-DFLOAT_DSP)
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -ffast-math")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -ffast-math -Wall")
 
 ADD_EXECUTABLE(gnuitar
     src/amp.c src/main.c src/pump.c src/chorus.c

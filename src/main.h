@@ -71,15 +71,14 @@ extern my_mutex         snd_open;
 #ifndef _WIN32
 extern pthread_t        audio_thread;
 
-extern SAMPLE32         wrbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-extern SAMPLE32         rdbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
 extern HANDLE	        audio_thread;	/* defined in main.c */
 
-extern char             wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
-extern char             rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
+/* sadly, Windows and Linux have a different idea what the size of the buffer is.
+ * Linux world talks about size in frames because that is most convenient for ALSA
+ * and JACK (but less so for OSS). */
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern unsigned short   overrun_threshold;

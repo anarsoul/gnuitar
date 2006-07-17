@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.61  2006/07/17 21:39:38  alankila
+ * - use dynamically allocated sample buffers instead of static ones.
+ *   (Win32 still uses static buffers moved directly into audio-windows.c)
+ *
  * Revision 1.60  2006/07/17 21:09:47  alankila
  * - silence gcc warnings.
  *
@@ -291,15 +295,11 @@ my_mutex        snd_open=NULL;
 #ifndef _WIN32
 pthread_t       audio_thread = 0;
 
-SAMPLE32        wrbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-SAMPLE32        rdbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
 HANDLE          audio_thread = 0;
 
-char            wrbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
-char            rdbuf[MIN_BUFFER_SIZE * MAX_BUFFERS];
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern short    dsound;         /* from audio-windows.h */

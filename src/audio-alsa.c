@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2006/07/17 21:39:38  alankila
+ * - use dynamically allocated sample buffers instead of static ones.
+ *   (Win32 still uses static buffers moved directly into audio-windows.c)
+ *
  * Revision 1.35  2006/07/16 20:43:32  alankila
  * - use non-white triangular noise for slightly better dithering.
  *
@@ -203,6 +207,9 @@ static snd_pcm_t *capture_handle;
 static unsigned int capture_bits;
 static unsigned int playback_bits;
 
+void *rdbuf = NULL;
+void *wrbuf = NULL;
+
 static void           *
 alsa_audio_thread(void *V)
 {
@@ -213,10 +220,10 @@ alsa_audio_thread(void *V)
         .len = buffer_size * n_output_channels,
         .channels = n_output_channels
     };
-    SAMPLE16    *rdbuf16 = (SAMPLE16 *) rdbuf;
-    SAMPLE32    *rdbuf32 = (SAMPLE32 *) rdbuf;
-    SAMPLE16    *wrbuf16 = (SAMPLE16 *) wrbuf;
-    SAMPLE32    *wrbuf32 = (SAMPLE32 *) wrbuf;
+    SAMPLE16 *rdbuf16;
+    SAMPLE32 *rdbuf32;
+    SAMPLE16 *wrbuf16;
+    SAMPLE32 *wrbuf32;
     
     /* frame counts are always the same to both read and write */
     while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
@@ -224,6 +231,13 @@ alsa_audio_thread(void *V)
             usleep(10000);
         }
         my_lock_mutex(snd_open);
+        /* this is technically typepunning but we never mix the pointers;
+         * we always use the same in read and write directions. */
+        rdbuf16 = rdbuf;
+        rdbuf32 = rdbuf;
+        wrbuf16 = wrbuf;
+        wrbuf32 = wrbuf;
+        
         /* catch transition PAUSE -> EXIT with mutex being waited already */
         if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
             my_unlock_mutex(snd_open);
@@ -244,14 +258,14 @@ alsa_audio_thread(void *V)
             snd_pcm_prepare(capture_handle);
             snd_pcm_prepare(playback_handle);
 
-            //gnuitar_printf( "Resyncing input/output\n");
             /* Prefill 2 playback buffer fragments. Normally this is the
              * maximum amount of fragments, and it ensures there's something
-             * to play while we come up with more data to play. */
-            for (i = 0; i < buffer_size * n_output_channels; i += 1)
-                wrbuf[i] = 0;
+             * to play while we come up with more data to play.
+             * Notice that here wrbuf16 usage doesn't imply 16-bit samples.
+             * It's just a block of memory cleared far enough. */ 
+            memset(wrbuf16, 0, n_output_channels * buffer_size * (playback_bits >> 3));
             for (i = 0; i < fragments; i += 1)
-                snd_pcm_writei(playback_handle, wrbuf, buffer_size);
+                snd_pcm_writei(playback_handle, wrbuf16, buffer_size);
         }
 
         while ((inframes = snd_pcm_readi(capture_handle, rdbuf, buffer_size)) < 0) {
@@ -310,6 +324,8 @@ alsa_finish_sound(void)
 {
     state = STATE_PAUSE;
     my_lock_mutex(snd_open);
+    free(rdbuf);
+    free(wrbuf);
     alsa_driver.enabled = 0;
     snd_pcm_drop(playback_handle);
     snd_pcm_close(playback_handle);
@@ -539,6 +555,9 @@ alsa_init_sound(void)
     /* the adapting step may have altered these settings, so copy them back. */
     fragments = fragments_try;
     buffer_size = bs_try;
+
+    rdbuf = gnuitar_memalign(n_input_channels  * buffer_size, capture_bits  >> 3);
+    wrbuf = gnuitar_memalign(n_output_channels * buffer_size, playback_bits >> 3);
     
     restarting = 1;
     state = STATE_PROCESS;
