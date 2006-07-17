@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.8  2006/07/17 20:23:06  alankila
+# - set a default build type
+#
 # Revision 1.7  2006/07/17 20:02:00  alankila
 # - win32 should work too now
 #
@@ -32,6 +35,11 @@
 
 PROJECT(GNUitar)
 
+# force optimizings on... We put yet more optimizing options later.
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
 INCLUDE(UsePkgConfig)
 
 # GTK+ is mandatory
@@ -41,21 +49,14 @@ IF (GTK_FOUND)
     ADD_DEFINITIONS(-DHAVE_GTK)
     MESSAGE("GTK 1.x found and used as GUI\n")
 ELSE (GTK_FOUND)
-    # This is a huge, quivering pile of poo. I guess CMake sucks.
-    # There is obviously no way this will work on Windows. ;-(
-
-    # PKGCONFIG doesn't exist on cmake 2.2 but on cmake 2.4 earliest.
-    # I need to fix this, at the moment I'm compiling with GTK1 only.
-    PKGCONFIG(gtk+-2.0 GTK2_INCLUDE_DIR GTK2_LINK_DIR GTK2_LINK_FLAGS GTK2_CFLAGS)
+    # This doesn't work on Windows, so I need to come up with something for that OS.
+    # (As soon as I understand what...)
+    PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
     PKGCONFIG(gthread-2.0 GTHREAD_INCLUDE_DIR GTHREAD_LINK_DIR GTHREAD_LINK_FLAGS GTHREAD_CFLAGS)
     
     IF (GTK2_INCLUDE_DIR)
-        # ok, I can get compile work through CFLAGS
-        SET(CMAKE_C_FLAGS "${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
-        # but to include libraries I have to do these awful hacks
-        # remove -l from in front of library
-        STRING(REGEX REPLACE "-l" "" GTK_LIBRARIES "${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS}")
-        SEPARATE_ARGUMENTS(GTK_LIBRARIES)
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
+        SET(GTK_LIBRARIES ${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS})
         ADD_DEFINITIONS(-DHAVE_GTK2)
         MESSAGE("GTK 2.x found and used as GUI\n")
     ELSE (GTK2_INCLUDE_DIR)
@@ -120,12 +121,9 @@ ENDIF (FFTW3_LIBRARY)
 
 # default to DSP & SSE
 ADD_DEFINITIONS(-DFLOAT_DSP)
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -O2 -fomit-frame-pointer -ffast-math")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -ffast-math")
 
-SET(Libraries ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
-SET(CurrentExe "gnuitar")
-
-ADD_EXECUTABLE(${CurrentExe}
+ADD_EXECUTABLE(gnuitar
     src/amp.c src/main.c src/pump.c src/chorus.c
     src/delay.c src/echo.c src/tracker.c src/tremolo.c src/vibrato.c src/autowah.c
     src/phasor.c src/rcfilter.c src/tubeamp.c src/rotary.c src/gui.c src/distort.c
@@ -138,7 +136,8 @@ ADD_EXECUTABLE(${CurrentExe}
     src/audio-alsa.h src/audio-oss.c src/audio-oss.h src/pitch.c src/pitch.h
     src/fft.c src/fft.h src/glib12-compat.c src/glib12-compat.h src/audio-jack.c
     src/audio-jack.h src/audio-windows.c)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
+TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 
 INSTALL_TARGETS(/bin gnuitar)
-INSTALL_FILES(/share/doc/gnuitar FILES docs/devdocs.txt docs/faq.html docs/index.html docs/install.html docs/readme.html)
+INSTALL_FILES(/share/doc/gnuitar FILES
+    docs/devdocs.txt docs/faq.html docs/index.html docs/install.html docs/readme.html)
