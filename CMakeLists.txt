@@ -3,6 +3,11 @@
 # $Id$
 #
 # $Log$
+# Revision 1.4  2006/07/17 14:21:56  alankila
+# - SEPARATE_ARGUMENTS() already does the " " => ";" translation, so I rather
+#   use it. PKGCONFIG macros still suck, though.
+# - make GTK2 missing error message fatal.
+#
 # Revision 1.3  2006/07/17 12:46:38  alankila
 # - use pkg-config and huge pile of kludges to compile with GTK+ 2.0.
 #   I guess CMake isn't that great after all, as pkg-config is not platform
@@ -21,9 +26,9 @@ INCLUDE(${CMAKE_ROOT}/Modules/UsePkgConfig.cmake)
 # GTK+ is mandatory
 FIND_PACKAGE(GTK)
 IF (GTK_FOUND)
-    MESSAGE("GTK found -- using GTK GUI.")
     INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIR})
     ADD_DEFINITIONS(-DHAVE_GTK)
+    MESSAGE("GTK 1.x found and used as GUI\n")
 ELSE (GTK_FOUND)
     # This is a huge, quivering pile of poo. I guess CMake sucks.
     # There is obviously no way this will work on Windows. ;-(
@@ -39,11 +44,11 @@ ELSE (GTK_FOUND)
         # but to include libraries I have to do these awful hacks
         # remove -l from in front of library
         STRING(REGEX REPLACE "-l" "" GTK_LIBRARIES "${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS}")
-        # ; separates entries meant as separate arguments in cmake internally
-        STRING(REGEX REPLACE " " ";" GTK_LIBRARIES ${GTK_LIBRARIES})
+        SEPARATE_ARGUMENTS(GTK_LIBRARIES)
         ADD_DEFINITIONS(-DHAVE_GTK2)
+        MESSAGE("GTK 2.x found and used as GUI\n")
     ELSE (GTK2_INCLUDE_DIR)
-        MESSAGE("GTK or GTK2 is mandatory -- make will fail. :-(")
+        MESSAGE(FATAL_ERROR "GTK or GTK2 is mandatory -- make will fail. :-(")
     ENDIF (GTK2_INCLUDE_DIR)
 ENDIF (GTK_FOUND)
 
