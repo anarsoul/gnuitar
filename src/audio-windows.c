@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.18  2006/07/17 11:21:40  alankila
+ * - add a _WIN32 define protecting compile for simplifying cmake build
+ *
  * Revision 1.17  2006/07/15 23:02:45  alankila
  * - remove the bits control -- just use the best available on every driver.
  *
@@ -95,6 +98,8 @@
  * - windows driver is probably broken
  *
  */
+
+#ifdef _WIN32
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -938,3 +943,5 @@ audio_driver_t windows_driver = {
     windows_finish_sound,   /* finish */
     windows_audio_thread    /* audio_proc */
 };
+
+#endif
