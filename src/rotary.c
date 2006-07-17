@@ -13,7 +13,6 @@
 #include <stdlib.h>
 
 #include "biquad.h"
-#include "fft.h"
 #include "pump.h"
 #include "rotary.h"
 

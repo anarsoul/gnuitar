@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.10  2006/07/17 22:01:59  alankila
+# - various compile fixes
+#
 # Revision 1.9  2006/07/17 21:39:38  alankila
 # - use dynamically allocated sample buffers instead of static ones.
 #   (Win32 still uses static buffers moved directly into audio-windows.c)
@@ -127,6 +130,11 @@ ENDIF (FFTW3_LIBRARY)
 ADD_DEFINITIONS(-DFLOAT_DSP)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -ffast-math -Wall")
 
+# for vasprintf
+IF (UNIX)
+    ADD_DEFINITIONS(-D_GNU_SOURCE)
+ENDIF (UNIX)
+
 ADD_EXECUTABLE(gnuitar
     src/amp.c src/main.c src/pump.c src/chorus.c
     src/delay.c src/echo.c src/tracker.c src/tremolo.c src/vibrato.c src/autowah.c
@@ -138,8 +146,8 @@ ADD_EXECUTABLE(gnuitar
     src/backbuf.h src/utils.h src/noise.c src/noise.h src/biquad.c src/biquad.h
     src/eqbank.c src/eqbank.h src/tuner.c src/tuner.h src/audio-alsa.c
     src/audio-alsa.h src/audio-oss.c src/audio-oss.h src/pitch.c src/pitch.h
-    src/fft.c src/fft.h src/glib12-compat.c src/glib12-compat.h src/audio-jack.c
-    src/audio-jack.h src/audio-windows.c)
+    src/glib12-compat.c src/glib12-compat.h src/audio-jack.c src/audio-jack.h
+    src/audio-windows.c)
 TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 
 INSTALL_TARGETS(/bin gnuitar)

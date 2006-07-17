@@ -55,13 +55,12 @@ am_gnuitar_OBJECTS = amp.$(OBJEXT) main.$(OBJEXT) pump.$(OBJEXT) \
 	reverb.$(OBJEXT) backbuf.$(OBJEXT) utils.$(OBJEXT) \
 	noise.$(OBJEXT) biquad.$(OBJEXT) eqbank.$(OBJEXT) \
 	tuner.$(OBJEXT) audio-alsa.$(OBJEXT) audio-oss.$(OBJEXT) \
-	pitch.$(OBJEXT) fft.$(OBJEXT) glib12-compat.$(OBJEXT) \
-	audio-jack.$(OBJEXT)
+	pitch.$(OBJEXT) glib12-compat.$(OBJEXT) audio-jack.$(OBJEXT)
 gnuitar_OBJECTS = $(am_gnuitar_OBJECTS)
 am__DEPENDENCIES_1 =
 gnuitar_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -97,6 +96,7 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FFTW3_LIBS = @FFTW3_LIBS@
 GLIB_CFLAGS = @GLIB_CFLAGS@
 GLIB_CONFIG = @GLIB_CONFIG@
 GLIB_GENMARSHAL = @GLIB_GENMARSHAL@
@@ -168,7 +168,7 @@ gnuitar_SOURCES = amp.c main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.
 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h \
 	tuner.c tuner.h audio-alsa.c audio-alsa.h audio-oss.c audio-oss.h \
-	pitch.c pitch.h fft.c fft.h glib12-compat.c glib12-compat.h audio-jack.c \
+	pitch.c pitch.h glib12-compat.c glib12-compat.h audio-jack.c \
 	audio-jack.h
 
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
@@ -178,7 +178,7 @@ INCLUDES = \
 	-I$(includedir) -Wall -ffast-math
 
 gnuitar_LDADD = \
-	$(GTK_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(SNDFILE_LIBS) $(JACK_LIBS)
+	$(GTK_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(SNDFILE_LIBS) $(JACK_LIBS) $(FFTW3_LIBS)
 
 all: all-am
 
@@ -259,7 +259,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/distort2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/echo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eqbank.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/glib12-compat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
