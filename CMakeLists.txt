@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.7  2006/07/17 20:02:00  alankila
+# - win32 should work too now
+#
 # Revision 1.6  2006/07/17 19:59:51  alankila
 # - first stab at install targets
 #
@@ -28,7 +31,6 @@
 #
 
 PROJECT(GNUitar)
-SET(CMAKE_INSTALL_PREFIX "/usr/local/")
 
 INCLUDE(UsePkgConfig)
 
@@ -138,5 +140,5 @@ ADD_EXECUTABLE(${CurrentExe}
     src/audio-jack.h src/audio-windows.c)
 TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
 
-INSTALL_TARGETS(bin gnuitar)
-INSTALL_FILES(share/doc/gnuitar FILES docs/devdocs.txt docs/faq.html docs/index.html docs/install.html docs/readme.html)
+INSTALL_TARGETS(/bin gnuitar)
+INSTALL_FILES(/share/doc/gnuitar FILES docs/devdocs.txt docs/faq.html docs/index.html docs/install.html docs/readme.html)
