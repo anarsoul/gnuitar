@@ -3,6 +3,11 @@
 # $Id$
 #
 # $Log$
+# Revision 1.3  2006/07/17 12:46:38  alankila
+# - use pkg-config and huge pile of kludges to compile with GTK+ 2.0.
+#   I guess CMake isn't that great after all, as pkg-config is not platform
+#   independent.
+#
 # Revision 1.2  2006/07/17 11:31:06  alankila
 # - move fftw3 for platform-independent inclusion, add some comments
 #
@@ -11,6 +16,7 @@
 #
 
 PROJECT(GNUitar)
+INCLUDE(${CMAKE_ROOT}/Modules/UsePkgConfig.cmake)
 
 # GTK+ is mandatory
 FIND_PACKAGE(GTK)
@@ -19,18 +25,26 @@ IF (GTK_FOUND)
     INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIR})
     ADD_DEFINITIONS(-DHAVE_GTK)
 ELSE (GTK_FOUND)
+    # This is a huge, quivering pile of poo. I guess CMake sucks.
+    # There is obviously no way this will work on Windows. ;-(
 
-    # GTK2 find_package probably doesn't exist on cmake 2.2 but on cmake 2.4 earliest.
+    # PKGCONFIG doesn't exist on cmake 2.2 but on cmake 2.4 earliest.
     # I need to fix this, at the moment I'm compiling with GTK1 only.
-
-    FIND_PACKAGE(GTK2)
-    IF (GTK2_FOUND)
-        MESSAGE("GTK2 found -- using GTK2 GUI.")
-        INCLUDE_DIRECTORIES(${GTK2_INCLUDE_DIR})
+    PKGCONFIG(gtk+-2.0 GTK2_INCLUDE_DIR GTK2_LINK_DIR GTK2_LINK_FLAGS GTK2_CFLAGS)
+    PKGCONFIG(gthread-2.0 GTHREAD_INCLUDE_DIR GTHREAD_LINK_DIR GTHREAD_LINK_FLAGS GTHREAD_CFLAGS)
+    
+    IF (GTK2_INCLUDE_DIR)
+        # ok, I can get compile work through CFLAGS
+        SET(CMAKE_C_FLAGS "${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
+        # but to include libraries I have to do these awful hacks
+        # remove -l from in front of library
+        STRING(REGEX REPLACE "-l" "" GTK_LIBRARIES "${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS}")
+        # ; separates entries meant as separate arguments in cmake internally
+        STRING(REGEX REPLACE " " ";" GTK_LIBRARIES ${GTK_LIBRARIES})
         ADD_DEFINITIONS(-DHAVE_GTK2)
-    ELSE (GTK2_FOUND)
+    ELSE (GTK2_INCLUDE_DIR)
         MESSAGE("GTK or GTK2 is mandatory -- make will fail. :-(")
-    ENDIF (GTK2_FOUND)
+    ENDIF (GTK2_INCLUDE_DIR)
 ENDIF (GTK_FOUND)
 
 SET(OTHER_LIBRARIES m)
