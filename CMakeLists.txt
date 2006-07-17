@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.2  2006/07/17 11:31:06  alankila
+# - move fftw3 for platform-independent inclusion, add some comments
+#
 # Revision 1.1  2006/07/17 11:26:17  alankila
 # - commit an experimental exit from autotools hell
 #
@@ -16,6 +19,10 @@ IF (GTK_FOUND)
     INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIR})
     ADD_DEFINITIONS(-DHAVE_GTK)
 ELSE (GTK_FOUND)
+
+    # GTK2 find_package probably doesn't exist on cmake 2.2 but on cmake 2.4 earliest.
+    # I need to fix this, at the moment I'm compiling with GTK1 only.
+
     FIND_PACKAGE(GTK2)
     IF (GTK2_FOUND)
         MESSAGE("GTK2 found -- using GTK2 GUI.")
@@ -67,21 +74,23 @@ IF (UNIX)
     ELSE (SNDFILE_LIBRARY)
         MESSAGE("libsndfile not found -- .wav export not possible.")
     ENDIF (SNDFILE_LIBRARY)
-
-    FIND_LIBRARY(FFTW3_LIBRARY
-        NAMES fftw3
-        PATHS
-        /usr/local/lib
-        /usr/lib)
-    IF (FFTW3_LIBRARY)
-        ADD_DEFINITIONS(-DHAVE_FFTW3)
-        SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} fftw3)
-    ELSE (FFTW3_LIBRARY)
-        MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
-    ENDIF (FFTW3_LIBRARY)
 ENDIF (UNIX)
 
-ADD_DEFINITIONS(-DFLOAT_DSP)
+FIND_LIBRARY(FFTW3_LIBRARY
+    NAMES fftw3
+    PATHS
+    /usr/local/lib
+    /usr/lib)
+IF (FFTW3_LIBRARY)
+    ADD_DEFINITIONS(-DHAVE_FFTW3)
+    SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} fftw3)
+ELSE (FFTW3_LIBRARY)
+    MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
+ENDIF (FFTW3_LIBRARY)
+
+# SSE + floating point operation -- we probably should export
+# these as CMake options for the automatic cmake gui
+ADD_DEFINITIONS(-DFLOAT_DSP -msse)
 
 SET(Libraries ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 SET(CurrentExe "gnuitar")
