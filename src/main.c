@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.60  2006/07/17 21:09:47  alankila
+ * - silence gcc warnings.
+ *
  * Revision 1.59  2006/07/15 16:54:48  alankila
  * - ignore PIPE to avoid exit on jackd termination
  *
@@ -309,7 +312,8 @@ main(int argc, char **argv)
 #ifndef _WIN32
     int             max_priority;
     struct sched_param p;
-
+    sigset_t ignore_set;
+    
     max_priority = sched_get_priority_max(SCHED_FIFO);
     p.sched_priority = max_priority/2;
 
@@ -325,7 +329,9 @@ main(int argc, char **argv)
 
     /* JACK can give us PIPE if the server terminates abruptly,
      * ignoring it allows us to avoid exit(). */
-    sigignore(SIGPIPE);
+    sigemptyset(&ignore_set);
+    sigaddset(&ignore_set, SIGPIPE);
+    sigprocmask(SIG_BLOCK, &ignore_set, NULL);
 #endif
 
     printf(COPYRIGHT

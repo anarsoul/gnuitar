@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.40  2006/07/17 21:09:47  alankila
+ * - silence gcc warnings.
+ *
  * Revision 1.39  2006/07/08 16:28:16  alankila
  * - extend hilbert transform with channel information for effects that could
  *   be used on channels separately. We've already allocated space in biquads
@@ -363,7 +366,7 @@ phasor_filter_mono(struct effect *p, struct data_block *db)
         *s = *s * Dry + tmp * Wet;
         
         curr_channel = (curr_channel + 1) % db->channels;
-        *s++;
+        s++;
         count--;
     }
 }
