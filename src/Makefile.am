@@ -9,7 +9,7 @@ gnuitar_SOURCES =  amp.c main.c pump.c chorus.c delay.c echo.c tracker.c tremolo
 	gui.h distort.h distort2.h sustain.h reverb.h backbuf.h utils.h \
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h \
 	tuner.c tuner.h audio-alsa.c audio-alsa.h audio-oss.c audio-oss.h \
-	pitch.c pitch.h fft.c fft.h glib12-compat.c glib12-compat.h audio-jack.c \
+	pitch.c pitch.h glib12-compat.c glib12-compat.h audio-jack.c \
 	audio-jack.h
 
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
@@ -20,4 +20,4 @@ INCLUDES = \
 	-I$(includedir) -Wall -ffast-math
 
 gnuitar_LDADD = \
-	$(GTK_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(SNDFILE_LIBS) $(JACK_LIBS)
+	$(GTK_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(SNDFILE_LIBS) $(JACK_LIBS) $(FFTW3_LIBS)
