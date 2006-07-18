@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2006/07/18 21:35:59  alankila
+ * - add optional FFT-based implementation -- it is several times faster
+ *   than the time-domain version and nearly as good.
+ *
  * Revision 1.6  2005/09/05 19:08:12  alankila
  * - abolish global variables. It's either that, or we forbid opening more than
  *   one tuner at once
@@ -50,6 +54,10 @@
 #ifndef _TUNER_H_
 #define _TUNER_H_ 1
 
+#ifdef HAVE_FFTW3
+#include "fftw3.h"
+#endif
+
 #include "backbuf.h"
 
 extern effect_t *   tuner_create();
@@ -62,9 +70,17 @@ struct tuner_params {
     /* backlog of sample data */
     Backbuf_t	    *history;
 
+#ifdef HAVE_FFTW3
+    /* fftw3 state */
+    fftw_complex    *fftin;
+    fftw_plan       fftfw;
+    fftw_plan       fftbw;
+    int             count;
+#endif
+    
     /* signal processing helpers */
     double	    power;
-    DSP_SAMPLE	    oldval[4];
+    DSP_SAMPLE	    oldval[3];
     
     /* raw measurements */
     double	    freq_history[FREQ_SIZE];

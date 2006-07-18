@@ -57,6 +57,10 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.29  2006/07/18 21:35:59  alankila
+ * - add optional FFT-based implementation -- it is several times faster
+ *   than the time-domain version and nearly as good.
+ *
  * Revision 1.28  2005/10/01 07:55:27  fonin
  * Decreased accuracy required to light the led
  *
@@ -171,9 +175,7 @@
 
 #define GUI_UPDATE_INTERVAL	125.0 /* ms */
 #define MIN_HZ	    27.5	/* lowest tone that will work: freq. of A */
-#define MAX_HZ	    1800.0	/* highest tone that will work */
-#define HISTORY_SIZE 1200	/* history buffer size: allows ~40 Hz */
-#define COMPARE_LEN 192		/* sample data examining length */
+#define MAX_HZ	    400.0	/* highest tone that will work */
 #define NOTES_N	    12		/* the note scale */
 #define NOTES_TO_C  9		/* how many notes to C sound from MIN_HZ */
 #define MAX_STRINGS 6		/* max.number of strings */
@@ -457,51 +459,123 @@ void
 tuner_filter(struct effect *p, struct data_block *db)
 {
     struct tuner_params *params;
-    int			i, j, loop_len;
+    int			i, j;
     DSP_SAMPLE	       *s;
     DSP_SAMPLE		newval;
-    double		power = 0,
-			good_loop_len = 0,
+    float		power = 0,
+			freq = 0;
+#ifdef HAVE_FFTW3
+    float               weighted_bin = 0,
+                        weighted_bin_n = 0,
+                        maxlen = 0;
+    int                 maxbin = 0;
+#else
+    float               good_loop_len = 0,
 			good_loop_len_n = 0,
 			max_diff = 0,
-			max_tmp2 = 0,
-			freq = 0;
-    
-    i = db->len;
+			max_tmp2 = 0;
+    int                 loop_len;
+#endif
     s = db->data;
     params = p->params;
 
-    while (i > 0) {
+    for (i = 0; i < db->len; i += db->channels) {
 	newval = 0;
 	for (j = 0; j < db->channels; j += 1) {
-	    newval += ((SAMPLE32)*s++ >> 8) / db->channels;
-            i--;
+	    newval += *s / db->channels;
+            s++;
         }
 
 	/* smooth signal a bit for noise reduction */
 	/* NR is FIR with y_n = 1/k * sum(x_i) */
-	params->oldval[3] = params->oldval[2];
 	params->oldval[2] = params->oldval[1];
 	params->oldval[1] = params->oldval[0];
 	params->oldval[0] = newval;
 	
-	newval = (params->oldval[3] + params->oldval[2] + params->oldval[1] + params->oldval[0]) / 4;
+	newval = (params->oldval[2] + params->oldval[1] + params->oldval[1] + params->oldval[0]) / 4;
+        newval /= 256;
 	
-	power += newval * newval;
+        power += newval * newval;
 	params->history->add(params->history, newval);
     }
     power /= db->len;
     
     /* smoothed power of the signal */
-    power = params->power = (power + params->power * 15) / 16;
+    power = params->power = (power + params->power * 3) / 4;
  
     /* don't try to analyse too quiet a signal. */
-    if (power < 900) {
+    if (power < 1800) {
         /* set "no measurement" state */
         params->freq = 0;
         return;
     }
-    
+
+#ifdef HAVE_FFTW3
+#define FFT_SIZE 4096
+#define HISTORY_SIZE FFT_SIZE
+
+    /* don't do FFT too often, with small fragment size the cost is prohibtive... */
+    params->count += db->len / db->channels;
+    if (params->count < FFT_SIZE/2)
+        return;
+    params->count -= FFT_SIZE/2;
+
+    /* fill FFT from last input */
+    for (i = 0; i < FFT_SIZE; i += 1) {
+        /* raised cosine window */
+        float w = 0.5 - 0.5 * sin_lookup(((i + FFT_SIZE/4) % FFT_SIZE) / (float) FFT_SIZE);
+        params->fftin[i][0] = params->history->get(params->history, FFT_SIZE - i) * w;
+        params->fftin[i][1] = 0;
+    }
+
+    /* obtain spectrum of input */
+    fftw_execute(params->fftfw);
+
+    /* obtain logaritmic magnitude of spectrum */
+    for (i = 0; i < FFT_SIZE; i += 1) {
+        /* abs()**2 */
+        double len = params->fftin[i][0] * params->fftin[i][0] + params->fftin[i][1] * params->fftin[i][1];
+        /* log(0) -> NaN, let's avoid NaN */
+        if (len > 0)
+            len = log(len) / 2; /* compensate for lack of sqrt with 2 */
+        else
+            len = -999;  /* or any small value */
+
+        /* store magnitudes */
+        params->fftin[i][0] = len;
+        params->fftin[i][1] = 0;
+    }
+
+    /* obtain cepstrum of real magnitude spectrum */
+    fftw_execute(params->fftbw);
+    /* note: the complex part should be neglible */
+
+    /* search for maximum quefrency -- this analysis could be better though... */
+    for (i = sample_rate / MAX_HZ; i < sample_rate / MIN_HZ; i += 1) {
+        float len = fabs(params->fftin[i][0]);
+        if (len > maxlen) {
+            maxbin = i;
+            maxlen = len;
+        }
+    }
+
+    /* now weigh 10 % on both sides to patch our accuracy up a bit */
+    for (i = maxbin * 0.9; i <= maxbin * 1.1; i += 1) {
+        float len;
+        if (i > FFT_SIZE / 2 - 1)
+            continue;
+        len = params->fftin[i][0] * params->fftin[i][0];
+        weighted_bin += len * i;
+        weighted_bin_n += len;
+    }
+    /* this should be a good approximation of the true quefrency */
+    weighted_bin /= weighted_bin_n;
+
+    freq = (float) sample_rate / weighted_bin;
+#else
+#define HISTORY_SIZE 1200	/* history buffer size: allows ~40 Hz */
+#define COMPARE_LEN 192		/* sample data examining length */
+
     /* now look for similarities in the history buffer.
      * we start from the beginning of the history
      * and look for the first sequence that repeats
@@ -551,6 +625,8 @@ tuner_filter(struct effect *p, struct data_block *db)
     /* If we are reinitializing, prefill the history to improve the time
      * it takes to get a valid median */
     freq = sample_rate / good_loop_len;
+#endif
+
     if (params->freq == 0) {
 	for (i = 0; i < FREQ_SIZE; i += 1) {
             params->freq_history[i] = freq;
@@ -572,7 +648,7 @@ tuner_filter(struct effect *p, struct data_block *db)
     freq = (params->sorted_freq_history[FREQ_SIZE / 2] + params->sorted_freq_history[FREQ_SIZE / 2 - 1]) / 2;
     
     /* update the exponential average from the median */
-    params->freq = (freq + 3 * params->freq) / 4;
+    params->freq = (freq + 2 * params->freq) / 3;
     return;
 }
 
@@ -613,6 +689,13 @@ tuner_create()
     
     params = p->params;
     params->history = new_Backbuf(HISTORY_SIZE);
+
+#ifdef HAVE_FFTW3
+    /* prepare for FFT transforms */
+    params->fftin = fftw_malloc(sizeof(fftw_complex) * FFT_SIZE);
+    params->fftfw = fftw_plan_dft_1d(FFT_SIZE, params->fftin, params->fftin, FFTW_FORWARD, FFTW_ESTIMATE);
+    params->fftbw = fftw_plan_dft_1d(FFT_SIZE, params->fftin, params->fftin, FFTW_BACKWARD, FFTW_ESTIMATE);
+#endif
 
     return p;
 }
