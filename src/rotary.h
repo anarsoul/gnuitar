@@ -12,8 +12,6 @@
 #include "pump.h"
 #include "biquad.h"
 
-#define FFT_SIZE 512
-
 extern effect_t *rotary_create();
 
 struct rotary_params {
