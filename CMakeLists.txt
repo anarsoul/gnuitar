@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.11  2006/07/19 10:34:04  alankila
+# - update install to cmake 2.4 style
+#
 # Revision 1.10  2006/07/17 22:01:59  alankila
 # - various compile fixes
 #
@@ -150,6 +153,8 @@ ADD_EXECUTABLE(gnuitar
     src/audio-windows.c)
 TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 
-INSTALL_TARGETS(/bin gnuitar)
-INSTALL_FILES(/share/doc/gnuitar FILES
-    docs/devdocs.txt docs/faq.html docs/index.html docs/install.html docs/readme.html)
+INSTALL(TARGETS gnuitar RUNTIME DESTINATION bin)
+MAKE_DIRECTORY("${CMAKE_INSTALL_PREFIX}/share/doc/gnuitar/docs")
+INSTALL(FILES docs/devdocs.txt docs/faq.html docs/index.html docs/install.html
+        docs/readme.html
+        DESTINATION share/doc/gnuitar/docs)
