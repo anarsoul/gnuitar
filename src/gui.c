@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.88  2006/07/19 22:16:39  anarsoul
+ * - Fixed copy-paste error (No operations between gtk_text_freeze and gtk_text_thaw)
+ *
  * Revision 1.87  2006/07/19 10:43:42  alankila
  * - remove unnecessary paths in help_contents
  *
@@ -614,10 +617,12 @@ about_dlg(void)
 
     gtk_text_freeze(GTK_TEXT(about_text));
     
-    gtk_text_thaw(GTK_TEXT(about_text));
-
     gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, "\n GNUitar " VERSION"\n\n", -1);
     gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, about_txt, -1);
+
+    
+    gtk_text_thaw(GTK_TEXT(about_text));
+
     
     authors_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
 			(GTK_SCROLLED_WINDOW(authors_scrolledwin)),
@@ -627,9 +632,11 @@ about_dlg(void)
 
     gtk_text_freeze(GTK_TEXT(authors_text));
     
+    gtk_text_insert(GTK_TEXT(authors_text), NULL, NULL, NULL, authors_txt, -1);
+    
     gtk_text_thaw(GTK_TEXT(authors_text));
 
-    gtk_text_insert(GTK_TEXT(authors_text), NULL, NULL, NULL, authors_txt, -1);
+    
     
     license_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
 			(GTK_SCROLLED_WINDOW(license_scrolledwin)),
@@ -641,21 +648,6 @@ about_dlg(void)
 
 
     gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL, license_txt, -1);
-    /*gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL, DISCLAIMER, -1);
-
-    gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL,
-		    "This program is distributed in the hope that it will be useful,\n"
-		    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-		    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
-		    "See the GNU General Public License for more details.\n\n",
-		    -1);
-
-    gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL,
-		    "You should have received a copy of the GNU General Public License\n"
-		    "along with this program; if not, write to the Free Software\n"
-		    "Foundation, Inc., 59 Temple Place - Suite 330, Boston,\n"
-		    "MA 02111-1307, USA.", -1);
-    */
 
     gtk_text_thaw(GTK_TEXT(license_text));
 
