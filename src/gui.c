@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.87  2006/07/19 10:43:42  alankila
+ * - remove unnecessary paths in help_contents
+ *
  * Revision 1.86  2006/07/15 23:21:23  alankila
  * - show input/output vu meters separately
  *
@@ -669,28 +672,26 @@ about_dlg(void)
 static void
 help_contents(void)
 {
-    char            path[2048] = "";
+    char            path[256] = "";
 #ifndef _WIN32
     pid_t           pid;
-    char            browser[2048] = "";
+    char            browser[256] = "";
     char           *env_browser = NULL;
-    char           *browsers[7] = {
-	"/usr/bin/netscape",
-	"/usr/bin/netscape-navigator",
-	"/usr/bin/netscape-communicator",
-	"/usr/bin/konqueror",
-	"/usr/bin/mozilla",
-	"/usr/bin/links",
-	"/usr/bin/lynx"
+    char           *browsers[] = {
+        "/usr/bin/x-www-browser",
+        "/usr/bin/firefox",
+        "/usr/bin/mozilla",
+        "/usr/bin/opera",
+        "/usr/bin/konqueror",
+        "/usr/bin/dillo",
+        "/usr/bin/galeon",
+        NULL,
     };
-    char           *docs[7] = {
-	"/usr/share/doc/gnuitar-" VERSION "/docs/index.html",
-	"/usr/share/gnuitar/docs/index.html",
-	"/usr/doc/gnuitar-" VERSION "/docs/index.html",
-	"/usr/local/doc/gnuitar-" VERSION "/docs/index.html",
-	"/usr/share/doc/gnuitar/docs/index.html",
-	"/usr/doc/gnuitar/docs/index.html",
-	"/usr/local/doc/gnuitar/docs/index.html"
+    char           *docs[] = {
+        /* we should propagate install path from build directory */
+	"/usr/local/share/doc/gnuitar/docs/index.html",
+        "/usr/share/doc/gnuitar/docs/index.html",
+        NULL,
     };
     int             i;
 
@@ -702,7 +703,7 @@ help_contents(void)
      * if there is no preference, trying to guess
      */
     if (env_browser == NULL) {
-	for (i = 0; i < 7; i++) {
+	for (i = 0; browsers[i] != NULL; i++) {
 	    if (access(browsers[i], X_OK) == 0) {
 		strcpy(browser, browsers[i]);
 		break;
@@ -722,7 +723,7 @@ help_contents(void)
 	 * child process
 	 */
 	if (pid == 0) {
-	    for (i = 0; i < 7; i++) {
+	    for (i = 0; docs[i] != NULL; i++) {
 		if (access(docs[i], R_OK) == 0) {
 		    strcpy(path, docs[i]);
 		    break;
@@ -741,6 +742,8 @@ help_contents(void)
 	    }
 	    if (strcmp(path, "") != 0)
 		execl(browser, browser, path, NULL);
+            fprintf(stderr, "failed to start browser at %s %s, child exiting...", browser, path);
+            exit(1);
 	}
     }
 #else
