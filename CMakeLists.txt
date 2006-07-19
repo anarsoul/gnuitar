@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.13  2006/07/19 11:01:43  alankila
+# - install more docs
+#
 # Revision 1.12  2006/07/19 10:48:50  alankila
 # - make cmake prefer gtk2 gui
 #
@@ -164,6 +167,8 @@ TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 
 INSTALL(TARGETS gnuitar RUNTIME DESTINATION bin)
 MAKE_DIRECTORY("${CMAKE_INSTALL_PREFIX}/share/doc/gnuitar/docs")
+INSTALL(FILES AUTHORS NEWS README TODO FAQ COPYING ChangeLog
+        DESTINATION share/doc/gnuitar)
 INSTALL(FILES docs/devdocs.txt docs/faq.html docs/index.html docs/install.html
         docs/readme.html
         DESTINATION share/doc/gnuitar/docs)
