@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.12  2006/07/19 10:48:50  alankila
+# - make cmake prefer gtk2 gui
+#
 # Revision 1.11  2006/07/19 10:34:04  alankila
 # - update install to cmake 2.4 style
 #
@@ -46,33 +49,39 @@
 PROJECT(GNUitar)
 
 # force optimizings on... We put yet more optimizing options later.
-IF(NOT CMAKE_BUILD_TYPE)
+IF (NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release FORCE)
-ENDIF(NOT CMAKE_BUILD_TYPE)
+ENDIF (NOT CMAKE_BUILD_TYPE)
 
-INCLUDE(UsePkgConfig)
-
-# GTK+ is mandatory
-FIND_PACKAGE(GTK)
-IF (GTK_FOUND)
-    INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIR})
-    ADD_DEFINITIONS(-DHAVE_GTK)
-    MESSAGE("GTK 1.x found and used as GUI\n")
-ELSE (GTK_FOUND)
+IF (UNIX)
+    INCLUDE(UsePkgConfig)
     # This doesn't work on Windows, so I need to come up with something for that OS.
     # (As soon as I understand what...)
     PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
     PKGCONFIG(gthread-2.0 GTHREAD_INCLUDE_DIR GTHREAD_LINK_DIR GTHREAD_LINK_FLAGS GTHREAD_CFLAGS)
-    
+
     IF (GTK2_INCLUDE_DIR)
         SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
         SET(GTK_LIBRARIES ${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS})
         ADD_DEFINITIONS(-DHAVE_GTK2)
         MESSAGE("GTK 2.x found and used as GUI\n")
-    ELSE (GTK2_INCLUDE_DIR)
-        MESSAGE(FATAL_ERROR "GTK or GTK2 is mandatory -- make will fail. :-(")
+        SET(GTK2_FOUND 1)
     ENDIF (GTK2_INCLUDE_DIR)
-ENDIF (GTK_FOUND)
+ENDIF(UNIX)
+
+IF (NOT GTK2_FOUND)
+    FIND_PACKAGE(GTK)
+    IF (GTK_FOUND)
+        INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIR})
+        ADD_DEFINITIONS(-DHAVE_GTK)
+        MESSAGE("GTK 1.x found and used as GUI\n")
+    ENDIF (GTK_FOUND)
+ENDIF (NOT GTK2_FOUND)
+
+IF (GTK_FOUND OR GTK2_FOUND)
+ELSE (GTK_FOUND OR GTK2_FOUND)
+    MESSAGE(FATAL_ERROR "Please install gtk 2.x or gtk 1.x development files")
+ENDIF (GTK_FOUND OR GTK2_FOUND)
 
 SET(OTHER_LIBRARIES m)
 IF (UNIX)
