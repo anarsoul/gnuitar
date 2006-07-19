@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.14  2006/07/19 11:11:49  alankila
+# - don't pass paths to FIND_LIBRARY: standard paths will do
+#
 # Revision 1.13  2006/07/19 11:01:43  alankila
 # - install more docs
 #
@@ -91,12 +94,9 @@ IF (UNIX)
     # OSS is always available on Unix
     ADD_DEFINITIONS(-DHAVE_OSS)
 
-    # these libraries are dynamically detected
-    FIND_LIBRARY(JACK_LIBRARY
-        NAMES jack
-        PATHS
-        /usr/local/lib
-        /usr/lib)
+    # these libraries are dynamically detected.
+    # probably pkg-config should be used for these as well.
+    FIND_LIBRARY(JACK_LIBRARY NAMES jack)
     IF (JACK_LIBRARY)
         ADD_DEFINITIONS(-DHAVE_JACK)
         SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} jack)
@@ -104,11 +104,7 @@ IF (UNIX)
         MESSAGE("libjack not found -- not compiling jack support.")
     ENDIF (JACK_LIBRARY)
 
-    FIND_LIBRARY(ALSA_LIBRARY
-        NAMES asound
-        PATHS
-        /usr/local/lib
-        /usr/lib)
+    FIND_LIBRARY(ALSA_LIBRARY NAMES asound)
     IF (ALSA_LIBRARY)
         ADD_DEFINITIONS(-DHAVE_ALSA)
         SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} asound)
@@ -116,11 +112,7 @@ IF (UNIX)
         MESSAGE("libasound not found -- not compiling ALSA support.")
     ENDIF (ALSA_LIBRARY)
 
-    FIND_LIBRARY(SNDFILE_LIBRARY
-        NAMES sndfile
-        PATHS
-        /usr/local/lib
-        /usr/lib)
+    FIND_LIBRARY(SNDFILE_LIBRARY NAMES sndfile)
     IF (SNDFILE_LIBRARY)
         ADD_DEFINITIONS(-DHAVE_SNDFILE)
         SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} sndfile)
@@ -129,11 +121,7 @@ IF (UNIX)
     ENDIF (SNDFILE_LIBRARY)
 ENDIF (UNIX)
 
-FIND_LIBRARY(FFTW3_LIBRARY
-    NAMES fftw3
-    PATHS
-    /usr/local/lib
-    /usr/lib)
+FIND_LIBRARY(FFTW3_LIBRARY NAMES fftw3)
 IF (FFTW3_LIBRARY)
     ADD_DEFINITIONS(-DHAVE_FFTW3)
     SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} fftw3)
