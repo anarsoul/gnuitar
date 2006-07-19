@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.89  2006/07/19 22:30:57  alankila
+ * - remove all freeze/thaw cycles around singular operations too
+ *
  * Revision 1.88  2006/07/19 22:16:39  anarsoul
  * - Fixed copy-paste error (No operations between gtk_text_freeze and gtk_text_thaw)
  *
@@ -614,14 +617,8 @@ about_dlg(void)
 			gtk_scrolled_window_get_vadjustment
 			(GTK_SCROLLED_WINDOW(about_scrolledwin)));
     gtk_container_add(GTK_CONTAINER(about_scrolledwin), about_text);
-
-    gtk_text_freeze(GTK_TEXT(about_text));
-    
-    gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, "\n GNUitar " VERSION"\n\n", -1);
+    gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, "\n GNUitar " VERSION "\n\n", -1);
     gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, about_txt, -1);
-
-    
-    gtk_text_thaw(GTK_TEXT(about_text));
 
     
     authors_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
@@ -629,27 +626,15 @@ about_dlg(void)
 			gtk_scrolled_window_get_vadjustment
 			(GTK_SCROLLED_WINDOW(authors_scrolledwin)));
     gtk_container_add(GTK_CONTAINER(authors_scrolledwin), authors_text);
-
-    gtk_text_freeze(GTK_TEXT(authors_text));
-    
     gtk_text_insert(GTK_TEXT(authors_text), NULL, NULL, NULL, authors_txt, -1);
-    
-    gtk_text_thaw(GTK_TEXT(authors_text));
 
-    
     
     license_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
 			(GTK_SCROLLED_WINDOW(license_scrolledwin)),
 			gtk_scrolled_window_get_vadjustment
 			(GTK_SCROLLED_WINDOW(license_scrolledwin)));
     gtk_container_add(GTK_CONTAINER(license_scrolledwin), license_text);
-
-    gtk_text_freeze(GTK_TEXT(license_text));
-
-
     gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL, license_txt, -1);
-
-    gtk_text_thaw(GTK_TEXT(license_text));
 
     ok_button = gtk_button_new_with_label("OK");
     gtk_box_pack_end(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
@@ -779,9 +764,7 @@ delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
         return TRUE;
     }
     effects[i]->proc_done(effects[i]);
-    gtk_clist_freeze(GTK_CLIST(processor));
     gtk_clist_remove(GTK_CLIST(processor), i);
-    gtk_clist_thaw(GTK_CLIST(processor));
     for (; i < n-1; i += 1)
         effects[i] = effects[i+1];
     effects[n--] = NULL;
@@ -910,12 +893,10 @@ del_pressed(GtkWidget *widget, gpointer data)
 	effects[n--] = NULL;
         my_unlock_mutex(effectlist_lock);
 
-	gtk_clist_freeze(GTK_CLIST(processor));
 	gtk_clist_remove(GTK_CLIST(processor), curr_row);
 	if (curr_row == n - 1 && curr_row > 0)
 	    curr_row--;
 	gtk_clist_select_row(GTK_CLIST(processor), curr_row, 0);
-	gtk_clist_thaw(GTK_CLIST(processor));
     }
 }
 
@@ -1037,12 +1018,10 @@ bank_del_pressed(GtkWidget * widget, gpointer data)
     bank_len=GTK_CLIST(bank)->rows;
 
     if (bank_row >= 0 && bank_row < bank_len) {
-	gtk_clist_freeze(GTK_CLIST(bank));
 	gtk_clist_remove(GTK_CLIST(bank), bank_row);
 	if (bank_row == bank_len - 1)
 	    bank_row--;
 	gtk_clist_select_row(GTK_CLIST(bank), bank_row, 0);
-	gtk_clist_thaw(GTK_CLIST(bank));
     }
 }
 
@@ -1919,8 +1898,6 @@ init_gui(void)
 			GTK_SCROLLED_WINDOW(status_window),
 			gtk_scrolled_window_get_vadjustment
 			GTK_SCROLLED_WINDOW(status_window));
-    gtk_text_freeze(GTK_TEXT(status_text));
-    gtk_text_thaw(GTK_TEXT(status_text));
 #endif
     
     /* Update container data with text buffered before the window existed. */
