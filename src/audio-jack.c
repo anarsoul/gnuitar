@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2006/07/20 22:37:21  alankila
+ * - can't write to debug buffer from audio thread: instant gui crash results
+ *
  * Revision 1.7  2006/07/15 23:02:45  alankila
  * - remove the bits control -- just use the best available on every driver.
  *
@@ -87,7 +90,6 @@ process (jack_nframes_t nframes, void *arg)
     
     if (nframes != buffer_size)
     {
-	gnuitar_printf("Adapting to JACK buffer size of %d frames\n", nframes);
 	buffer_size = nframes;
     }
     
@@ -185,7 +187,7 @@ jack_init_sound(void)
     client = jack_client_open ("GNUitar", options, &status, jack_server_name);
     if (client == NULL)
     {
-	gnuitar_printf ("jack_client_new() failed (status=%d)\n", status);
+	gnuitar_printf ("jack_client_open() failed (status=%d)\n", status);
 	return ERR_WAVEOUTOPEN;
     }
     
