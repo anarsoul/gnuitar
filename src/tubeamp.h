@@ -32,9 +32,8 @@ extern effect_t *tubeamp_create();
 #define MAX_IMPULSE_LENGTH 512
 
 struct tubeamp_params {
-    int         stages;
-    float       gain, middlefreq;
-    float       asymmetry, biasfactor;
+    int         stages, impulse_model, impulse_quality;
+    float       gain, asymmetry, biasfactor;
     
     /* internal state variables */
     Biquad_t    highpass[MAX_STAGES];

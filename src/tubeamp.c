@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2006/07/20 22:32:04  alankila
+ * - reduce cpu drain somewhat
+ * - prepare effect for different amp models
+ *
  * Revision 1.38  2006/07/03 12:08:15  alankila
  * - remove alignment requirement from DSP_SAMPLE; it's not likely we can ever
  *   really make significant use of the procbuf's alignment due to channel
@@ -172,40 +176,10 @@
 #include "tubeamp.h"
 
 #define UPSAMPLE_RATIO 6
+#define IMPULSE_SIZE   512
 
-/*
- * Marshall Pro Jr
-DSP_SAMPLE impulse[256] = {
-  4138,  14611,  26189,  34250,  37102,  34071,  26597,  16581,   7236,   2504,   1816,
-  1633,    800,   -196,  -1047,   -969,    137,   1698,   3159,   3497,   2204,    399,
- -1583,  -4201,  -7083, -10054, -13786, -17384, -18258, -15413, -10370,  -5328,  -1841,
-  -382,  -1525,  -4882,  -7757,  -8338,  -7171,  -5643,  -4865,  -4798,  -4937,  -5238,
- -5322,  -5120,  -4950,  -4658,  -4049,  -3294,  -2562,  -2205,  -2353,  -2971,  -3915,
- -4662,  -4769,  -4166,  -3396,  -2813,  -2258,  -1482,   -675,   -198,   -131,   -414,
-  -983,  -1688,  -2454,  -3162,  -3583,  -3602,  -3422,  -3060,  -2433,  -1858,  -1866,
- -2707,  -3905,  -4531,  -4241,  -3507,  -2595,  -1626,   -925,   -556,   -103,    976,
-  2625,   3995,   4524,   4214,   3286,   2029,    577,  -1039,  -2628,  -4108,  -5456,
- -6359,  -6527,  -5884,  -4494,  -2661,   -927,    361,   1241,   1894,   2221,   1833,
-   574,  -1097,  -2559,  -3387,  -3414,  -2812,  -1936,  -1234,   -999,   -990,   -650,
-   272,   1553,   2671,   3237,   3259,   2924,   2415,   1840,   1189,    453,   -282,
-  -829,  -1002,   -718,   -226,    146,    347,    455,    501,    530,    470,    268,
-  -159,   -857,  -1543,  -1878,  -1698,  -1072,   -253,    563,   1311,   2039,   2823,
-  3560,   3939,   3677,   2807,   1718,    847,    343,     57,   -184,   -355,   -337,
-    -7,    656,   1508,   2346,   3003,   3333,   3253,   2798,   2143,   1504,    979,
-   417,   -299,  -1098,  -1740,  -1960,  -1694,  -1113,   -459,     -9,      4,   -417,
- -1113,  -1837,  -2300,  -2307,  -1811,   -964,    -75,    633,   1048,   1109,    854,
-   402,    -90,   -446,   -545,   -349,     25,    332,    380,    179,   -170,   -601,
- -1008,  -1214,  -1079,   -637,    -60,    428,    620,    385,   -219,   -994,  -1763,
- -2413,  -2872,  -3076,  -2973,  -2598,  -2076,  -1529,  -1010,   -508,    -10,    504,
-  1041,   1599,   2127,   2540,   2741,   2655,   2261,   1620,    873,    173,   -410,
-  -812,   -949,   -808,   -467,    -43,    329,    539,    593,    593,    622,    716,
-   859,    989,   1040
-};
-*/
-
- /*
-  * Marshall G15R
-DSP_SAMPLE impulse[512] = {
+/* Marshall G15R */
+static DSP_SAMPLE __attribute__((aligned(16))) impulse_g15r[IMPULSE_SIZE] = {
   4405,  17364,  30475,  33517,  28810,  20846,   9309,  -4045, -13421, -13737,  -6939,
   -644,   2381,   4726,   4890,   -577,  -8708, -13224, -11835,  -6840,   -805,   5847,
  11158,  10895,   3963,  -5524, -11923, -13616, -12717,  -9577,  -4247,   -180,    568,
@@ -254,10 +228,9 @@ DSP_SAMPLE impulse[512] = {
    372,    338,    207,     53,    -63,   -131,   -187,   -265,   -372,   -482,   -551,
   -587,   -642,   -689,   -662,   -577,   -485
 };
-*/
 
- /* Princeton II */
-DSP_SAMPLE __attribute__((aligned(16))) impulse[512] = {
+/* Princeton II */
+static DSP_SAMPLE __attribute__((aligned(16))) impulse_princeton2[IMPULSE_SIZE] = {
   2799,  11631,  23881,  32811,  34786,  30693,  22401,  12097,   3608,    333,   1986,
   5050,   5906,   3149,  -2263,  -7957, -11151,  -9808,  -4421,   1179,   2345,  -1974,
  -8064, -11426, -10826,  -7845,  -4476,  -2085,  -1307,  -1743,  -2306,  -2291,  -1539,
@@ -307,13 +280,22 @@ DSP_SAMPLE __attribute__((aligned(16))) impulse[512] = {
   -870,   -939,   -708,   -263,    109,    199
 };
 
+typedef struct {
+    char       *name;
+    DSP_SAMPLE *impulse;
+} ampmodels_t;
+
+ampmodels_t ampmodels[] = {
+    { "Marshall G15R", impulse_g15r,      },
+    { "Princeton II",  impulse_princeton2 },
+    { NULL,            NULL               }
+};
+
 #define NONLINEARITY_SIZE 16384      /* the bigger the table, the louder before hardclip */
 #define NONLINEARITY_PRECISION (1/16.0)   /* the bigger the value, the lower the noise */
 
 #define NONLINEARITY_SCALE 1024     /* this variable works like gain */
 static float nonlinearity[NONLINEARITY_SIZE];
-
-#define IMPULSE_SIZE (sizeof(impulse) / sizeof(impulse[0])) /* <= MAX_IMPULSE_SIZE */
 
 static void
 update_stages(GtkAdjustment *adj, struct tubeamp_params *params)
@@ -524,7 +506,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
         
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
         ptr1[IMPULSE_SIZE] = ptr1[0] = result / 500 * (MAX_SAMPLE >> 13);
-        db->data[i] = convolve(impulse, ptr1, IMPULSE_SIZE) / 32;
+        db->data[i] = convolve(ampmodels[params->impulse_model].impulse, ptr1, params->impulse_quality) / 32;
         
         params->bufidx[curr_channel] -= 1;
         if (params->bufidx[curr_channel] < 0)
@@ -549,10 +531,11 @@ tubeamp_save(struct effect *p, SAVE_ARGS)
 {
     struct tubeamp_params *params = p->params;
     SAVE_INT("stages", params->stages);
-    SAVE_INT("biasfactor", params->biasfactor);
-    SAVE_INT("asymmetry", params->asymmetry);
+    SAVE_INT("impulse_quality", params->impulse_quality);
+    SAVE_INT("impulse_model", params->impulse_model);
+    SAVE_DOUBLE("biasfactor", params->biasfactor);
+    SAVE_DOUBLE("asymmetry", params->asymmetry);
     SAVE_DOUBLE("gain", params->gain);
-    SAVE_DOUBLE("middlefreq", params->middlefreq);
 }
 
 static void
@@ -560,10 +543,11 @@ tubeamp_load(struct effect *p, LOAD_ARGS)
 {
     struct tubeamp_params *params = p->params;
     LOAD_INT("stages", params->stages);
-    LOAD_INT("biasfactor", params->biasfactor);
-    LOAD_INT("asymmetry", params->asymmetry);
+    LOAD_INT("impulse_quality", params->impulse_quality);
+    LOAD_INT("impulse_model", params->impulse_model);
+    LOAD_DOUBLE("biasfactor", params->biasfactor);
+    LOAD_DOUBLE("asymmetry", params->asymmetry);
     LOAD_DOUBLE("gain", params->gain);
-    LOAD_DOUBLE("middlefreq", params->middlefreq);
 }
 
 effect_t *
@@ -587,6 +571,8 @@ tubeamp_create()
     params->gain = 32.0;
     params->biasfactor = -7;
     params->asymmetry = -3500;
+    params->impulse_model = 1;
+    params->impulse_quality = 256;
 
     /* configure the various stages */
     params->r_i[0] = 68e3 / 3000;
