@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2006/07/23 20:46:05  alankila
+ * - it is illegal to write to GUI from audio thread.
+ *
  * Revision 1.22  2006/07/17 21:39:38  alankila
  * - use dynamically allocated sample buffers instead of static ones.
  *   (Win32 still uses static buffers moved directly into audio-windows.c)
@@ -174,7 +177,7 @@ oss_audio_thread(void *V)
                 perror("error reading from sound device: ");
                 break;
             } else if (count != buffer_size * n_output_channels * 2) {
-                gnuitar_printf( "warning: short read (%d/%d) from sound device\n", count, buffer_size);
+                //gnuitar_printf( "warning: short read (%d/%d) from sound device\n", count, buffer_size);
                 break;
 	    }
 	} while (select(fd+1, &read_fds, NULL, NULL, &read_timeout) != 0);
@@ -200,8 +203,9 @@ oss_audio_thread(void *V)
 	    rwbuf[i] = (SAMPLE32) db.data[i] >> 8;
 
 	count = write(fd, rwbuf, buffer_size * n_output_channels * 2);
+        /*
 	if (count != buffer_size * n_output_channels * 2)
-	    gnuitar_printf( "warning: short write (%d/%d) to sound device\n", count, buffer_size);
+	    gnuitar_printf( "warning: short write (%d/%d) to sound device\n", count, buffer_size);*/
         my_unlock_mutex(snd_open);
     }
 
