@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.15  2006/07/23 20:33:02  alankila
+# - bah with this cmake BUILD TYPE. I'm forcing RELEASE now.
+#
 # Revision 1.14  2006/07/19 11:11:49  alankila
 # - don't pass paths to FIND_LIBRARY: standard paths will do
 #
@@ -55,9 +58,7 @@
 PROJECT(GNUitar)
 
 # force optimizings on... We put yet more optimizing options later.
-IF (NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release FORCE)
-ENDIF (NOT CMAKE_BUILD_TYPE)
+SET(CMAKE_BUILD_TYPE RELEASE)
 
 IF (UNIX)
     INCLUDE(UsePkgConfig)
