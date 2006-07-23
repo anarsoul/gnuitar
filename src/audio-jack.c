@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2006/07/23 21:01:08  alankila
+ * - move the small loop out of the hot spot, put the larger loop in its stead
+ *
  * Revision 1.8  2006/07/20 22:37:21  alankila
  * - can't write to debug buffer from audio thread: instant gui crash results
  *
@@ -79,59 +82,65 @@ static int
 process (jack_nframes_t nframes, void *arg)
 {
     int i,j,k;
-    jack_default_audio_sample_t *in[MAX_CHANNELS], *out[MAX_CHANNELS];
     static struct data_block db = {
         .data = procbuf,
         .data_swap = procbuf2,
     };
-
+    
     if (state != STATE_PROCESS)
         return 0;
     
-    if (nframes != buffer_size)
-    {
-	buffer_size = nframes;
+    /* This mutex is tricky because it should be held whenever the audio device is
+     * used by the playback thread. However, it's possible that this mutex becomes
+     * taken the instant before process() is called. Somehow JACK itself should
+     * take care of this mutex, and not us. Probably does -- if so, this mutex is
+     * meaningless. */
+    my_lock_mutex(snd_open);
+
+    /* check that state is still set up for playback when we do get the mutex. */
+    if (state != STATE_PROCESS) {
+        my_unlock_mutex(snd_open);
+        return 0;
     }
     
-    my_lock_mutex(snd_open);
+    if (nframes != buffer_size) {
+	buffer_size = nframes;
+    }
     
     //capturing
     db.len = buffer_size * n_input_channels;
     db.channels = n_input_channels;
     
-    for (k = 0; k < n_input_channels; k++) {
-        jack_default_audio_sample_t *buf = jack_port_get_buffer(input_ports[k], nframes);
+    /* convert JACK's buffers to our interleaved format */
+    for (i = 0; i < n_input_channels; i += 1) {
+        jack_default_audio_sample_t *buf = jack_port_get_buffer(input_ports[i], nframes);
         assert(buf != NULL);
-        in[k] = buf;
-    }
-    
-    k = 0;
-    for (i = 0; i < nframes; i++)
-    {
-	for (j = 0; j < n_input_channels; j++)
-            db.data[k++] = in[j][i] * (1 << 23);
+        
+        k = i;
+        for (j = 0; j < nframes; j += 1) {
+            db.data[k] = buf[j] * (1 << 23);
+            k += n_input_channels;
+        }
     }
     
     pump_sample(&db);
     
     assert(db.channels == n_output_channels);
     assert(db.len / n_output_channels == buffer_size);
-    
-    for (k = 0; k < n_output_channels; k++) {
-        jack_default_audio_sample_t *buf = jack_port_get_buffer(output_ports[k], nframes);
+
+    /* convert our interleaved format to buffers expected by JACK */ 
+    for (i = 0; i < n_output_channels; i += 1) {
+        jack_default_audio_sample_t *buf = jack_port_get_buffer(output_ports[i], nframes);
         assert(buf != NULL);
-        out[k] = buf;
-    }
-    
-    k = 0;	
-    for (i = 0; i < nframes; i++)
-    {
-	for (j = 0; j < n_output_channels; j++)
-            out[j][i] = (jack_default_audio_sample_t) db.data[k++] / (1 << 23);
+	
+        k = i;
+        for (j = 0; j < nframes; j += 1) {
+            buf[j] = (jack_default_audio_sample_t) db.data[k] / (1 << 23);
+            k += n_output_channels;
+        }
     }
     
     my_unlock_mutex(snd_open);
-
     return 0;
 }
 
