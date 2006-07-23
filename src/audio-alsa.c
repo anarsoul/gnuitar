@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2006/07/23 20:19:01  alankila
+ * - it's illegal to issue any GUI activity from the audio thread
+ *
  * Revision 1.36  2006/07/17 21:39:38  alankila
  * - use dynamically allocated sample buffers instead of static ones.
  *   (Win32 still uses static buffers moved directly into audio-windows.c)
@@ -273,8 +276,9 @@ alsa_audio_thread(void *V)
             restarting = 1;
             snd_pcm_prepare(capture_handle);
         }
+        /*
         if (inframes != buffer_size)
-            gnuitar_printf( "Short read from capture device: %d, expecting %d\n", inframes, buffer_size);
+            gnuitar_printf( "Short read from capture device: %d, expecting %d\n", inframes, buffer_size);*/
         
         /* prepare output */
 	if (playback_bits == 32) {
@@ -292,8 +296,9 @@ alsa_audio_thread(void *V)
             restarting = 1;
             snd_pcm_prepare(playback_handle);
         }
+        /*
         if (outframes != buffer_size)
-            gnuitar_printf( "Short write to playback device: %d, expecting %d\n", outframes, buffer_size);
+            gnuitar_printf( "Short write to playback device: %d, expecting %d\n", outframes, buffer_size);*/
 
         /* now that output is out of the way, we have most time for running effects */ 
         db.len = buffer_size * n_input_channels;
