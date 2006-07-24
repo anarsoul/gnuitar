@@ -3,6 +3,11 @@
 # $Id$
 #
 # $Log$
+# Revision 1.16  2006/07/24 23:18:43  alankila
+# - enable use of autovectorisation, turn on sse2 along with sse.
+# - in reality we should detect host system type and only use options that
+#   the host system is capable of.
+#
 # Revision 1.15  2006/07/23 20:33:02  alankila
 # - bah with this cmake BUILD TYPE. I'm forcing RELEASE now.
 #
@@ -130,9 +135,9 @@ ELSE (FFTW3_LIBRARY)
     MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
 ENDIF (FFTW3_LIBRARY)
 
-# default to DSP & SSE
+# default to DSP, SSE, SSE2, loop autovectorisation, etc.
 ADD_DEFINITIONS(-DFLOAT_DSP)
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -ffast-math -Wall")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -ffast-math -ftree-vectorize -Wall")
 
 # for vasprintf
 IF (UNIX)
