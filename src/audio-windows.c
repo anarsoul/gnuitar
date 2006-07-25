@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2006/07/25 22:49:04  alankila
+ * - balance commented { in order to make vim brace matching work
+ *
  * Revision 1.19  2006/07/17 21:39:38  alankila
  * - use dynamically allocated sample buffers instead of static ones.
  *   (Win32 still uses static buffers moved directly into audio-windows.c)
@@ -358,7 +361,7 @@ windows_audio_thread(void *V)
 	    /*
 	     * handle wrap around
 	     */
-            if (wbufpos >= MIN_BUFFER_SIZE * MAX_BUFFERS) {//bufsize) {
+            if (wbufpos >= MIN_BUFFER_SIZE * MAX_BUFFERS) {//bufsize) {   // } for vim
                 if(abs(write_pos-wbufpos)>buffer_size*100)
                     wbufpos=write_pos;
                 else wbufpos-=MIN_BUFFER_SIZE * MAX_BUFFERS;
