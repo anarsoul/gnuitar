@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.92  2006/07/25 23:47:51  alankila
+ * - depend on audio-windows.h to obtain description of the state variable
+ *
  * Revision 1.91  2006/07/25 23:41:14  alankila
  * - this patch may break win32. I can't test it.
  *   - move audio_thread handling code into sound driver init/finish
@@ -403,6 +406,7 @@
 #    include <windows.h>
 #    include <process.h>
 #    include "resource.h"
+#    include "audio-windows.h"
 #else
 #    include <libgen.h>
 #    include <unistd.h>
