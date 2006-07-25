@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2006/07/25 23:41:14  alankila
+ * - this patch may break win32. I can't test it.
+ *   - move audio_thread handling code into sound driver init/finish
+ *   - remove state variable from sight of the Linux code -- it should be
+ *     killed also on Win32 side using similar strategies
+ *   - snd_open mutex starts to look spurious. It can probably be removed.
+ *
  * Revision 1.37  2006/07/23 20:19:01  alankila
  * - it's illegal to issue any GUI activity from the audio thread
  *
@@ -194,6 +201,7 @@
 #include <stdlib.h>
 #include <alsa/asoundlib.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "pump.h"
 #include "main.h"
@@ -213,6 +221,9 @@ static unsigned int playback_bits;
 void *rdbuf = NULL;
 void *wrbuf = NULL;
 
+volatile static int keepthreadrunning = 0;
+static pthread_t audio_thread = 0;
+
 static void           *
 alsa_audio_thread(void *V)
 {
@@ -229,23 +240,15 @@ alsa_audio_thread(void *V)
     SAMPLE32 *wrbuf32;
     
     /* frame counts are always the same to both read and write */
-    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
-        while (state == STATE_PAUSE) {
-            usleep(10000);
-        }
+    while (keepthreadrunning) {
         my_lock_mutex(snd_open);
+
         /* this is technically typepunning but we never mix the pointers;
          * we always use the same in read and write directions. */
         rdbuf16 = rdbuf;
         rdbuf32 = rdbuf;
         wrbuf16 = wrbuf;
         wrbuf32 = wrbuf;
-        
-        /* catch transition PAUSE -> EXIT with mutex being waited already */
-        if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
-            my_unlock_mutex(snd_open);
-            break;
-        }
         
         /* ensure output buffer has data in it,
          * this fixes the rattly scratching I used to be getting
@@ -327,7 +330,8 @@ alsa_audio_thread(void *V)
 static void
 alsa_finish_sound(void)
 {
-    state = STATE_PAUSE;
+    keepthreadrunning = 0;
+    pthread_join(audio_thread, NULL);
     my_lock_mutex(snd_open);
     free(rdbuf);
     free(wrbuf);
@@ -488,7 +492,6 @@ alsa_init_sound(void)
 
     if ((err = snd_pcm_open(&playback_handle, alsadevice_str, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 	gnuitar_printf( "can't open output audio device %s: %s\n", alsadevice_str, snd_strerror(err));
-	state = STATE_EXIT;
 	return ERR_WAVEOUTOPEN;
     }
 
@@ -499,7 +502,6 @@ alsa_init_sound(void)
     if ((err = snd_pcm_open(&capture_handle, alsadevice_in_str, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
 	gnuitar_printf( "can't open input audio device %s: %s\n", alsadevice_str, snd_strerror(err));
         snd_pcm_close(playback_handle);
-	state = STATE_EXIT;
 	return ERR_WAVEINOPEN;
     }
 
@@ -563,9 +565,15 @@ alsa_init_sound(void)
 
     rdbuf = gnuitar_memalign(n_input_channels  * buffer_size, capture_bits  >> 3);
     wrbuf = gnuitar_memalign(n_output_channels * buffer_size, playback_bits >> 3);
-    
+   
+    /* create the audio thread */
+    keepthreadrunning = 1;
+    if (pthread_create(&audio_thread, NULL, alsa_audio_thread, NULL)) {
+        gnuitar_printf("Audio thread creation failed!\n");
+        return ERR_THREAD;
+    }
+
     restarting = 1;
-    state = STATE_PROCESS;
     alsa_driver.enabled = 1;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;
@@ -595,7 +603,6 @@ audio_driver_t alsa_driver = {
     
     .init = alsa_init_sound,
     .finish = alsa_finish_sound,
-    .thread = alsa_audio_thread
 };
 
 #endif /* HAVE_ALSA */

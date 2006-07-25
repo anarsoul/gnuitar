@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.62  2006/07/25 23:41:14  alankila
+ * - this patch may break win32. I can't test it.
+ *   - move audio_thread handling code into sound driver init/finish
+ *   - remove state variable from sight of the Linux code -- it should be
+ *     killed also on Win32 side using similar strategies
+ *   - snd_open mutex starts to look spurious. It can probably be removed.
+ *
  * Revision 1.61  2006/07/17 21:39:38  alankila
  * - use dynamically allocated sample buffers instead of static ones.
  *   (Win32 still uses static buffers moved directly into audio-windows.c)
@@ -279,30 +286,25 @@
 #include <sys/types.h>
 #ifndef _WIN32
 #include <unistd.h>
-#include <pthread.h>
 #include <signal.h>
+#include <pthread.h>
 #endif
 
+#include "audio-windows.h"
 #include "main.h"
 #include "tracker.h"
 #include "gui.h"
 
 volatile audio_driver_t  *audio_driver = NULL;
-volatile int    state;
 char            version[13] = "GNUitar "VERSION;
 
 my_mutex        snd_open=NULL;
 #ifndef _WIN32
-pthread_t       audio_thread = 0;
-
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
-HANDLE          audio_thread = 0;
-
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-extern short    dsound;         /* from audio-windows.h */
 #endif
 
 int
@@ -348,7 +350,6 @@ main(int argc, char **argv)
     load_settings();
 
 #ifndef _WIN32
-    state = STATE_PAUSE;
     /* choose audio driver if not given in config */
     if (audio_driver == NULL) {
         gnuitar_printf("Discovering audio driver.\n");
@@ -372,12 +373,6 @@ main(int argc, char **argv)
     my_create_mutex(&snd_open);
     my_lock_mutex(snd_open);
 
-    if (audio_driver) {
-        if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
-            gnuitar_printf("Audio thread creation failed!\n");
-            return ERR_THREAD;
-        }
-    }
 #else
     state = STATE_START_PAUSE;
 
@@ -410,7 +405,9 @@ main(int argc, char **argv)
     pump_start(argc, argv);    
 
     if (audio_driver && (error = audio_driver->init()) != ERR_NOERROR) {
+#ifdef _WIN32
 	state = STATE_PAUSE;
+#endif
         gnuitar_printf("warning: unable to begin audio processing (code %d)\n", error);
     }
 
@@ -418,20 +415,11 @@ main(int argc, char **argv)
     gtk_main();
 
 #ifndef _WIN32
-    /* wait for audio thread to finish */
-    if (state == STATE_PAUSE || state == STATE_ATHREAD_RESTART) {
-        state = STATE_EXIT;
-        my_unlock_mutex(snd_open);
-        if (audio_thread)
-            pthread_join(audio_thread, NULL);
-    } else {
-        state = STATE_EXIT;
-        if (audio_thread)
-            pthread_join(audio_thread, NULL);
-        if (audio_driver)
-            audio_driver->finish();
-        my_unlock_mutex(snd_open);
-    }
+    /* terminate audio */
+    if (audio_driver && audio_driver->enabled)
+        audio_driver->finish();
+    /* free the mutex used to track access to hardware */
+    my_unlock_mutex(snd_open);
 #else
     state = STATE_EXIT;
     my_unlock_mutex(snd_open);

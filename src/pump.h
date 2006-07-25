@@ -100,9 +100,7 @@ typedef struct {
     
     int     (*init)(void);
     void    (*finish)(void);
-#ifndef _WIN32
-    void *  (*thread)(void *);
-#else
+#ifdef _WIN32
     DWORD (WINAPI *audio_proc)(void *);
 #endif
 } audio_driver_t;

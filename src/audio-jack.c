@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2006/07/25 23:41:14  alankila
+ * - this patch may break win32. I can't test it.
+ *   - move audio_thread handling code into sound driver init/finish
+ *   - remove state variable from sight of the Linux code -- it should be
+ *     killed also on Win32 side using similar strategies
+ *   - snd_open mutex starts to look spurious. It can probably be removed.
+ *
  * Revision 1.9  2006/07/23 21:01:08  alankila
  * - move the small loop out of the hot spot, put the larger loop in its stead
  *
@@ -87,25 +94,13 @@ process (jack_nframes_t nframes, void *arg)
         .data_swap = procbuf2,
     };
     
-    if (state != STATE_PROCESS)
+    if (! audio_driver->enabled)
         return 0;
     
-    /* This mutex is tricky because it should be held whenever the audio device is
-     * used by the playback thread. However, it's possible that this mutex becomes
-     * taken the instant before process() is called. Somehow JACK itself should
-     * take care of this mutex, and not us. Probably does -- if so, this mutex is
-     * meaningless. */
     my_lock_mutex(snd_open);
 
-    /* check that state is still set up for playback when we do get the mutex. */
-    if (state != STATE_PROCESS) {
-        my_unlock_mutex(snd_open);
-        return 0;
-    }
-    
-    if (nframes != buffer_size) {
+    if (nframes != buffer_size)
 	buffer_size = nframes;
-    }
     
     //capturing
     db.len = buffer_size * n_input_channels;
@@ -152,21 +147,10 @@ process (jack_nframes_t nframes, void *arg)
 static void
 jack_finish_sound(void)
 {
-    state = STATE_PAUSE;
     my_lock_mutex(snd_open);
     jack_driver.enabled = 0;
     jack_client_close(client);
-    client = NULL;
 }
-
-/* The audio thread is unnecessary for JACK.
- * It's still started, but it exits as soon as it starts. */
-static void *
-jack_audio_thread(void *V)
-{
-    return NULL;
-}
-
 
 static void
 jack_shutdown (void *arg)
@@ -327,9 +311,8 @@ jack_init_sound(void)
 	    return ERR_WAVEOUTOPEN;
 	}
     }
-    free (ports);
+    free(ports);
     
-    state = STATE_PROCESS;
     jack_driver.enabled = 1;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;
@@ -370,7 +353,6 @@ audio_driver_t jack_driver = {
     
     .init = jack_init_sound,
     .finish = jack_finish_sound,
-    .thread = jack_audio_thread
 };
 
 #endif /* HAVE_JACK */

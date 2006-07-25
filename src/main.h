@@ -65,17 +65,12 @@ typedef enum {
 
 extern char version[];
 
-extern volatile int state;
 extern volatile audio_driver_t *audio_driver;
 extern my_mutex         snd_open;
 #ifndef _WIN32
-extern pthread_t        audio_thread;
-
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 #else
-extern HANDLE	        audio_thread;	/* defined in main.c */
-
 /* sadly, Windows and Linux have a different idea what the size of the buffer is.
  * Linux world talks about size in frames because that is most convenient for ALSA
  * and JACK (but less so for OSS). */

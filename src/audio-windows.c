@@ -21,6 +21,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2006/07/25 23:41:14  alankila
+ * - this patch may break win32. I can't test it.
+ *   - move audio_thread handling code into sound driver init/finish
+ *   - remove state variable from sight of the Linux code -- it should be
+ *     killed also on Win32 side using similar strategies
+ *   - snd_open mutex starts to look spurious. It can probably be removed.
+ *
  * Revision 1.20  2006/07/25 22:49:04  alankila
  * - balance commented { in order to make vim brace matching work
  *
@@ -128,7 +135,9 @@
 
 HANDLE          input_bufs_done,
                 output_bufs_done;
+HANDLE          audio_thread = 0;
 DWORD           thread_id;
+volatile int    state;
 
 LPDIRECTSOUND   snd = NULL;	        /* DirectSound rendering object */
 LPDIRECTSOUNDCAPTURE capture = NULL;    /* DirectSound capture object */

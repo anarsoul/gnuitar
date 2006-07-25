@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.91  2006/07/25 23:41:14  alankila
+ * - this patch may break win32. I can't test it.
+ *   - move audio_thread handling code into sound driver init/finish
+ *   - remove state variable from sight of the Linux code -- it should be
+ *     killed also on Win32 side using similar strategies
+ *   - snd_open mutex starts to look spurious. It can probably be removed.
+ *
  * Revision 1.90  2006/07/25 22:51:38  alankila
  * - simplify help browser forking, get rid of all string operations
  *
@@ -1294,11 +1301,9 @@ update_driver(GtkWidget *widget, gpointer data)
         audio_driver = &windows_driver;
         dsound=1;
     }
+    state = STATE_ATHREAD_RESTART;
 #endif
     populate_sparams_channels(sparams->channels);
-    /* XXX we should now reopen the dialog because changing audio driver
-     * updates bits & channels settings */
-    state = STATE_ATHREAD_RESTART;
 }
 
 #ifdef _WIN32
@@ -1602,6 +1607,8 @@ update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
 static void
 start_stop(GtkWidget *widget, gpointer data)
 {
+    int error;
+
     /* without audio driver, we can't allow user to proceed */
     if (! audio_driver) {
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
@@ -1630,23 +1637,12 @@ start_stop(GtkWidget *widget, gpointer data)
     }
 
     if (GTK_TOGGLE_BUTTON(widget)->active) {
-        int error;
 #ifdef _WIN32
 	ResumeThread(audio_thread);
 	if(state != STATE_ATHREAD_RESTART)
 	    state = STATE_PROCESS;
-#endif
 	if(state == STATE_ATHREAD_RESTART) {
             my_unlock_mutex(snd_open);
-#ifndef _WIN32
-            if (audio_thread)
-                pthread_join(audio_thread, NULL);
-	    state = STATE_PAUSE;
-	    if (pthread_create(&audio_thread, NULL, audio_driver->thread, NULL)) {
-		gnuitar_printf("Audio thread restart failed!\n");
-		state = STATE_EXIT;
-	    }
-#else
             WaitForSingleObject(audio_thread,INFINITE);
             state = STATE_PAUSE;
 	    audio_thread =
@@ -1660,15 +1656,11 @@ start_stop(GtkWidget *widget, gpointer data)
 		gnuitar_printf(
 		    "\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
 			GetLastError());
-#endif
 	}
+#endif
 
-	if ((error = audio_driver->init()) != ERR_NOERROR) {
+	if ((error = audio_driver->init()) != ERR_NOERROR)
             gnuitar_printf("warning: unable to begin audio processing (code %d)\n", error);
-            audio_driver->enabled = 0;
-        } else {
-            audio_driver->enabled = 1;
-        }
 
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
