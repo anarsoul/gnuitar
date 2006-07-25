@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.90  2006/07/25 22:51:38  alankila
+ * - simplify help browser forking, get rid of all string operations
+ *
  * Revision 1.89  2006/07/19 22:30:57  alankila
  * - remove all freeze/thaw cycles around singular operations too
  *
@@ -386,6 +389,7 @@
 #include <time.h>
 #include <string.h>
 #include <math.h>
+#include <errno.h>
 #ifdef _WIN32
 #    include <io.h>
 #    include <ctype.h>
@@ -488,7 +492,7 @@ static gint            bank_row = -1;
 extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
                                  * MSVC 6.0 complains: identifier effectlist_lock: */
 
-static char longbuf[4096] = "Gnuitar " VERSION "\n\nDebug info.\n";
+static char longbuf[4096] = "Gnuitar " VERSION " debug window.\n";
 
 //function for printing debuging messages
 //if GUI isn't created, text will be buffered
@@ -649,12 +653,12 @@ about_dlg(void)
 static void
 help_contents(void)
 {
-    char            path[256] = "";
+    char const     *path = NULL;
+    int             i;
 #ifndef _WIN32
     pid_t           pid;
-    char            browser[256] = "";
-    char           *env_browser = NULL;
-    char           *browsers[] = {
+    char const     *browser;
+    const char     *browsers[] = {
         "/usr/bin/x-www-browser",
         "/usr/bin/firefox",
         "/usr/bin/mozilla",
@@ -664,80 +668,73 @@ help_contents(void)
         "/usr/bin/galeon",
         NULL,
     };
-    char           *docs[] = {
-        /* we should propagate install path from build directory */
+#endif
+    const char     *docs[] = {
+/* we should propagate install path from build directory, get rid of this */
+#ifdef _WIN32
+        "..\\docs\\index.html",
+        "docs\\index.html",
+        "index.html",
+#else
 	"/usr/local/share/doc/gnuitar/docs/index.html",
         "/usr/share/doc/gnuitar/docs/index.html",
-        NULL,
+        "../docs/index.html",
+        "docs/index.html",
+        "index.html",
+#endif
+        NULL
     };
-    int             i;
 
-    /*
-     * first get environment variable for a browser
-     */
-    env_browser = getenv("BROWSER");
-    /*
-     * if there is no preference, trying to guess
-     */
-    if (env_browser == NULL) {
+    /* try to find the document directory */
+    for (i = 0; docs[i] != NULL; i++) {
+        if (access(docs[i], R_OK) == 0) {
+            path = docs[i];
+            break;
+        }
+    }
+
+    if (path == NULL) {
+        gnuitar_printf("Failed to find the documents in any known dir.\n");
+        return;
+    }
+
+#ifndef _WIN32
+    /* unix code must find browser to run */
+    browser = getenv("BROWSER");
+    if (browser == NULL) {
+        /* nope -- must guess. */
 	for (i = 0; browsers[i] != NULL; i++) {
 	    if (access(browsers[i], X_OK) == 0) {
-		strcpy(browser, browsers[i]);
+		browser = browsers[i];
 		break;
 	    }
 	}
-    } else {
-	strcpy(browser, env_browser);
     }
 
-    if (strcmp(browser, "") != 0) {
-	pid = fork();
-	if (pid == -1) {
-	    perror("fork");
-	    return;
-	}
-	/*
-	 * child process
-	 */
-	if (pid == 0) {
-	    for (i = 0; docs[i] != NULL; i++) {
-		if (access(docs[i], R_OK) == 0) {
-		    strcpy(path, docs[i]);
-		    break;
-		}
-	    }
-	    if (strcmp(path, "") == 0) {
-		getcwd(path, sizeof(path));
-		strcat(path, "/../docs/index.html");
-		if (access(path, R_OK) != 0) {
-		    getcwd(path, sizeof(path));
-		    strcat(path, "/index.html");
-		    if (access(path, R_OK) != 0) {
-			strcpy(path, "");
-		    }
-		}
-	    }
-	    if (strcmp(path, "") != 0)
-		execl(browser, browser, path, NULL);
-            fprintf(stderr, "failed to start browser at %s %s, child exiting...", browser, path);
-            exit(1);
-	}
+    if (browser == NULL) {
+        gnuitar_printf("Failed to find a working browser to launch.\n");
+        return;
     }
+
+    pid = fork();
+    if (pid == -1) {
+        gnuitar_printf("Failed to fork a process: %s\n", strerror(errno));
+        return;
+    }
+    if (pid != 0) {
+        /* parent has no work to do and can return. */
+        return;
+    }
+    
+    /* child process will either become the browser or be dead & gone. */
+    execl(browser, browser, path, NULL);
+    /* since we are child, best not disturb GTK+ */
+    fprintf(stderr, "Failed to exec '%s' with arg '%s': %s\n", browser, path, strerror(errno));
+    exit(1);
 #else
-    strcpy(path, "..\\docs\\index.html");
-    if (access(path, R_OK) != 0) {
-	strcpy(path, "index.html");
-	if (access(path, R_OK) != 0) {
-	    strcpy(path, "docs\\index.html");
-	    if (access(path, R_OK) != 0) {
-		strcpy(path, "");
-	    }
-	}
-    }
-    if (strcmp(path, "") != 0) {
-	if (spawnlp(P_NOWAIT, "start", "start", path, NULL) == -1)
-            if (spawnlp(P_NOWAIT, "cmd", "/c", "start", path, NULL) == -1)
-	        perror("spawn");
+    if (spawnlp(P_NOWAIT, "start", "start", path, NULL) == -1 &&
+        spawnlp(P_NOWAIT, "cmd", "/c", "start", path, NULL) == -1) {
+            gnuitar_printf("Failed to run browser for help display: %s\n", strerror(errno));
     }
 #endif
 }
