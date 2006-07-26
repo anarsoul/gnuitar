@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.17  2006/07/26 18:08:38  alankila
+# - implement various compile fixes for mingw
+#
 # Revision 1.16  2006/07/24 23:18:43  alankila
 # - enable use of autovectorisation, turn on sse2 along with sse.
 # - in reality we should detect host system type and only use options that
@@ -65,21 +68,19 @@ PROJECT(GNUitar)
 # force optimizings on... We put yet more optimizing options later.
 SET(CMAKE_BUILD_TYPE RELEASE)
 
-IF (UNIX)
-    INCLUDE(UsePkgConfig)
-    # This doesn't work on Windows, so I need to come up with something for that OS.
-    # (As soon as I understand what...)
-    PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
-    PKGCONFIG(gthread-2.0 GTHREAD_INCLUDE_DIR GTHREAD_LINK_DIR GTHREAD_LINK_FLAGS GTHREAD_CFLAGS)
+INCLUDE(UsePkgConfig)
+# This doesn't work on Windows, so I need to come up with something for that OS.
+# (As soon as I understand what...)
+PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
+PKGCONFIG(gthread-2.0 GTHREAD_INCLUDE_DIR GTHREAD_LINK_DIR GTHREAD_LINK_FLAGS GTHREAD_CFLAGS)
 
-    IF (GTK2_INCLUDE_DIR)
-        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
-        SET(GTK_LIBRARIES ${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS})
-        ADD_DEFINITIONS(-DHAVE_GTK2)
-        MESSAGE("GTK 2.x found and used as GUI\n")
-        SET(GTK2_FOUND 1)
-    ENDIF (GTK2_INCLUDE_DIR)
-ENDIF(UNIX)
+IF (GTK2_INCLUDE_DIR)
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
+SET(GTK_LIBRARIES ${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS})
+ADD_DEFINITIONS(-DHAVE_GTK2)
+MESSAGE("GTK 2.x found and used as GUI\n")
+SET(GTK2_FOUND 1)
+ENDIF (GTK2_INCLUDE_DIR)
 
 IF (NOT GTK2_FOUND)
     FIND_PACKAGE(GTK)
@@ -135,14 +136,28 @@ ELSE (FFTW3_LIBRARY)
     MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
 ENDIF (FFTW3_LIBRARY)
 
-# default to DSP, SSE, SSE2, loop autovectorisation, etc.
+# default to floating-point DSP
 ADD_DEFINITIONS(-DFLOAT_DSP)
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -ffast-math -ftree-vectorize -Wall")
+IF (UNIX)
+	# -msse and -msse2 are offered only for unix because I can't work out
+	# how to replace posix_memalign for win32 / mingw
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2")
+ENDIF (UNIX)
+# common flags
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffast-math -Wall")
+
+# GTK_TEXT, mainly
+ADD_DEFINITIONS("-DGTK_ENABLE_BROKEN")
 
 # for vasprintf
 IF (UNIX)
     ADD_DEFINITIONS(-D_GNU_SOURCE)
 ENDIF (UNIX)
+
+# require various libraries for win32
+IF (WIN32)
+    SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} dsound dxguid winmm)
+ENDIF (WIN32)
 
 ADD_EXECUTABLE(gnuitar
     src/amp.c src/main.c src/pump.c src/chorus.c

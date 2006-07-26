@@ -23,7 +23,6 @@
 #ifndef _GUI_H_
 #define _GUI_H_ 1
 
-#define GTK_ENABLE_BROKEN /* for gtk_text_new() */
 #include "glib12-compat.h"
 #include "pump.h"
 #include <gtk/gtk.h>

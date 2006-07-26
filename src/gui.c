@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.93  2006/07/26 18:08:39  alankila
+ * - implement various compile fixes for mingw
+ *
  * Revision 1.92  2006/07/25 23:47:51  alankila
  * - depend on audio-windows.h to obtain description of the state variable
  *
@@ -956,10 +959,8 @@ static void
 bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 {
     char            *fname;
-#ifndef _WIN32
-    const char	    *name;
-#else
     char	    *name;
+#ifdef _WIN32
     int             str_len,
                     i;
     char            drive[_MAX_DRIVE],
@@ -967,10 +968,12 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
                     ext[_MAX_EXT];
 #endif
 
-    name = gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+    /* this cast is to shut up const qualifier ignore due to
+     * differences between gcc, mingw and msvc++. */ 
+    name = (char *) gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
     fname = (char *) malloc(strlen(name) * sizeof(char) + 1);
-    if (fname != NULL)
-	strcpy(fname, name);
+    if (fname == NULL)
+	return;
 
 #ifdef _WIN32
     /*
@@ -992,6 +995,7 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
     gtk_clist_set_row_data_full(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1,
 				fname, free_clist_ptr);
     gtk_widget_destroy(GTK_WIDGET(filesel));
+    free(fname);
 }
 
 static void
@@ -1558,8 +1562,9 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
     int             tmp1, tmp2;
     sample_params_t *sparams = data;
 
+#ifndef _WIN32
     const char *tmp=NULL;
-
+#endif
 #ifdef HAVE_ALSA
     tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->alsadevice)->entry));
     if (tmp == NULL || strlen(tmp) == 0) {

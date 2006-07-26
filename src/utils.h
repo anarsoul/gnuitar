@@ -25,7 +25,9 @@
 
 #include "pump.h"
 #ifdef _WIN32
+#  ifndef M_PI
 #    define M_PI 3.1415926535897932384626433832795
+#  endif
 #    ifndef  R_OK
 #        define  R_OK 04
 #    endif
@@ -36,7 +38,9 @@
 #        define  F_OK 00
 #    endif
 #    define FILESEP "\\"
+#ifndef isnan
 #    define isnan _isnan
+#endif
 
 #include <windows.h>
 typedef HANDLE  my_mutex;
