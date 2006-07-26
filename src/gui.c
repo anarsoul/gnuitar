@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.94  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.93  2006/07/26 18:08:39  alankila
  * - implement various compile fixes for mingw
  *
@@ -427,9 +436,7 @@
 #include "tracker.h"
 #include "utils.h"
 
-#ifdef _WIN32
-extern short dsound;
-#endif
+#include "audio-windows.h"
 
 #define VU_UPDATE_INTERVAL 100.0    /* ms */
 
@@ -1309,7 +1316,6 @@ update_driver(GtkWidget *widget, gpointer data)
         audio_driver = &windows_driver;
         dsound=1;
     }
-    state = STATE_ATHREAD_RESTART;
 #endif
     populate_sparams_channels(sparams->channels);
 }
@@ -1646,28 +1652,6 @@ start_stop(GtkWidget *widget, gpointer data)
     }
 
     if (GTK_TOGGLE_BUTTON(widget)->active) {
-#ifdef _WIN32
-	ResumeThread(audio_thread);
-	if(state != STATE_ATHREAD_RESTART)
-	    state = STATE_PROCESS;
-	if(state == STATE_ATHREAD_RESTART) {
-            my_unlock_mutex(snd_open);
-            WaitForSingleObject(audio_thread,INFINITE);
-            state = STATE_PAUSE;
-	    audio_thread =
-		CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->audio_proc, 0,
-		     0, &thread_id);
-
-            /*
-	     * set realtime priority to the thread
-    	     */
-	    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL))
-		gnuitar_printf(
-		    "\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
-			GetLastError());
-	}
-#endif
-
 	if ((error = audio_driver->init()) != ERR_NOERROR)
             gnuitar_printf("warning: unable to begin audio processing (code %d)\n", error);
 

@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.6  2006/07/26 17:13:34  alankila
  * - win32 build fixes
  *
@@ -59,11 +68,7 @@
 #include "pump.h"
 
 audio_driver_t windows_driver;
-
-extern short dsound;
-extern volatile int state;
-extern HANDLE audio_thread;
-extern DWORD thread_id;
+short dsound;
 
 #endif
 #endif

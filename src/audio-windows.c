@@ -21,6 +21,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.23  2006/07/26 21:08:43  alankila
  * - it is illegal to use gnuitar_printf from audio thread; this corrects
  *   crashes in stopping and restarting MMSystem and DirectSound.
@@ -140,46 +149,42 @@
 #include "utils.h"
 #include "audio-windows.h"
 
-HANDLE          input_bufs_done,
-                output_bufs_done;
-HANDLE          audio_thread = 0;
-DWORD           thread_id;
-volatile int    state;
+static volatile int keepthreadrunning = 0, firstbuffer = 0;
+static HANDLE       input_bufs_done = 0, output_bufs_done = 0, audio_thread = 0;
+static DWORD        thread_id = 0;
 
-LPDIRECTSOUND   snd = NULL;	        /* DirectSound rendering object */
-LPDIRECTSOUNDCAPTURE capture = NULL;    /* DirectSound capture object */
-LPDIRECTSOUNDBUFFER pbuffer = NULL;	/* DS rendering buffer */
-LPDIRECTSOUNDCAPTUREBUFFER cbuffer = NULL;  /* DS capture buffer */
-HANDLE          notify_event;           /* for DS notify events */
-DSBPOSITIONNOTIFY   notify_handlers[MAX_BUFFERS+1];
-LPDIRECTSOUNDNOTIFY notify;
-DWORD           bufsize = MIN_BUFFER_SIZE * MAX_BUFFERS;
+static LPDIRECTSOUND	    snd = NULL;		    /* DS rendering object */
+static LPDIRECTSOUNDCAPTURE capture = NULL;	    /* DS capture object */
+static LPDIRECTSOUNDBUFFER  pbuffer = NULL;	    /* DS rendering buffer */
+static LPDIRECTSOUNDCAPTUREBUFFER cbuffer = NULL;   /* DS capture buffer */
+static HANDLE		    notify_event;	    /* for DS notify events */
+static DSBPOSITIONNOTIFY    notify_handlers[MAX_BUFFERS+1];
+static LPDIRECTSOUNDNOTIFY  notify;
+static DWORD		    bufsize = MIN_BUFFER_SIZE * MAX_BUFFERS;
 
-short           dsound = 0;	/* flag - do we use DirectSound for output ? */
-unsigned short	overrun_threshold=4;	/* after this number of fragments
-					 * overran buffer will be recovered  */
-HWAVEIN         in;		/* input sound handle */
-HWAVEOUT        out;		/* output sound handle */
-MMRESULT        err;
-			/*
-			 * We use N WAVEHDR's for recording (ie,
-			 * double-buffering)
-			 */
-WAVEHDR         wave_header[MAX_BUFFERS];	/* input header */
-WAVEHDR         write_header[MAX_BUFFERS];	/* output headers */
-char            cur_wr_hdr[MAX_BUFFERS];	/* available write headers
+short           dsound = 0;	/* flag: DS or MMS? */
+unsigned short	overrun_threshold = 4;	/* after this number of fragments
+					 * overran buffer will be recovered */
+static HWAVEIN  in;		/* input sound handle */
+static HWAVEOUT	out;		/* output sound handle */
+static MMRESULT err;
+
+/* We use N WAVEHDR's for recording (ie, double-buffering) */
+static WAVEHDR  wave_header[MAX_BUFFERS];	/* input header */
+static WAVEHDR  write_header[MAX_BUFFERS];	/* output headers */
+static char     cur_wr_hdr[MAX_BUFFERS];	/* available write headers
 						 * array */
-int             active_in_buffers = 0,
+static int      active_in_buffers = 0,
                 active_out_buffers = 0;
 
-void            serror(DWORD err, TCHAR * str);
-void            dserror(HRESULT res, char *s);
+static void     serror(DWORD err, TCHAR * str);
+static void     dserror(HRESULT res, char *s);
 
 static unsigned int bits = 16;
 static SAMPLE16 wrbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
 static SAMPLE16 rdbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
 
-DWORD           WINAPI
+static DWORD WINAPI
 windows_audio_thread(void *V)
 {
     int             count = 0, i, j, k, old_count = 0;
@@ -191,36 +196,23 @@ windows_audio_thread(void *V)
                     len2 = 0;
     DWORD           event = 0;  /* for WaitForMultipleObjects() */
 
-    /*
-     * read/write cursors and lengths for DS calls
-     */
+    /* read/write cursors and lengths for DS calls */
     LPVOID      pos1 = NULL,
-                pos2 = NULL;	/* pointers for DirectSound lock
-					 * call */
-    DWORD   wbufpos = 0,	/* current write position in the */
-			rbufpos = 0;	/* buffer (DirectSound) */
+                pos2 = NULL;	/* pointers for DirectSound lock call */
+    DWORD       wbufpos = 0,	/* current write position in the */
+		rbufpos = 0;	/* buffer (DirectSound) */
     struct data_block db;
 
     /*
      * Wait for a message sent to me by the audio driver
      */
-    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
-        while (state == STATE_PAUSE || state == STATE_START_PAUSE) {
+    while (keepthreadrunning) {
+	if (! audio_driver->enabled) {
 	    Sleep(10);
+	    continue;
 	}
-        if (!dsound)
-            if(!GetMessage(&msg, 0, 0, 0)) {
-                return 0;
-	    }
-        my_lock_mutex(snd_open);
-        /* catch transition PAUSE -> EXIT with mutex being waited already */
-        if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
-            my_unlock_mutex(snd_open);
-            break;
-        }
 
-
-        if(dsound) {
+        if (dsound) {
             /*
 	     * DirectSound capture:
              * 1) if this is START state, init the capture
@@ -234,11 +226,11 @@ windows_audio_thread(void *V)
 	     * Start DirectSound capture, if this is a first
 	     * recorded buffer
 	     */
-	    if (state == STATE_START) {
+	    if (firstbuffer) {
 		res = IDirectSoundCaptureBuffer_Start(cbuffer, DSCBSTART_LOOPING);
 		if (res != DS_OK) {
 		    dserror(res,"\nCannot start capture via DirectSound: ");
-		    state = STATE_EXIT;
+		    break;
 		}
 
 	        /*
@@ -248,7 +240,7 @@ windows_audio_thread(void *V)
                 res = IDirectSoundBuffer_Play(pbuffer, 0, 0, DSBPLAY_LOOPING);
 		if (res != DS_OK) {
 		    dserror(res,"\nCannot start playback via DirectSound: ");
-		    state = STATE_EXIT;
+		    break;
 		}
 
                 /* must wait here until the buffer gets filled */
@@ -263,7 +255,7 @@ windows_audio_thread(void *V)
             res = IDirectSoundCaptureBuffer_GetCurrentPosition(cbuffer, &write_pos, &read_pos);
             if(write_pos>rbufpos+buffer_size && write_pos-rbufpos<buffer_size*2) {
 //                fprintf(stderr,"\ncapture buffer underrun: rbufpos=%i, read_pos=%i,capture_pos=%i,delta=%i",rbufpos,read_pos,write_pos,write_pos-read_pos);
-                goto END_LOOP;
+		break;
             }
             /*
 	     * If this is a start state, buffer position
@@ -271,9 +263,9 @@ windows_audio_thread(void *V)
 	     * returned by the call above
 	     */
             /* no bytes read since the last time; skip the cycle */
-            else if(rbufpos == read_pos) {
-                goto END_LOOP;
-            }
+            else if (rbufpos == read_pos) {
+		break;
+	    }
 	    /*
 	     * otherwise we just increment buffer position
 	     * by the fragment size
@@ -284,7 +276,7 @@ windows_audio_thread(void *V)
 		        /* this condition handles buffer wrap around */
 		        read_pos-rbufpos > buffer_size*overrun_threshold &&
 		        read_pos-rbufpos < buffer_size*nbuffers/2) {
-		    fprintf(stderr, "\ncapture buffer overrun: real position=%u, calculated=%u",read_pos,rbufpos);
+		    fprintf(stderr, "\ncapture buffer overrun: real position=%u, calculated=%u", (int) read_pos, (int) rbufpos);
 		    rbufpos=read_pos;
 		}
 		else rbufpos += buffer_size;
@@ -304,7 +296,7 @@ windows_audio_thread(void *V)
 
 		if (res != DS_OK) {
 	    	    dserror(res, "\nCannot lock buffer: ");
-	    	    state = STATE_EXIT;
+		    break;
         	}
 	    }
 
@@ -358,25 +350,18 @@ windows_audio_thread(void *V)
 	     * is equal to the write position
 	     * returned by the call above
 	     */
-	    if (state == STATE_START) {
-		wbufpos = write_pos;//+buffer_size;
+	    if (firstbuffer)
+		wbufpos = write_pos;
+	    /* workaround buffer overrun */
+	    else if (wbufpos<write_pos &&
+		    /* this condition handles buffer wrap around */
+		    abs(write_pos-wbufpos)>buffer_size*overrun_threshold &&
+		    abs(write_pos-wbufpos)<buffer_size*100) {
+		fprintf(stderr, "\nplayback buffer overrun: real position=%u, calculated=%u",
+			(int) write_pos, (int) wbufpos);
+		wbufpos=write_pos+buffer_size;
 	    }
-	    /*
-	     * otherwise we just increment buffer position
-	     * by the fragment size
-	     */
-	    else {
-		/* workaround buffer overrun */
-		if(wbufpos<write_pos &&
-		        /* this condition handles buffer wrap around */
-		        abs(write_pos-wbufpos)>buffer_size*overrun_threshold &&
-		        abs(write_pos-wbufpos)<buffer_size*100) {
-		    fprintf(stderr, "\nplayback buffer overrun: real position=%u, calculated=%u",
-                            write_pos,wbufpos);
-		    wbufpos=write_pos+buffer_size;
-		}
-                else wbufpos += (old_count?old_count:buffer_size);
-	    }
+	    else wbufpos += (old_count?old_count:buffer_size);
 	    /*
 	     * handle wrap around
 	     */
@@ -393,7 +378,7 @@ windows_audio_thread(void *V)
 							      0);
                 if (res != DS_OK) {
 	    	    dserror(res, "\nCannot lock buffer: ");
-	    	    state = STATE_EXIT;
+		    break;
         	}
 	    }
 	    for (i = 0, j = 0, k = 0; i < count / sizeof(SAMPLE16); i++) {
@@ -417,180 +402,157 @@ windows_audio_thread(void *V)
 	    if (res != DS_OK)
 		dserror(res, "\nunlock:");
 
-            if (state == STATE_START)
-                state=STATE_PROCESS;
-        }
-
-
-	/*
-	 * Figure out which message was sent
-	 */
-	else switch (msg.message) {
-	case WM_QUIT:{
-		return 0;
+	    firstbuffer = 0;
+        } else {
+	    int hdr_avail = -1;	/* available write header index */
+	    if (! GetMessage(&msg, 0, 0, 0)) {
+		fprintf(stderr, "Failed to get MMS message -- thread exit\n");
+		break;
 	    }
-	    /*
-	     * A buffer has been filled by the driver
-	     */
-	case MM_WIM_DATA:{
-            if(!dsound) {
-                int             hdr_avail = -1;	/* available write header
-						 * index */
-		active_in_buffers--;
-		if (state == STATE_PAUSE || state == STATE_START_PAUSE) {
-                    my_unlock_mutex(snd_open);
-		    continue;
-		}
+	    switch (msg.message) {
+		case WM_QUIT:
+		    return 0;
+		/*
+		 * A buffer has been filled by the driver
+		 */
+		case MM_WIM_DATA:
+		    active_in_buffers--;
 
-		count = ((WAVEHDR *) msg.lParam)->dwBytesRecorded;
-		if (count) {
-		    count /= bits >> 3;
+		    count = ((WAVEHDR *) msg.lParam)->dwBytesRecorded;
+		    if (count) {
+			count /= bits >> 3;
 			//WAVEHDR *twh;
 			//twh = (WAVEHDR*) msg.lParam;
-		    for (i = 0; i < count; i++) {
-			procbuf[i] =
-			   ((SAMPLE16 *) (((WAVEHDR *) msg.lParam)->lpData))[i] << 8;
-		    }
-
-
-		    /*
-		     * find unused output buffer and queue it to output
-		     */
-		    for (i = 0; i < nbuffers; i++)
-			if (cur_wr_hdr[i] == 1) {
-			    hdr_avail = i;
-			    cur_wr_hdr[i] = 0;	/* ready to queue */
-			    break;
-			}
-
-		    if (hdr_avail != -1) {
-                        db.data = procbuf;
-                        db.data_swap = procbuf2;
-                        db.len = count;
-                        db.channels = n_input_channels;
-			pump_sample(&db);
-                        triangular_dither(&db);
+			for (i = 0; i < count; i++)
+			    procbuf[i] = ((SAMPLE16 *) (((WAVEHDR *) msg.lParam)->lpData))[i] << 8;
 
 
 			/*
-			 * start playback - MME output
+			 * find unused output buffer and queue it to output
 			 */
-			for (i = 0; i < count; i++) {
-			    DSP_SAMPLE W = (SAMPLE32)db.data[i] >> 8;
-			    ((SAMPLE16 *) (write_header[hdr_avail].lpData))[i] = W;
-			}
+			for (i = 0; i < nbuffers; i++)
+			    if (cur_wr_hdr[i] == 1) {
+				hdr_avail = i;
+				cur_wr_hdr[i] = 0;	/* ready to queue */
+				break;
+			    }
 
-			err = waveOutWrite(out, &write_header[hdr_avail],sizeof(WAVEHDR));
-			if (err) {
-			    serror(err, "\nwriting samples - ");
+			if (hdr_avail != -1) {
+			    db.data = procbuf;
+			    db.data_swap = procbuf2;
+			    db.len = count;
+			    db.channels = n_input_channels;
+			    pump_sample(&db);
+			    triangular_dither(&db);
+
+			    /*
+			     * start playback - MME output
+			     */
+			    for (i = 0; i < count; i++) {
+				DSP_SAMPLE W = (SAMPLE32)db.data[i] >> 8;
+				((SAMPLE16 *) (write_header[hdr_avail].lpData))[i] = W;
+			    }
+
+			    err = waveOutWrite(out, &write_header[hdr_avail],sizeof(WAVEHDR));
+			    if (err) {
+				serror(err, "\nwriting samples - ");
+			    } else
+				active_out_buffers++;
 			} else
-			    active_out_buffers++;
+			    fprintf(stderr, "\nbuffer overrun.");
 		    } else
-		        fprintf(stderr, "\nbuffer overrun.");
-	        } else
-	            fprintf(stderr, "\nbuffer underrun.");
+			fprintf(stderr, "\nbuffer underrun.");
 
-                /*
-		 * Now we need to requeue this buffer so the driver can
-		 * use it for another block of audio data. NOTE: We
-		 * shouldn't need to waveInPrepareHeader() a WAVEHDR that
-		 * has already been prepared once
+		    /*
+		     * Now we need to requeue this buffer so the driver can
+		     * use it for another block of audio data. NOTE: We
+		     * shouldn't need to waveInPrepareHeader() a WAVEHDR that
+		     * has already been prepared once
+		     */
+		    waveInAddBuffer(in, (WAVEHDR *) msg.lParam,
+				    sizeof(WAVEHDR));
+		    active_in_buffers++;
+		    continue;
+		/*
+		 * Our main thread is opening the WAVE device
 		 */
-		waveInAddBuffer(in, (WAVEHDR *) msg.lParam,
-				sizeof(WAVEHDR));
-		active_in_buffers++;
-		if (active_in_buffers == 0 && state == STATE_PAUSE)
-		    SetEvent(input_bufs_done);
-                my_unlock_mutex(snd_open);
-		continue;
-            }
-	}
-	/*
-	 * Our main thread is opening the WAVE device
-	 */
-	case MM_WIM_OPEN:{
-                my_unlock_mutex(snd_open);
-		continue;
-	    }
-	    /*
-	     * Our main thread is closing the WAVE device
-	     */
-	case MM_WIM_CLOSE:{
-                /*
-		 * Terminate this thread (by return'ing)
+		case MM_WIM_OPEN:
+		    continue;
+		/*
+		 * Our main thread is closing the WAVE device
 		 */
-		break;
-	    }
-	    /*
-	     * Audio driver is ready to playback next block
-	     */
-	case MM_WOM_DONE:{
-                /*
-		 * Clear the WHDR_DONE bit (which the driver set last time
-		 * that this WAVEHDR was sent via waveOutWrite and was
-		 * played). Some drivers need this to be cleared
+		case MM_WIM_CLOSE:
+		    /*
+		     * Terminate this thread (by return'ing)
+		     */
+		    break;
+		/*
+		 * Audio driver is ready to playback next block
 		 */
-		((WAVEHDR *) msg.lParam)->dwFlags &= ~WHDR_DONE;
-		for (i = 0; i < nbuffers; i++)
-		    if (&write_header[i] == (WAVEHDR *) msg.lParam) {
-			cur_wr_hdr[i] = 1;
-			break;
+		case MM_WOM_DONE:
+		    /*
+		     * Clear the WHDR_DONE bit (which the driver set last time
+		     * that this WAVEHDR was sent via waveOutWrite and was
+		     * played). Some drivers need this to be cleared
+		     */
+		    ((WAVEHDR *) msg.lParam)->dwFlags &= ~WHDR_DONE;
+		    for (i = 0; i < nbuffers; i++) {
+			if (&write_header[i] == (WAVEHDR *) msg.lParam) {
+			    cur_wr_hdr[i] = 1;
+			    break;
+			}
 		    }
-		active_out_buffers++;
-		if (active_out_buffers == 0 && state == STATE_PAUSE)
-		    SetEvent(output_bufs_done);
-                my_unlock_mutex(snd_open);
-		continue;
+		    active_out_buffers++;
+		    continue;
 	    }
-	default:
-	    ;
-        }
+	}
 
-END_LOOP:
-        my_unlock_mutex(snd_open);
-        /* now let's freeze the thread until the next data block is read */
-        if(dsound) {
-            event=WaitForSingleObject(notify_event,INFINITE);
-            ResetEvent(notify_event);
-        }
+	/* now let's freeze the thread until the next data block is read */
+	if (dsound) {
+	    event=WaitForSingleObject(notify_event,INFINITE);
+	    ResetEvent(notify_event);
+	}
     }
-    CloseHandle(audio_thread);
     return 0;
 }
 
-
-/*
- * sound shutdown
- */
-void
-windows_finish_sound(void)
+static void
+windows_driver_cleanup(void)
 {
     int             i;
 
-    state = STATE_PAUSE;
-    my_lock_mutex(snd_open);
-    windows_driver.enabled = 0;
-    SuspendThread(audio_thread);
-
-    if(!dsound) {
+    keepthreadrunning = 0;
+    if (audio_thread) {
+	WaitForSingleObject(audio_thread, INFINITE);
+	CloseHandle(audio_thread);
+	audio_thread = NULL;
+    }
+    if (!dsound) {
         /*
          * Stop Windows queuing of buffers
          */
-    	waveOutReset(out);
-        waveInReset(in);
+	if (out)
+	    waveOutReset(out);
+	if (in)
+	    waveInReset(in);
         /*
          * Wait until all output buffers return
          */
-	WaitForSingleObject(output_bufs_done, INFINITE);
-        WaitForSingleObject(input_bufs_done, INFINITE);
+	if (output_bufs_done)
+	    WaitForSingleObject(output_bufs_done, INFINITE);
+	if (input_bufs_done)
+	    WaitForSingleObject(input_bufs_done, INFINITE);
+	output_bufs_done = NULL;
+	input_bufs_done = NULL;
 
         /*
          * Unprepare WAVE buffers
          */
         for (i = 0; i < nbuffers; i++) {
-	    if (!dsound)
+	    if (out)
 	        waveOutUnprepareHeader(out, &write_header[i], sizeof(WAVEHDR));
-	    waveInUnprepareHeader(in, &wave_header[i], sizeof(WAVEHDR));
+	    if (in)
+		waveInUnprepareHeader(in, &wave_header[i], sizeof(WAVEHDR));
         }
         /*
          * We should unprepare the read headers here,
@@ -601,29 +563,41 @@ windows_finish_sound(void)
         /*
          * Close WAVE devices
          */
-	waveOutClose(out);
-        waveInClose(in);
-    }
-
-    if(dsound) {
+	if (out)
+	    waveOutClose(out);
+	if (in)
+	    waveInClose(in);
+	out = NULL;
+	in = NULL;
+    } else {
         if (cbuffer)
 	    IDirectSoundCaptureBuffer_Stop(cbuffer);
         if (pbuffer)
 	    IDirectSoundBuffer_Stop(pbuffer);
-        if(cbuffer)
+        if (cbuffer)
 	    IDirectSoundCaptureBuffer_Release(cbuffer);
-	if(capture)
+	if (capture)
 	    IDirectSoundCapture_Release(capture);
-        if(pbuffer)
+        if (pbuffer)
 	    IDirectSoundBuffer_Release(pbuffer);
-	if(snd)
+	if (snd)
 	    IDirectSound_Release(snd);
-	cbuffer=NULL;
-	capture=NULL;
-        notify=NULL;
-	pbuffer=NULL;
-	snd=NULL;
+	cbuffer = NULL;
+	capture = NULL;
+        notify = NULL;
+	pbuffer = NULL;
+	snd = NULL;
     }
+}
+
+/*
+ * sound shutdown
+ */
+void
+windows_finish_sound(void)
+{
+    windows_driver_cleanup();
+    windows_driver.enabled = 0;
 }
 
 /*
@@ -634,6 +608,19 @@ windows_init_sound(void)
 {
     int             i;
     WAVEFORMATEX    format;	/* wave format */
+
+    /* start thread -- it is paused until enabled is set to 1 */
+    keepthreadrunning = 1;
+    firstbuffer = 1;
+    audio_thread = CreateThread(NULL, 0, windows_audio_thread, NULL, 0, &thread_id);
+    if (! audio_thread) {
+	gnuitar_printf("Failed to create audio recording thread: %08X\n", GetLastError());
+	windows_driver_cleanup();
+	return ERR_THREAD;	
+    }
+    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
+	gnuitar_printf("Failed to set realtime priority to thread: %s. Continuing with default priority.", GetLastError());
+    }
 
     /*
      * set audio parameters - sampling rate, number of channels etc.
@@ -661,25 +648,19 @@ windows_init_sound(void)
         /*
          * Open Digital Audio In device
          */
-        err =
-	    waveInOpen(&in, WAVE_MAPPER, &format, (DWORD) thread_id, 0,
+        err = waveInOpen(&in, WAVE_MAPPER, &format, thread_id, 0,
 	    	       CALLBACK_THREAD);
         if (err) {
 	    serror(err,
 	        "There was an error opening the Digital Audio In device\r\n");
-	    state = STATE_EXIT;
-	    TerminateThread(audio_thread, ERR_WAVEINOPEN);
 	    return ERR_WAVEINOPEN;
         }
 
-        if ((err =
-	     waveOutOpen(&out, WAVE_MAPPER, &format, (DWORD) thread_id, 0,
+        if ((err = waveOutOpen(&out, WAVE_MAPPER, &format, thread_id, 0,
 			 CALLBACK_THREAD))) {
 	    serror(err,
 		   "There was an error opening the Digital Audio Out device!\r\n");
-	    state = STATE_EXIT;
-	    waveInClose(in);
-	    TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
+	    windows_driver_cleanup();
 	    return ERR_WAVEOUTOPEN;
 	}
 	for (i = 0; i < nbuffers; i++) {
@@ -698,9 +679,7 @@ windows_init_sound(void)
 				      sizeof(WAVEHDR)))) {
 		gnuitar_printf( "ERROR: preparing WAVEHDR %d! -- %08X\n",
 			i, err);
-		state = STATE_EXIT;
-		windows_finish_sound();
-		TerminateThread(audio_thread, ERR_WAVEOUTHDR);
+		windows_driver_cleanup();
 		return ERR_WAVEOUTHDR;
 	    }
 	    cur_wr_hdr[i] = 1;
@@ -724,12 +703,9 @@ windows_init_sound(void)
 	    /*
 	     * Prepare the WAVEHDR's
 	     */
-	    if ((err =
-	                waveInPrepareHeader(in, &wave_header[i], sizeof(WAVEHDR)))) {
+	    if ((err = waveInPrepareHeader(in, &wave_header[i], sizeof(WAVEHDR)))) {
 	        serror(err, "Error preparing WAVEHDR!\n");
-	        state = STATE_EXIT;
-	        windows_finish_sound();
-	        TerminateThread(audio_thread, ERR_WAVEINHDR);
+		windows_driver_cleanup();
 	        return ERR_WAVEINHDR;
 	    }
 	    /*
@@ -737,9 +713,7 @@ windows_init_sound(void)
 	     */
 	    if ((err = waveInAddBuffer(in, &wave_header[i], sizeof(WAVEHDR)))) {
 	        serror(err, "Error queueing WAVEHDR!\n");
-	        state = STATE_EXIT;
-	        windows_finish_sound();
-	        TerminateThread(audio_thread, ERR_WAVEINQUEUE);
+		windows_driver_cleanup();
 	        return ERR_WAVEINQUEUE;
 	    }
 	    active_in_buffers++;
@@ -751,12 +725,9 @@ windows_init_sound(void)
          */
         if ((err = waveInStart(in))) {
 	    serror(err, "Error starting record!\n");
-	    state = STATE_EXIT;
-	    windows_finish_sound();
-	    TerminateThread(audio_thread, ERR_WAVEINRECORD);
+	    windows_driver_cleanup();
 	    return ERR_WAVEINRECORD;
         }
-	state = STATE_PROCESS;
     }
     /*
      * DirectSound init
@@ -786,17 +757,14 @@ windows_init_sound(void)
 	 * open the rendering DirectSound interface
 	 */
 	if (DirectSoundCreate(NULL, &snd, NULL) != DS_OK) {
-	    state = STATE_EXIT;
 	    gnuitar_printf( "\nError opening DirectSound rendering device !");
-	    TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
+	    windows_driver_cleanup();
 	    return ERR_DSOUNDOPEN;
 	}
 
 	if (IDirectSound_CreateSoundBuffer(snd, &buffer_desc, &pbuffer, NULL) != DS_OK) {
-	    state = STATE_EXIT;
-	    windows_finish_sound();
 	    gnuitar_printf( "\nError creating DirectSound rendering buffer !");
-	    TerminateThread(audio_thread, ERR_WAVEOUTHDR);
+	    windows_driver_cleanup();
 	    return ERR_DSOUNDBUFFER;
 	}
 
@@ -818,25 +786,18 @@ windows_init_sound(void)
 	    capture_desc.dwBufferBytes = bufsize;
 	    capture_desc.lpwfxFormat = &format;
 	    if ((res=DirectSoundCaptureCreate(NULL, &capture, NULL)) != DS_OK) {
-	        state = STATE_EXIT;
 	        dserror(res, "\nError opening DirectSound capture object !");
-	        TerminateThread(audio_thread, ERR_WAVEOUTOPEN);
+		windows_driver_cleanup();
 	        return ERR_DSOUNDOPEN;
 	    }
 
-	    if ((res=IDirectSoundCapture_CreateCaptureBuffer(capture, &capture_desc, &cbuffer, NULL)) !=
-	                                                                                DS_OK) {
-	        state = STATE_EXIT;
-	        windows_finish_sound();
+	    if ((res=IDirectSoundCapture_CreateCaptureBuffer(capture, &capture_desc, &cbuffer, NULL)) != DS_OK) {
 	        dserror(res, "\nError creating DirectSound capture buffer !");
-	        TerminateThread(audio_thread, ERR_WAVEOUTHDR);
 	        return ERR_DSOUNDBUFFER;
 	    }
             if ((res = IDirectSoundCaptureBuffer_QueryInterface(cbuffer,&IID_IDirectSoundNotify, (LPVOID) &notify)) != S_OK) {
-                state = STATE_EXIT;
-	        windows_finish_sound();
 	        gnuitar_printf( "\nError creating DirectSound notifier !");
-	        TerminateThread(audio_thread, ERR_WAVEOUTHDR);
+		windows_driver_cleanup();
 	        return ERR_DSOUNDBUFFER;
             }
 
@@ -889,20 +850,14 @@ windows_init_sound(void)
 	    res = IDirectSound_SetCooperativeLevel(snd, window,
 						   DSSCL_PRIORITY);
 	    if (res != DS_OK) {
-		state = STATE_EXIT;
-		windows_finish_sound();
-		dserror(res,
-			"\nError setting up the cooperative level: ");
-		TerminateThread(audio_thread, ERR_DSCOOPLEVEL);
+		dserror(res, "\nError setting up the cooperative level: ");
+		windows_driver_cleanup();
 		return ERR_DSCOOPLEVEL;
 	    }
 	}
-	if (state != STATE_START_PAUSE)
-	    state = STATE_START;
     }
 
     windows_driver.enabled = 1;
-    my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
 
@@ -910,7 +865,7 @@ windows_init_sound(void)
  * Retrieves and displays an error message for the passed Wave In error
  * number. It does this using mciGetErrorString().
  */
-void
+static void
 serror(DWORD err, TCHAR * str)
 {
     char            buffer[128];
@@ -924,7 +879,8 @@ serror(DWORD err, TCHAR * str)
 }
 
 /* DirectSound Error */
-void dserror(HRESULT res, char *s) {
+static void 
+dserror(HRESULT res, char *s) {
     gnuitar_printf(s);
     switch (res) {
 	case DSERR_ALLOCATED:{
@@ -958,19 +914,18 @@ void dserror(HRESULT res, char *s) {
     }
 }
 
-struct audio_driver_channels windows_channels_cfg[]={
+static struct audio_driver_channels windows_channels_cfg[]={
     { 1, 1 },
     { 2, 2 },
     { 0, 0 }
 };
 
 audio_driver_t windows_driver = {
-    "Windows",              /* str */
-    0,                      /* enabled */
-    windows_channels_cfg,   /* channels */
-    windows_init_sound,     /* init */
-    windows_finish_sound,   /* finish */
-    windows_audio_thread    /* audio_proc */
+    .str = "Windows",
+    .enabled = 0,
+    .channels = windows_channels_cfg,
+    .init = windows_init_sound,
+    .finish = windows_finish_sound,
 };
 
 #endif

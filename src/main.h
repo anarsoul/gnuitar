@@ -27,19 +27,11 @@
 #include "utils.h"
 
 /* compile-time decision is easier to make working first */
-#ifndef _WIN32
-#    ifdef HAVE_ALSA
-#        include "audio-alsa.h"
-#    endif
-#    ifdef HAVE_OSS
-#        include "audio-oss.h"
-#    endif
-#    ifdef HAVE_JACK
-#        include "audio-jack.h"
-#    endif
-#else
-#    include "audio-windows.h"
-#endif
+#include "audio-alsa.h"
+#include "audio-oss.h"
+#include "audio-jack.h"
+#include "audio-windows.h"
+
 typedef enum {
     ERR_NOERROR = 0,
     ERR_THREAD, 		/* cannot create audio thread */
@@ -66,7 +58,6 @@ typedef enum {
 extern char version[];
 
 extern volatile audio_driver_t *audio_driver;
-extern my_mutex         snd_open;
 #ifndef _WIN32
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
@@ -77,18 +68,6 @@ extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern unsigned short   overrun_threshold;
-extern DWORD            thread_id;
 #endif
 
-/*
- * Program states:
- */
-enum STATES {
-    STATE_PROCESS = 0,      /* record/playback is on */
-    STATE_PAUSE,            /* plauyback is paused */
-    STATE_EXIT,             /* exit thread */
-    STATE_ATHREAD_RESTART,  /* audio thread must restart */
-    STATE_START,            /* the thread's first iteration, playback on */
-    STATE_START_PAUSE,      /* application is initializing, playback paused */
-};
 #endif

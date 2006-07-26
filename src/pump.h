@@ -31,10 +31,6 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-#ifdef _WIN32
-#  include <windows.h>      /* for DWORD */
-#endif
-
 #include "glib12-compat.h"
 
 #ifdef FLOAT_DSP
@@ -100,9 +96,6 @@ typedef struct {
     
     int     (*init)(void);
     void    (*finish)(void);
-#ifdef _WIN32
-    DWORD (WINAPI *audio_proc)(void *);
-#endif
 } audio_driver_t;
 
 struct data_block {

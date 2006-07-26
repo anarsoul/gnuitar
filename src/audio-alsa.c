@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.38  2006/07/25 23:41:14  alankila
  * - this patch may break win32. I can't test it.
  *   - move audio_thread handling code into sound driver init/finish
@@ -241,8 +250,6 @@ alsa_audio_thread(void *V)
     
     /* frame counts are always the same to both read and write */
     while (keepthreadrunning) {
-        my_lock_mutex(snd_open);
-
         /* this is technically typepunning but we never mix the pointers;
          * we always use the same in read and write directions. */
         rdbuf16 = rdbuf;
@@ -318,8 +325,6 @@ alsa_audio_thread(void *V)
          * frame counts somehow */
         assert(db.channels == n_output_channels);
         assert(db.len / n_output_channels == buffer_size);
-
-        my_unlock_mutex(snd_open);
     }
     return NULL;
 }
@@ -332,7 +337,6 @@ alsa_finish_sound(void)
 {
     keepthreadrunning = 0;
     pthread_join(audio_thread, NULL);
-    my_lock_mutex(snd_open);
     free(rdbuf);
     free(wrbuf);
     alsa_driver.enabled = 0;
@@ -575,7 +579,6 @@ alsa_init_sound(void)
 
     restarting = 1;
     alsa_driver.enabled = 1;
-    my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
 

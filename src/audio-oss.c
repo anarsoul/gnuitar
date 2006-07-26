@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.24  2006/07/26 00:04:27  alankila
  * - move state off from main codebase into windows
  * - start audio thread directly in code
@@ -163,8 +172,6 @@ oss_audio_thread(void *V)
     struct timeval read_timeout;
 
     while (keepthreadrunning) {
-        my_lock_mutex(snd_open);
-
 	/* keep on reading and discard if select says we can read.
          * this will allow us to catch up if we fall behind */
         FD_ZERO(&read_fds);
@@ -206,7 +213,6 @@ oss_audio_thread(void *V)
         /*
 	if (count != buffer_size * n_output_channels * 2)
 	    gnuitar_printf( "warning: short write (%d/%d) to sound device\n", count, buffer_size);*/
-        my_unlock_mutex(snd_open);
     }
 
     return NULL;
@@ -217,7 +223,6 @@ oss_finish_sound(void)
 {
     keepthreadrunning = 0;
     pthread_join(audio_thread, NULL);
-    my_lock_mutex(snd_open);
     free(rwbuf);
     oss_driver.enabled = 0;
     close(fd);
@@ -310,7 +315,6 @@ oss_init_sound(void)
     }
 
     oss_driver.enabled = 1;
-    my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
 

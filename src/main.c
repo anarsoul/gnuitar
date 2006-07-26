@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.63  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.62  2006/07/25 23:41:14  alankila
  * - this patch may break win32. I can't test it.
  *   - move audio_thread handling code into sound driver init/finish
@@ -292,13 +301,11 @@
 
 #include "audio-windows.h"
 #include "main.h"
-#include "tracker.h"
 #include "gui.h"
 
 volatile audio_driver_t  *audio_driver = NULL;
 char            version[13] = "GNUitar "VERSION;
 
-my_mutex        snd_open=NULL;
 #ifndef _WIN32
 DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
 DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
@@ -343,8 +350,8 @@ main(int argc, char **argv)
     /* GTK+ manual suggests this regarding threads:
      * http://developer.gimp.org/api/2.0/gdk/gdk-Threads.html
      *
-     * We shouldn't need to initialize gtk/gdk mutex because our audio thread does
-     * not participate in the GUI. */
+     * We shouldn't need to initialize gtk/gdk mutex because our audio thread 
+     * does not participate in the GUI. */
     g_thread_init(NULL);
     gtk_init(&argc, &argv);
     load_settings();
@@ -370,65 +377,26 @@ main(int argc, char **argv)
 #    endif
             printf("warning: no usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
     }
-    my_create_mutex(&snd_open);
-    my_lock_mutex(snd_open);
-
 #else
-    state = STATE_START_PAUSE;
-
     if (audio_driver == NULL) {
         audio_driver = &windows_driver;
-        dsound=1;
-    }
-    my_create_mutex(&snd_open);
-    /*
-     * create audio thread
-     */
-    audio_thread =
-	CreateThread(0, 0, (LPTHREAD_START_ROUTINE) audio_driver->audio_proc, 0,
-		     0, &thread_id);
-    if (!audio_thread) {
-	gnuitar_printf("Can't create WAVE recording thread! -- %08X\n",
-		GetLastError());
-	return ERR_THREAD;
-    }
-
-    /*
-     * set realtime priority to the thread
-     */
-    if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
-	gnuitar_printf(
-		"\nFailed to set realtime priority to thread: %s. Continuing with default priority.",
-		GetLastError());
+        dsound = 1;
     }
 #endif
     pump_start(argc, argv);    
 
     if (audio_driver && (error = audio_driver->init()) != ERR_NOERROR) {
-#ifdef _WIN32
-	state = STATE_PAUSE;
-#endif
         gnuitar_printf("warning: unable to begin audio processing (code %d)\n", error);
     }
 
     init_gui();
     gtk_main();
 
-#ifndef _WIN32
-    /* terminate audio */
     if (audio_driver && audio_driver->enabled)
         audio_driver->finish();
-    /* free the mutex used to track access to hardware */
-    my_unlock_mutex(snd_open);
-#else
-    state = STATE_EXIT;
-    my_unlock_mutex(snd_open);
-    if (audio_driver)
-        audio_driver->finish();
-#endif
+
     pump_stop();
     save_settings();
-    my_close_mutex(snd_open);
 
     return ERR_NOERROR;
 }

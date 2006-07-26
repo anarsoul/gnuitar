@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.10  2006/07/25 23:41:14  alankila
  * - this patch may break win32. I can't test it.
  *   - move audio_thread handling code into sound driver init/finish
@@ -97,8 +106,6 @@ process (jack_nframes_t nframes, void *arg)
     if (! audio_driver->enabled)
         return 0;
     
-    my_lock_mutex(snd_open);
-
     if (nframes != buffer_size)
 	buffer_size = nframes;
     
@@ -134,8 +141,6 @@ process (jack_nframes_t nframes, void *arg)
             k += n_output_channels;
         }
     }
-    
-    my_unlock_mutex(snd_open);
     return 0;
 }
 
@@ -147,7 +152,6 @@ process (jack_nframes_t nframes, void *arg)
 static void
 jack_finish_sound(void)
 {
-    my_lock_mutex(snd_open);
     jack_driver.enabled = 0;
     jack_client_close(client);
 }
@@ -314,7 +318,6 @@ jack_init_sound(void)
     free(ports);
     
     jack_driver.enabled = 1;
-    my_unlock_mutex(snd_open);
     return ERR_NOERROR;
 }
 

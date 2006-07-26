@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.3  2005/09/03 20:20:42  alankila
  * - create audio_driver type and write all the driver stuff into it. This
  *   faciliates carrying configuration data about the capabilities of
@@ -43,9 +52,13 @@
 #ifndef _AUDIO_ALSA_H_
 #define _AUDIO_ALSA_H_ 1
 
+#ifdef HAVE_ALSA
+
 #include "pump.h"
 
 int                 alsa_available();
 extern audio_driver_t alsa_driver;
+
+#endif
 
 #endif

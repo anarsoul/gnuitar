@@ -20,6 +20,15 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/07/26 23:09:09  alankila
+ * - DirectSound may be buggy; MMSystem at least worked in mingw build.
+ * - remove some sound-specific special cases in gui and main code.
+ * - create thread in windows driver.
+ * - remove all traces of "program states" variable.
+ * - remove snd_open mutex: it is now unnecessary. Concurrency is handled
+ *   through joining/waiting threads where necessary. (We assume JACK
+ *   does its own locking, though.)
+ *
  * Revision 1.1  2006/05/29 18:36:54  anarsoul
  * Initial JACK support
  *
@@ -28,9 +37,13 @@
 #ifndef _AUDIO_JACK_H_
 #define _AUDIO_JACK_H_ 1
 
+#ifdef HAVE_JACK
+
 #include "pump.h"
 
 int                 jack_available();
 extern audio_driver_t jack_driver;
+
+#endif
 
 #endif
