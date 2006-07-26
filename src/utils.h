@@ -37,7 +37,6 @@
 #    endif
 #    define FILESEP "\\"
 #    define isnan _isnan
-#    define rand_r(x) rand()
 
 #include <windows.h>
 typedef HANDLE  my_mutex;
