@@ -9978,6 +9978,7 @@ _ACEOF
 rm -f conftest*
 
 
+CONFIG_DEFS="$CONFIG_DEFS -DGTK_ENABLE_BROKEN"
 
 
 ac_config_files="$ac_config_files src/Makefile Makefile"
