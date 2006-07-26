@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2006/07/26 17:13:05  alankila
+ * - win32 build fixes
+ *
  * Revision 1.19  2006/06/20 20:41:08  anarsoul
  * Added some kind of status window. Now we can use gnuitar_printf(char *fmt, ...) that redirects debug information in this window.
  *
@@ -191,7 +194,7 @@ tracker_out(const char *outfile)
 	format.wFormatTag = WAVE_FORMAT_PCM;
 	format.nChannels = n_output_channels;
 	format.nSamplesPerSec = sample_rate;
-	format.wBitsPerSample = bits;
+	format.wBitsPerSample = 16;
 	format.nBlockAlign =
 	    format.nChannels * (format.wBitsPerSample / 8);
 	format.nAvgBytesPerSec =

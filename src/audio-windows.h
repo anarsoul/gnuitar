@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2006/07/26 17:13:34  alankila
+ * - win32 build fixes
+ *
  * Revision 1.5  2006/07/25 23:41:14  alankila
  * - this patch may break win32. I can't test it.
  *   - move audio_thread handling code into sound driver init/finish
@@ -53,6 +56,8 @@
 #ifdef _WIN32
 
 #include <windows.h>
+#include "pump.h"
+
 audio_driver_t windows_driver;
 
 extern short dsound;
