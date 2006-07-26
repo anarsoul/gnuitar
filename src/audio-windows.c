@@ -21,6 +21,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2006/07/26 21:08:43  alankila
+ * - it is illegal to use gnuitar_printf from audio thread; this corrects
+ *   crashes in stopping and restarting MMSystem and DirectSound.
+ *
  * Revision 1.22  2006/07/26 21:03:21  alankila
  * - correct various type errors in the code, although some errors remain.
  *
@@ -280,7 +284,7 @@ windows_audio_thread(void *V)
 		        /* this condition handles buffer wrap around */
 		        read_pos-rbufpos > buffer_size*overrun_threshold &&
 		        read_pos-rbufpos < buffer_size*nbuffers/2) {
-		    gnuitar_printf("\ncapture buffer overrun: real position=%u, calculated=%u",read_pos,rbufpos);
+		    fprintf(stderr, "\ncapture buffer overrun: real position=%u, calculated=%u",read_pos,rbufpos);
 		    rbufpos=read_pos;
 		}
 		else rbufpos += buffer_size;
@@ -367,7 +371,7 @@ windows_audio_thread(void *V)
 		        /* this condition handles buffer wrap around */
 		        abs(write_pos-wbufpos)>buffer_size*overrun_threshold &&
 		        abs(write_pos-wbufpos)<buffer_size*100) {
-		    gnuitar_printf("\nplayback buffer overrun: real position=%u, calculated=%u",
+		    fprintf(stderr, "\nplayback buffer overrun: real position=%u, calculated=%u",
                             write_pos,wbufpos);
 		    wbufpos=write_pos+buffer_size;
 		}
@@ -482,9 +486,9 @@ windows_audio_thread(void *V)
 			} else
 			    active_out_buffers++;
 		    } else
-		        gnuitar_printf("\nbuffer overrun.");
+		        fprintf(stderr, "\nbuffer overrun.");
 	        } else
-	            gnuitar_printf("\nbuffer underrun.");
+	            fprintf(stderr, "\nbuffer underrun.");
 
                 /*
 		 * Now we need to requeue this buffer so the driver can
