@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.24  2006/07/26 00:04:27  alankila
+ * - move state off from main codebase into windows
+ * - start audio thread directly in code
+ *
  * Revision 1.23  2006/07/23 20:46:05  alankila
  * - it is illegal to write to GUI from audio thread.
  *
@@ -134,6 +138,7 @@
 #include <sys/types.h>
 #include <math.h>
 #include <assert.h>
+#include <pthread.h>
  
 #include "pump.h"
 #include "main.h"
@@ -141,6 +146,9 @@
 
 static SAMPLE16 *rwbuf = NULL;
 static int fd;
+
+volatile static int keepthreadrunning = 0;
+static pthread_t audio_thread = 0;
 
 static void *
 oss_audio_thread(void *V)
@@ -154,16 +162,8 @@ oss_audio_thread(void *V)
     fd_set read_fds;
     struct timeval read_timeout;
 
-    while (state != STATE_EXIT && state != STATE_ATHREAD_RESTART) {
-	if (state == STATE_PAUSE) {
-	    usleep(10000);
-	}
+    while (keepthreadrunning) {
         my_lock_mutex(snd_open);
-        /* catch transition PAUSE -> EXIT with mutex being waited already */
-        if (state == STATE_EXIT || state == STATE_ATHREAD_RESTART) {
-            my_unlock_mutex(snd_open);
-            break;
-        }
 
 	/* keep on reading and discard if select says we can read.
          * this will allow us to catch up if we fall behind */
@@ -215,7 +215,8 @@ oss_audio_thread(void *V)
 static void
 oss_finish_sound(void)
 {
-    state = STATE_PAUSE;
+    keepthreadrunning = 0;
+    pthread_join(audio_thread, NULL);
     my_lock_mutex(snd_open);
     free(rwbuf);
     oss_driver.enabled = 0;
@@ -300,8 +301,14 @@ oss_init_sound(void)
         rwbuf = gnuitar_memalign(n_input_channels * buffer_size, 16 >> 3);
     else
         rwbuf = gnuitar_memalign(n_output_channels * buffer_size, 16 >> 3);
-    
-    state = STATE_PROCESS;
+
+    /* create the audio thread */
+    keepthreadrunning = 1;
+    if (pthread_create(&audio_thread, NULL, oss_audio_thread, NULL)) {
+        gnuitar_printf("Audio thread creation failed!\n");
+        return ERR_THREAD;
+    }
+
     oss_driver.enabled = 1;
     my_unlock_mutex(snd_open);
     return ERR_NOERROR;
@@ -330,7 +337,6 @@ audio_driver_t oss_driver = {
 
     .init = oss_init_sound,
     .finish = oss_finish_sound,
-    .thread = oss_audio_thread
 };
 
 #endif /* HAVE_OSS */
