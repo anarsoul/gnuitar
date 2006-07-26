@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2006/07/26 21:03:21  alankila
+ * - correct various type errors in the code, although some errors remain.
+ *
  * Revision 1.21  2006/07/25 23:41:14  alankila
  * - this patch may break win32. I can't test it.
  *   - move audio_thread handling code into sound driver init/finish
@@ -175,7 +178,7 @@ static SAMPLE16 rdbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
 DWORD           WINAPI
 windows_audio_thread(void *V)
 {
-    int             count, i, j, k, old_count = 0;
+    int             count = 0, i, j, k, old_count = 0;
     MSG             msg;
     HRESULT         res;
     DWORD           write_pos = 0,
@@ -187,10 +190,10 @@ windows_audio_thread(void *V)
     /*
      * read/write cursors and lengths for DS calls
      */
-    SAMPLE16       *pos1 = NULL,
-                   *pos2 = NULL;	/* pointers for DirectSound lock
+    LPVOID      pos1 = NULL,
+                pos2 = NULL;	/* pointers for DirectSound lock
 					 * call */
-    static unsigned int wbufpos = 0,	/* current write position in the */
+    DWORD   wbufpos = 0,	/* current write position in the */
 			rbufpos = 0;	/* buffer (DirectSound) */
     struct data_block db;
 
@@ -307,7 +310,7 @@ windows_audio_thread(void *V)
 
             /* copying the data block */
             for (i = 0, j = 0, k = 0; i < count / sizeof(SAMPLE16); i++) {
-		SAMPLE16       *curpos;
+		SAMPLE16       *curpos = NULL;
 
 		if (j * sizeof(SAMPLE16) >= len1 && pos2 != NULL && k * sizeof(SAMPLE16) < len2) {
                     curpos = pos2 + k;
@@ -315,8 +318,11 @@ windows_audio_thread(void *V)
 		} else if (pos1 != NULL) {
 		    curpos = pos1 + j;
 		    j++;
+		} else {
+			/* curpos is rubbish if neither condition is true */
+			continue;
 		}
-                procbuf[i]= (*(SAMPLE16 *) curpos) << 8;
+                procbuf[i] = *curpos << 8;
             }
 	    res = IDirectSoundCaptureBuffer_Unlock(cbuffer, pos1, /*j * sizeof(SAMPLE16)*/len1, pos2,
 							   /*k * sizeof(SAMPLE16)*/len2);
@@ -388,7 +394,7 @@ windows_audio_thread(void *V)
 	    }
 	    for (i = 0, j = 0, k = 0; i < count / sizeof(SAMPLE16); i++) {
 		DSP_SAMPLE      W = (SAMPLE32)db.data[i] >> 8;
-		SAMPLE16       *curpos;
+		SAMPLE16       *curpos = NULL;
 
 		if (j * sizeof(SAMPLE16) >= len1 && pos2 != NULL && k * sizeof(SAMPLE16) < len2) {
 		    curpos = pos2 + k;
@@ -396,8 +402,11 @@ windows_audio_thread(void *V)
 		} else if (pos1 != NULL) {
 		    curpos = pos1 + j;
 		    j++;
+		} else {
+			/* curpos is rubbish if neither condition is true */
+			continue;
 		}
-		*(SAMPLE16 *) curpos = W;
+		*curpos = W;
 	    }
 
 	    res = IDirectSoundBuffer_Unlock(pbuffer, pos1, len1, pos2, len2);
@@ -819,7 +828,7 @@ windows_init_sound(void)
 	        TerminateThread(audio_thread, ERR_WAVEOUTHDR);
 	        return ERR_DSOUNDBUFFER;
 	    }
-            if(res=IDirectSoundCaptureBuffer_QueryInterface(cbuffer,&IID_IDirectSoundNotify,(LPVOID*)&notify)!=S_OK) {
+            if ((res = IDirectSoundCaptureBuffer_QueryInterface(cbuffer,&IID_IDirectSoundNotify, (LPVOID) &notify)) != S_OK) {
                 state = STATE_EXIT;
 	        windows_finish_sound();
 	        gnuitar_printf( "\nError creating DirectSound notifier !");
