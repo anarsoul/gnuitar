@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.96  2006/07/27 00:45:57  alankila
+ * - get rid of GTK_ENABLE_BROKEN -- no more gtk_text_new() for GTK2.
+ *
  * Revision 1.95  2006/07/27 00:13:35  alankila
  * - switch to 100% dynamic gnuitar_printf routine
  *
@@ -525,9 +528,7 @@ gnuitar_printf(char *frm, ...)
     static GList *bufferedmsgs = NULL;
     GList *listtmp;
     gchar *tmp;
-#ifdef HAVE_GTK2    
-    GtkTextBuffer  *textbuf;
-    GtkTextIter    iter;
+#ifdef HAVE_GTK2
     GtkAdjustment *adj;
 #endif
 
@@ -540,21 +541,9 @@ gnuitar_printf(char *frm, ...)
 	return;
     }
     
-#ifdef HAVE_GTK
-#define APPEND(s)\
-    gtk_text_insert(GTK_TEXT(status_text), NULL, NULL, NULL, (s), -1);
-#endif
-
-#ifdef HAVE_GTK2
-    textbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(status_text));
-#define APPEND(s)\
-    gtk_text_buffer_get_end_iter(textbuf, &iter);\
-    gtk_text_buffer_insert(textbuf, &iter, (s), -1);
-#endif
-
     /* append the buffered data, get rid of bufferedmsgs */ 
     for (listtmp = g_list_first(bufferedmsgs); listtmp != NULL; listtmp = g_list_next(listtmp)) {
-        APPEND(listtmp->data);
+        gnuitar_gtk_text_view_append(status_text, listtmp->data);
         g_free(listtmp->data);
     }
     if (bufferedmsgs) {
@@ -563,7 +552,7 @@ gnuitar_printf(char *frm, ...)
     }
 
     /* append the given input buffer */
-    APPEND(tmp);
+    gnuitar_gtk_text_view_append(status_text, tmp);
     g_free(tmp);
 
 #ifdef HAVE_GTK2
@@ -571,7 +560,6 @@ gnuitar_printf(char *frm, ...)
     adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(status_window));
     gtk_adjustment_set_value(adj, adj->upper);
 #endif
-#undef APPEND
 }
 
 /*
@@ -594,7 +582,6 @@ about_dlg(void)
     GtkWidget      *about_plabel, *license_plabel, *authors_plabel;
     GtkWidget      *ok_button;
     GtkWidget      *notebook;
-
 
     about = gtk_window_new(GTK_WINDOW_DIALOG);
 
@@ -638,29 +625,15 @@ about_dlg(void)
     gtk_notebook_append_page (GTK_NOTEBOOK (notebook), authors_scrolledwin, authors_plabel);
     gtk_notebook_append_page (GTK_NOTEBOOK (notebook), license_scrolledwin, license_plabel);
     
-    about_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
-			(GTK_SCROLLED_WINDOW(about_scrolledwin)),
-			gtk_scrolled_window_get_vadjustment
-			(GTK_SCROLLED_WINDOW(about_scrolledwin)));
-    gtk_container_add(GTK_CONTAINER(about_scrolledwin), about_text);
-    gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, "\n GNUitar " VERSION "\n\n", -1);
-    gtk_text_insert(GTK_TEXT(about_text), NULL, NULL, NULL, about_txt, -1);
-
+    about_text = gnuitar_gtk_text_view_new(GTK_CONTAINER(about_scrolledwin));
+    gnuitar_gtk_text_view_append(about_text, "\n GNUitar " VERSION "\n\n");
+    gnuitar_gtk_text_view_append(about_text, about_txt);
     
-    authors_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
-			(GTK_SCROLLED_WINDOW(authors_scrolledwin)),
-			gtk_scrolled_window_get_vadjustment
-			(GTK_SCROLLED_WINDOW(authors_scrolledwin)));
-    gtk_container_add(GTK_CONTAINER(authors_scrolledwin), authors_text);
-    gtk_text_insert(GTK_TEXT(authors_text), NULL, NULL, NULL, authors_txt, -1);
+    authors_text = gnuitar_gtk_text_view_new(GTK_CONTAINER(authors_scrolledwin));
+    gnuitar_gtk_text_view_append(authors_text, authors_txt);
 
-    
-    license_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
-			(GTK_SCROLLED_WINDOW(license_scrolledwin)),
-			gtk_scrolled_window_get_vadjustment
-			(GTK_SCROLLED_WINDOW(license_scrolledwin)));
-    gtk_container_add(GTK_CONTAINER(license_scrolledwin), license_text);
-    gtk_text_insert(GTK_TEXT(license_text), NULL, NULL, NULL, license_txt, -1);
+    license_text = gnuitar_gtk_text_view_new(GTK_CONTAINER(license_scrolledwin));
+    gnuitar_gtk_text_view_append(license_text, license_txt);
 
     ok_button = gtk_button_new_with_label("OK");
     gtk_box_pack_end(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
@@ -1873,24 +1846,15 @@ init_gui(void)
     
 #ifdef HAVE_GTK2
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(status_window), GTK_SHADOW_IN);
-    status_text = gtk_text_view_new();
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(status_text), FALSE);
 #endif
-#ifdef HAVE_GTK
-    status_text = gtk_text_new(
-        gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(status_window)),
-        gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(status_window)));
-#endif
-    
-    /* Update container data with text buffered before the window existed. */
+    status_text = gnuitar_gtk_text_view_new(GTK_CONTAINER(status_window));
+    /* Side effect: update container data with text buffered before the window existed. */
     gnuitar_printf("");
     
-    gtk_container_add(GTK_CONTAINER(status_window), status_text);
-    
-    gtk_widget_set_sensitive(GTK_WIDGET
-				 (gtk_item_factory_get_widget
-				  (item_factory, "/Options/Options")),
-				 !audio_driver->enabled);
+    gtk_widget_set_sensitive(GTK_WIDGET(
+                                gtk_item_factory_get_widget(
+                                    item_factory, "/Options/Options")),
+			     !audio_driver->enabled);
     gtk_label_set_text(GTK_LABEL(GTK_BIN(start)->child),
                     audio_driver->enabled ? "Stop" : "ERROR");
     
@@ -1982,7 +1946,3 @@ init_gui(void)
     gdk_window_set_icon(mainWnd->window, mainWnd->window, app_icon, mask);
 #endif
 }
-
-
-
-

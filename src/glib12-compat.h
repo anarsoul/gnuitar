@@ -1,5 +1,5 @@
-/* GTK12 compatibility header (c) Antti S. Lankila 2005  <alankila@bel.fi>
- * All Rights reserved. See gtk12-compat.c for more info. */
+/* GTK12 compatibility header (c) Antti S. Lankila 2005, 2006  <alankila@bel.fi>
+ * All Rights reserved. See gtk12-compat.c for more info. Licensed under the GPL. */
 
 #ifndef _GTK12_COMPAT_H_
 #define _GTK12_COMPAT_H_
@@ -9,6 +9,10 @@
 #endif
 
 #include <glib.h>
+
+/* custom functions */
+GtkWidget *gnuitar_gtk_text_view_new(GtkContainer *container);
+void       gnuitar_gtk_text_view_append(GtkWidget *tw, gchar *text);
 
 #ifndef HAVE_GTK
 #include <glib/gstdio.h>

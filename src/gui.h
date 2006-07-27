@@ -23,9 +23,9 @@
 #ifndef _GUI_H_
 #define _GUI_H_ 1
 
-#include "glib12-compat.h"
-#include "pump.h"
 #include <gtk/gtk.h>
+#include "pump.h"
+#include "glib12-compat.h"
 
 #ifdef __cplusplus
 #define __GTKATTACHOPTIONS GtkAttachOptions

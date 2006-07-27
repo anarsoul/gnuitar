@@ -2,12 +2,49 @@
  * Licensed under the LGPL. Mostly lifted off from glib-2.0 and massaged
  * a bit to compile */
 
+#include <gtk/gtk.h>
 #include "glib12-compat.h"
+
+#ifdef HAVE_GTK2
+
+GtkWidget *
+gnuitar_gtk_text_view_new(GtkContainer *container) {
+    GtkWidget *tw = gtk_text_view_new();
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(tw), FALSE);
+    gtk_container_add(GTK_CONTAINER(container), tw);
+    return tw;
+}
+
+void
+gnuitar_gtk_text_view_append(GtkWidget *tw, gchar *text) {
+    GtkTextIter iter;
+    GtkTextBuffer  *textbuf;
+    textbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(tw));
+    gtk_text_buffer_get_end_iter(textbuf, &iter);\
+    gtk_text_buffer_insert(textbuf, &iter, text, -1);
+}
+
+#endif
 
 /* substitute locale versions for glib1.2 */
 #ifdef HAVE_GTK
 #define g_ascii_strtod		strtod
 #define g_ascii_dtostr(a, b, c)	sprintf(a, "%lf", c)
+
+GtkWidget *
+gnuitar_gtk_text_view_new(GtkContainer *container) {
+    GtkWidget *tw = gtk_text_new(
+        gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(container)),
+        gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(container)));
+    gtk_container_add(GTK_CONTAINER(container), tw);
+    return tw;
+}
+
+void
+gnuitar_gtk_text_view_append(GtkWidget *tw, gchar *text) {
+    gtk_text_insert(GTK_TEXT(tw), NULL, NULL, NULL, text, -1);
+}
+
 #endif
 
 #include <stdio.h>

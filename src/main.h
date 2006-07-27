@@ -23,7 +23,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_ 1
 
-#include "glib12-compat.h"
+#include "pump.h"
 #include "utils.h"
 
 /* compile-time decision is easier to make working first */

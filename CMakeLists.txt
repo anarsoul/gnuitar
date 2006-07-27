@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.18  2006/07/27 00:45:57  alankila
+# - get rid of GTK_ENABLE_BROKEN -- no more gtk_text_new() for GTK2.
+#
 # Revision 1.17  2006/07/26 18:08:38  alankila
 # - implement various compile fixes for mingw
 #
@@ -145,9 +148,6 @@ IF (UNIX)
 ENDIF (UNIX)
 # common flags
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffast-math -Wall")
-
-# GTK_TEXT, mainly
-ADD_DEFINITIONS("-DGTK_ENABLE_BROKEN")
 
 # for vasprintf
 IF (UNIX)
