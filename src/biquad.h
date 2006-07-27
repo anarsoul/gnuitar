@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.29  2006/07/27 19:38:14  alankila
+ * - disable SSE convolve for mingw32 for now
+ * - fix type of non-SSE convolve() routine
+ *
  * Revision 1.28  2006/07/08 18:11:33  alankila
  * - reduce overdrive effect cpu drain by implementing low-pass filtering
  *   in resampler and reusing the static 720 Hz lowpass filter as decimating
@@ -189,14 +193,8 @@ extern DSP_SAMPLE fir_decimate_2x(DSP_SAMPLE *mem, DSP_SAMPLE in1, DSP_SAMPLE in
 extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 			              int lowpass, Biquad_t *f);
 
-/*
- * computes one sample ; because inline declared, this will be compiled in 
- * place where called works with MS Visual C . Other compilers ? 
- */
-
-/* check if the compiler is Visual C or GCC so we can use inline function in C,
- * declared here */
-#if defined(__SSE__) && defined(FLOAT_DSP)
+/* use SSE if available -- doesn't work on mingw (gcc 3.4), don't know why */
+#if defined(__SSE__) && defined(FLOAT_DSP) && !defined(__MINGW32__)
 #include <xmmintrin.h>
 
 /*
@@ -237,7 +235,7 @@ convolve(const float *a, const float *b, int len) {
     __m128 r;
     float dot = 0.0;
     int i;
-    
+  
     i = (len / 4) * 2;
     if (i) {
         /* The assembly code does the convolution as fast as possible. Modelled after
@@ -274,7 +272,8 @@ convolve(const float *a, const float *b, int len) {
 
 static inline DSP_SAMPLE
 convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
-    int i, dot = 0;
+    int i;
+    DSP_SAMPLE dot = 0;
     for (i = 0; i < len; i += 1)
             dot += a[i] * b[i];
     return dot;
@@ -287,10 +286,9 @@ convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
  * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
 #define DENORMAL_BIAS   1E-5
 
-__inline float static
+static inline float
 do_biquad(float x, Biquad_t *f, int c)
-{				
-				 
+{
     float          y;
     if(isnan(x))
 	x=0;
