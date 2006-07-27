@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.19  2006/07/27 18:31:15  alankila
+# - split dsound and winmm into separate drivers.
+#
 # Revision 1.18  2006/07/27 00:45:57  alankila
 # - get rid of GTK_ENABLE_BROKEN -- no more gtk_text_new() for GTK2.
 #
@@ -70,19 +73,21 @@ PROJECT(GNUitar)
 
 # force optimizings on... We put yet more optimizing options later.
 SET(CMAKE_BUILD_TYPE RELEASE)
+# default to floating-point DSP
+ADD_DEFINITIONS(-DFLOAT_DSP)
+# other useful flags...
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -ffast-math -msse -msse2 -mfpmath=sse")
 
 INCLUDE(UsePkgConfig)
-# This doesn't work on Windows, so I need to come up with something for that OS.
-# (As soon as I understand what...)
 PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
 PKGCONFIG(gthread-2.0 GTHREAD_INCLUDE_DIR GTHREAD_LINK_DIR GTHREAD_LINK_FLAGS GTHREAD_CFLAGS)
 
 IF (GTK2_INCLUDE_DIR)
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
-SET(GTK_LIBRARIES ${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS})
-ADD_DEFINITIONS(-DHAVE_GTK2)
-MESSAGE("GTK 2.x found and used as GUI\n")
-SET(GTK2_FOUND 1)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
+    SET(GTK_LIBRARIES ${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS})
+    ADD_DEFINITIONS(-DHAVE_GTK2)
+    MESSAGE("GTK 2.x found and used as GUI\n")
+    SET(GTK2_FOUND 1)
 ENDIF (GTK2_INCLUDE_DIR)
 
 IF (NOT GTK2_FOUND)
@@ -94,13 +99,15 @@ IF (NOT GTK2_FOUND)
     ENDIF (GTK_FOUND)
 ENDIF (NOT GTK2_FOUND)
 
-IF (GTK_FOUND OR GTK2_FOUND)
-ELSE (GTK_FOUND OR GTK2_FOUND)
+IF (NOT GTK_FOUND AND NOT GTK2_FOUND)
     MESSAGE(FATAL_ERROR "Please install gtk 2.x or gtk 1.x development files")
-ENDIF (GTK_FOUND OR GTK2_FOUND)
+ENDIF (NOT GTK_FOUND AND NOT GTK2_FOUND)
 
 SET(OTHER_LIBRARIES m)
 IF (UNIX)
+    # for vasprintf
+    ADD_DEFINITIONS(-D_GNU_SOURCE)
+
     # OSS is always available on Unix
     ADD_DEFINITIONS(-DHAVE_OSS)
 
@@ -122,6 +129,7 @@ IF (UNIX)
         MESSAGE("libasound not found -- not compiling ALSA support.")
     ENDIF (ALSA_LIBRARY)
 
+    # sndfile is only required for unix
     FIND_LIBRARY(SNDFILE_LIBRARY NAMES sndfile)
     IF (SNDFILE_LIBRARY)
         ADD_DEFINITIONS(-DHAVE_SNDFILE)
@@ -131,6 +139,28 @@ IF (UNIX)
     ENDIF (SNDFILE_LIBRARY)
 ENDIF (UNIX)
 
+IF (WIN32)
+    FIND_LIBRARY(DSOUND_LIBRARY NAMES dsound)
+    IF (DSOUND_LIBRARY)
+        ADD_DEFINITIONS(-DHAVE_DSOUND)
+        SET (OTHER_LIBRARIES ${OTHER_LIBRARIES} dsound dxguid)
+    ELSE (DSOUND_LIBRARY)
+        MESSAGE("dsound not found -- disabling DirectSound output.")
+    ENDIF (DSOUND_LIBRARY)
+
+    FIND_LIBRARY(WINMM_LIBRARY NAMES winmm)
+    IF (WINMM_LIBRARY)
+        ADD_DEFINITIONS(-DHAVE_WINMM)
+        SET (OTHER_LIBRARIES ${OTHER_LIBRARIES} winmm)
+    ELSE (WINMM_LIBRARY)
+        MESSAGE("winmm not found -- disabling MMSystem output.")
+    ENDIF (WINMM_LIBRARY)
+
+    IF (NOT DSOUND_LIBRARY AND NOT WINMM_LIBRARY)
+        MESSAGE(FATAL_ERROR "Neither DirectSound or WinMM libraries could be found for audio playback.")
+    ENDIF (NOT DSOUND_LIBRARY AND NOT WINMM_LIBRARY)
+ENDIF (WIN32)
+
 FIND_LIBRARY(FFTW3_LIBRARY NAMES fftw3)
 IF (FFTW3_LIBRARY)
     ADD_DEFINITIONS(-DHAVE_FFTW3)
@@ -139,26 +169,7 @@ ELSE (FFTW3_LIBRARY)
     MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
 ENDIF (FFTW3_LIBRARY)
 
-# default to floating-point DSP
-ADD_DEFINITIONS(-DFLOAT_DSP)
-IF (UNIX)
-	# -msse and -msse2 are offered only for unix because I can't work out
-	# how to replace posix_memalign for win32 / mingw
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2")
-ENDIF (UNIX)
-# common flags
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffast-math -Wall")
-
-# for vasprintf
-IF (UNIX)
-    ADD_DEFINITIONS(-D_GNU_SOURCE)
-ENDIF (UNIX)
-
-# require various libraries for win32
-IF (WIN32)
-    SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} dsound dxguid winmm)
-ENDIF (WIN32)
-
+# setup complete: define build targets and build files
 ADD_EXECUTABLE(gnuitar
     src/amp.c src/main.c src/pump.c src/chorus.c
     src/delay.c src/echo.c src/tracker.c src/tremolo.c src/vibrato.c src/autowah.c
@@ -171,7 +182,7 @@ ADD_EXECUTABLE(gnuitar
     src/eqbank.c src/eqbank.h src/tuner.c src/tuner.h src/audio-alsa.c
     src/audio-alsa.h src/audio-oss.c src/audio-oss.h src/pitch.c src/pitch.h
     src/glib12-compat.c src/glib12-compat.h src/audio-jack.c src/audio-jack.h
-    src/audio-windows.c)
+    src/audio-winmm.h src/audio-winmm.c src/audio-dsound.h src/audio-dsound.c)
 TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 
 INSTALL(TARGETS gnuitar RUNTIME DESTINATION bin)

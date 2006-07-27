@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.98  2006/07/27 18:31:15  alankila
+ * - split dsound and winmm into separate drivers.
+ *
  * Revision 1.97  2006/07/27 10:31:01  alankila
  * - make surround40 -> 4 channel link work
  * - remove process headers from gui.c
@@ -427,7 +430,6 @@
 #    include <ctype.h>
 #    include <windows.h>
 #    include "resource.h"
-#    include "audio-windows.h"
 #else
 #    include <libgen.h>
 #    include <unistd.h>
@@ -443,8 +445,6 @@
 #include "main.h"
 #include "tracker.h"
 #include "utils.h"
-
-#include "audio-windows.h"
 
 #define VU_UPDATE_INTERVAL 100.0    /* ms */
 
@@ -1281,15 +1281,15 @@ update_driver(GtkWidget *widget, gpointer data)
         audio_driver = &oss_driver;
     }
 #endif
-#ifdef _WIN32
-    if(strcmp(tmp,"MMSystem")==0) {
-        audio_driver = &windows_driver;
-        dsound=0;
-        buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
-    }
+#ifdef HAVE_DSOUND
     if(strcmp(tmp,"DirectX")==0) {
-        audio_driver = &windows_driver;
-        dsound=1;
+        audio_driver = &dsound_driver;
+    }
+#endif
+#ifdef HAVE_MMS
+    if(strcmp(tmp,"MMSystem")==0) {
+        audio_driver = &mms_driver;
+        buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
     }
 #endif
     populate_sparams_channels(sparams->channels);
@@ -1449,13 +1449,8 @@ sample_dlg(GtkWidget *widget, gpointer data)
     gtk_combo_set_popdown_strings(GTK_COMBO(sparams.driver), drivers_list);
     g_list_free(drivers_list);
     
-#ifndef _WIN32
     if (audio_driver)
         gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry), audio_driver->str);
-#else
-    if (audio_driver)
-        gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry), dsound ? "DirectX" : "MMSystem");
-#endif
 
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sparams.driver)->entry),
 			   FALSE);
@@ -1556,11 +1551,8 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
     /* for certain audio drivers, make the fragment size to be a multiple
      * of the MIN_BUFFER_SIZE */
     if (audio_driver) {
-        if (strcmp(audio_driver->str, "OSS")==0
-#ifdef _WIN32
-            || (strcmp(audio_driver->str, "Windows")==0 && !dsound)
-#endif
-            ) {
+        if (strcmp(audio_driver->str, "OSS") == 0
+            || strcmp(audio_driver->str, "MMSystem") == 0) {
             buffer_size -= buffer_size % MIN_BUFFER_SIZE;
             gtk_adjustment_set_value(gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(sparams->latency)),
                                                                     buffer_size);

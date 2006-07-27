@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.65  2006/07/27 18:31:15  alankila
+ * - split dsound and winmm into separate drivers.
+ *
  * Revision 1.64  2006/07/27 00:13:35  alankila
  * - switch to 100% dynamic gnuitar_printf routine
  *
@@ -302,7 +305,6 @@
 #include <pthread.h>
 #endif
 
-#include "audio-windows.h"
 #include "main.h"
 #include "gui.h"
 
@@ -360,7 +362,6 @@ main(int argc, char **argv)
     gtk_init(&argc, &argv);
     load_settings();
 
-#ifndef _WIN32
     /* choose audio driver if not given in config */
     if (audio_driver == NULL) {
         gnuitar_printf("Discovering audio driver.\n");
@@ -380,13 +381,13 @@ main(int argc, char **argv)
         } else
 #    endif
             printf("warning: no usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
-    }
-#else
-    if (audio_driver == NULL) {
-        audio_driver = &windows_driver;
-        dsound = 1;
-    }
+#ifdef HAVE_DSOUND
+        audio_driver ||= &dsound_driver;
 #endif
+#ifdef HAVE_WINMM
+        audio_driver ||= &winmm_driver;
+#endif
+    }
     pump_start(argc, argv);    
 
     if (audio_driver && (error = audio_driver->init()) != ERR_NOERROR) {

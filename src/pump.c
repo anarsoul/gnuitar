@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.70  2006/07/27 18:31:15  alankila
+ * - split dsound and winmm into separate drivers.
+ *
  * Revision 1.69  2006/07/16 20:43:32  alankila
  * - use non-white triangular noise for slightly better dithering.
  *
@@ -624,15 +627,13 @@ load_settings() {
         if (strcmp(gstr, "OSS") == 0)
             audio_driver = &oss_driver;
 #endif
-#ifdef _WIN32
-        if (strcmp(gstr, "MMSystem") == 0) {
-            audio_driver = &windows_driver;
-            dsound = 0;
-        }
-        if (strcmp(gstr, "DirectX") == 0) {
-            audio_driver = &windows_driver;
-            dsound = 1;
-        }
+#ifdef HAVE_MMS
+        if (strcmp(gstr, "MMSystem") == 0)
+            audio_driver = &mms_driver;
+#endif
+#ifdef HAVE_DSOUND
+        if (strcmp(gstr, "DirectX") == 0)
+            audio_driver = &dsound_driver;
 #endif
         free(gstr);
     }
@@ -688,24 +689,13 @@ save_settings() {
     settingspath = discover_settings_path();
     file = g_key_file_new();
 
-#ifndef _WIN32
     if (audio_driver)
         g_key_file_set_string(file, "global", "driver", audio_driver->str);
-#else
-    /* Windows code has "two drivers in one". */
-    if (audio_driver) {
-        g_key_file_set_string(file, "global", "driver", dsound ? "DirectX" : "MMSystem");
-    }
-#endif
+    
     g_key_file_set_string(file, "global", "alsadevice", alsadevice_str);
     g_key_file_set_integer(file, "global", "n_output_channels", n_output_channels);
     g_key_file_set_integer(file, "global", "n_input_channels", n_input_channels);
     g_key_file_set_integer(file, "global", "sample_rate", sample_rate);
-#ifdef _WIN32
-    /* align fragment size to the power of 2 */
-    if (dsound == 0)
-        buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
-#endif
     g_key_file_set_integer(file, "global", "buffer_size", buffer_size);
 #ifdef _WIN32
     g_key_file_set_integer(file, "global", "n_inout_buffers", nbuffers);

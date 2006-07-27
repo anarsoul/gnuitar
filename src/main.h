@@ -30,7 +30,8 @@
 #include "audio-alsa.h"
 #include "audio-oss.h"
 #include "audio-jack.h"
-#include "audio-windows.h"
+#include "audio-dsound.h"
+#include "audio-winmm.h"
 
 typedef enum {
     ERR_NOERROR = 0,
