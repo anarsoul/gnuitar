@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.100  2006/07/27 20:15:54  alankila
+ * - one instance of DSound / MMSystem tied to _WIN32 still found. Fixed.
+ *
  * Revision 1.99  2006/07/27 19:15:35  alankila
  * - split windows driver architecture now compiles and runs.
  *
@@ -1445,8 +1448,10 @@ sample_dlg(GtkWidget *widget, gpointer data)
 #ifdef HAVE_OSS
     drivers_list = g_list_append(drivers_list, "OSS");
 #endif
-#ifdef _WIN32
+#ifdef HAVE_WINMM
     drivers_list = g_list_append(drivers_list, "MMSystem");
+#endif
+#ifdef HAVE_DSOUND
     drivers_list = g_list_append(drivers_list, "DirectX");
 #endif
 
