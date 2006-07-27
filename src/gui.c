@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.97  2006/07/27 10:31:01  alankila
+ * - make surround40 -> 4 channel link work
+ * - remove process headers from gui.c
+ *
  * Revision 1.96  2006/07/27 00:45:57  alankila
  * - get rid of GTK_ENABLE_BROKEN -- no more gtk_text_new() for GTK2.
  *
@@ -422,13 +426,11 @@
 #    include <io.h>
 #    include <ctype.h>
 #    include <windows.h>
-#    include <process.h>
 #    include "resource.h"
 #    include "audio-windows.h"
 #else
 #    include <libgen.h>
 #    include <unistd.h>
-#    include <pthread.h>
 #    include "gnuitar.xpm"
 #endif
 
@@ -1264,6 +1266,11 @@ update_driver(GtkWidget *widget, gpointer data)
     tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->driver)->entry));
     if(tmp == NULL)
 	return;
+#ifdef HAVE_JACK
+    if (strcmp(tmp,"JACK")==0) {
+        audio_driver = &jack_driver;
+    }
+#endif
 #ifdef HAVE_ALSA
     if (strcmp(tmp,"ALSA")==0) {
         audio_driver = &alsa_driver;
@@ -1274,12 +1281,6 @@ update_driver(GtkWidget *widget, gpointer data)
         audio_driver = &oss_driver;
     }
 #endif
-#ifdef HAVE_JACK
-    if (strcmp(tmp,"JACK")==0) {
-        audio_driver = &jack_driver;
-    }
-#endif
-
 #ifdef _WIN32
     if(strcmp(tmp,"MMSystem")==0) {
         audio_driver = &windows_driver;
@@ -1434,11 +1435,11 @@ sample_dlg(GtkWidget *widget, gpointer data)
 #ifdef HAVE_JACK
     drivers_list = g_list_append(drivers_list, "JACK");
 #endif
-#ifdef HAVE_OSS
-    drivers_list = g_list_append(drivers_list, "OSS");
-#endif
 #ifdef HAVE_ALSA
     drivers_list = g_list_append(drivers_list, "ALSA");
+#endif
+#ifdef HAVE_OSS
+    drivers_list = g_list_append(drivers_list, "OSS");
 #endif
 #ifdef _WIN32
     drivers_list = g_list_append(drivers_list, "MMSystem");
@@ -1541,23 +1542,14 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
 {
     int             tmp1, tmp2;
     sample_params_t *sparams = data;
-
-#ifndef _WIN32
-    const char *tmp=NULL;
-#endif
 #ifdef HAVE_ALSA
+    const char *tmp=NULL;
+
     tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->alsadevice)->entry));
     if (tmp == NULL || strlen(tmp) == 0) {
 	strcpy(alsadevice_str, "default");
     } else {
 	strncpy(alsadevice_str, tmp, sizeof(alsadevice_str)-1);
-
-        /* XXX debug why this doesn't work at some point */
-        if (strcmp(alsadevice_str, "surround40") == 0) {
-            n_output_channels = 4;
-            //instant segfault if we try to update the channels dialog accordingly ;-/
-            //populate_sparams_channels(sparams->channels);
-        }
     }
 #endif    
     buffer_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(sparams->latency));
@@ -1578,11 +1570,15 @@ update_sampling_params(GtkWidget * dialog, gpointer data)
            "%d in - %d out", &tmp1, &tmp2);
     n_input_channels = tmp1;
     n_output_channels = tmp2;
+    
+    /* if alsa and surround40 selected, force 4-channel output. */
+    if (audio_driver && strcmp(audio_driver->str, "ALSA") == 0
+        && strcmp(alsadevice_str, "surround40") == 0)
+        n_output_channels = 4;
 
     sample_rate = atoi(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->rate)->entry)));
 }
 
-    
 
 static void
 update_sampling_params_and_close_dialog(GtkWidget *dialog, gpointer data)
