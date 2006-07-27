@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.99  2006/07/27 19:15:35  alankila
+ * - split windows driver architecture now compiles and runs.
+ *
  * Revision 1.98  2006/07/27 18:31:15  alankila
  * - split dsound and winmm into separate drivers.
  *
@@ -429,6 +432,7 @@
 #    include <io.h>
 #    include <ctype.h>
 #    include <windows.h>
+#    include <process.h>
 #    include "resource.h"
 #else
 #    include <libgen.h>
@@ -1286,10 +1290,10 @@ update_driver(GtkWidget *widget, gpointer data)
         audio_driver = &dsound_driver;
     }
 #endif
-#ifdef HAVE_MMS
+#ifdef HAVE_WINMM
     if(strcmp(tmp,"MMSystem")==0) {
-        audio_driver = &mms_driver;
-        buffer_size=pow(2, (int) (log(buffer_size) / log(2)));
+        audio_driver = &winmm_driver;
+        buffer_size = pow(2, (int) (log(buffer_size) / log(2)));
     }
 #endif
     populate_sparams_channels(sparams->channels);

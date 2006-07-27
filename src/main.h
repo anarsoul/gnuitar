@@ -68,7 +68,6 @@ extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
  * and JACK (but less so for OSS). */
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-extern unsigned short   overrun_threshold;
 #endif
 
 #endif

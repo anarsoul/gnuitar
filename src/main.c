@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.66  2006/07/27 19:15:35  alankila
+ * - split windows driver architecture now compiles and runs.
+ *
  * Revision 1.65  2006/07/27 18:31:15  alankila
  * - split dsound and winmm into separate drivers.
  *
@@ -378,16 +381,20 @@ main(int argc, char **argv)
 #    ifdef HAVE_OSS
         if (oss_available()) {
             audio_driver = &oss_driver;
-        } else
+        }
 #    endif
-            printf("warning: no usable audio driver found. Tried jack, alsa and oss (if compiled in.)\n");
-#ifdef HAVE_DSOUND
-        audio_driver ||= &dsound_driver;
-#endif
-#ifdef HAVE_WINMM
-        audio_driver ||= &winmm_driver;
-#endif
+#    ifdef HAVE_DSOUND
+	if (audio_driver == NULL)
+	    audio_driver = &dsound_driver;
+#    endif
+#    ifdef HAVE_WINMM
+	if (audio_driver == NULL)
+	    audio_driver = &winmm_driver;
+#    endif
     }
+    if (audio_driver == NULL)
+	gnuitar_printf("warning: no usable audio driver found.\n");
+
     pump_start(argc, argv);    
 
     if (audio_driver && (error = audio_driver->init()) != ERR_NOERROR) {

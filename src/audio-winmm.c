@@ -21,13 +21,16 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.2  2006/07/27 19:15:35  alankila
+ * - split windows driver architecture now compiles and runs.
+ *
  * Revision 1.1  2006/07/27 18:31:15  alankila
  * - split dsound and winmm into separate drivers.
  *
  *
  */
 
-#ifdef _WIN32
+#ifdef HAVE_WINMM
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,23 +47,12 @@
 #include "tracker.h"
 #include "gui.h"
 #include "utils.h"
-#include "audio-windows.h"
+#include "audio-winmm.h"
 
 static volatile int keepthreadrunning = 0;
 static HANDLE       input_bufs_done = 0, output_bufs_done = 0, audio_thread = 0;
 static DWORD        thread_id = 0;
 
-static LPDIRECTSOUND	    snd = NULL;		    /* DS rendering object */
-static LPDIRECTSOUNDCAPTURE capture = NULL;	    /* DS capture object */
-static LPDIRECTSOUNDBUFFER  pbuffer = NULL;	    /* DS rendering buffer */
-static LPDIRECTSOUNDCAPTUREBUFFER cbuffer = NULL;   /* DS capture buffer */
-static HANDLE		    notify_event;	    /* for DS notify events */
-static DSBPOSITIONNOTIFY    notify_handlers[MAX_BUFFERS+1];
-static LPDIRECTSOUNDNOTIFY  notify;
-static DWORD		    bufsize = MIN_BUFFER_SIZE * MAX_BUFFERS;
-
-unsigned short	overrun_threshold = 4;	/* after this number of fragments
-					 * overran buffer will be recovered */
 static HWAVEIN  in;		/* input sound handle */
 static HWAVEOUT	out;		/* output sound handle */
 static MMRESULT err;
@@ -80,22 +72,12 @@ static SAMPLE16 wrbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
 static SAMPLE16 rdbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
 
 static DWORD WINAPI
-mms_audio_thread(void *V)
+winmm_audio_thread(void *V)
 {
-    int             count = 0, i, j, k, old_count = 0;
+    int             count = 0, i;
     MSG             msg;
-    HRESULT         res;
-    DWORD           write_pos = 0,
-                    read_pos = 0,
-                    len1 = 0,
-                    len2 = 0;
-    DWORD           event = 0;  /* for WaitForMultipleObjects() */
 
     /* read/write cursors and lengths for DS calls */
-    LPVOID      pos1 = NULL,
-                pos2 = NULL;	/* pointers for DirectSound lock call */
-    DWORD       wbufpos = 0,	/* current write position in the */
-		rbufpos = 0;	/* buffer (DirectSound) */
     struct data_block db;
 
     /*
@@ -206,7 +188,7 @@ mms_audio_thread(void *V)
 }
 
 static void
-mms_driver_cleanup(void)
+winmm_driver_cleanup(void)
 {
     int             i;
 
@@ -259,28 +241,28 @@ mms_driver_cleanup(void)
 /*
  * sound shutdown
  */
-void
-mms_finish_sound(void)
+static void
+winmm_finish_sound(void)
 {
-    mms_driver_cleanup();
-    mms_driver.enabled = 0;
+    winmm_driver_cleanup();
+    winmm_driver.enabled = 0;
 }
 
 /*
  * sound initialization
  */
-int
-mms_init_sound(void)
+static int
+winmm_init_sound(void)
 {
     int             i;
     WAVEFORMATEX    format;	/* wave format */
 
     /* start thread -- it is paused until enabled is set to 1 */
     keepthreadrunning = 1;
-    audio_thread = CreateThread(NULL, 0, mms_audio_thread, NULL, 0, &thread_id);
+    audio_thread = CreateThread(NULL, 0, winmm_audio_thread, NULL, 0, &thread_id);
     if (! audio_thread) {
 	gnuitar_printf("Failed to create audio recording thread: %08X\n", GetLastError());
-	mms_driver_cleanup();
+	winmm_driver_cleanup();
 	return ERR_THREAD;	
     }
     if (!SetThreadPriority(audio_thread, THREAD_PRIORITY_TIME_CRITICAL)) {
@@ -323,7 +305,7 @@ mms_init_sound(void)
                      CALLBACK_THREAD))) {
         serror(err,
                "There was an error opening the Digital Audio Out device!\r\n");
-        mms_driver_cleanup();
+        winmm_driver_cleanup();
         return ERR_WAVEOUTOPEN;
     }
     for (i = 0; i < nbuffers; i++) {
@@ -342,7 +324,7 @@ mms_init_sound(void)
                                   sizeof(WAVEHDR)))) {
             gnuitar_printf( "ERROR: preparing WAVEHDR %d! -- %08X\n",
                     i, err);
-            mms_driver_cleanup();
+            winmm_driver_cleanup();
             return ERR_WAVEOUTHDR;
         }
         cur_wr_hdr[i] = 1;
@@ -368,7 +350,7 @@ mms_init_sound(void)
          */
         if ((err = waveInPrepareHeader(in, &wave_header[i], sizeof(WAVEHDR)))) {
             serror(err, "Error preparing WAVEHDR!\n");
-            mms_driver_cleanup();
+            winmm_driver_cleanup();
             return ERR_WAVEINHDR;
         }
         /*
@@ -376,7 +358,7 @@ mms_init_sound(void)
          */
         if ((err = waveInAddBuffer(in, &wave_header[i], sizeof(WAVEHDR)))) {
             serror(err, "Error queueing WAVEHDR!\n");
-            mms_driver_cleanup();
+            winmm_driver_cleanup();
             return ERR_WAVEINQUEUE;
         }
         active_in_buffers++;
@@ -388,10 +370,10 @@ mms_init_sound(void)
      */
     if ((err = waveInStart(in))) {
         serror(err, "Error starting record!\n");
-        mms_driver_cleanup();
+        winmm_driver_cleanup();
         return ERR_WAVEINRECORD;
     }
-    mms_driver.enabled = 1;
+    winmm_driver.enabled = 1;
     return ERR_NOERROR;
 }
 
@@ -412,18 +394,18 @@ serror(DWORD err, TCHAR * str)
     }
 }
 
-static struct audio_driver_channels mms_channels_cfg[]={
+static struct audio_driver_channels winmm_channels_cfg[]={
     { 1, 1 },
     { 2, 2 },
     { 0, 0 }
 };
 
-audio_driver_t mms_driver = {
+audio_driver_t winmm_driver = {
     .str = "MMSystem",
     .enabled = 0,
-    .channels = mms_channels_cfg,
-    .init = mms_init_sound,
-    .finish = mms_finish_sound,
+    .channels = winmm_channels_cfg,
+    .init = winmm_init_sound,
+    .finish = winmm_finish_sound,
 };
 
 #endif

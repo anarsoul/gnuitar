@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.71  2006/07/27 19:15:35  alankila
+ * - split windows driver architecture now compiles and runs.
+ *
  * Revision 1.70  2006/07/27 18:31:15  alankila
  * - split dsound and winmm into separate drivers.
  *
@@ -325,7 +328,6 @@
 #endif
 #include <assert.h>
 #include <fcntl.h>
-//#include <sys/types.h>
 #include <sys/stat.h>
 #include "pump.h"
 #include "main.h"
@@ -369,6 +371,7 @@ my_mutex        effectlist_lock = NULL;
 #ifndef _WIN32
 unsigned int    fragments = 2;
 #else
+unsigned int    overrun_threshold = 4;
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
@@ -627,15 +630,18 @@ load_settings() {
         if (strcmp(gstr, "OSS") == 0)
             audio_driver = &oss_driver;
 #endif
-#ifdef HAVE_MMS
+#ifdef HAVE_WINMM
         if (strcmp(gstr, "MMSystem") == 0)
-            audio_driver = &mms_driver;
+            audio_driver = &winmm_driver;
 #endif
 #ifdef HAVE_DSOUND
         if (strcmp(gstr, "DirectX") == 0)
             audio_driver = &dsound_driver;
 #endif
-        free(gstr);
+       	if (audio_driver) {
+		gnuitar_printf("after loading: driver str = %s, requested %s\n", audio_driver->str, gstr);
+	} 
+	free(gstr);
     }
     
     error = NULL;
@@ -671,6 +677,11 @@ load_settings() {
     tmp = g_key_file_get_integer(file, "global", "n_inout_buffers", &error);
     if (error == NULL)
         nbuffers = tmp;
+    
+    error = NULL;
+    tmp = g_key_file_get_integer(file, "global", "overrun_threshold", &error);
+    if (error == NULL)
+        overrun_threshold = tmp;
 #endif
     g_key_file_free(file);
     g_free((void *) settingspath);
@@ -699,6 +710,7 @@ save_settings() {
     g_key_file_set_integer(file, "global", "buffer_size", buffer_size);
 #ifdef _WIN32
     g_key_file_set_integer(file, "global", "n_inout_buffers", nbuffers);
+    g_key_file_set_integer(file, "global", "overrun_threshold", overrun_threshold);
 #endif
     key_file_as_str = g_key_file_to_data(file, &length, NULL);
 

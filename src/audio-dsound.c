@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/07/27 19:15:35  alankila
+ * - split windows driver architecture now compiles and runs.
+ *
  * Revision 1.1  2006/07/27 18:31:15  alankila
  * - split dsound and winmm into separate drivers.
  *
@@ -132,7 +135,7 @@
  *
  */
 
-#ifdef _WIN32
+#ifdef HAVE_DSOUND
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,7 +143,6 @@
 #include <io.h>
 #include <windows.h>
 #include <process.h>
-#include <mmsystem.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <dsound.h>
@@ -150,10 +152,10 @@
 #include "tracker.h"
 #include "gui.h"
 #include "utils.h"
-#include "audio-windows.h"
+#include "audio-dsound.h"
 
 static volatile int keepthreadrunning = 0, firstbuffer = 0;
-static HANDLE       input_bufs_done = 0, output_bufs_done = 0, audio_thread = 0;
+static HANDLE       audio_thread = 0;
 static DWORD        thread_id = 0;
 
 static LPDIRECTSOUND	    snd = NULL;		    /* DS rendering object */
@@ -165,31 +167,14 @@ static DSBPOSITIONNOTIFY    notify_handlers[MAX_BUFFERS+1];
 static LPDIRECTSOUNDNOTIFY  notify;
 static DWORD		    bufsize = MIN_BUFFER_SIZE * MAX_BUFFERS;
 
-unsigned short	overrun_threshold = 4;	/* after this number of fragments
-					 * overran buffer will be recovered */
-static HWAVEIN  in;		/* input sound handle */
-static HWAVEOUT	out;		/* output sound handle */
-static MMRESULT err;
-
-/* We use N WAVEHDR's for recording (ie, double-buffering) */
-static WAVEHDR  wave_header[MAX_BUFFERS];	/* input header */
-static WAVEHDR  write_header[MAX_BUFFERS];	/* output headers */
-static char     cur_wr_hdr[MAX_BUFFERS];	/* available write headers
-						 * array */
-static int      active_in_buffers = 0,
-                active_out_buffers = 0;
-
 static void     dserror(HRESULT res, char *s);
 
 static unsigned int bits = 16;
-static SAMPLE16 wrbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
-static SAMPLE16 rdbuf16[MIN_BUFFER_SIZE * MAX_BUFFERS / sizeof(SAMPLE16)];
 
 static DWORD WINAPI
 dsound_audio_thread(void *V)
 {
     int             count = 0, i, j, k, old_count = 0;
-    MSG             msg;
     HRESULT         res;
     DWORD           write_pos = 0,
                     read_pos = 0,
@@ -411,8 +396,6 @@ dsound_audio_thread(void *V)
 static void
 dsound_driver_cleanup(void)
 {
-    int             i;
-
     keepthreadrunning = 0;
     if (audio_thread) {
 	WaitForSingleObject(audio_thread, INFINITE);
@@ -441,7 +424,7 @@ dsound_driver_cleanup(void)
 /*
  * sound shutdown
  */
-void
+static void
 dsound_finish_sound(void)
 {
     dsound_driver_cleanup();
@@ -451,7 +434,7 @@ dsound_finish_sound(void)
 /*
  * sound initialization
  */
-int
+static int
 dsound_init_sound(void)
 {
     int             i;

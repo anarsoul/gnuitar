@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.2  2006/07/27 19:15:35  alankila
+ * - split windows driver architecture now compiles and runs.
+ *
  * Revision 1.1  2006/07/27 18:31:15  alankila
  * - split dsound and winmm into separate drivers.
  *
@@ -27,11 +30,11 @@
 
 #ifndef _AUDIO_WINDOWS_H_
 #define _AUDIO_WINDOWS_H_ 1
-#ifdef _WIN32
+#ifdef HAVE_WINMM
 
 #include "pump.h"
 
-audio_driver_t windows_driver;
+audio_driver_t winmm_driver;
 
 #endif
 #endif

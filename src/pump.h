@@ -23,6 +23,7 @@
 #ifndef PUMP_H
 #define PUMP_H 1
 
+#include <malloc.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -45,14 +46,27 @@ typedef gint32	DSP_SAMPLE;
 static inline void *
 gnuitar_memalign(size_t num, size_t bytes) {
     void *mem = NULL;
+#ifndef __MINGW32__
     if (posix_memalign(&mem, 16, num * bytes)) {
         fprintf(stderr, "failed to allocate aligned memory.\n");
         exit(1);
     }
+#else
+    mem = __mingw_aligned_malloc(num * bytes, 16);
+#endif
     assert(mem != NULL);
 
     memset(mem, 0, num * bytes);
     return mem;
+}
+
+static inline void
+gnuitar_memfree(void *memory) {
+#ifndef __MINGW32__
+    free(memory);
+#else
+    __mingw_aligned_free(memory);
+#endif
 }
 
 #else
@@ -66,6 +80,11 @@ gnuitar_memalign(unsigned int num, size_t bytes)
         exit(1);
     }
     return mem;
+}
+
+static inline void
+gnuitar_memfree(void *memory) {
+    free(memory);
 }
 #endif
 
@@ -170,6 +189,7 @@ extern unsigned int buffer_size;
 extern unsigned int fragments;
 #else
 extern unsigned int nbuffers;
+extern unsigned int overrun_threshold;
 #endif
 
 extern int      n;
