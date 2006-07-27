@@ -61,7 +61,7 @@ gnuitar_memalign(size_t num, size_t bytes) {
 }
 
 static inline void
-gnuitar_memfree(void *memory) {
+gnuitar_free(void *memory) {
 #ifndef __MINGW32__
     free(memory);
 #else
@@ -83,7 +83,7 @@ gnuitar_memalign(unsigned int num, size_t bytes)
 }
 
 static inline void
-gnuitar_memfree(void *memory) {
+gnuitar_free(void *memory) {
     free(memory);
 }
 #endif

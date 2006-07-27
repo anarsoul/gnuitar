@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.40  2006/07/27 19:24:42  alankila
+ * - aligned memory needs aligned free operation.
+ *
  * Revision 1.39  2006/07/20 22:32:04  alankila
  * - reduce cpu drain somewhat
  * - prepare effect for different amp models
@@ -521,7 +524,7 @@ tubeamp_filter(struct effect *p, struct data_block *db)
 static void
 tubeamp_done(struct effect *p)
 {
-    free(p->params);
+    gnuitar_free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
 }

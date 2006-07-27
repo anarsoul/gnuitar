@@ -132,8 +132,7 @@ rotary_filter(struct effect *p, struct data_block *db)
 static void
 rotary_done(struct effect *p)
 {
-    //struct rotary_params *params = p->params;
-    free(p->params);
+    gnuitar_free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
 }

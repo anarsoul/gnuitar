@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2006/07/27 19:24:41  alankila
+ * - aligned memory needs aligned free operation.
+ *
  * Revision 1.40  2006/07/17 21:09:47  alankila
  * - silence gcc warnings.
  *
@@ -433,7 +436,7 @@ phasor_filter(struct effect *p, struct data_block *db)
 static void
 phasor_done(struct effect *p)
 {
-    free(p->params);
+    gnuitar_free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
 }

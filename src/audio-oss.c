@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2006/07/27 19:24:41  alankila
+ * - aligned memory needs aligned free operation.
+ *
  * Revision 1.25  2006/07/26 23:09:09  alankila
  * - DirectSound may be buggy; MMSystem at least worked in mingw build.
  * - remove some sound-specific special cases in gui and main code.
@@ -223,7 +226,7 @@ oss_finish_sound(void)
 {
     keepthreadrunning = 0;
     pthread_join(audio_thread, NULL);
-    free(rwbuf);
+    gnuitar_free(rwbuf);
     oss_driver.enabled = 0;
     close(fd);
 }

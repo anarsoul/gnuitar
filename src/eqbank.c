@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.27  2006/07/27 19:24:41  alankila
+ * - aligned memory needs aligned free operation.
+ *
  * Revision 1.26  2006/05/29 23:46:02  alankila
  * - move _GNU_SOURCE into Makefile
  * - align memory for x86-32; x86-64 already aligned memory for us in glibc
@@ -319,7 +322,7 @@ eqbank_done(struct effect *p)
 {
     struct eqbank_params *ep = p->params;
 	
-    free(ep->filters);
+    gnuitar_free(ep->filters);
     free(ep->boosts);
     gtk_widget_destroy(p->control);
     free(p->params);

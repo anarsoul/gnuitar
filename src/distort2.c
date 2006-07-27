@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.63  2006/07/27 19:24:41  alankila
+ * - aligned memory needs aligned free operation.
+ *
  * Revision 1.62  2006/07/14 14:21:30  alankila
  * - forgot to use the interpolated values in the actual loop.
  *
@@ -603,7 +606,7 @@ distort2_done(struct effect *p)
     struct distort2_params *ap;
 
     ap = (struct distort2_params *) p->params;
-    free(p->params);
+    gnuitar_free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
 }

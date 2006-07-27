@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.36  2006/07/27 19:24:42  alankila
+ * - aligned memory needs aligned free operation.
+ *
  * Revision 1.35  2006/07/08 16:28:16  alankila
  * - extend hilbert transform with channel information for effects that could
  *   be used on channels separately. We've already allocated space in biquads
@@ -338,8 +341,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
 void
 vibrato_done(struct effect *p)
 {
-    struct vibrato_params *vp = p->params;
-    free(vp);
+    gnuitar_free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
 }
