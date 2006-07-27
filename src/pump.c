@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.72  2006/07/27 19:48:46  alankila
+ * - remove debug print
+ *
  * Revision 1.71  2006/07/27 19:15:35  alankila
  * - split windows driver architecture now compiles and runs.
  *
@@ -638,8 +641,6 @@ load_settings() {
         if (strcmp(gstr, "DirectX") == 0)
             audio_driver = &dsound_driver;
 #endif
-       	if (audio_driver) {
-		gnuitar_printf("after loading: driver str = %s, requested %s\n", audio_driver->str, gstr);
 	} 
 	free(gstr);
     }
