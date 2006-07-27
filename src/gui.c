@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.95  2006/07/27 00:13:35  alankila
+ * - switch to 100% dynamic gnuitar_printf routine
+ *
  * Revision 1.94  2006/07/26 23:09:09  alankila
  * - DirectSound may be buggy; MMSystem at least worked in mingw build.
  * - remove some sound-specific special cases in gui and main code.
@@ -513,15 +516,15 @@ static gint            bank_row = -1;
 extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
                                  * MSVC 6.0 complains: identifier effectlist_lock: */
 
-static char longbuf[4096] = "Gnuitar " VERSION " debug window.\n";
-
 //function for printing debuging messages
 //if GUI isn't created, text will be buffered
 void 
 gnuitar_printf(char *frm, ...)
 {
     va_list args;
-    static char buf[1024];
+    static GList *bufferedmsgs = NULL;
+    GList *listtmp;
+    gchar *tmp;
 #ifdef HAVE_GTK2    
     GtkTextBuffer  *textbuf;
     GtkTextIter    iter;
@@ -529,17 +532,11 @@ gnuitar_printf(char *frm, ...)
 #endif
 
     va_start(args, frm);
-    vsnprintf(buf, sizeof(buf), frm, args);
+    tmp = g_strdup_vprintf(frm, args);
     va_end(args);
-    
-    if (status_text == NULL)
-    {
-	if (strlen(longbuf) + strlen(buf) > sizeof(longbuf) - 2) {
-            printf("error: too much debug output before GUI is even created!\n%s%s",
-                    longbuf, buf);
-            exit(1);
-        }
-	strcat(longbuf, buf);
+   
+    if (status_text == NULL) {
+        bufferedmsgs = g_list_append(bufferedmsgs, tmp);
 	return;
     }
     
@@ -555,15 +552,19 @@ gnuitar_printf(char *frm, ...)
     gtk_text_buffer_insert(textbuf, &iter, (s), -1);
 #endif
 
-    /* append the buffered data */ 
-    if (longbuf[0] != 0)
-    {
-        APPEND(longbuf);
-	longbuf[0] = 0;
+    /* append the buffered data, get rid of bufferedmsgs */ 
+    for (listtmp = g_list_first(bufferedmsgs); listtmp != NULL; listtmp = g_list_next(listtmp)) {
+        APPEND(listtmp->data);
+        g_free(listtmp->data);
     }
-    
+    if (bufferedmsgs) {
+        g_list_free(bufferedmsgs);
+        bufferedmsgs = NULL;
+    }
+
     /* append the given input buffer */
-    APPEND(buf);
+    APPEND(tmp);
+    g_free(tmp);
 
 #ifdef HAVE_GTK2
     /* scroll to end */
@@ -1876,10 +1877,9 @@ init_gui(void)
     gtk_text_view_set_editable(GTK_TEXT_VIEW(status_text), FALSE);
 #endif
 #ifdef HAVE_GTK
-    status_text = gtk_text_new(gtk_scrolled_window_get_hadjustment
-			GTK_SCROLLED_WINDOW(status_window),
-			gtk_scrolled_window_get_vadjustment
-			GTK_SCROLLED_WINDOW(status_window));
+    status_text = gtk_text_new(
+        gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(status_window)),
+        gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(status_window)));
 #endif
     
     /* Update container data with text buffered before the window existed. */

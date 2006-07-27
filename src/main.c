@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.64  2006/07/27 00:13:35  alankila
+ * - switch to 100% dynamic gnuitar_printf routine
+ *
  * Revision 1.63  2006/07/26 23:09:09  alankila
  * - DirectSound may be buggy; MMSystem at least worked in mingw build.
  * - remove some sound-specific special cases in gui and main code.
@@ -346,6 +349,7 @@ main(int argc, char **argv)
     printf(COPYRIGHT
        "This program is a free software under the GPL;\n"
        "see Help->About for details.\n");
+    gnuitar_printf("GNUitar " VERSION " debug window.\n");
 
     /* GTK+ manual suggests this regarding threads:
      * http://developer.gimp.org/api/2.0/gdk/gdk-Threads.html
