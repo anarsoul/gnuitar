@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.73  2006/07/27 19:49:39  alankila
+ * - blah, forgot one }
+ *
  * Revision 1.72  2006/07/27 19:48:46  alankila
  * - remove debug print
  *
@@ -641,7 +644,6 @@ load_settings() {
         if (strcmp(gstr, "DirectX") == 0)
             audio_driver = &dsound_driver;
 #endif
-	} 
 	free(gstr);
     }
     
