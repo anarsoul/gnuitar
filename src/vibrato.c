@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.37  2006/07/28 19:41:51  alankila
+ * - save amplitude too
+ *
  * Revision 1.36  2006/07/27 19:24:42  alankila
  * - aligned memory needs aligned free operation.
  *
@@ -352,6 +355,7 @@ vibrato_save(struct effect *p, SAVE_ARGS)
     struct vibrato_params *params = p->params;
 
     SAVE_DOUBLE("vibrato_speed", params->vibrato_speed);
+    SAVE_DOUBLE("vibrato_amplitude", params->vibrato_amplitude);
     SAVE_DOUBLE("vibrato_base", params->vibrato_base);
 }
 
