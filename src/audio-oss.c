@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.27  2006/07/28 20:11:51  alankila
+ * - commit unfortunately untested MIDI code for OSS
+ *
  * Revision 1.26  2006/07/27 19:24:41  alankila
  * - aligned memory needs aligned free operation.
  *
@@ -145,22 +148,88 @@
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <sys/poll.h>
 #include <sys/soundcard.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <math.h>
 #include <assert.h>
 #include <pthread.h>
+#include <errno.h>
  
 #include "pump.h"
 #include "main.h"
 #include "utils.h"
 
 static SAMPLE16 *rwbuf = NULL;
-static int fd;
+static int fd = 0, midi_fd = 0;
 
 volatile static int keepthreadrunning = 0;
 static pthread_t audio_thread = 0;
+
+static void
+oss_midi_event(void)
+{
+    int current = 0;
+    int maxevents = 0;
+    int pollstatus = 0;
+    char midi_events[256];
+    struct pollfd midi_poll = { .fd = midi_fd, .events = POLLIN, .revents = 0 };
+
+    pollstatus = poll(&midi_poll, 1, 0);
+    if (pollstatus == 0)
+        return;
+    if (pollstatus == -1) {
+        fprintf(stderr, "error polling for midi events: %s\n", strerror(errno));
+        return;
+    }
+
+    maxevents = read(midi_fd, midi_events, sizeof(midi_events));
+    if (maxevents == -1) {
+        fprintf(stderr, "error reading midi events: %s\n", strerror(errno));
+        return;
+    }
+
+    while (current < maxevents) {
+        if (! midi_events[current] & 0x80) {
+            current += 1;
+            continue;
+        }
+        /* note on event */
+        if ((midi_events[current] & 0x70) == 0x10) {
+            if (current + 3 > maxevents) {
+                fprintf(stderr, "too much midi data -- ignoring command\n");
+                break;
+            }
+            midictrl.key = midi_events[current + 1] - 60;
+            midictrl.keyevent = 1;
+            current += 3;
+            continue;
+        }
+        /* control change */
+        if ((midi_events[current] & 0x70) == 0x30) {
+            if (current + 3 > maxevents) {
+                fprintf(stderr, "too much midi data -- ignoring command\n");
+                break;
+            }
+            midictrl.key = midi_events[current + 1];
+            midictrl.keyevent = 1;
+            current += 3;
+            continue;
+        }
+        /* pitch wheel */
+        if ((midi_events[current] & 0x70) == 0x60) {
+            if (current + 2 > maxevents) {
+                fprintf(stderr, "too much midi data -- ignoring command\n");
+                break;
+            }
+            midictrl.pitchbend = ((midi_events[current] & 0xf) << 7) + (midi_events[current + 1] & 0x7f);
+            current += 2;
+            continue;
+        }
+        /* ignore message */
+    }
+}
 
 static void *
 oss_audio_thread(void *V)
@@ -203,6 +272,8 @@ oss_audio_thread(void *V)
             for (i = 0; i < db.len; i ++)
                 db.data[i] = rwbuf[i * 2] << 8;
         }
+
+        oss_midi_event();
 	pump_sample(&db);
 
         /* Ensure that pump adapted us to output */
@@ -237,7 +308,7 @@ oss_init_sound(void)
     int             i;
     
     if ((fd = open("/dev/dsp", O_RDWR)) == -1) {
-	perror("cannot open audio device: ");
+	gnuitar_printf("Cannot open /dev/dsp: %s\n", strerror(errno));
 	return ERR_WAVEINOPEN;
     }
 
@@ -257,26 +328,25 @@ oss_init_sound(void)
      */
     i = 0x7fff0000 + (int) (log(buffer_size * 2 * n_output_channels) / log(2));
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &i) < 0) {
-	gnuitar_printf( "Cannot setup fragments!\n");
+	gnuitar_printf("Cannot setup fragments: %s\n", strerror(errno));
 	close(fd);
 	return ERR_WAVEFRAGMENT;
     }
 
     if (ioctl(fd, SNDCTL_DSP_GETCAPS, &i) == -1) {
-	gnuitar_printf( "Cannot get soundcard capabilities!\n");
+	gnuitar_printf("Cannot get soundcard capabilities: %s\n", strerror(errno));
 	close(fd);
 	return ERR_WAVEGETCAPS;
     }
 
     if (!(i & DSP_CAP_DUPLEX)) {
-	gnuitar_printf(
-		"Sorry but your soundcard isn't full duplex capable!\n");
+	gnuitar_printf("It seems your soundcard is not full duplex capable. (Try ALSA driver before giving up hope.) Error from OSS: %s\n", strerror(errno));
 	close(fd);
 	exit(ERR_WAVENOTDUPLEX);
     }
 
     if (ioctl(fd, SNDCTL_DSP_SETDUPLEX, 0) == -1) {
-	gnuitar_printf( "Cannot setup fullduplex audio!\n");
+	gnuitar_printf("Cannot setup full-duplex audio: %s\n", strerror(errno));
 	close(fd);
 	return ERR_WAVEDUPLEX;
     }
@@ -284,21 +354,21 @@ oss_init_sound(void)
     /* 16-bit recording is the best available with OSS */
     i = AFMT_S16_NE;
     if (ioctl(fd, SNDCTL_DSP_SETFMT, &i) == -1) {
-	gnuitar_printf( "Cannot setup 16-bit native-endian audio!\n");
+	gnuitar_printf("Cannot setup 16-bit native-endian audio: %s\n", strerror(errno));
 	close(fd);
 	return ERR_WAVESETBIT;
     }
 
     i = n_output_channels;
     if (ioctl(fd, SNDCTL_DSP_CHANNELS, &i) == -1) {
-	gnuitar_printf( "Cannot setup %d-channel audio!\n", i);
+	gnuitar_printf("Cannot setup %d-channel audio: %s\n", i, strerror(errno));
 	close(fd);
 	return ERR_WAVESETCHANNELS;
     }
 
     i = sample_rate;
     if (ioctl(fd, SNDCTL_DSP_SPEED, &i) == -1) {
-	gnuitar_printf( "Cannot setup sampling frequency %d Hz!\n", i);
+	gnuitar_printf("Cannot setup sampling frequency %d Hz: %s\n", i, strerror(errno));
 	close(fd);
 	return ERR_WAVESETRATE;
     }
@@ -313,8 +383,14 @@ oss_init_sound(void)
     /* create the audio thread */
     keepthreadrunning = 1;
     if (pthread_create(&audio_thread, NULL, oss_audio_thread, NULL)) {
-        gnuitar_printf("Audio thread creation failed!\n");
+        gnuitar_printf("Audio thread creation failed: %s\n", strerror(errno));
         return ERR_THREAD;
+    }
+
+    if ((midi_fd = open("/dev/midi", O_RDONLY)) == -1) {
+	gnuitar_printf("Cannot open /dev/midi: %s -- continuing without midi.",
+                        strerror(errno));
+        midi_fd = 0;
     }
 
     oss_driver.enabled = 1;
