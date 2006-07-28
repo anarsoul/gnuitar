@@ -68,10 +68,11 @@ g_key_file_get_double(GKeyFile *kf, const gchar *grp, const gchar *name, GError 
 
     tmp = g_key_file_get_string(kf, grp, name, error);
     if (*error != NULL)
-	tmp = "NAN";
-    /* XXX this parsing should be locale independent, how to do it? */
+        return 0;
+    
     value = g_ascii_strtod(tmp, NULL);
     g_free(tmp);
+    
     return value;
 }
 

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.76  2006/07/28 19:42:15  alankila
+ * - fix compat library to not crash on invalid free
+ *
  * Revision 1.75  2006/07/28 19:23:41  alankila
  * - reduce lock contention when switching between presets
  *
@@ -938,47 +941,29 @@ load_pump(const char *fname)
 	    effects[n]->proc_load(effects[n], preset, gtmp, &error);
 
 	effects[n]->proc_init(effects[n]);
-	gtk_clist_append(GTK_CLIST(processor),
-			 &effect_list[j].str);
+	gtk_clist_append(GTK_CLIST(processor), &effect_list[j].str);
 	n += 1;
 
 	free(effect_name);
 	free(gtmp);
     }
 
-    //g_key_file_get_double causes sigfault on my version of gtk (2.6.10)
-    //so making workaround this bug
-    master_volume = g_key_file_get_integer(preset, "global", "volume", &error);
-    
-    if (error != NULL) 
-    {
+    master_volume = g_key_file_get_double(preset, "global", "volume", &error);
+    if (error != NULL) {
 	master_volume = 0.0;
 	error = NULL;
     }
-    else
-    {
-	master_volume = g_key_file_get_double(preset, "global", "volume", &error);
-    }
     
-    //g_key_file_get_double causes sigfault on my version of gtk (2.6.10)
-    //so making workaround this bug
-    input_volume = g_key_file_get_integer(preset, "global", "input_volume", &error);
-    
-    if (error != NULL) 
-    {
-	input_volume = 0.0;
-	error = NULL;
-    }
-    else
-    {
-	input_volume = g_key_file_get_double(preset, "global", "input_volume", &error);
+    input_volume = g_key_file_get_double(preset, "global", "input_volume", &error);
+    if (error != NULL) {
+        input_volume = 0.0;
+        error = NULL;
     }
         
     g_key_file_free(preset);
     
-    
     /* update master volume */
-    gtk_adjustment_set_value(GTK_ADJUSTMENT(adj_master),master_volume);
+    gtk_adjustment_set_value(GTK_ADJUSTMENT(adj_master), master_volume);
     /* update input volume */
-    gtk_adjustment_set_value(GTK_ADJUSTMENT(adj_input),input_volume);
+    gtk_adjustment_set_value(GTK_ADJUSTMENT(adj_input), input_volume);
 }
