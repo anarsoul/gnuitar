@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.75  2006/07/28 19:23:41  alankila
+ * - reduce lock contention when switching between presets
+ *
  * Revision 1.74  2006/07/28 19:08:40  alankila
  * - add midi event listeners into JACK and ALSA
  * - make gui listen to midi events and switch bank
@@ -858,7 +861,7 @@ save_pump(const char *fname)
 void
 load_pump(const char *fname)
 {
-    int		    i, j, n_effects;
+    int		    i, j, n_effects, tmp_n;
     GKeyFile	   *preset;
     GError	   *error = NULL;
     gchar	   *gtmp, *effect_name;
@@ -885,12 +888,18 @@ load_pump(const char *fname)
 	return;
     }
 
+    /* we do not take effectlist lock. I have carefully built this code to not need it. */
 
     gtk_clist_clear(GTK_CLIST(processor));
+
+    /* this lock is only taken for a split second in order to ensure that n=0
+     * is seen by audio thread. Otherwise we might destroy memory used by the thread. */
     my_lock_mutex(effectlist_lock);
-    for (i = 0; i < n; i++)
-	effects[i]->proc_done(effects[i]);
+    tmp_n = n;
     n = 0;
+    my_unlock_mutex(effectlist_lock);
+    for (i = 0; i < tmp_n; i++)
+	effects[i]->proc_done(effects[i]);
 
     for (i = 0; i < n_effects; i += 1) {
 	gtmp = g_strdup_printf("effect%d", i+1);
@@ -931,12 +940,11 @@ load_pump(const char *fname)
 	effects[n]->proc_init(effects[n]);
 	gtk_clist_append(GTK_CLIST(processor),
 			 &effect_list[j].str);
-	n++;
+	n += 1;
 
 	free(effect_name);
 	free(gtmp);
     }
-    my_unlock_mutex(effectlist_lock);
 
     //g_key_file_get_double causes sigfault on my version of gtk (2.6.10)
     //so making workaround this bug
