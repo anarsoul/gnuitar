@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2006/07/28 19:24:35  alankila
+ * - avoid destroying sequencer if for some reason init is called twice. The
+ *   circumstances where this might occur smell a bit dubious though.
+ *
  * Revision 1.12  2006/07/28 19:08:40  alankila
  * - add midi event listeners into JACK and ALSA
  * - make gui listen to midi events and switch bank
@@ -406,7 +410,8 @@ jack_init_sound(void)
     free(ports);
 
 #ifdef HAVE_ALSA
-    alsa_midi_init();
+    if (sequencer_handle == NULL)
+        alsa_midi_init();
 #endif
     jack_driver.enabled = 1;
     return ERR_NOERROR;
