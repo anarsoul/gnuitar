@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.101  2006/07/28 19:08:40  alankila
+ * - add midi event listeners into JACK and ALSA
+ * - make gui listen to midi events and switch bank
+ * - fix a bug involving "add pressed"
+ * - change documentation of "Switch preset" to "Cycle presets" which is what
+ *   it does now.
+ *
  * Revision 1.100  2006/07/27 20:15:54  alankila
  * - one instance of DSound / MMSystem tied to _WIN32 still found. Fixed.
  *
@@ -453,7 +460,8 @@
 #include "tracker.h"
 #include "utils.h"
 
-#define VU_UPDATE_INTERVAL 100.0    /* ms */
+#define VU_UPDATE_INTERVAL   100.0    /* ms */
+#define BANK_UPDATE_INTERVAL 20.0     /* ms */
 
 static void     add_pressed(GtkWidget *, gpointer);
 static void     bank_start_save(GtkWidget *, gpointer);
@@ -785,6 +793,9 @@ static void
 selectrow_bank(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
+    /* I can't support doubleclick on this list because the programmatically generated
+     * selectrow events seem to segfault GTK+. I should have some way to suppress them. */
+
     bank_row = row;
 }
 
@@ -961,9 +972,7 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
     /* this cast is to shut up const qualifier ignore due to
      * differences between gcc, mingw and msvc++. */ 
     name = (char *) gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
-    fname = (char *) malloc(strlen(name) * sizeof(char) + 1);
-    if (fname == NULL)
-	return;
+    fname = g_strdup(name);
 
 #ifdef _WIN32
     /*
@@ -979,13 +988,11 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 #else
     name = basename(fname);
 #endif
-    gtk_clist_append(GTK_CLIST(bank), (gchar **) &name);
-    gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5,
-		     1.0);
+    gtk_clist_append(GTK_CLIST(bank), &name);
+    gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5, 1.0);
     gtk_clist_set_row_data_full(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1,
 				fname, free_clist_ptr);
     gtk_widget_destroy(GTK_WIDGET(filesel));
-    free(fname);
 }
 
 static void
@@ -1028,14 +1035,16 @@ bank_del_pressed(GtkWidget * widget, gpointer data)
 }
 
 static void
-bank_switch_pressed(GtkWidget * widget, gpointer data)
+bank_switch_pressed(GtkWidget *widget, gpointer data)
 {
     char           *fname;
+    int             rows;
 
-    if (bank_row == GTK_CLIST(bank)->rows - 1)
-	bank_row = 0;
-    else
-	bank_row++;
+    rows = GTK_CLIST(bank)->rows;
+    if (! rows)
+        return;
+
+    bank_row = (bank_row + 1) % rows;
     fname = gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
     if (fname == NULL)
         return;
@@ -1211,6 +1220,23 @@ timeout_update_vumeter_out(gpointer vumeter) {
     }
     
     gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
+    return TRUE;
+}
+
+static gboolean
+timeout_update_bank(gpointer whatever) {
+    char *fname;
+
+    if (! midictrl.keyevent)
+        return TRUE;
+    midictrl.keyevent = 0;
+    bank_row = midictrl.key;
+
+    fname = gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
+    if (fname == NULL)
+        return TRUE;
+    gtk_clist_select_row(GTK_CLIST(bank), bank_row, 0);
+    load_pump(fname);
     return TRUE;
 }
 
@@ -1750,7 +1776,7 @@ init_gui(void)
 				   GTK_POLICY_AUTOMATIC);
     gtk_tooltips_set_tip(tooltips,bank,"This area contains the available presets." \
 	"Use \"Add preset\" button to add more presets to the list." \
-	"Use \"Switch preset\" to switch to selected preset.", NULL);
+	"Use \"Cycle presets\" to go through the list of available presets.", NULL);
 
     gtk_table_attach(GTK_TABLE(tbl), processor_scroll, 3, 4, 1, 5,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND),
@@ -1791,8 +1817,8 @@ init_gui(void)
 
     bank_del = gtk_button_new_with_label("Remove preset");
     gtk_tooltips_set_tip(tooltips,bank_del,"Remove preset from the presets list.",NULL);
-    bank_switch = gtk_button_new_with_label("Switch\npreset");
-    gtk_tooltips_set_tip(tooltips,bank_switch,"Switch effects to currently selected preset",NULL);
+    bank_switch = gtk_button_new_with_label("Cycle\npresets");
+    gtk_tooltips_set_tip(tooltips,bank_switch,"Cycle through effect presets",NULL);
     up = gtk_button_new_with_label("Up");
     gtk_tooltips_set_tip(tooltips,up,"Move the currently selected effect up.", NULL);
     down = gtk_button_new_with_label("Down");
@@ -1920,8 +1946,9 @@ init_gui(void)
 		       GTK_SIGNAL_FUNC(update_input_volume), NULL);
     gtk_widget_show_all(mainWnd);
 
-    g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter_in,  vumeter_in );
-    g_timeout_add(VU_UPDATE_INTERVAL, timeout_update_vumeter_out, vumeter_out);
+    g_timeout_add(VU_UPDATE_INTERVAL,   timeout_update_vumeter_in,  vumeter_in );
+    g_timeout_add(VU_UPDATE_INTERVAL,   timeout_update_vumeter_out, vumeter_out);
+    g_timeout_add(BANK_UPDATE_INTERVAL, timeout_update_bank,        NULL);
 
     /*
      * Attach icon to the window

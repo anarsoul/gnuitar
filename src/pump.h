@@ -102,7 +102,7 @@ typedef gint32  SAMPLE32;
 #define MAX_SAMPLE_RATE 48000
 #define MAX_EFFECTS 50
 
-extern void gnuitar_printf(char *, ...);
+void gnuitar_printf(char *, ...);
 
 struct audio_driver_channels {
     unsigned int in, out;
@@ -116,6 +116,12 @@ typedef struct {
     int     (*init)(void);
     void    (*finish)(void);
 } audio_driver_t;
+
+typedef struct {
+    float pitchbend;
+    int key;
+    short keyevent;
+} midictrl_t;
 
 struct data_block {
     DSP_SAMPLE     *data;
@@ -178,6 +184,7 @@ extern int sin_lookup_table[SIN_LOOKUP_SIZE+1];
 #define sin_lookup(scale) ((float) sin_lookup_table[(int) ((scale) * SIN_LOOKUP_SIZE)] / SIN_LOOKUP_AMPLITUDE)
 
 extern volatile unsigned short write_track;
+extern volatile midictrl_t midictrl;
 
 extern char alsadevice_str[64];
 extern unsigned short n_input_channels;
@@ -196,14 +203,14 @@ extern int      n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];
 
-extern void     pump_sample(data_block_t *db);
-extern void     pump_start(int argc, char **argv);
-extern void     pump_stop(void);
-extern void     save_pump(const char *fname);
-extern void     load_pump(const char *fname);
-extern void     load_settings(void);
-extern void     save_settings(void);
-extern void     triangular_dither(data_block_t *db);
+void     pump_sample(data_block_t *db);
+void     pump_start(int argc, char **argv);
+void     pump_stop(void);
+void     save_pump(const char *fname);
+void     load_pump(const char *fname);
+void     load_settings(void);
+void     save_settings(void);
+void     triangular_dither(data_block_t *db);
 
 #endif
 

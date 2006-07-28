@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2006/07/28 19:08:40  alankila
+ * - add midi event listeners into JACK and ALSA
+ * - make gui listen to midi events and switch bank
+ * - fix a bug involving "add pressed"
+ * - change documentation of "Switch preset" to "Cycle presets" which is what
+ *   it does now.
+ *
  * Revision 1.40  2006/07/27 19:24:41  alankila
  * - aligned memory needs aligned free operation.
  *
@@ -221,20 +228,55 @@
 /* these parameters affect our persistency in attempts to configure playback */
 #define MAX_TRIES 8
 
-// XXX: these should be made changeable in the UI
-static const char     *snd_test_device_out = "default";
-
-static short   restarting;
-static snd_pcm_t *playback_handle;
-static snd_pcm_t *capture_handle;
-static unsigned int capture_bits;
-static unsigned int playback_bits;
+static const char *snd_test_device_out = "default";
+static short restarting = 0;
+static snd_pcm_t *playback_handle = NULL;
+static snd_pcm_t *capture_handle = NULL;
+static snd_seq_t *sequencer_handle = NULL;
+static unsigned int capture_bits = 0;
+static unsigned int playback_bits = 0;
 
 void *rdbuf = NULL;
 void *wrbuf = NULL;
 
 volatile static int keepthreadrunning = 0;
 static pthread_t audio_thread = 0;
+
+static void
+alsa_midi_event(void)
+{
+    snd_seq_event_t *ev;
+
+    /* if no events in queue, do nothing */
+    if (! snd_seq_event_input_pending(sequencer_handle, 1))
+        return;
+
+/* while more midi events in software queue */
+    while (snd_seq_event_input_pending(sequencer_handle, 0)) {
+        /* obtain an event */
+        snd_seq_event_input(sequencer_handle, &ev);
+        switch (ev->type) {
+            /* foot pedal */
+            case SND_SEQ_EVENT_PITCHBEND:
+                midictrl.pitchbend = (float) ev->data.control.value / 8192;
+                break;
+            /* any kind of key event: note press */
+            case SND_SEQ_EVENT_NOTEON:
+                /* map middle C to 0 */
+                midictrl.key = ev->data.note.note - 60;
+                midictrl.keyevent = 1;
+                break;
+            /* control press */
+            case SND_SEQ_EVENT_CONTROLLER:
+                midictrl.key = ev->data.control.value;
+                midictrl.keyevent = 1;
+                break;
+            default:
+                break;
+        }
+        /* free on event is no longer required, it isn't malloced */
+    }
+}
 
 static void           *
 alsa_audio_thread(void *V)
@@ -312,6 +354,7 @@ alsa_audio_thread(void *V)
         /*
         if (outframes != buffer_size)
             gnuitar_printf( "Short write to playback device: %d, expecting %d\n", outframes, buffer_size);*/
+        alsa_midi_event();
 
         /* now that output is out of the way, we have most time for running effects */ 
         db.len = buffer_size * n_input_channels;
@@ -332,9 +375,16 @@ alsa_audio_thread(void *V)
     return NULL;
 }
 
-/*
- * sound shutdown 
- */
+/* sound shutdown */
+static void
+alsa_midi_finish(void)
+{
+    if (sequencer_handle) {
+        snd_seq_close(sequencer_handle);
+        sequencer_handle = NULL;
+    }
+}
+
 static void
 alsa_finish_sound(void)
 {
@@ -342,6 +392,7 @@ alsa_finish_sound(void)
     pthread_join(audio_thread, NULL);
     gnuitar_free(rdbuf);
     gnuitar_free(wrbuf);
+    alsa_midi_finish();
     alsa_driver.enabled = 0;
     snd_pcm_drop(playback_handle);
     snd_pcm_close(playback_handle);
@@ -487,9 +538,32 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     return 0;
 }
 
-/*
- * sound initialization
- */
+/* sound initialization */
+static int
+alsa_midi_init(void)
+{
+    int client_id, port_id;
+
+    if (snd_seq_open(&sequencer_handle, "default", SND_SEQ_OPEN_INPUT, 0) < 0) {
+        sequencer_handle = NULL; /* just to be sure */
+        gnuitar_printf("MIDI sequencer could not be opened -- skipping midi features.\n");
+        return 1;
+    }
+    snd_seq_set_client_name(sequencer_handle, "GNUitar");
+    client_id = snd_seq_client_id(sequencer_handle);
+    
+    if ((port_id = snd_seq_create_simple_port(sequencer_handle, "input",
+                    SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
+                    SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
+        gnuitar_printf("Could not create MIDI port -- skipping midi features.\n");
+        snd_seq_close(sequencer_handle);
+        sequencer_handle = NULL;
+        return 1;
+    }
+    
+    return 0;
+}
+
 static int
 alsa_init_sound(void)
 {
@@ -579,6 +653,8 @@ alsa_init_sound(void)
         gnuitar_printf("Audio thread creation failed!\n");
         return ERR_THREAD;
     }
+
+    alsa_midi_init();
 
     restarting = 1;
     alsa_driver.enabled = 1;

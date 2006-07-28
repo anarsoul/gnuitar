@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.74  2006/07/28 19:08:40  alankila
+ * - add midi event listeners into JACK and ALSA
+ * - make gui listen to midi events and switch bank
+ * - fix a bug involving "add pressed"
+ * - change documentation of "Switch preset" to "Cycle presets" which is what
+ *   it does now.
+ *
  * Revision 1.73  2006/07/27 19:49:39  alankila
  * - blah, forgot one }
  *
@@ -366,6 +373,7 @@ int             n = 0;
 
 /* flag for whether we are creating .wav */
 volatile unsigned short  write_track = 0;
+volatile midictrl_t midictrl = { 0, 0, 0 };
 
 /* default settings */
 char            alsadevice_str[64];

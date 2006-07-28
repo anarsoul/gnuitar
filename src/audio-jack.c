@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2006/07/28 19:08:40  alankila
+ * - add midi event listeners into JACK and ALSA
+ * - make gui listen to midi events and switch bank
+ * - fix a bug involving "add pressed"
+ * - change documentation of "Switch preset" to "Cycle presets" which is what
+ *   it does now.
+ *
  * Revision 1.11  2006/07/26 23:09:09  alankila
  * - DirectSound may be buggy; MMSystem at least worked in mingw build.
  * - remove some sound-specific special cases in gui and main code.
@@ -83,6 +90,9 @@
 
 #include <assert.h>
 #include <jack/jack.h>
+#ifdef HAVE_ALSA /* for midi -- it seems JACK doesn't have its own midi system. */
+#include <alsa/asoundlib.h>
+#endif
 #include "pump.h"
 #include "main.h"
 
@@ -93,6 +103,46 @@ static jack_status_t status;
 static jack_client_t *client;
 static jack_port_t *input_ports[MAX_CHANNELS];  // capture ports
 static jack_port_t *output_ports[MAX_CHANNELS]; // playback ports
+
+#ifdef HAVE_ALSA
+static snd_seq_t *sequencer_handle = NULL;
+
+static void
+alsa_midi_event(void)
+{
+    snd_seq_event_t *ev;
+
+    /* if no events in software/hardware queue, do nothing */
+    if (! snd_seq_event_input_pending(sequencer_handle, 1))
+        return;
+
+    /* while more midi events in software queue */
+    while (snd_seq_event_input_pending(sequencer_handle, 0)) {
+        /* obtain an event */
+        snd_seq_event_input(sequencer_handle, &ev);
+        switch (ev->type) {
+            /* foot pedal */
+            case SND_SEQ_EVENT_PITCHBEND:
+                midictrl.pitchbend = (float) ev->data.control.value / 8192;
+                break;
+            /* any kind of key event: note press */
+            case SND_SEQ_EVENT_NOTEON:
+                /* map middle C to 0 */
+                midictrl.key = ev->data.note.note - 60;
+                midictrl.keyevent = 1;
+                break;
+            /* control press */
+            case SND_SEQ_EVENT_CONTROLLER:
+                midictrl.key = ev->data.control.value;
+                midictrl.keyevent = 1;
+                break;
+            default:
+                break;
+        }
+        /* free on event is no longer required, it isn't malloced */
+    }
+}
+#endif
 
 static int 
 process (jack_nframes_t nframes, void *arg)
@@ -124,7 +174,10 @@ process (jack_nframes_t nframes, void *arg)
             k += n_input_channels;
         }
     }
-    
+
+#ifdef HAVE_ALSA
+    alsa_midi_event();
+#endif
     pump_sample(&db);
     
     assert(db.channels == n_output_channels);
@@ -144,16 +197,26 @@ process (jack_nframes_t nframes, void *arg)
     return 0;
 }
 
+/* sound shutdown */
+#ifdef HAVE_ALSA
+static void
+alsa_midi_finish(void)
+{
+    if (sequencer_handle) {
+        snd_seq_close(sequencer_handle);
+        sequencer_handle = NULL;
+    }
+}
+#endif
 
-
-/*
- * sound shutdown 
- */
 static void
 jack_finish_sound(void)
 {
     jack_driver.enabled = 0;
     jack_client_close(client);
+#ifdef HAVE_ALSA
+    alsa_midi_finish();
+#endif
 }
 
 static void
@@ -169,9 +232,34 @@ update_sample_rate(jack_nframes_t nframes, void *args)
     return 0;
 }
 
-/*
- * sound initialization
- */
+/* sound initialization */
+#ifdef HAVE_ALSA
+static int
+alsa_midi_init(void)
+{
+    int client_id, port_id;
+
+    if (snd_seq_open(&sequencer_handle, "default", SND_SEQ_OPEN_INPUT, 0) < 0) {
+        sequencer_handle = NULL; /* just to be sure */
+        gnuitar_printf("MIDI sequencer could not be opened -- skipping midi features.\n");
+        return 1;
+    }
+    snd_seq_set_client_name(sequencer_handle, "GNUitar");
+    client_id = snd_seq_client_id(sequencer_handle);
+    
+    if ((port_id = snd_seq_create_simple_port(sequencer_handle, "input",
+                    SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
+                    SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
+        gnuitar_printf("Could not create MIDI port -- skipping midi features.\n");
+        snd_seq_close(sequencer_handle);
+        sequencer_handle = NULL;
+        return 1;
+    }
+    
+    return 0;
+}
+#endif
+
 static int
 jack_init_sound(void)
 {
@@ -316,7 +404,10 @@ jack_init_sound(void)
 	}
     }
     free(ports);
-    
+
+#ifdef HAVE_ALSA
+    alsa_midi_init();
+#endif
     jack_driver.enabled = 1;
     return ERR_NOERROR;
 }
