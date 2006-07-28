@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2006/07/28 20:18:04  alankila
+ * - disable midi on first sniff of problems
+ *
  * Revision 1.27  2006/07/28 20:11:51  alankila
  * - commit unfortunately untested MIDI code for OSS
  *
@@ -180,13 +183,15 @@ oss_midi_event(void)
     if (pollstatus == 0)
         return;
     if (pollstatus == -1) {
-        fprintf(stderr, "error polling for midi events: %s\n", strerror(errno));
+        fprintf(stderr, "error polling for midi events: %s -- disabling midi\n", strerror(errno));
+        midi_fd = 0;
         return;
     }
 
     maxevents = read(midi_fd, midi_events, sizeof(midi_events));
     if (maxevents == -1) {
-        fprintf(stderr, "error reading midi events: %s\n", strerror(errno));
+        fprintf(stderr, "error reading midi events: %s -- disabling midi\n", strerror(errno));
+        midi_fd = 0;
         return;
     }
 
@@ -273,7 +278,8 @@ oss_audio_thread(void *V)
                 db.data[i] = rwbuf[i * 2] << 8;
         }
 
-        oss_midi_event();
+        if (midi_fd)
+            oss_midi_event();
 	pump_sample(&db);
 
         /* Ensure that pump adapted us to output */
