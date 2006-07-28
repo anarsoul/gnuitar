@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.40  2006/07/28 20:38:55  alankila
+ * - midi control into autowah, parameter lickup
+ *
  * Revision 1.39  2006/07/16 12:40:04  alankila
  * - dirty the moog sound a bit to better justify its existence
  *
@@ -184,13 +187,20 @@
  * sweep triggers. Data is collected AUTOWAH_HISTORY_LENGTH ms apart. */
 
 #define AUTOWAH_HISTORY_LENGTH  100  /* ms */
-#define AUTOWAH_DISCANT_TRIGGER 0.65 /* dB */
+#define AUTOWAH_DISCANT_TRIGGER 0.60 /* dB */
 #define AUTOWAH_BASS_TRIGGER    0.65 /* dB */
 
 static const char *methods[] = {
     "Lowpass",
     "Bandpass",
     "Moog ladder",
+    NULL
+};
+
+static const char *syncs[] = {
+    "envelope",
+    "continuous",
+    "midi",
     NULL
 };
 
@@ -225,9 +235,21 @@ update_wah_res(GtkAdjustment *adj, struct autowah_params *params)
 }
 
 static void
-update_wah_continuous(GtkAdjustment *adj, struct autowah_params *params)
+update_wah_sync(GtkWidget *w, struct autowah_params *params)
 {
-    params->continuous = !params->continuous;
+    int i;
+    const char *tmp;
+    
+    tmp = gtk_entry_get_text(GTK_ENTRY(w));
+    if (tmp == NULL)
+        return;
+
+    for (i = 0; syncs[i] != NULL; i += 1) {
+	if (strcmp(tmp, syncs[i]) == 0) {
+	    params->sync = i;
+	    break;
+	}
+    }
 }
 
 static void
@@ -240,7 +262,6 @@ update_method(GtkWidget *w, struct autowah_params *params)
     if (tmp == NULL)
         return;
 
-    /* I guess we could also strdup the method from the entry. */ 
     for (i = 0; methods[i] != NULL; i += 1) {
 	if (strcmp(tmp, methods[i]) == 0) {
 	    params->method = i;
@@ -271,12 +292,13 @@ autowah_init(struct effect *p)
     GtkObject	   *adj_res;
     GtkWidget      *res_label;
 
-    GtkWidget      *button, *continuous;
+    GtkWidget      *button;
     GtkWidget      *drywet;
     GtkObject	   *adj_drywet;
     GtkWidget      *drywet_label;
     GtkWidget      *parmTable;
 
+    GtkWidget      *sync;
     GtkWidget      *method;
     GList          *glist_methods = NULL;
 
@@ -352,16 +374,19 @@ autowah_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    continuous = gtk_check_button_new_with_label("Repeat sweep");
-    if (params->continuous)
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(continuous), TRUE);
-    gtk_signal_connect(GTK_OBJECT(continuous), "toggled",
-		       GTK_SIGNAL_FUNC(update_wah_continuous), params);
-    gtk_table_attach(GTK_TABLE(parmTable), continuous, 1, 3, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_EXPAND | GTK_FILL | GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-
+    for (i = 0; syncs[i] != NULL; i += 1)
+        glist_methods = g_list_append(glist_methods, (gchar *) syncs[i]);
+    sync = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(sync), glist_methods);
+    g_list_free(glist_methods);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sync)->entry), FALSE);
+    gtk_table_attach(GTK_TABLE(parmTable), sync, 1, 3, 2, 3,
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
+		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sync)->entry),
+		       "changed", GTK_SIGNAL_FUNC(update_wah_sync), params);
+    glist_methods = NULL; /* reused below */
+    
     button = gtk_check_button_new_with_label("On");
     if (p->toggle)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -439,7 +464,7 @@ autowah_filter(struct effect *p, struct data_block *db)
 
     memcpy(db->data_swap, db->data, db->len * sizeof(DSP_SAMPLE));
 
-    if (ap->continuous) {
+    if (ap->sync == 1) { /* continuous sweep */
         /* recover from noncontinuous sweep */
         if (ap->dir == 0)
             ap->dir = 1.0;
@@ -448,7 +473,8 @@ autowah_filter(struct effect *p, struct data_block *db)
             ap->dir = -1;
         if (ap->f < 0.0 && ap->dir < 0)
             ap->dir = 1;
-    } else {
+    }
+    if (ap->sync == 0) { /* envelope detect */
         /* Firstly, quiesce wah if we have reached the end of sweep */
         if (ap->f < 0.0) {
             ap->f = 0.0;
@@ -493,6 +519,11 @@ autowah_filter(struct effect *p, struct data_block *db)
             ap->f = 1.0;
             ap->dir = -1.0;
         }
+    }
+    if (ap->sync == 2) { /* midi control, from Roland FC-200 or somesuch */
+        ap->f = midictrl.pitchbend;
+        ap->dir = 0;
+        ap->freq_vibrato = 0;
     }
 
     /* in order to have audibly linear sweep, we must map
@@ -597,7 +628,7 @@ autowah_save(effect_t *p, SAVE_ARGS)
     SAVE_DOUBLE("freq_high", params->freq_high);
     SAVE_DOUBLE("res", params->res);
     SAVE_DOUBLE("drywet", params->drywet);
-    SAVE_INT("continuous", params->continuous);
+    SAVE_INT("sync", params->sync);
     SAVE_INT("method", params->method);
 }
 
@@ -610,8 +641,8 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_DOUBLE("freq_low", params->freq_low);
     LOAD_DOUBLE("freq_high", params->freq_high);
     LOAD_DOUBLE("res", params->res);
-    LOAD_DOUBLE("drywet", params->continuous);
-    LOAD_INT("continuous", params->continuous);
+    LOAD_DOUBLE("drywet", params->drywet);
+    LOAD_INT("sync", params->sync);
     LOAD_INT("method", params->method);
 }
 
@@ -639,7 +670,7 @@ autowah_create()
     ap->freq_high = 900;
     ap->sweep_time = 500;
     ap->drywet = 100;
-    ap->continuous = 0;
+    ap->sync = 0;
     ap->res = 85;
 
     return p;

@@ -38,7 +38,7 @@ struct autowah_params {
     double          freq_high;
     double          res;
     double	    drywet;
-    int             continuous;
+    int             sync;
     int             method;
 
     double          fresh_accum_delta;
