@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.77  2006/07/29 12:04:36  alankila
+ * - effect lickup:
+ *   * stereo phaser has less severe phase cancellation effects
+ *   * rotary speaker can go even faster
+ * - improve performance of sin_lookup, add cos_lookup
+ *
  * Revision 1.76  2006/07/28 19:42:15  alankila
  * - fix compat library to not crash on invalid free
  *
@@ -395,7 +401,7 @@ unsigned int    overrun_threshold = 4;
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
-int sin_lookup_table[SIN_LOOKUP_SIZE + 1];
+float sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
 /* from JACK -- blindingly fast */
 static inline unsigned int prng() {
@@ -607,7 +613,7 @@ static void
 init_sin_lookup_table() {
     int i = 0;
     for (i = 0; i < SIN_LOOKUP_SIZE + 1; i += 1)
-        sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE) * SIN_LOOKUP_AMPLITUDE;
+        sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE);
 }
 
 static const gchar *

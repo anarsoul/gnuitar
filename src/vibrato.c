@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.38  2006/07/29 12:04:36  alankila
+ * - effect lickup:
+ *   * stereo phaser has less severe phase cancellation effects
+ *   * rotary speaker can go even faster
+ * - improve performance of sin_lookup, add cos_lookup
+ *
  * Revision 1.37  2006/07/28 19:41:51  alankila
  * - save amplitude too
  *
@@ -320,7 +326,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
         hilbert_transform(*s, &x0, &x1, &vp->hilbert, curr_channel);
         
         sinval = sin_lookup(vp->phase);
-        cosval = sin_lookup(vp->phase >= 0.75 ? vp->phase - 0.75 : vp->phase + 0.25);
+        cosval = cos_lookup(vp->phase);
         if (vp->vibrato_base > 0)
             *s = cosval * x0 + sinval * x1;
         else

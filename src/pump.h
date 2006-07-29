@@ -176,12 +176,22 @@ struct effect_creator {
     effect_t *    (*create_f)();
 };
 
+/* tabularised sin() */
 #define SIN_LOOKUP_SIZE         65536
-#define SIN_LOOKUP_AMPLITUDE    0x7ffffffL
-extern int sin_lookup_table[SIN_LOOKUP_SIZE+1];
+extern float sin_lookup_table[SIN_LOOKUP_SIZE+1];
 
-/* [0 .. 1[ -> sin(0 .. 2pi) */
-#define sin_lookup(scale) ((float) sin_lookup_table[(int) ((scale) * SIN_LOOKUP_SIZE)] / SIN_LOOKUP_AMPLITUDE)
+static inline float
+sin_lookup(float pos) {
+    return sin_lookup_table[(int) (pos * SIN_LOOKUP_SIZE)];
+}
+
+static inline DSP_SAMPLE
+cos_lookup(float pos) {
+    if (pos >= 0.75)
+        return sin_lookup(pos - 0.75);
+    else
+        return sin_lookup(pos + 0.25);
+}
 
 extern volatile unsigned short write_track;
 extern volatile midictrl_t midictrl;

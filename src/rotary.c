@@ -42,7 +42,7 @@ rotary_init(struct effect *p)
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
                      __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
                      3, 0);
-    o = gtk_adjustment_new(params->speed, 250, 5000, 1, 1, 0);
+    o = gtk_adjustment_new(params->speed, 200, 5000, 1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_speed), params);
     w = gtk_vscale_new(GTK_ADJUSTMENT(o));
@@ -83,10 +83,6 @@ rotary_filter(struct effect *p, struct data_block *db)
     if (db->channels != 1 || n_output_channels < 2)
         return;
     
-    params->phase += (float) db->len / sample_rate * 1000.0 / params->speed;
-    if (params->phase >= 1.0)
-        params->phase -= 1.0;
-
     /* The rotary speaker simulation is based on modulating input with subsonic
      * sinuswave and then separating the upwards and downwards shifted frequencies
      * with hilbert transform. The upwards shifted component can be thought to be
@@ -106,7 +102,7 @@ rotary_filter(struct effect *p, struct data_block *db)
          * discontinuities between audio blocks */
         if (i % 16 == 0) {
             sinval = sin_lookup(pha);
-            cosval = sin_lookup(pha >= 0.75 ? pha - 0.75 : pha + 0.25);
+            cosval = cos_lookup(pha);
             pha += (float) 16 / sample_rate * 1000.0 / params->speed;
             // params->speed;
             if (pha >= 1.0)
@@ -122,8 +118,11 @@ rotary_filter(struct effect *p, struct data_block *db)
         db->data_swap[i*2+0] = 0.60 * y0 + 0.40 * do_biquad(y1, &params->ld, 0);
         db->data_swap[i*2+1] = 0.60 * y1 + 0.40 * do_biquad(y0, &params->rd, 0);
     }
-    
-    /* swap to processed buffer for next effect */
+
+    params->phase += (float) db->len / sample_rate * 1000.0 / params->speed;
+    if (params->phase >= 1.0)
+        params->phase -= 1.0;
+
     tmp = db->data;
     db->data = db->data_swap;
     db->data_swap = tmp;

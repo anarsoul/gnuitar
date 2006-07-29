@@ -20,6 +20,12 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.42  2006/07/29 12:04:36  alankila
+ * - effect lickup:
+ *   * stereo phaser has less severe phase cancellation effects
+ *   * rotary speaker can go even faster
+ * - improve performance of sin_lookup, add cos_lookup
+ *
  * Revision 1.41  2006/07/27 19:24:41  alankila
  * - aligned memory needs aligned free operation.
  *
@@ -407,8 +413,8 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
         y0 = cosval * x0 + sinval * x1;
         y1 = cosval * x0 - sinval * x1;
 
-        db->data_swap[i*2+0] = Dry * x1 + Wet * y0;
-        db->data_swap[i*2+1] = Dry * x1 + Wet * y1;
+        db->data_swap[i*2+0] = Dry * db->data[i] + Wet * y0;
+        db->data_swap[i*2+1] = Dry * db->data[i] + Wet * y1;
     }
     /* swap to processed buffer for next effect */
     tmp = db->data;
