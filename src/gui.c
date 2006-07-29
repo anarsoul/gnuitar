@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.103  2006/07/29 15:16:28  alankila
+ * - remember presets between gnuitar invocations
+ * - remember effect settings between gnuitar invocations
+ *
  * Revision 1.102  2006/07/29 13:54:34  alankila
  * - add audio driver configuration guide, discussion about using JACK and
  *   MIDI
@@ -589,6 +593,16 @@ gnuitar_printf(char *frm, ...)
 static void
 quit(GtkWidget * widget, gpointer data)
 {
+    gchar *presetpath;
+    gchar *filename;
+
+    /* on quit, save settings... */
+    presetpath = discover_preset_path();
+    filename = g_strdup_printf("%s" FILESEP "%s", presetpath, "__default__.gnuitar");
+    save_pump(filename);
+    g_free(filename);
+    g_free(presetpath);
+
     gtk_main_quit();
 }
 
@@ -960,29 +974,21 @@ free_clist_ptr(gpointer data)
 	free(data);
 }
 
-static void
-bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
-{
-    char            *fname;
-    char	    *name;
+/* called from pump, too */
+void bank_append_entry(char *fname) {
+    char *name;
 #ifdef _WIN32
     int             str_len,
                     i;
     char            drive[_MAX_DRIVE],
                     dir[_MAX_DIR],
                     ext[_MAX_EXT];
-#endif
-
-    /* this cast is to shut up const qualifier ignore due to
-     * differences between gcc, mingw and msvc++. */ 
-    name = (char *) gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
-    fname = g_strdup(name);
-
-#ifdef _WIN32
+    
     /*
      * GTK for Windows have a bug related to non-ascii characters
      * in the strings. We replace all non-ascii chars to ? character.
      */
+    fname = g_strdup(fname);
     _splitpath(fname, drive, dir, name, ext);
     str_len = strlen(name);
     for (i = 0; i < str_len; i++)
@@ -990,12 +996,23 @@ bank_perform_add(GtkWidget * widget, GtkFileSelection * filesel)
 	    name[i] = '?';
 	}
 #else
+    fname = g_strdup(fname);
     name = basename(fname);
 #endif
     gtk_clist_append(GTK_CLIST(bank), &name);
     gtk_clist_moveto(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1, 0, 0.5, 1.0);
     gtk_clist_set_row_data_full(GTK_CLIST(bank), GTK_CLIST(bank)->rows - 1,
 				fname, free_clist_ptr);
+}
+
+static void
+bank_perform_add(GtkWidget *widget, GtkFileSelection *filesel)
+{
+    char	    *name;
+    /* this cast is to shut up const qualifier ignore due to
+     * differences between gcc, mingw and msvc++. */ 
+    name = (char *) gtk_file_selection_get_filename(GTK_FILE_SELECTION(filesel));
+    bank_append_entry(name);
     gtk_widget_destroy(GTK_WIDGET(filesel));
 }
 
@@ -1677,14 +1694,13 @@ start_stop(GtkWidget *widget, gpointer data)
 void
 init_gui(void)
 {
+    gchar          *tmp;
     GtkAccelGroup  *accel_group;
     GtkWidget      *vumeter_in;
     GtkWidget      *vumeter_out;
     GtkWidget	   *master;
     GtkWidget      *input;
 
-
-    
     int             i;
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
@@ -1706,6 +1722,10 @@ init_gui(void)
 #endif
     GtkStyle       *style;
     
+    tmp = discover_preset_path();
+    effects_dir = g_strdup_printf("%s" FILESEP "presetname.gnuitar", tmp);
+    g_free(tmp);
+
     mainWnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(mainWnd, 700, 450);
     tbl = gtk_table_new(7, 6, FALSE);

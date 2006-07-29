@@ -49,6 +49,7 @@
 void		init_gui(void);
 gint            delete_event(GtkWidget *, GdkEvent *, gpointer);
 void            toggle_effect(GtkWidget *, effect_t *);
+void            bank_append_entry(gchar *entry);
 
 extern GtkWidget *processor;
 extern double master_volume;

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.67  2006/07/29 15:16:28  alankila
+ * - remember presets between gnuitar invocations
+ * - remember effect settings between gnuitar invocations
+ *
  * Revision 1.66  2006/07/27 19:15:35  alankila
  * - split windows driver architecture now compiles and runs.
  *
@@ -402,6 +406,7 @@ main(int argc, char **argv)
     }
 
     init_gui();
+    load_initial_state();
     gtk_main();
 
     if (audio_driver && audio_driver->enabled)

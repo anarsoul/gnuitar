@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.78  2006/07/29 15:16:28  alankila
+ * - remember presets between gnuitar invocations
+ * - remember effect settings between gnuitar invocations
+ *
  * Revision 1.77  2006/07/29 12:04:36  alankila
  * - effect lickup:
  *   * stereo phaser has less severe phase cancellation effects
@@ -344,6 +348,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
+#include <errno.h>
 #include <math.h>
 #ifndef _WIN32
 #    include <unistd.h>
@@ -404,7 +410,9 @@ unsigned int    nbuffers = MAX_BUFFERS;
 float sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
 /* from JACK -- blindingly fast */
-static inline unsigned int prng() {
+static inline unsigned int
+prng(void)
+{
     static unsigned int seed = 22222;
     seed = (seed * 96314165) + 907633515;
     return seed;
@@ -610,25 +618,77 @@ struct effect_creator effect_list[] = {
 };
 
 static void
-init_sin_lookup_table() {
+init_sin_lookup_table(void) {
     int i = 0;
     for (i = 0; i < SIN_LOOKUP_SIZE + 1; i += 1)
         sin_lookup_table[i] = sin(2 * M_PI * i / SIN_LOOKUP_SIZE);
 }
 
 static const gchar *
-discover_settings_path() {
-    const gchar *path;
-#ifdef _WIN32
-    path = g_strdup_printf("%s\\%s", g_get_home_dir(), ".gnuitarrc");
-#else
-    path = g_strdup_printf("%s/%s", g_get_home_dir(), ".gnuitarrc");
-#endif
-    return path;
+discover_settings_path(void) {
+    return g_strdup_printf("%s" FILESEP "%s", g_get_home_dir(), ".gnuitarrc");
+}
+
+gchar *
+discover_preset_path(void) {
+    return g_strdup_printf("%s" FILESEP "%s", g_get_home_dir(), ".gnuitar_presets");
 }
 
 void
-load_settings() {
+load_initial_state(void)
+{
+    char *path = discover_preset_path();
+    DIR *dir;
+    struct dirent *ent;
+    GList *list = NULL;
+    GList *cur;
+
+    dir = opendir(path);
+    if (dir == NULL) {
+        if (errno == ENOENT) {
+            /* doesn't exist, create it */
+            mkdir(path, 0777);
+        }
+        /* whether it succeeded or not doesn't matter, there's nothing to load */
+        return;
+    }
+
+    /* scan the settings directory, load into preset control */
+    while ((ent = readdir(dir)) != NULL) {
+        gchar *entry;
+        /* entry must terminate with .gnuitar to be considered */
+        if (strstr(ent->d_name, ".gnuitar") == NULL)
+            continue;
+        /* construct full path to entry */
+        entry = g_strdup_printf("%s" FILESEP "%s", path, ent->d_name);
+        list = g_list_append(list, entry);
+    }
+    if (errno) {
+        gnuitar_printf("Error reading presets from directory '%s': %s\n",
+                       path, strerror(errno));
+    }
+    g_free(path);
+
+    /* order the entries to guarantee same loading order anywhere */
+    list = g_list_sort(list, (GCompareFunc) strcmp);
+
+    /* iterate the entires now, add into preset list */
+    for (cur = g_list_first(list); cur != NULL; cur = g_list_next(cur)) {
+        if (strstr(cur->data, "__default__.gnuitar") != NULL) {
+            /* if the entry is the default entry, load it, don't append it */
+            load_pump(cur->data);
+        } else {
+            /* add it to preset list */
+            bank_append_entry(cur->data);
+        }
+        g_free(cur->data);
+    }
+    /* free GList memory */
+    g_list_free(list);
+}
+
+void
+load_settings(void) {
     const gchar    *settingspath;
     GKeyFile       *file;
     GError         *error;
@@ -712,7 +772,7 @@ load_settings() {
 }
 
 void
-save_settings() {
+save_settings(void) {
     const gchar    *settingspath;
     GKeyFile       *file;
     gchar          *key_file_as_str;
