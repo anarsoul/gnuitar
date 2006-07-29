@@ -15,18 +15,22 @@ Packager: Max V. Rudensky <fonin@omnistaronline.com>
 BuildRoot: /var/tmp/%{name}-root
 
 %description
-This is a guitar effects software that allows you to 
-use your computer as powerful guitar processor.
-Includes effects:
-	o wah-wah
+GNUitar is a free, realtime guitar effect software that allows you to use your
+computer to spice up your guitar playing. The following effects are included:
+        o wah-wah with MIDI control
 	o sustain
-	o two flavours of distortion
+	o three flavours of distortion
 	o reverberator, echo, delay
-	o tremolo
+	o tremolo (volume), tremolo bar (pitch shift)
 	o vibrato
-	o chorus/flanger
+	o chorus/flanger/vibrato
 	o phasor
+        o sustain (dynamic range compression)
+        o rotary speaker
 	o noise gate
+        o equaliser bank
+        o pitch shift
+        o generic instrument tuner
 
 %prep
 rm -rf $RPM_BUILD_ROOT

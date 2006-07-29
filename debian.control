@@ -8,15 +8,19 @@ Section: sound
 Source: gnuitar-0.3.3.tar.gz
 Depends: libsndfile1, libgtk2.0-0 (>=2.6), libglib2.0-0 (>=2.0)
 Description: a GTK+ based real-time guitar processor.
- This is a guitar effects software that allows you to 
- use your computer as powerful guitar processor.
- Includes effects:
-    o wah-wah
-    o sustain
-    o two flavours of distortion
-    o reverberator, echo, delay
-    o tremolo
-    o vibrato
-    o chorus/flanger
-    o phasor
-    o noise gate
+ GNUitar is a free, realtime guitar effect software that allows you to use your
+ computer to spice up your guitar playing. The following effects are included:
+	o wah-wah with MIDI control
+	o sustain
+	o three flavours of distortion
+	o reverberator, echo, delay
+	o tremolo (volume), tremolo bar (pitch shift)
+	o vibrato
+	o chorus/flanger/vibrato
+	o phasor
+        o sustain (dynamic range compression)
+        o rotary speaker
+	o noise gate
+        o equaliser bank
+        o pitch shift
+        o generic instrument tuner
