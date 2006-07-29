@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>GNUitar - A Guitar processor software</title>
+    <title>GNUitar - A Free Guitar Processor Software</title>
 </head>
 <style type="text/css"><!--
 dl {
@@ -12,19 +12,42 @@ dt {
 dd {
     margin-bottom: 0.5em;
 }
+h1 {
+    border-bottom: 2px dashed gray;
+}
 
 --></style>
 <body>
-<h1 style="text-align: center">
-			    <strong>GNUitar</strong><br>
-			    Guitar processor software
+<h1 style="text-align: center; border-bottom: none; margin-top: 1em">
+          <strong>GNUitar</strong> &mdash; a free guitar processor software
 </h1>
-<h1><a name=about>What is GNUitar ?</a></h1>
+<p style="text-align: center; font-style: italic; margin-bottom: 2em">By Max Rudensky, Ciulei Bogdan, Antti S. Lankila and Vasily Khoruzhick</p>
+<h1><a name=about>Introduction</a></h1>
 
-<p>GNUitar is a real-time sound effects software that allows 
-you to use your computer as a guitar processor. It has GTK+ based 
-interface. It can be compiled on any flavor of UNIX that have
-GTK+ 1.2, 2.0, Glib, pthreads and OSS sound driver. It also works on Windows.
+<p>
+    GNUitar is a cross-platform real-time sound effects software that allows 
+    you to use your computer as a low-latency effect processor. It has GTK+ based 
+    interface. It can be compiled on any flavor of Unix that has
+    GTK+ 1.2, 2.x, pthreads and JACK, ALSA or OSS sound drivers.
+    Windows version can be compiled with MinGW and MS Visual Studio.
+</p>
+<p>
+    GNUitar contains all typical guitar effects, including chorus, phaser, tube amp
+    simulation, overdrive distortion, wah, reverb, etc. Additionally,
+    GNUitar supports MIDI devices for switching between effect presets. This makes
+    it possible to use foot pedals, for instance Roland FC-200. Wah frequency
+    can be controlled through any pitch bend control.
+</p>
+
+<p>
+    GNUitar is pronounced like "GNU Guitar". English was not the author's native
+    language, so when he invented the word, it did't occur for him to think how
+    it should be pronounced.
+</p>
+<p>GNUitar is distributed under GNU GPL.</p>
+
+<h1>Earlier works</h1>
+<p>
 This program was inspired by two earlier works:<ul>
 <li>Ele 0.1 by Morris Slutsky<br>
 <a href=http://www-personal.umich.edu/~mslutsky/elepage/index.html target=top>
@@ -32,13 +55,6 @@ This program was inspired by two earlier works:<ul>
 <li>Guitar FX Processor by Marin Vlah<br>
 <a href=http://fly.srk.fer.hr/~mvlah/fx_processor.html target=top>http://fly.srk.fer.hr/~mvlah/fx_processor.html</a></li>
 </ul>
-GNUitar is free software and is distributed under GNU GPL license.
-</p>
-
-<p>GNUitar is pronounced like "GNU Guitar". English is not my native language,
-so when I invented this word I did not think how it should be pronounced.
-Unless someone has a better idea, let's pronounce it like this for now.
-</p>
 
 <h1><a name=download>Download</a></h1>
 
@@ -48,46 +64,63 @@ Unless someone has a better idea, let's pronounce it like this for now.
 
 <h1><a name=requirements>Requirements</a></h1>
 
-<p>You will need:<ul>
-<li>GTK+ versions 1.2.6 or better, or GTK+ 2.0 or better</li>
+<p>To run the software:</p>
+<ul>
+<li>GTK+ versions 1.2.6 or better, or GTK+ 2.6 or better</li>
 <li>GLIB 1.2 or better</li>
 <li>POSIX threads on UNIX</li>
 <li>full-duplex sound card</li>
-<li>To compile: GCC on UNIX, Microsoft Visual C++ 6.0 or 7.0 on Windows</li>
+</ul>
+</p>
+<p>To compile the software:</p>
+<ul>
+<li>Unix: GCC on Unixish systems</li>
+<li>Windows: MinGW and MSYS, or Microsoft Visual C++ 6.0 or 7.0</li>
+<li>Both: fftw3 for some FFT algorithms (optional)</li>
+<li>Windows: DirectX SDK (or get a copy of dsound.h from WINE)</li>
+<li>Unix: sndfile for wav output on Unixish systems<li>
+<li>Unix: jack, libasound</li>
 </ul>
 
 <h1><a name=performance>Performance</a></h1>
 
 <p>GNUitar should run on even low-end hardware. It has been reported to work
 on even a Pentium II / 300 MHz computer. However, some of the effects
-demand more CPU power, and probably ~1 GHz machine is required for
+demand more CPU power, and probably at least 1 GHz machine is required for
 running complicated effect setups.
 </p>
-
-<p>When running the program, make sure you close all unnecessary applications,
-to free more resources. Avoid anything that can cause lots of disk I/O
-or sudden bursts of CPU usage.</p>
-
 <p>
-GNUitar runs with increased priority if available; this may cause hang-ups
-and delayed system response on low-end machines <strong>potentially making the
-computer unusable</strong>. Therefore you should take care to save all
-important data in other applications before launching GNUitar.
-This situation probably does not occur in practice, but with elevated task
-priorities the consequences for misbehaviour become greater.
+At the moment GNUitar is not capable of utilising dual-core systems for effect processing.
+This is because the effect pipeline runs on one thread and the data must pass quickly
+from one effect to next. Utilising dual-core would require independent parts of pipeline
+that could be run in parallel, but on GNUitar all effects are daisy-chained. That being
+said, the dual-core will still be used to run the GUI thread, and a version of JACK
+exists that attempts to use multiple cores to run the independent parts of audio chain
+simultaneously.
 </p>
 
-<h2><a name=perf_unix>Performance - UNIX notes</a></h2>
+<p>GNUitar places itself on elevated priority for the time-critical audio thread.
+When running the program, make sure you close all unnecessary applications,
+to free more resources. You would do well to avoid anything that can cause disk
+activity or unpredictable bursts of CPU usage.</p>
+
+<p>
+<strong style="color:red">Warning:</strong> System hang-ups may happen if the effect
+chain ends up consuming all CPU <strong>making the computer unusable</strong>.
+Therefore you should take care to save all important data in other applications before
+testing the limits of GNUitar.
+</p>
+
+<h2><a name=perf_unix>Performance on UNIX</a></h2>
 
 <p>GNUitar executable file should be setuid root to process sound using
 real-time priority class; otherwise you'll hear glitches and delays while 
-switching between windows. The program drops privileges as soon as the
-effect-processing thread has been started, even before any GTK+ initialization
-or command line handling, so it should be safe on any system.
-GNUitar has a latency of about 4-8ms on Linux/Pentium II/450/AWE64 ISA!
+switching between windows. The program drops privileges after setting realtime
+class, before analysing any user input. We belive it is secure.
+Latencies of between 4-8 ms are readily obtained on even modest hardware.
 </p>
 
-<h2><a name=perf_windows>Performance - Windows notes</a></h2>
+<h2><a name=perf_windows>Performance on Windows</a></h2>
 
 <p>Windows have complex problems with latency when processing audio in real time,
 mostly because of its non-uniform drivers architecture. 
@@ -97,7 +130,7 @@ depends mostly on the sound card's driver.
 
 <p>GNUitar for Windows has two playback methods:</p>
 <ul>
-<li>Playback via MME</li>
+<li>Playback via MMSystem</li>
 <li>Playback via DirectSound</li>
 </ul>
 <p>The first method uses the standard MME API (functions waveOut*()).
@@ -129,17 +162,17 @@ the latency that much, it's most often a software issue. Old sound cards that
 are unusable in Windows are likely to work just fine in Linux.
 </p>
 
-<h2><a name=latency_control>How To Control Latency</h2>
-<p>The latency can be controlled to a high degree in the Options dialog.
+<h1><a name=latency_control>How To Control Latency</h1>
+<p>The latency can be controlled in the Options dialog.
 It can be invoked from the
 <i>Options->Sampling Parameters</i> menu (or by <i>Ctrl-P</i>). You will
-need to stop playback before entering this dialog.
-There is an option called "Fragment Size". The lower the fragment size is,
-the better is the latency, but this is not a free lunch. If the latency
-is too low, the CPU drain from constantly attending to the sound card
-leaves no time for anything else! You may need to increase the
-fragment size on low-end computers. Try increasing this value if you hear
-repeated scratches from the speakers.
+need to stop playback before this dialog is available. (Will be fixed in
+a future release.) There is an option called "Fragment Size". The lower the
+fragment size is, the better is the latency, but this is not a free lunch.
+If the latency is too low, the CPU must be constantly working with the audio
+driver, and any pause in audio processing will cause an overrun.
+You may need to increase the fragment size on low-end computers. Try increasing
+this value if you hear repeated scratching or popping from the speakers.
 </p>
 <p>General notes on how to achieve the best performance:
 </p>
@@ -148,16 +181,16 @@ repeated scratches from the speakers.
 the lower sound quality.</li>
 <li>The lower the fragment size, the better is the latency. Drawback is the
 higher system load.</li>
-<li>The audible periodic scratches (DirectSound output) can be fixed
+<li>The audible periodic scratches (DirectX output) can be fixed
 by decreasing the overrun threshold (sampling parameters dialog).</li>
 <li>Increase the fragment size and decrease the sampling rate on
 low-end CPU, to gain the best latency/overruns/load ratio.</li>
-<li>On Windows, prefer WDM drivers, if possible. Try both MME and
-DirectSound playback; choose which is the best.</li>
+<li>On Windows, prefer WDM drivers, if possible. Try both MMSystem and
+DirectX playback; choose which is the best.</li>
 <li>Prefer Linux over Windows. Properly tuned Linux kernel has 10-100 times 
 better latency on the same hardware.</li>
-<li>Make gnuitar executable setuid root on UNIX, to allow it run with
-increased priority.</li>
+<li>Make GNUitar executable setuid root on UNIX, to allow it run with
+increased priority. (See discussion about security on Performance section above.)</li>
 </ul>
 
 <h1><a name=install>Installation</a></h1>
@@ -181,13 +214,13 @@ to add the one. Layout is a "snapshot" of your effects and its'
 settings, you can load/save using "File" menu.
 </p>
 
-<p>Big "Switch" button is used to switch layouts. In this manner,
+<p>Big "Cycle button" button is used to cycle between layouts. In this manner,
 you can change current sound by one mouse/keyboard click.
 </p>
 
 <p>Big "START/STOP" button is used to start/stop playback.
 You may want to try pressing it a few times if you experience buffer overruns
-or broken sound output.
+or broken sound output. Sometimes it helps.
 </p>
 
 <p>You can write track of what you play to a file. Just click
@@ -196,18 +229,16 @@ file name and play. Don't forget that continuous track write
 can fill out your hard drive.
 The track file format is WAV data on Windows and Linux.
 </p>
-<p>Linux WAV writing depends on libsndfile. However, if you do not have sndfile, then the data is raw 16-bit signed data, with the sampling rate and channels
-as defined in the sampling parameters dialog. You can convert it with <a href="http://sox.sourceforge.net/">sox</a> like this:
+<p>Linux WAV writing depends on libsndfile. However, if you do not have sndfile,
+then the data is raw 16-bit signed data on host system endianness, with the sampling rate
+and channels as defined in the sampling parameters dialog. You can convert it with
+<a href="http://sox.sourceforge.net/">sox</a> like this:
 </p>
-<pre>
-    sox -w -s -c 1 -r 44100 track.raw track.wav, 
-</pre>
+<pre>sox -w -s -c 1 -r 44100 track.raw track.wav,</pre>
 <p>
 and then to <a href="http://www.vorbis.com/">ogg vorbis</a>:
 </p>
-<pre>
-    oggenc track.wav
-</pre>
+<pre>oggenc track.wav</pre>
 
 <h1><a name=effects>Effects</a></h1>
 <p>
@@ -240,13 +271,12 @@ The controls and description of the effects follow below.
 <dd>choose resonance of the lowpass filter and the moog ladder filter.
     Values close and exceeding 100% are slightly dangerous and may clip. Adjust volume
     down if extreme resonances are desired.</dd>
-<dt>continuous sweep</dt>
-<dd>The Wah can be run in two modes, one where it sweeps between the low and high
-    frequency in /\/\/\/ type manner, and another where it "listens" to input signal
-    and tries to detect guitar picks for triggering the wah sweep synchronously with
-    guitar picking. The pick
-    detection works best if the wah receives unaltered input signal from the guitar,
-    rather than say distorted input from an overdrive effect.</dd>
+<dt>sweep mode</dt>
+<dd>The Wah can be run in three modes. The continuous mode simply sweeps between the
+    low and high frequency range in /\/\/\/ type manner, the envelope mode attempts to
+    "listens" to input signal and trigger wah sweep from high to low frequency whenever
+    guitar is being picked. The third mode uses a MIDI pitch bend control to set the
+    wah frequency.</dd>
 </dl>
 
 <h2><a name=distort>Distortion</a></h2>
@@ -351,6 +381,9 @@ a vibrato.
 <dd>an unitless measure of the maximum delay imposed by the effect on the audio</dd>
 <dt>dry/wet</dt>
 <dd>the dry vs. wet mixing ratio</dd>
+<dt>stereo</dt>
+<dd>Stereo switch changes the algorithm to one based on hilbert transform, which
+    naturally produces signals with time-varying phase shift.</dd>
 </dl>
 
 <h2><a name=rotary>Rotary speaker</a></h2>
@@ -402,25 +435,21 @@ overdrive pedals such as Ibanez TS9.
 Because Overdrive is limited to simulating the Ibanez TS9, another effect is required
 for more powerful distortion sounds.
 The effect loosely models a tube amplifier with a variable number of output stages,
-each which add different kind of clipping to the sound. Some tone controls are provided
-for additional flexibility.
+each which add slightly different kind of clipping to the sound.
 </p>
 
 <dl>
 <dt>stages</dt>
-<dd>Number of stages. All can be used to produce distortion, 5 stages being very close
+<dd>Number of stages. All can be used to produce distortion, 3-4 stages being very close
 to overkill.</dd>
 <dt>gain</dt>
-<dd>Gain per stage. Higher gains drive the later stages into more clipping.</dd>
-<dt>bass cut</dt>
-<dd>A highpass filter with tunable cutoff frequency. Increasing this value reduces
-   bass from the output.</dd>
-<dt>middle cut</dt>
-<dd>Decreasing the value of the control introduces a deepening notch at 720 Hz, allowing
-   the effect to be used for dark distortion sounds.</dd>
-<dt>treble cut</dt>
-<dd>A lowpass filter with tunable cutoff frequency. This can be used to change the
-   tone and control noise.</dd>
+<dd>Gain per stage. Higher gains drive the later stages into more clipping.
+    Please use the master volume control for now to set output volume, if less extreme
+    distortions are desired.</dd>
+<dt>absolute bias</dt>
+<dd>A parameter to the ad-hoc tube model.</dd>
+<dt>dynamic bias</dt>
+<dd>Input-dependant parameter to the ad-hoc tube model.</dd>
 </dl>
 
 <h2><a name=noise>Noise gate</a></h2>
