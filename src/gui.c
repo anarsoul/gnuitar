@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.104  2006/07/29 15:25:46  alankila
+ * - support doubleclick on preset list
+ *
  * Revision 1.103  2006/07/29 15:16:28  alankila
  * - remember presets between gnuitar invocations
  * - remember effect settings between gnuitar invocations
@@ -580,11 +583,9 @@ gnuitar_printf(char *frm, ...)
     gnuitar_gtk_text_view_append(status_text, tmp);
     g_free(tmp);
 
-#ifdef HAVE_GTK2
     /* scroll to end */
     adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(status_window));
     gtk_adjustment_set_value(adj, adj->upper);
-#endif
 }
 
 /*
@@ -811,10 +812,16 @@ static void
 selectrow_bank(GtkWidget *widget, gint row, gint col,
 		    GdkEventButton *event, gpointer data)
 {
-    /* I can't support doubleclick on this list because the programmatically generated
-     * selectrow events seem to segfault GTK+. I should have some way to suppress them. */
+    gchar *fname;
 
     bank_row = row;
+    if (event && event->type == GDK_2BUTTON_PRESS) {
+        fname = gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
+        if (fname == NULL)
+            return;
+        gtk_clist_select_row(GTK_CLIST(bank), bank_row, 0);
+        load_pump(fname);
+    }
 }
 
 static void
@@ -823,7 +830,7 @@ selectrow_effects(GtkWidget *widget, gint row, gint col,
 {
     effects_row = row;
     /* doubleclick */
-    if (event->type == GDK_2BUTTON_PRESS) {
+    if (event && event->type == GDK_2BUTTON_PRESS) {
         add_pressed(NULL, data);
     }
 }
