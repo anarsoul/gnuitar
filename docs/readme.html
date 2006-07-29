@@ -119,6 +119,93 @@ switching between windows. The program drops privileges after setting realtime
 class, before analysing any user input. We belive it is secure.
 Latencies of between 4-8 ms are readily obtained on even modest hardware.
 </p>
+<h3>Audio driver setup guide</h3>
+<p>
+    Plug something into your line input jack: guitar, portable CD player,
+    whatever.  If you have "Analog Mix" control, you can test sound input
+    without running GNUitar.  Temporarily maximise the "Analog Mix" control and
+    twiddle with capture controls until you start to hear something. After
+    this, mute every unnecessary capture control. You should end up with the minimum
+    set of mixers necessary to get the input into the soundcard's output.
+    When done, turn "Analog Mix" control down. No sound must be produced if
+    GNUitar is not running.
+</p>
+<p>
+    Typical setup that works is: Line input is maximised, Analog Mix is minimised,
+    Analog Mix Capture is maximised. <strong color="red:">Important:</strong>
+    ensure that the "What You Hear" control, often called PCM capture on ALSA, is muted.
+    If this control is maximised, gnuitar will constantly reprocess its own output.
+</p>
+<p>
+    Be sure to turn your volume low before starting GNUitar for the first time.
+    Your speakers and your ears will thank you. Observe the input volume and master
+    volume VU meters. You should be reading some value above -96 on them, and the
+    bars should wiggle a bit, as indication that some signal is coming in.
+    The scale is logarithmic, so even the slightest noise can be seen.
+</p>
+<p>
+    On the other
+    hand, if the bars are at -96 and there is a large button on left that says "ERROR",
+    the sound driver could not be initialised and the debug window on bottom should be
+    examined for clues about the setup failure. Try different drivers, for instance
+    JACK or ALSA from the sampling parameters dialog in Options menu. Press the "ERROR"
+    button to try setting audio up again. If it works now, the button changes to Stop
+    and remains pressed down.
+</p>
+<p>
+    To set up appropriate volume on capture and playback, you should choose the Line In
+    or Analog Mix Capture control value in such a way that the maximum sound is
+    is not hitting above the -3 dB value on either control. After -3 dB, the sound will
+    almost certainly begin to distort. This can be heard as a harsh "edge" appearing
+    on sound. This distortion contains <strong>significant</strong> amount of energy
+    in treble range and may <strong>easily destroy your speakers</strong>, so please be
+    cautious! If you want distorted sounds, try using the tube-amp and overdrive effects.
+</p>
+<p>
+    The volume sliders to right of VUs are digital volume controls, and do not
+    change mixer settings. Using these to correct for the problem may be
+    appropriate for output after effect processing has occured, but is rarely good
+    idea for input because of the implied loss in dynamic range. When picking a
+    chord normally, the input VU should indicate volume somewhere between
+    -10 and -20 dB.
+</p>
+
+<h3>JACK setup tips</h3>
+
+<p>JACK parameters are defined in a file called .jackdrc on home directory.
+    When GNUitar starts, it tries to contact a JACK server or opens up its own if
+    none exist, and these parameters are used.  This line works quite well on Ubuntu
+    Dapper/Edgy:
+</p>
+<pre>/usr/bin/jackstart -R -dalsa -dhw:0 -r48000 -p256 -n2 -i2 -o2 -zs</pre>
+<p>
+    It specifies realtime (elevated priority) operation, alsa driver using alsa
+    hardware hw:0, 48000 Hz sampling frequency, 256-frame buffer size (quite large,
+    also 128 would work well), 2 periods, 2 input channels, 2 output channels
+    and shaped dither mode.
+</p>
+<p>
+    48000 Hz sampling frequency is recommended if Creative soundcards are used,
+    because they only work correctly on this sampling frequency (at least on Linux).
+    In fact, Creative soundcards have long been an enemy of hi-fi audio
+    reproduction. It doesn't matter whether Creative's design is to blame or whether
+    it is due to bugs on Linux driver: the end result is same. Regardless, M-Audio
+    soundcards should be an excellent alternative for Linux at the moment (2006).
+</p>
+<p>
+    Audio dithering may be waste for sampled audio which is usually noisy to begin with,
+    but shaped dithering offers some dynamic range extension between 0-12 kHz with the
+    cost of added noise between 12 and 24 kHz. The dithering algorithm used by JACK
+    is fast enough, so I recommend using it. The audio is dithered with all other
+    drivers by GNUitar, but with JACK it is assumed that JACK is setup to do its own
+    dithering.
+</p>
+<p>
+    For MIDI, some kind of JACK connection utility is necessary for making the
+    connection from your MIDI device of choice to GNUitar's midi port. If you do not have
+    hardware MIDI devices that you wish to use with gnuitar, you of course do not
+    need to do this. I use qjackctl for JACK configuration and connection management.
+</p>
 
 <h2><a name=perf_windows>Performance on Windows</a></h2>
 

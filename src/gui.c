@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.102  2006/07/29 13:54:34  alankila
+ * - add audio driver configuration guide, discussion about using JACK and
+ *   MIDI
+ *
  * Revision 1.101  2006/07/28 19:08:40  alankila
  * - add midi event listeners into JACK and ALSA
  * - make gui listen to midi events and switch bank
@@ -1629,7 +1633,7 @@ start_stop(GtkWidget *widget, gpointer data)
 				  (item_factory, "/Options/Options")),
 				 !audio_driver->enabled);
 	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
-                    audio_driver->enabled ? "Stop" : "ERROR");
+                    audio_driver->enabled ? "Stop" : "ERROR\nNo audio driver");
         return;
     }
     
@@ -1643,7 +1647,7 @@ start_stop(GtkWidget *widget, gpointer data)
 				  (item_factory, "/Options/Options")),
 				 !audio_driver->enabled);
             gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
-                    audio_driver->enabled ? "Stop" : "ERROR");
+                    audio_driver->enabled ? "Stop" : "ERROR\nSee debug log");
             return;
         }
     }
@@ -1657,7 +1661,7 @@ start_stop(GtkWidget *widget, gpointer data)
 				  (item_factory, "/Options/Options")),
 				 !audio_driver->enabled);
 	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
-                    audio_driver->enabled ? "Stop" : "ERROR");
+                    audio_driver->enabled ? "Stop" : "ERROR\nSee debug log");
         if (!audio_driver->enabled)
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
     } else {
@@ -1879,7 +1883,7 @@ init_gui(void)
                                     item_factory, "/Options/Options")),
 			     !audio_driver->enabled);
     gtk_label_set_text(GTK_LABEL(GTK_BIN(start)->child),
-                    audio_driver->enabled ? "Stop" : "ERROR");
+                    audio_driver->enabled ? "Stop" : "ERROR\nPush to retry");
     
     gtk_table_attach(GTK_TABLE(tbl), status_window, 0 ,7, 7, 9,
     		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL),
