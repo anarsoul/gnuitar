@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.14  2006/07/29 15:34:50  alankila
+ * - compatibility with JACK versions that don't have jack_options_t.
+ *
  * Revision 1.13  2006/07/28 19:24:35  alankila
  * - avoid destroying sequencer if for some reason init is called twice. The
  *   circumstances where this might occur smell a bit dubious though.
@@ -101,7 +104,8 @@
 #include "main.h"
 
 static char *jack_server_name = NULL; /* in the future, maybe something else? */
-static jack_options_t options = JackNullOption;
+//static jack_options_t options = JackNullOption;
+static int options = 0; /* for older JACK... */
 
 static jack_status_t status;
 static jack_client_t *client;
