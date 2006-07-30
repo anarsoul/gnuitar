@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.105  2006/07/30 11:14:06  alankila
+ * - rename n variable to effects_n -- n is too short for a global
+ *
  * Revision 1.104  2006/07/29 15:25:46  alankila
  * - support doubleclick on preset list
  *
@@ -783,19 +786,19 @@ delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
     int             i;
 
     my_lock_mutex(effectlist_lock);
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < effects_n; i++) {
         if (effects[i] == p)
             break;
     }
-    if (i == n) {
+    if (i == effects_n) {
         gnuitar_printf("hmm, can't find effect to destroy in subwindow delete\n");
         return TRUE;
     }
     effects[i]->proc_done(effects[i]);
     gtk_clist_remove(GTK_CLIST(processor), i);
-    for (; i < n-1; i += 1)
+    for (; i < effects_n-1; i += 1)
         effects[i] = effects[i+1];
-    effects[n--] = NULL;
+    effects[effects_n--] = NULL;
     my_unlock_mutex(effectlist_lock);
 
     return TRUE;
@@ -865,7 +868,7 @@ up_pressed(GtkWidget *widget, gpointer data)
     effect_t       *swap;
     gchar          *name_above, *name_selected;
 
-    if (curr_row > 0 && curr_row < n) {
+    if (curr_row > 0 && curr_row < effects_n) {
 	swap = effects[curr_row - 1];
 
         my_lock_mutex(effectlist_lock);
@@ -894,7 +897,7 @@ down_pressed(GtkWidget * widget, gpointer data)
     effect_t       *swap;
     gchar          *name_below, *name_selected;
 
-    if (curr_row >= 0 && curr_row < n - 1) {
+    if (curr_row >= 0 && curr_row < effects_n - 1) {
 	swap = effects[curr_row + 1];
 
 	my_lock_mutex(effectlist_lock);
@@ -922,16 +925,16 @@ del_pressed(GtkWidget *widget, gpointer data)
 {
     int             i;
 
-    if (curr_row >= 0 && curr_row < n) {
+    if (curr_row >= 0 && curr_row < effects_n) {
         my_lock_mutex(effectlist_lock);
 	effects[curr_row]->proc_done(effects[curr_row]);
-	for (i = curr_row; i < n; i++)
+	for (i = curr_row; i < effects_n; i++)
 	    effects[i] = effects[i + 1];
-	effects[n--] = NULL;
+	effects[effects_n--] = NULL;
         my_unlock_mutex(effectlist_lock);
 
 	gtk_clist_remove(GTK_CLIST(processor), curr_row);
-	if (curr_row == n - 1 && curr_row > 0)
+	if (curr_row == effects_n - 1 && curr_row > 0)
 	    curr_row--;
 	gtk_clist_select_row(GTK_CLIST(processor), curr_row, 0);
     }
@@ -945,7 +948,7 @@ add_pressed(GtkWidget *widget, gpointer data)
     gchar          *name;
     GtkWidget      *known_effects = data;
 
-    if (n < MAX_EFFECTS && effects_row >= 0) {
+    if (effects_n < MAX_EFFECTS && effects_row >= 0) {
 	tmp_effect = effect_list[effects_row].create_f();
 	tmp_effect->proc_init(tmp_effect);
 
@@ -953,14 +956,15 @@ add_pressed(GtkWidget *widget, gpointer data)
         name = strdup(name);
 
 	my_lock_mutex(effectlist_lock);
-	if (curr_row >= 0 && curr_row < n) {
+	if (curr_row >= 0 && curr_row < effects_n) {
 	    idx = curr_row + 1;
-	    for (i = n; i > idx; i--) {
+	    for (i = effects_n; i > idx; i--) {
 		effects[i] = effects[i - 1];
 	    }
-	    n++;
+	    effects_n += 1;
 	} else {
-	    idx = n++;
+	    idx = effects_n;
+	    effects_n += 1;
 	}
 	effects[idx] = tmp_effect;
         my_unlock_mutex(effectlist_lock);

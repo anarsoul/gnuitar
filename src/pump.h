@@ -209,7 +209,7 @@ extern unsigned int nbuffers;
 extern unsigned int overrun_threshold;
 #endif
 
-extern int      n;
+extern int      effects_n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];
 
