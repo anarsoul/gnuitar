@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.79  2006/07/30 10:56:23  alankila
+ * - W32 mkdir() doesn't have permissions
+ *
  * Revision 1.78  2006/07/29 15:16:28  alankila
  * - remember presets between gnuitar invocations
  * - remember effect settings between gnuitar invocations
@@ -647,7 +650,11 @@ load_initial_state(void)
     if (dir == NULL) {
         if (errno == ENOENT) {
             /* doesn't exist, create it */
+#ifdef _WIN32
+	    mkdir(path);
+#else
             mkdir(path, 0777);
+#endif
         }
         /* whether it succeeded or not doesn't matter, there's nothing to load */
         return;
