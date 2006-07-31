@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.106  2006/07/31 22:48:59  alankila
+ * - selecting pre- and post-gains are an exact science, so show the values.
+ *
  * Revision 1.105  2006/07/30 11:14:06  alankila
  * - rename n variable to effects_n -- n is too short for a global
  *
@@ -1889,9 +1892,8 @@ init_gui(void)
     gtk_tooltips_set_tip(tooltips, master, "Change output gain (post-amp)", NULL);
     gtk_tooltips_set_tip(tooltips, input, "Change input gain (pre-amp)", NULL);
     
-    gtk_scale_set_draw_value(GTK_SCALE(master), FALSE);
-    
-    gtk_scale_set_draw_value(GTK_SCALE(input), FALSE);
+    gtk_scale_set_value_pos(GTK_SCALE(master), GTK_POS_RIGHT);
+    gtk_scale_set_value_pos(GTK_SCALE(input), GTK_POS_RIGHT);
     
     volume_label = gtk_label_new("Master volume:");
     input_label = gtk_label_new("Input volume:");
