@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.15  2006/07/31 22:45:27  alankila
+ * - don't quit on failure to connect to all capture/playback ports.
+ *   We will assume user using JACK knows what he is doing.
+ *
  * Revision 1.14  2006/07/29 15:34:50  alankila
  * - compatibility with JACK versions that don't have jack_options_t.
  *
@@ -278,8 +282,7 @@ jack_init_sound(void)
     
     //creating jack client
     client = jack_client_open ("GNUitar", options, &status, jack_server_name);
-    if (client == NULL)
-    {
+    if (client == NULL) {
 	gnuitar_printf ("jack_client_open() failed (status=%d)\n", status);
 	return ERR_WAVEOUTOPEN;
     }
@@ -292,42 +295,35 @@ jack_init_sound(void)
         
     // adapting to JACK's sample rate and buffer size
     temp_rate = jack_get_sample_rate(client);
-    if (temp_rate != sample_rate)
-    {
+    if (temp_rate != sample_rate) {
 	gnuitar_printf("Adapting to JACK's sample rate: %d\n", temp_rate);
 	sample_rate = temp_rate;
     }
     jack_set_sample_rate_callback(client, update_sample_rate, NULL);
-   
     
     // register I/O ports
     if (n_input_channels > MAX_CHANNELS) n_input_channels = MAX_CHANNELS;
     if (n_output_channels > MAX_CHANNELS) n_output_channels = MAX_CHANNELS;
     
-    for (i = 0; i < n_input_channels; i++)
-    {
+    for (i = 0; i < n_input_channels; i++) {
 	sprintf(portname, "input_%d", i);
 	input_ports[i] = jack_port_register(client, portname,
 					    JACK_DEFAULT_AUDIO_TYPE,
 					    JackPortIsInput, 0);
-	if (input_ports[i] == NULL) 
-	{
+	if (input_ports[i] == NULL) {
 	    gnuitar_printf("Registering input ports: tried to register %s but failed.\n",
                            portname);
 	    jack_client_close(client);
 	    return ERR_WAVEINOPEN;
 	}
-    
     }
     
-    for (i = 0; i < n_output_channels; i++)
-    {
+    for (i = 0; i < n_output_channels; i++) {
 	sprintf(portname, "output_%d", i);
 	output_ports[i] = jack_port_register(client, portname,
 					     JACK_DEFAULT_AUDIO_TYPE,
 					     JackPortIsOutput, 0);
-	if (output_ports[i] == NULL) 
-	{
+	if (output_ports[i] == NULL) {
 	    gnuitar_printf("Registering output ports: tried to register %s but failed.\n",
                            portname);
 	    jack_client_close(client);
@@ -336,82 +332,70 @@ jack_init_sound(void)
     
     }
     
-    // Tell the JACK server that we are ready to roll. Our process()
-    // callback will start running now.
-    if (jack_activate(client))
-    {
-	gnuitar_printf("failed to active client -- unknown reason, see STDERR output\n");
+    /* Tell the JACK server that we are ready to roll. Our processing
+     * callback will start running now. Until enabled is set to true,
+     * however, it will do nothing. */
+    if (jack_activate(client)) {
+	gnuitar_printf("Failed to active client -- unknown reason, see STDERR output\n");
 	jack_client_close(client);
 	return ERR_WAVEOUTOPEN;
     }
    
-    /* Try to set buffer size for JACK.
-     * Whether this succeeds or not will be found out in the next call to process(). */ 
+    /* Try to set buffer size for JACK. This is potentially unfriendly action to do. *
+     * Result will be handled through adaptation by the processing callback. */
     jack_set_buffer_size(client, buffer_size);
     
-    // Connecting capture ports to our ports
+    /* Connecting capture ports to our ports. I think gnuitar might be
+     * used as an effect processor even when there is no actual sound
+     * hardware, so some errors are not fatal. */
     ports = jack_get_ports(client, NULL, NULL,
                            JackPortIsPhysical|JackPortIsOutput);
 		
-    if (ports == NULL)
-    {
-	gnuitar_printf("No physical capture ports!\n");
-	jack_client_close(client);
-	return ERR_WAVEINOPEN;
-    }
-    
-    for (i = 0; i < n_input_channels; i++)
-    {
-	if (ports[i] == NULL)
-	{
-	    gnuitar_printf("No physical capture port for channel %d!\n", i+1);
-	    jack_client_close(client);
-            free(ports);
-	    return ERR_WAVEINOPEN;
-	}
-        gnuitar_printf("Reading channel %d input from port: %s\n", i+1, ports[i]);
+    if (ports == NULL) {
+	gnuitar_printf("warning: No physical capture ports. Not making connections.\n");
+    } else {
+        for (i = 0; i < n_input_channels; i++) {
+            gnuitar_printf("Reading channel %d input from port: %s\n", i+1, ports[i]);
+	    if (ports[i] == NULL) {
+	        gnuitar_printf("warning: No physical capture port for channel %d!\n", i+1);
+                continue;
+	    }
 
-	if (jack_connect(client, ports[i], jack_port_name(input_ports[i]))) 
-	{
-	    gnuitar_printf("Cannot connect capture port %s to %s\n", ports[i], jack_port_name(input_ports[i]));
-	    jack_client_close(client);
-            free(ports);
-	    return ERR_WAVEINOPEN;
+	    /* On the other hand, if port is there, the connection should
+             * succeed. Something is seriously wrong if not. */
+            if (jack_connect(client, ports[i], jack_port_name(input_ports[i]))) {
+	        gnuitar_printf("Cannot connect capture port %s to %s\n", ports[i], jack_port_name(input_ports[i]));
+	        jack_client_close(client);
+                free(ports);
+	        return ERR_WAVEINOPEN;
+            }
 	}
+        free(ports);
     }
-    free(ports);
     
     // Connecting our ports to playback ports
     ports = jack_get_ports(client, NULL, NULL,
 		           JackPortIsPhysical|JackPortIsInput);
 		
-    if (ports == NULL)
-    {
-	gnuitar_printf("No physical playback ports.\n");
-	jack_client_close(client);
-	return ERR_WAVEOUTOPEN;
-    }
-    
-    for (i = 0; i < n_output_channels; i++)
-    {
-	if (ports[i] == NULL)
-	{
-	    gnuitar_printf("No physical playback port for channel %d.\n", i+1);
-	    jack_client_close(client);
-	    free(ports);
-            return ERR_WAVEOUTOPEN;
-	}
-        gnuitar_printf("Sending channel %d output to port: %s\n", i+1, ports[i]);
+    if (ports == NULL) {
+	gnuitar_printf("warning: No physical playback ports. Not making connections.\n");
+    } else {
+        for (i = 0; i < n_output_channels; i++) {
+            gnuitar_printf("Sending channel %d output to port: %s\n", i+1, ports[i]);
+	    if (ports[i] == NULL) {
+	        gnuitar_printf("warning: No physical playback port for channel %d.\n", i+1);
+	        continue;
+	    }
 	
-	if (jack_connect(client, jack_port_name(output_ports[i]), ports[i])) 
-	{
-	    gnuitar_printf("Cannot connect playback port %s to %s\n", jack_port_name(output_ports[i]), ports[i]);
-	    jack_client_close(client);
-            free(ports);
-	    return ERR_WAVEOUTOPEN;
+	    if (jack_connect(client, jack_port_name(output_ports[i]), ports[i])) {
+	        gnuitar_printf("Cannot connect playback port %s to %s\n", jack_port_name(output_ports[i]), ports[i]);
+	        jack_client_close(client);
+                free(ports);
+	        return ERR_WAVEOUTOPEN;
+            }
 	}
+        free(ports);
     }
-    free(ports);
 
 #ifdef HAVE_ALSA
     if (sequencer_handle == NULL)
