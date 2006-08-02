@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2006/08/02 19:21:04  alankila
+ * - add static declarations
+ *
  * Revision 1.2  2006/05/29 18:35:39  anarsoul
  * Added macroses id and log to files
  *
@@ -31,7 +34,7 @@
 #include "pump.h"
 
 
-extern effect_t *   amp_create();
+effect_t *   amp_create();
 
 struct amp_params {
     float            amp_power; //power of amp

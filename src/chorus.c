@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2006/08/02 19:21:04  alankila
+ * - add static declarations
+ *
  * Revision 1.34  2005/11/05 14:51:16  alankila
  * - use basedelay scaling also in multichannel
  * - make maximum period longer
@@ -160,53 +163,49 @@
 #define MAX_DEPTH       20
 #define MAX_BASEDELAY   50
  
-void chorus_filter(effect_t *p, data_block_t *db);
-void chorus_filter_mono(effect_t *p, data_block_t *db);
-void chorus_filter_mc(effect_t *p, data_block_t *db);
-
-void
+static void
 update_chorus_basedelay(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->basedelay = adj->value;
 }
 
-void
+static void
 update_chorus_depth(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->depth = adj->value;
 }
 
-void
+static void
 update_chorus_speed(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->speed = adj->value;
 }
 
-void
+static void
 update_chorus_voices(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->voices = adj->value;
 }
 
-void
+static void
 update_chorus_drywet(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->drywet = adj->value;
 }
 
-void
+static void
 update_chorus_regen(GtkAdjustment *adj, struct chorus_params *params)
 {
     params->regen = adj->value;
 }
 
-void
+static void
 toggle_chorus_multichannel(void *bullshit, struct chorus_params *params)
 {
     params->multichannel = !params->multichannel;
 }
 
-void
+static void
 chorus_init(struct effect *p)
 {
     struct chorus_params *pchorus;
@@ -408,19 +407,7 @@ chorus_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-void
-chorus_filter(struct effect *p, struct data_block *db)
-{
-    struct chorus_params *params = p->params;
-    
-    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
-        chorus_filter_mc(p, db);
-    } else {
-        chorus_filter_mono(p, db);
-    }
-}
-
-void
+static void
 chorus_filter_mono(struct effect *p, struct data_block *db)
 {
     struct chorus_params *cp;
@@ -476,7 +463,7 @@ chorus_filter_mono(struct effect *p, struct data_block *db)
 }
 
 /* mono to N */
-void
+static void
 chorus_filter_mc(struct effect *p, struct data_block *db)
 {
     struct chorus_params *cp;
@@ -534,8 +521,19 @@ chorus_filter_mc(struct effect *p, struct data_block *db)
     }
 }
 
+static void
+chorus_filter(struct effect *p, struct data_block *db)
+{
+    struct chorus_params *params = p->params;
+    
+    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
+        chorus_filter_mc(p, db);
+    } else {
+        chorus_filter_mono(p, db);
+    }
+}
 
-void
+static void
 chorus_done(struct effect *p)
 {
     struct chorus_params *cp;
@@ -550,7 +548,7 @@ chorus_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 chorus_save(struct effect *p, SAVE_ARGS)
 {
     struct chorus_params *params = p->params;
@@ -564,7 +562,7 @@ chorus_save(struct effect *p, SAVE_ARGS)
     SAVE_INT("multichannel", params->voices);
 }
 
-void
+static void
 chorus_load(struct effect *p, LOAD_ARGS)
 {
     struct chorus_params *params = p->params;

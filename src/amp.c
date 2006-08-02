@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/08/02 19:21:04  alankila
+ * - add static declarations
+ *
  * Revision 1.3  2006/05/29 18:35:39  anarsoul
  * Added macroses id and log to files
  *
@@ -37,15 +40,14 @@
 #    include <io.h>
 #endif
 
-void
+static void
 update_amp_power(GtkAdjustment *adj, struct amp_params *params)
 {
-
     params->amp_power = adj->value;
 }
 
 
-void
+static void
 amp_init(struct effect *p)
 {
     struct amp_params *pamp;
@@ -74,19 +76,17 @@ amp_init(struct effect *p)
 
     adj_power = gtk_adjustment_new(pamp->amp_power,
 				   -30, 30, 1, 1, 0);
-    power_label = gtk_label_new("   Power of amp   ");
+    power_label = gtk_label_new("Amplification\n(dB)");
     gtk_table_attach(GTK_TABLE(parmTable), power_label, 0, 1, 0, 1,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL |
 					GTK_SHRINK), 0, 0);
 
-
     gtk_signal_connect(GTK_OBJECT(adj_power), "value_changed",
 		       GTK_SIGNAL_FUNC(update_amp_power), pamp);
 
     power = gtk_vscale_new(GTK_ADJUSTMENT(adj_power));
-//    gtk_scale_set_digits(GTK_SCALE(adj_power), 0);
     gtk_widget_set_size_request(GTK_WIDGET(power),0,100);
 
     gtk_table_attach(GTK_TABLE(parmTable), power, 0, 1, 1, 2,
@@ -115,44 +115,19 @@ amp_init(struct effect *p)
 
 }
 
-
-void
+static void
 amp_filter(effect_t *p, data_block_t *db)
 {
-    struct amp_params *dp = p->params;
-    int             i, count;
-    
-    double     sample;
-    float     power;
-    DSP_SAMPLE     *ins, *outs;
+    struct amp_params *params = p->params;
+    int             i;
+    float           power;
 
-    ins = db->data;
-    outs = ins;
-        
-    count = db->len;
-    power = pow(10, dp->amp_power/20.0);
-    
-    for (i=0; i<count; i++)
-    {
-	//for (j=0; j< n_output_channels; j++)
-	{    
-	    sample=(*ins);
-	    sample=sample*power;
-            /*	    
-	    if (sample < -MAX_SAMPLE) sample = -MAX_SAMPLE;
-	    
-	    if (sample > MAX_SAMPLE) sample = MAX_SAMPLE;
-	    */
-	    *outs=(DSP_SAMPLE)sample;
-	    ins++;
-	    outs++;
-	}
-    }
-
+    power = pow(10, params->amp_power / 20.0);
+    for (i = 0; i < db->len; i++)
+        db->data[i] *= power;
 }
 
-
-void
+static void
 amp_done(struct effect *p)
 {
     struct amp_params *dp;
@@ -164,7 +139,7 @@ amp_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 amp_save(struct effect *p, SAVE_ARGS)
 {
     struct amp_params *params = p->params;
@@ -172,7 +147,7 @@ amp_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("amp_power", params->amp_power);
 }
 
-void
+static void
 amp_load(struct effect *p, LOAD_ARGS)
 {
     struct amp_params *params = p->params;
