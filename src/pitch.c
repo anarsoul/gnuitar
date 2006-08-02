@@ -35,32 +35,32 @@
 #define PITCH_MODULATION_FREQUENCY_MIN  2 /* Hz */
 #define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY_MIN)
 
-void
+static void
 update_pitch_halfnote(GtkAdjustment *adj, struct pitch_params *params)
 {
     params->halfnote = adj->value;
 }
 
-void
+static void
 update_pitch_finetune(GtkAdjustment *adj, struct pitch_params *params)
 {
     params->finetune = adj->value;
 }
 
-void
+static void
 update_pitch_drywet(GtkAdjustment *adj, struct pitch_params *params)
 {
     params->drywet = adj->value;
 }
 
-void
+static void
 update_pitch_buffer(GtkAdjustment *adj, struct pitch_params *params)
 {
     params->buffer = adj->value;
 }
 
 
-void
+static void
 pitch_init(struct effect *p)
 {
     struct pitch_params *params = p->params;
@@ -192,7 +192,7 @@ pitch_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-void
+static void
 pitch_filter(effect_t *p, data_block_t *db)
 {
     struct pitch_params *params = p->params;
@@ -293,7 +293,7 @@ pitch_filter(effect_t *p, data_block_t *db)
 
 }
 
-void
+static void
 pitch_done(struct effect *p)
 {
     free(p->params);
@@ -301,7 +301,7 @@ pitch_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 pitch_save(effect_t *p, SAVE_ARGS)
 {
     struct pitch_params *params = p->params;
@@ -312,7 +312,7 @@ pitch_save(effect_t *p, SAVE_ARGS)
     SAVE_DOUBLE("drywet", params->drywet);
 }
 
-void
+static void
 pitch_load(effect_t *p, LOAD_ARGS)
 {
     struct pitch_params *params = p->params;

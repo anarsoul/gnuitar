@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.30  2006/08/02 19:07:57  alankila
+ * - add missing static declarations
+ *
  * Revision 1.29  2006/07/18 21:35:59  alankila
  * - add optional FFT-based implementation -- it is several times faster
  *   than the time-domain version and nearly as good.
@@ -179,12 +182,12 @@
 #define NOTES_N	    12		/* the note scale */
 #define NOTES_TO_C  9		/* how many notes to C sound from MIN_HZ */
 #define MAX_STRINGS 6		/* max.number of strings */
-const char *notes[] = {
+static const char *notes[] = {
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"
 };
 
 /* images */
-static char * empty_xpm[] = {	/* empty black light */
+static char *empty_xpm[] = {	/* empty black light */
 "7 7 10 1",
 " 	c None",
 ".	c #FFFFFF",
@@ -226,14 +229,14 @@ GtkPixmap green,black;
  * that defines MIN_HZ. The subsequent distances are from 1st tone to 2nd
  * and so on. For now, we assume all instruments have 6 strings.
  */
-const unsigned short layouts[][MAX_STRINGS+1]={
+static const unsigned short layouts[][MAX_STRINGS+1]={
     { 24+4, 5, 5, 5, 4, 5, 0 },
     { 24+3, 5, 5, 5, 4, 5, 0 },
     { 24+2, 5, 5, 5, 4, 5, 0 },
     { 12+4, 5, 5, 5, 4, 5, 0 },
     { 12+4, 5, 5, 5, 0, 0, 0 }
 };
-const char *layout_names[] = {
+static const char *layout_names[] = {
     "6-str. guitar E A D G H E",
     "6-str. guitar halfnote down",
     "6-str. guitar fullnote down",
@@ -241,19 +244,19 @@ const char *layout_names[] = {
     "4-str. bass   E A D G"
 };
 
-void tuner_filter(effect_t *, data_block_t *);
-void tuner_done_really(effect_t *);
-gboolean timeout_update_label(gpointer gp);
-void calc_layout_gui(struct tuner_params *);
-unsigned int freq2note(double freq);
-void update_layout(GtkWidget *widget, gpointer data);
-void ignored_event(void *whatever, void *whatever2) {
+static void tuner_done_really(effect_t *);
+static gboolean timeout_update_label(gpointer gp);
+static void calc_layout_gui(struct tuner_params *);
+static void update_layout(GtkWidget *widget, gpointer data);
+
+static void
+ignored_event(void *whatever, void *whatever2) {
     return;
 }
 
 #define OPTS_EXP __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND)
 #define OPTS __GTKATTACHOPTIONS(GTK_FILL)
-void
+static void
 tuner_init(effect_t *p)
 {
     struct tuner_params *params = p->params;
@@ -332,7 +335,7 @@ tuner_init(effect_t *p)
     gtk_widget_show_all(p->control);
 }
 
-void
+static void
 update_layout(GtkWidget *widget, gpointer data) {
     struct tuner_params *params = data;
     int i;
@@ -364,7 +367,7 @@ update_layout(GtkWidget *widget, gpointer data) {
     }
 }
 
-gboolean
+static gboolean
 timeout_update_label(gpointer gp)
 {
     struct effect *p = gp;
@@ -444,7 +447,8 @@ timeout_update_label(gpointer gp)
     return TRUE;
 }
 
-int cmp_double(const void *a, const void *b)
+static int
+cmp_double(const void *a, const void *b)
 {
     const double *da = a;
     const double *db = b;
@@ -455,7 +459,7 @@ int cmp_double(const void *a, const void *b)
     return 0;
 }
 
-void
+static void
 tuner_filter(struct effect *p, struct data_block *db)
 {
     struct tuner_params *params;
@@ -653,7 +657,7 @@ tuner_filter(struct effect *p, struct data_block *db)
 }
 
 /* this method is asynchronous because of timer that needs to cancel itself */
-void
+static void
 tuner_done(effect_t *p)
 {
     struct tuner_params *params = p->params;
@@ -662,7 +666,8 @@ tuner_done(effect_t *p)
     return;
 }
 
-void tuner_done_really(effect_t *p) {
+static void
+tuner_done_really(effect_t *p) {
     struct tuner_params *params = p->params;
     
     del_Backbuf(params->history);
@@ -703,7 +708,8 @@ tuner_create()
 /* Function with side effect - modifies global array "layout".
  * Takes the layout index on input, and calculates freqs of the
  * particular tones. */
-void calc_layout_gui(struct tuner_params *params) {
+static void
+calc_layout_gui(struct tuner_params *params) {
     unsigned short curr_note = 0; /* the note # from bottom A */
     int i;
 
@@ -729,20 +735,4 @@ void calc_layout_gui(struct tuner_params *params) {
 	gtk_table_attach(GTK_TABLE(params->led_table), params->note_letters[i], 0, 1, i, i+1,
 		     OPTS, OPTS_EXP, 2, 2);
     }
-}
-
-/* frequency on input, note letter (A, H, D# etc) on output */
-unsigned int freq2note(double freq) {
-    double halfnotes;
-    int note;
-    
-    halfnotes = (log(freq) - log(MIN_HZ)) / log(2);
-    note = (int) (halfnotes * NOTES_N + 0.5);
-    
-    /* clamp to array */
-    note = (NOTES_TO_C + note) % NOTES_N;
-    if (note < 0)
-	note = 0; /* bullshit, but shouldn't trigger */
-
-    return note;
 }

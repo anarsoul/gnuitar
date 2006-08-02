@@ -30,7 +30,7 @@
 #define MAX_STEP (MAX_SAMPLE_RATE * MAX_SECONDS)
 #define MAX_SIZE (MAX_STEP * (MAX_COUNT + 1))
 
-extern effect_t *   delay_create();
+effect_t *   delay_create();
 
 struct delay_params {
     Backbuf_t       *history[MAX_CHANNELS];  /* history of samples */

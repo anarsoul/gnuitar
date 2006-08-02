@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2006/08/02 19:07:56  alankila
+ * - add missing static declarations
+ *
  * Revision 1.28  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -125,33 +128,31 @@
 #include "gui.h"
 #include "utils.h"
 
-void            distort_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_distort_level(GtkAdjustment * adj, struct distort_params *params)
 {
     params->level = (int) adj->value * 2.56;
 }
 
-void
+static void
 update_distort_sat(GtkAdjustment * adj, struct distort_params *params)
 {
     params->sat = (int) adj->value * 300;
 }
 
-void
+static void
 update_distort_drive(GtkAdjustment * adj, struct distort_params *params)
 {
     params->drive = (int) adj->value * 10;
 }
 
-void
+static void
 update_distort_lowpass(GtkAdjustment * adj, struct distort_params *params)
 {
     params->lowpass = (int) adj->value;
 }
 
-void
+static void
 distort_init(struct effect *p)
 {
     struct distort_params *pdistort;
@@ -292,7 +293,7 @@ distort_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-void
+static void
 distort_filter(struct effect *p, struct data_block *db)
 {
     int             count,
@@ -346,7 +347,7 @@ distort_filter(struct effect *p, struct data_block *db)
     LC_filter(db, 0, dp->lowpass, &(dp->noise));
 }
 
-void
+static void
 distort_done(struct effect *p)
 {
     free(p->params);
@@ -354,7 +355,7 @@ distort_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 distort_save(struct effect *p, SAVE_ARGS)
 {
     struct distort_params *params = p->params;
@@ -365,7 +366,7 @@ distort_save(struct effect *p, SAVE_ARGS)
     SAVE_INT("lowpass", params->lowpass);
 }
 
-void
+static void
 distort_load(struct effect *p, LOAD_ARGS)
 {
     struct distort_params *params = p->params;

@@ -269,7 +269,7 @@ reverb_filter(struct effect *p, struct data_block *db)
     }
 }
 
-void
+static void
 reverb_done(struct effect *p)
 {
     struct reverb_params *dr;
@@ -290,7 +290,7 @@ reverb_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 reverb_save(struct effect *p, SAVE_ARGS)
 {
     struct reverb_params *params = p->params;
@@ -300,7 +300,7 @@ reverb_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("delay", params->delay);
 }
 
-void
+static void
 reverb_load(struct effect *p, LOAD_ARGS)
 {
     struct reverb_params *params = p->params;

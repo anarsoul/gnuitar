@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2006/08/02 19:07:56  alankila
+ * - add missing static declarations
+ *
  * Revision 1.29  2005/09/06 14:54:31  alankila
  * - set button states at loadup
  * - make echo multichannel aware. Echo currently can do almost everything
@@ -134,12 +137,9 @@
 #endif
 
 /* used to swap rear channels */
-const int circular_order[] = { 0, 1, 3, 2 };
+static const int circular_order[] = { 0, 1, 3, 2 };
 
-void            delay_filter_mono(effect_t *p, data_block_t *db);
-void            delay_filter_mc(effect_t *p, data_block_t *db);
-
-void
+static void
 update_delay_decay(GtkAdjustment *adj, struct delay_params *params)
 {
     int             i;
@@ -148,7 +148,7 @@ update_delay_decay(GtkAdjustment *adj, struct delay_params *params)
         params->history[i]->clear(params->history[i]);
 }
 
-void
+static void
 update_delay_time(GtkAdjustment *adj, struct delay_params *params)
 {
     int             i;
@@ -157,19 +157,19 @@ update_delay_time(GtkAdjustment *adj, struct delay_params *params)
         params->history[i]->clear(params->history[i]);
 }
 
-void
+static void
 update_delay_repeat(GtkAdjustment *adj, struct delay_params *params)
 {
     params->delay_count = adj->value;
 }
 
-void
+static void
 toggle_delay_multichannel(void *bullshit, struct delay_params *params)
 {
     params->multichannel = !params->multichannel;
 }
 
-void
+static void
 delay_init(struct effect *p)
 {
     struct delay_params *pdelay;
@@ -304,18 +304,7 @@ delay_init(struct effect *p)
 
 }
 
-void
-delay_filter(effect_t *p, data_block_t *db)
-{
-    struct delay_params *params = p->params;
-    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
-        delay_filter_mc(p, db);
-    } else {
-	delay_filter_mono(p, db);
-    }
-}
-
-void
+static void
 delay_filter_mono(effect_t *p, data_block_t *db)
 {
     struct delay_params *dp = p->params;
@@ -355,7 +344,8 @@ delay_filter_mono(effect_t *p, data_block_t *db)
 }
 
 /* this is a mono-to-N channel mixer */
-void delay_filter_mc(effect_t *p, data_block_t *db)
+static void
+delay_filter_mc(effect_t *p, data_block_t *db)
 {
     struct delay_params *dp = p->params;
     int             i,
@@ -407,7 +397,18 @@ void delay_filter_mc(effect_t *p, data_block_t *db)
     }
 }
 
-void
+static void
+delay_filter(effect_t *p, data_block_t *db)
+{
+    struct delay_params *params = p->params;
+    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
+        delay_filter_mc(p, db);
+    } else {
+	delay_filter_mono(p, db);
+    }
+}
+
+static void
 delay_done(struct effect *p)
 {
     struct delay_params *dp;
@@ -422,7 +423,7 @@ delay_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 delay_save(struct effect *p, SAVE_ARGS)
 {
     struct delay_params *params = p->params;
@@ -433,7 +434,7 @@ delay_save(struct effect *p, SAVE_ARGS)
     SAVE_INT("multichannel", params->multichannel);
 }
 
-void
+static void
 delay_load(struct effect *p, LOAD_ARGS)
 {
     struct delay_params *params = p->params;

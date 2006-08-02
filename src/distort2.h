@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "biquad.h"
 
-extern effect_t *distort2_create();
+effect_t *distort2_create();
 
 struct distort2_params {
     double      drive, clip, treble;

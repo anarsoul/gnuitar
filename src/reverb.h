@@ -26,7 +26,7 @@
 #include "backbuf.h"
 #include "pump.h"
 
-extern effect_t *   reverb_create();
+effect_t *   reverb_create();
 
 struct reverbBuffer {
     DSP_SAMPLE     *data;

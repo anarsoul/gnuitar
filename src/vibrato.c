@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.39  2006/08/02 19:11:18  alankila
+ * - add missing static declarations
+ *
  * Revision 1.38  2006/07/29 12:04:36  alankila
  * - effect lickup:
  *   * stereo phaser has less severe phase cancellation effects
@@ -163,29 +166,25 @@
 #endif
 #include "gui.h"
 
-void
-                vibrato_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_vibrato_speed(GtkAdjustment * adj, struct vibrato_params *params)
 {
     params->vibrato_speed = adj->value;
 }
 
-void
+static void
 update_vibrato_ampl(GtkAdjustment * adj, struct vibrato_params *params)
 {
     params->vibrato_amplitude = adj->value;
 }
 
-void
+static void
 update_vibrato_base(GtkAdjustment * adj, struct vibrato_params *params)
 {
     params->vibrato_base = adj->value;
 }
 
-
-void
+static void
 vibrato_init(struct effect *p)
 {
     struct vibrato_params *pvibrato;
@@ -298,7 +297,7 @@ vibrato_init(struct effect *p)
 
 }
 
-void
+static void
 vibrato_filter(struct effect *p, struct data_block *db)
 {
     DSP_SAMPLE     *s;
@@ -347,7 +346,7 @@ vibrato_filter(struct effect *p, struct data_block *db)
     }
 }
 
-void
+static void
 vibrato_done(struct effect *p)
 {
     gnuitar_free(p->params);
@@ -355,7 +354,7 @@ vibrato_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 vibrato_save(struct effect *p, SAVE_ARGS)
 {
     struct vibrato_params *params = p->params;
@@ -365,7 +364,7 @@ vibrato_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("vibrato_base", params->vibrato_base);
 }
 
-void
+static void
 vibrato_load(struct effect *p, LOAD_ARGS)
 {
     struct vibrato_params *params = p->params;

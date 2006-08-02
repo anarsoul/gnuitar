@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2006/08/02 19:11:18  alankila
+ * - add missing static declarations
+ *
  * Revision 1.22  2005/09/04 23:05:17  alankila
  * - delete the repeated toggle_foo functions, use one global from gui.c
  *
@@ -97,29 +100,25 @@
 #endif
 #include "gui.h"
 
-
-void            sustain_filter(struct effect *p, struct data_block *db);
-
-
-void
+static void
 update_sustain_sust(GtkAdjustment * adj, struct sustain_params *params)
 {
     params->sust = (int) adj->value * 2.56;
 }
 
-void
+static void
 update_sustain_noise(GtkAdjustment * adj, struct sustain_params *params)
 {
     params->noise = (int) adj->value * 2.56;
 }
 
-void
+static void
 update_sustain_gate(GtkAdjustment * adj, struct sustain_params *params)
 {
     params->threshold = (int) adj->value * 2.56;
 }
 
-void
+static void
 sustain_init(struct effect *p)
 {
     struct sustain_params *psustain;
@@ -238,7 +237,7 @@ sustain_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-void
+static void
 sustain_filter(struct effect *p, struct data_block *db)
 {
 
@@ -298,7 +297,7 @@ sustain_filter(struct effect *p, struct data_block *db)
 
 }
 
-void
+static void
 sustain_save(struct effect *p, SAVE_ARGS)
 {
     struct sustain_params *params = p->params;
@@ -308,7 +307,7 @@ sustain_save(struct effect *p, SAVE_ARGS)
     SAVE_INT("threshold", params->threshold);
 }
 
-void
+static void
 sustain_load(struct effect *p, LOAD_ARGS)
 {
     struct sustain_params *params = p->params;
@@ -318,7 +317,7 @@ sustain_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("threshold", params->threshold);
 }
 
-void
+static void
 sustain_done(struct effect *p)
 {
     struct sustain_params *dp;

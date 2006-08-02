@@ -28,7 +28,7 @@
 #include "biquad.h"
 #include "rcfilter.h"
 
-extern effect_t *   autowah_create();
+effect_t *   autowah_create();
 
 struct autowah_params {
     Backbuf_t       *history;

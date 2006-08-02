@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.64  2006/08/02 19:07:56  alankila
+ * - add missing static declarations
+ *
  * Revision 1.63  2006/07/27 19:24:41  alankila
  * - aligned memory needs aligned free operation.
  *
@@ -357,28 +360,26 @@
 #   pragma intrinsic (exp,log)
 #endif
 
-void            distort2_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_distort2_drive(GtkAdjustment *adj, struct distort2_params *params)
 {
     params->drive = adj->value;
 
 }
 
-void
+static void
 update_distort2_mUt(GtkAdjustment *adj, struct distort2_params *params)
 {
     params->clip = adj->value;
 }
 
-void
+static void
 update_distort2_treble(GtkAdjustment *adj, struct distort2_params *params)
 {
     params->treble = adj->value;
 }
 
-void
+static void
 distort2_init(struct effect *p)
 {
     struct distort2_params *pdistort;
@@ -489,7 +490,7 @@ distort2_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-void
+static void
 distort2_filter(struct effect *p, struct data_block *db)
 {
 
@@ -600,7 +601,7 @@ distort2_filter(struct effect *p, struct data_block *db)
     }
 }
 
-void
+static void
 distort2_done(struct effect *p)
 {
     struct distort2_params *ap;
@@ -611,7 +612,7 @@ distort2_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 distort2_save(struct effect *p, SAVE_ARGS)
 {
     struct distort2_params *params = p->params;
@@ -621,7 +622,7 @@ distort2_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("treble", params->treble);
 }
 
-void
+static void
 distort2_load(struct effect *p, LOAD_ARGS)
 {
     struct distort2_params *params = p->params;

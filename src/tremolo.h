@@ -24,7 +24,7 @@
 #define _TREMOLO_H_ 1
 #include "pump.h"
 
-extern effect_t *   tremolo_create();
+effect_t *   tremolo_create();
 
 struct tremolo_params {
     float	    tremolo_amplitude,

@@ -26,7 +26,7 @@
 #include "pump.h"
 #include "rcfilter.h"
 
-extern effect_t * distort_create();
+effect_t * distort_create();
 
 struct distort_params {
     int             sat,

@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2006/08/02 19:07:57  alankila
+ * - add missing static declarations
+ *
  * Revision 1.18  2005/10/01 07:54:59  fonin
  * Added tooltips
  *
@@ -94,40 +97,38 @@
 #include "gui.h"
 
 
-void            noise_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_noise_threshold(GtkAdjustment * adj, struct noise_params *params)
 {
     params->threshold = (int) adj->value * 10;
 }
 
-void
+static void
 update_noise_hold(GtkAdjustment * adj, struct noise_params *params)
 {
     params->hold_time = (int) adj->value * sample_rate / 1000;
 }
 
-void
+static void
 update_noise_release(GtkAdjustment * adj, struct noise_params *params)
 {
     params->release_time =
 	(int) adj->value * sample_rate / 1000;
 }
 
-void
+static void
 update_noise_hyst(GtkAdjustment * adj, struct noise_params *params)
 {
     params->hysteresis = (int) adj->value * 10;
 }
 
-void
+static void
 update_noise_attack(GtkAdjustment * adj, struct noise_params *params)
 {
     params->attack = (int) adj->value * sample_rate / 1000;
 }
 
-void
+static void
 noise_init(struct effect *p)
 {
     struct noise_params *pnoise;
@@ -324,7 +325,7 @@ noise_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-void
+static void
 noise_filter(struct effect *p, struct data_block *db)
 {
 
@@ -406,7 +407,7 @@ noise_filter(struct effect *p, struct data_block *db)
     }
 }
 
-void
+static void
 noise_save(struct effect *p, SAVE_ARGS)
 {
     struct noise_params *params = p->params;
@@ -418,7 +419,7 @@ noise_save(struct effect *p, SAVE_ARGS)
     SAVE_INT("hysteresis", params->hysteresis);
 }
 
-void
+static void
 noise_load(struct effect *p, LOAD_ARGS)
 {
     struct noise_params *params = p->params;
@@ -430,7 +431,7 @@ noise_load(struct effect *p, LOAD_ARGS)
     LOAD_INT("hysteresis", params->hysteresis);
 }
 
-void
+static void
 noise_done(struct effect *p)
 {
     struct noise_params *dp;

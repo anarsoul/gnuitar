@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.28  2006/08/02 19:11:18  alankila
+ * - add missing static declarations
+ *
  * Revision 1.27  2006/06/16 12:32:20  alankila
  * - the reasonably trivial vibrato effect is now reinstated as tremolo
  *   in a file with proper name. Old vibrato can be achieved through 1-voice
@@ -118,22 +121,20 @@
 #include "utils.h"
 #include "gui.h"
 
-void            tremolo_filter(struct effect *p, struct data_block *db);
-
-void
+static void
 update_tremolo_speed(GtkAdjustment * adj, struct tremolo_params *params)
 {
     params->tremolo_speed = adj->value;
 }
 
-void
+static void
 update_tremolo_amplitude(GtkAdjustment * adj,
 			 struct tremolo_params *params)
 {
     params->tremolo_amplitude = adj->value;
 }
 
-void
+static void
 tremolo_init(struct effect *p)
 {
     struct tremolo_params *ptremolo;
@@ -229,7 +230,7 @@ tremolo_init(struct effect *p)
 
 }
 
-void
+static void
 tremolo_filter(struct effect *p, struct data_block *db)
 {
     struct tremolo_params *tp;
@@ -261,7 +262,7 @@ tremolo_filter(struct effect *p, struct data_block *db)
     }
 }
 
-void
+static void
 tremolo_done(struct effect *p)
 {
     struct tremolo_params *tp;
@@ -272,7 +273,7 @@ tremolo_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 tremolo_save(struct effect *p, SAVE_ARGS)
 {
     struct tremolo_params *params = p->params;
@@ -281,7 +282,7 @@ tremolo_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("tremolo_speed", params->tremolo_speed);
 }
 
-void
+static void
 tremolo_load(struct effect *p, LOAD_ARGS)
 {
     struct tremolo_params *params = p->params;

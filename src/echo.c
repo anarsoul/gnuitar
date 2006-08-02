@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.25  2006/08/02 19:07:57  alankila
+ * - add missing static declarations
+ *
  * Revision 1.24  2005/09/16 20:40:51  alankila
  * - reduce total voice count to spare memory and constrain effect
  * - complete circular mixing and increase cross-mixing attenuation a lot
@@ -119,35 +122,31 @@
 #define ECHO_NEXT_PRIME_DISTANCE_FACTOR	    1.6
 #define ECHO_CROSSMIX_ATTN                  10.0
 
-void echo_filter(effect_t *p, data_block_t *db);
-void echo_filter_mc(effect_t *p, data_block_t *db);
-void echo_filter_mono(effect_t *p, data_block_t *db);
-
-void
+static void
 update_echo_decay(GtkAdjustment *adj, struct echo_params *params)
 {
     params->echo_decay = adj->value;
 }
 
-void
+static void
 update_echo_count(GtkAdjustment *adj, struct echo_params *params)
 {
     params->echoes = adj->value;
 }
 
-void
+static void
 update_echo_size(GtkAdjustment *adj, struct echo_params *params)
 {
     params->echo_size = adj->value;
 }
 
-void
+static void
 toggle_echo_multichannel(void *bullshit, struct echo_params *params)
 {
     params->multichannel = !params->multichannel;
 }
 
-int
+static int
 is_prime(int n)
 {
     int             i;
@@ -159,7 +158,7 @@ is_prime(int n)
     return 1;
 }
 
-void
+static void
 echo_init(struct effect *p)
 {
     struct echo_params *params;
@@ -282,19 +281,8 @@ echo_init(struct effect *p)
     gtk_widget_show_all(p->control);
 
 }
-
-void
-echo_filter(effect_t *p, data_block_t *db)
-{
-    struct echo_params *params = p->params;
-    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
-        echo_filter_mc(p, db);
-    } else {
-        echo_filter_mono(p, db);
-    }
-}
     
-void
+static void
 echo_filter_mono(effect_t *p, data_block_t *db)
 {
     int                 i, count, curr_channel = 0;
@@ -340,7 +328,7 @@ echo_filter_mono(effect_t *p, data_block_t *db)
     }
 }
 
-void
+static void
 echo_filter_mc(effect_t *p, data_block_t *db)
 {
     int                 i, count, curr_channel = 0;
@@ -399,7 +387,18 @@ echo_filter_mc(effect_t *p, data_block_t *db)
     }
 }
 
-void
+static void
+echo_filter(effect_t *p, data_block_t *db)
+{
+    struct echo_params *params = p->params;
+    if (params->multichannel && db->channels == 1 && n_output_channels > 1) {
+        echo_filter_mc(p, db);
+    } else {
+        echo_filter_mono(p, db);
+    }
+}
+
+static void
 echo_done(struct effect *p)
 {
     struct echo_params *params;
@@ -416,7 +415,7 @@ echo_done(struct effect *p)
     free(p);
 }
 
-void
+static void
 echo_save(struct effect *p, SAVE_ARGS)
 {
     struct echo_params *params = p->params;
@@ -427,7 +426,7 @@ echo_save(struct effect *p, SAVE_ARGS)
     SAVE_INT("multichannel", params->multichannel);
 }
 
-void
+static void
 echo_load(struct effect *p, LOAD_ARGS)
 {
     struct echo_params *params = p->params;
