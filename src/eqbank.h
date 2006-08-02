@@ -20,6 +20,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.7  2006/08/02 18:52:21  alankila
+ * - upsample equaliser 2x for improved precision, also add static
+ *   declarations and rename some variables
+ *
  * Revision 1.6  2006/05/13 17:10:06  alankila
  * - move hilbert transform into biquad.c
  * - implement stereo phaser using hilbert transform
@@ -52,12 +56,14 @@
 	#include "biquad.h"
 #endif
 
-extern effect_t *   eqbank_create();
+effect_t *   eqbank_create(void);
 
 struct eqbank_params {
     double          *boosts;
     double           volume;
     Biquad_t        *filters;
+    DSP_SAMPLE      history_in[MAX_CHANNELS][8];
+    DSP_SAMPLE      history_out[MAX_CHANNELS][8];
 };
 
 

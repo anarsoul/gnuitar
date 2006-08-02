@@ -20,6 +20,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.28  2006/08/02 18:52:20  alankila
+ * - upsample equaliser 2x for improved precision, also add static
+ *   declarations and rename some variables
+ *
  * Revision 1.27  2006/07/27 19:24:41  alankila
  * - aligned memory needs aligned free operation.
  *
@@ -133,12 +137,11 @@
  * Beware, to large values for the ends, may result in instability
  */
 
-const int fb_cf[FB_NB] =
+static const int fb_cf[FB_NB] =
     {40,100,200,320,640,1000,1600,2200,3000,4000,6000,8000,12000,16000};
 /* Array with the bandwidths of each filter in Hertz */
-const int fb_bw[FB_NB] =
+static const int fb_bw[FB_NB] =
     {30,120,160,320,640,800,1200,1200,1400,1800,2600,4000,6000,8000};
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,17 +154,13 @@ const int fb_bw[FB_NB] =
 
 #include "eqbank.h"
 #include "gui.h"
-#include <math.h>
 
-void            eqbank_filter(struct effect *p, struct data_block *db);
-
-struct slider_wrapper {
+static struct slider_wrapper {
     struct eqbank_params *par;
     int             slider_id;
 } sl_wrappers[FB_NB];
 
-
-void
+static void
 update_eqbank_eq(GtkAdjustment * adj, struct slider_wrapper *p)
 {
     p->par->boosts[p->slider_id] = adj->value;
@@ -169,13 +168,13 @@ update_eqbank_eq(GtkAdjustment * adj, struct slider_wrapper *p)
 		   adj->value, &p->par->filters[p->slider_id]);
 }
 
-void
+static void
 update_eqbank_volume(GtkAdjustment * adj, struct eqbank_params *p)
 {
     p->volume = adj->value;
 }
 
-void
+static void
 eqbank_init(struct effect *p)
 {
     struct eqbank_params *peq;
@@ -238,7 +237,6 @@ eqbank_init(struct effect *p)
             sprintf(s, "%.1fk", fb_cf[i] / 1000.0);
         }
 	
-        /* Other function on other compilers ? */
 	boost_label[i] = gtk_label_new(s);
 	gtk_table_attach(GTK_TABLE(parmTable), boost_label[i], i + 1,
 			 i + 2, 1, 2,
@@ -250,7 +248,7 @@ eqbank_init(struct effect *p)
     gtk_table_attach(GTK_TABLE(parmTable), Olabel, FB_NB + 1, FB_NB + 2, 1, 2,
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 3, 3);
-    adj_output = gtk_adjustment_new(peq->volume, -30, 30, 1.0, 5.0, 0.0);
+    adj_output = gtk_adjustment_new(peq->volume, FB_MIN, FB_MAX, 1.0, 5.0, 0.0);
     output = gtk_vscale_new(GTK_ADJUSTMENT(adj_output));
     gtk_widget_set_size_request(output,55,100);
     gtk_range_set_inverted(GTK_RANGE(output), TRUE);
@@ -283,53 +281,51 @@ eqbank_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
-void
+static void
 eqbank_filter(struct effect *p, struct data_block *db)
 {
-    int             count,
-                    i;
-
+    int                 count;
     DSP_SAMPLE         *s;
-
-    struct eqbank_params *ep;
-    double		  t, ocoeff;
+    struct eqbank_params *params = p->params;
+    float		  ocoeff;
     int			  cchannel=0;
-
-    ep = p->params;
 	
     count = db->len;
     s = db->data;
 
-    ocoeff = pow(10, ep->volume / 20.0);
+    ocoeff = pow(10, params->volume / 20.0);
     while (count) {
-	t = *s;
-	for (i = 0; i < FB_NB; i++)
-	    t = do_biquad(t, &ep->filters[i], cchannel);
-	t *= ocoeff;
-#ifdef CLIP_EVERYWHERE
-        CLIP_SAMPLE(t)
-#endif
-	*s = t;
+        int i;
+        DSP_SAMPLE out1, out2;
+        /* using 2x upsampling */
+        fir_interpolate_2x(params->history_in[cchannel], *s, &out1, &out2);
+	for (i = 0; i < FB_NB; i++) {
+            /* out1 is the sample before out2 */
+	    out1 = do_biquad(out1, &params->filters[i], cchannel);
+            out2 = do_biquad(out2, &params->filters[i], cchannel);
+        }
+        /* downsample back to 1x -- observe reversed ordering */
+        *s = fir_decimate_2x(params->history_out[cchannel], out2, out1) * ocoeff;
+
 	cchannel = (cchannel + 1) % db->channels;
-	  
 	s++;
 	count--;
     }
 }
 
-void
+static void
 eqbank_done(struct effect *p)
 {
-    struct eqbank_params *ep = p->params;
+    struct eqbank_params *params = p->params;
 	
-    gnuitar_free(ep->filters);
-    free(ep->boosts);
-    gtk_widget_destroy(p->control);
+    gnuitar_free(params->filters);
+    free(params->boosts);
     free(p->params);
+    gtk_widget_destroy(p->control);
     free(p);
 }
 
-void
+static void
 eqbank_save(struct effect *p, SAVE_ARGS)
 {
     struct eqbank_params *params = p->params;
@@ -344,7 +340,7 @@ eqbank_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("volume", params->volume);
 }
 
-void
+static void
 eqbank_load(struct effect *p, LOAD_ARGS)
 {
     struct eqbank_params *params = p->params;
@@ -359,7 +355,7 @@ eqbank_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("volume", params->volume);
 
     for (i = 0; i < FB_NB; i++) {
-	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], params->boosts[i], &params->filters[i]);
+	set_peq_biquad(sample_rate * 2, fb_cf[i], fb_bw[i], params->boosts[i], &params->filters[i]);
     }
 }
 
@@ -367,7 +363,7 @@ effect_t *
 eqbank_create()
 {
     effect_t       *p;
-    struct eqbank_params *peq;
+    struct eqbank_params *params;
     int             i;
 
     p = calloc(1, sizeof(effect_t));
@@ -379,12 +375,12 @@ eqbank_create()
     p->toggle = 0;
     p->proc_done = eqbank_done;
 
-    peq = p->params;
-    peq->filters = gnuitar_memalign(FB_NB, sizeof(peq->filters[0]));
-    peq->boosts  = calloc(FB_NB, sizeof(peq->boosts[0]));
+    params = p->params;
+    params->filters = gnuitar_memalign(FB_NB, sizeof(params->filters[0]));
+    params->boosts  = calloc(FB_NB, sizeof(params->boosts[0]));
     for (i = 0; i < FB_NB; i++)
-	set_peq_biquad(sample_rate, fb_cf[i], fb_bw[i], peq->boosts[i], &peq->filters[i]);
-    peq->volume=0;
+	set_peq_biquad(sample_rate * 2, fb_cf[i], fb_bw[i], params->boosts[i], &params->filters[i]);
+    params->volume = 0;
 
     return p;
 }
