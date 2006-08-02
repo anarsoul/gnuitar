@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.81  2006/08/02 19:21:23  alankila
+ * - clarify that amp is a digital amplification, not analog simulation
+ *
  * Revision 1.80  2006/07/30 11:14:06  alankila
  * - rename n variable to effects_n -- n is too short for a global
  *
@@ -602,7 +605,7 @@ pump_sample(data_block_t *db)
 
 /* note that vibrato & tremolo effects are swapped */
 struct effect_creator effect_list[] = {
-    {"Amp", amp_create},
+    {"Digital amp", amp_create},
     {"Autowah", autowah_create},
     {"Distort", distort_create},
     {"Delay", delay_create},
