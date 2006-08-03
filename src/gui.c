@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.108  2006/08/03 08:22:15  alankila
+ * - doh! forgot HAVE_GTK2 around text buffer adjustment when I shuffled
+ *   the code around.
+ *
  * Revision 1.107  2006/08/03 05:20:33  alankila
  * - strange, somehow missed one n => effects_n
  *
@@ -592,9 +596,11 @@ gnuitar_printf(char *frm, ...)
     gnuitar_gtk_text_view_append(status_text, tmp);
     g_free(tmp);
 
+#ifdef HAVE_GTK2
     /* scroll to end */
     adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(status_window));
     gtk_adjustment_set_value(adj, adj->upper);
+#endif
 }
 
 /*
