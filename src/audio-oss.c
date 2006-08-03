@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.29  2006/08/03 05:20:02  alankila
+ * - don't crash on missing midi device
+ * - alsa: keep on going if fragment number can't be set
+ *
  * Revision 1.28  2006/07/28 20:18:04  alankila
  * - disable midi on first sniff of problems
  *
@@ -305,6 +309,8 @@ oss_finish_sound(void)
     pthread_join(audio_thread, NULL);
     gnuitar_free(rwbuf);
     oss_driver.enabled = 0;
+    close(midi_fd);
+    midi_fd = 0;
     close(fd);
 }
 

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.16  2006/08/03 05:20:02  alankila
+ * - don't crash on missing midi device
+ * - alsa: keep on going if fragment number can't be set
+ *
  * Revision 1.15  2006/07/31 22:45:27  alankila
  * - don't quit on failure to connect to all capture/playback ports.
  *   We will assume user using JACK knows what he is doing.
@@ -188,7 +192,8 @@ process (jack_nframes_t nframes, void *arg)
     }
 
 #ifdef HAVE_ALSA
-    alsa_midi_event();
+    if (sequencer_handle != NULL)
+        alsa_midi_event();
 #endif
     pump_sample(&db);
     

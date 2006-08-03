@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2006/08/03 05:20:02  alankila
+ * - don't crash on missing midi device
+ * - alsa: keep on going if fragment number can't be set
+ *
  * Revision 1.42  2006/07/28 19:24:35  alankila
  * - avoid destroying sequencer if for some reason init is called twice. The
  *   circumstances where this might occur smell a bit dubious though.
@@ -358,7 +362,8 @@ alsa_audio_thread(void *V)
         /*
         if (outframes != buffer_size)
             gnuitar_printf( "Short write to playback device: %d, expecting %d\n", outframes, buffer_size);*/
-        alsa_midi_event();
+        if (sequencer_handle != NULL)
+            alsa_midi_event();
 
         /* now that output is out of the way, we have most time for running effects */ 
         db.len = buffer_size * n_input_channels;
@@ -479,8 +484,8 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
         if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
 	    gnuitar_printf("can't set fragments %d value on ALSA device: %s\n",
                            *fragments, snd_strerror(err));
-            snd_pcm_hw_params_free(hw_params);
-            return 1;
+            //snd_pcm_hw_params_free(hw_params);
+            //return 1;
         }
 
         /* let the sound driver pick period size as appropriate. */
