@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.107  2006/08/03 05:20:33  alankila
+ * - strange, somehow missed one n => effects_n
+ *
  * Revision 1.106  2006/07/31 22:48:59  alankila
  * - selecting pre- and post-gains are an exact science, so show the values.
  *
@@ -848,7 +851,7 @@ rowmove_processor(GtkWidget *widget, gint start, gint end, gpointer data)
     int         i;
 
     assert(start >= 0);
-    assert(end <= n);
+    assert(end <= effects_n);
 
     my_lock_mutex(effectlist_lock);
     if (start < end) {
