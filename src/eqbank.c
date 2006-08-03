@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.29  2006/08/03 17:49:39  alankila
+ * - oops: math.h required for pow
+ *
  * Revision 1.28  2006/08/02 18:52:20  alankila
  * - upsample equaliser 2x for improved precision, also add static
  *   declarations and rename some variables
@@ -152,6 +155,7 @@ static const int fb_bw[FB_NB] =
 #    include "utils.h"
 #endif
 
+#include <math.h>
 #include "eqbank.h"
 #include "gui.h"
 
