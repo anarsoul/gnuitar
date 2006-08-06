@@ -3,6 +3,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/08/06 20:45:52  alankila
+ * - use stdint type rather than glib type
+ *
  * Revision 1.1  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -15,14 +18,14 @@
 #ifndef _AUDIO_DRIVER_H_
 #define _AUDIO_DRIVER_H_ 1
 
-#include "glib.h"
+#include <stdint.h>
 
 #define MAX_SAMPLE (32767 << 8)
 
 #ifdef FLOAT_DSP
-typedef float	DSP_SAMPLE;
+typedef float           DSP_SAMPLE;
 #else
-typedef gint32	DSP_SAMPLE;
+typedef int_least32_t   DSP_SAMPLE;
 #endif
 
 typedef struct {
@@ -47,8 +50,8 @@ typedef struct {
 
 extern audio_driver_t *audio_driver;
 
-typedef gint16  SAMPLE16;
-typedef gint32  SAMPLE32;
+typedef int16_t  SAMPLE16;
+typedef int32_t  SAMPLE32;
 
 #ifdef _WIN32
     #define MAX_BUFFERS	1024	/* number of input/output sound buffers */
