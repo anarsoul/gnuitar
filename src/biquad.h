@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.31  2006/08/06 20:57:46  alankila
+ * - pepper with const declarations
+ *
  * Revision 1.30  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -160,7 +163,7 @@
 typedef struct {
     float       b1, b2, a1, a2;
     float       mem[MAX_CHANNELS][4];
-    float       b0, empty1, empty2, empty3;
+    float       b0;
 } Biquad_t __attribute__((aligned(16)));
 #else
 typedef struct {
@@ -177,22 +180,19 @@ typedef struct {
 /*
  * Sampling rate, Center frequency, Bandwidth, Gain (decibels) 
  */
-extern void     set_peq_biquad(double Fs, double Fc, double BW, double G,
-			       Biquad_t *f);
-extern void     set_bpf_biquad(double Fs, double Fc, double BW,
-			       Biquad_t *f);
-extern void     set_lpf_biquad(double Fs, double Fc, double BW,
-			       Biquad_t *f);
-extern void     set_phaser_biquad(double delay, Biquad_t *f);
-extern void     set_2nd_allpass_biquad(double delay, Biquad_t *f);
-extern void     set_rc_lowpass_biquad(double fs, double fc, Biquad_t *f);
-extern void     set_rc_highpass_biquad(double fs, double fc, Biquad_t *f);
-extern void     set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f);
+void     set_peq_biquad(const double Fs, const double Fc, const double BW, const double, Biquad_t *f);
+void     set_bpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f);
+void     set_lpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f);
+void     set_phaser_biquad(const double delay, Biquad_t *f);
+void     set_2nd_allpass_biquad(const double delay, Biquad_t *f);
+void     set_rc_lowpass_biquad(const double fs, const double fc, Biquad_t *f);
+void     set_rc_highpass_biquad(const double fs, const double fc, Biquad_t *f);
+void     set_lsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f);
 
-extern void     hilbert_transform(DSP_SAMPLE in, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h, int curr_channel);
-extern void     hilbert_init(Hilbert_t *h);
-extern void     fir_interpolate_2x(DSP_SAMPLE *mem, DSP_SAMPLE in, DSP_SAMPLE *o1, DSP_SAMPLE *o2);
-extern DSP_SAMPLE fir_decimate_2x(DSP_SAMPLE *mem, DSP_SAMPLE in1, DSP_SAMPLE in2);
+void     hilbert_transform(const DSP_SAMPLE in, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h, const int curr_channel);
+void     hilbert_init(Hilbert_t *h);
+void     fir_interpolate_2x(DSP_SAMPLE *mem, const DSP_SAMPLE in, DSP_SAMPLE *o1, DSP_SAMPLE *o2);
+DSP_SAMPLE fir_decimate_2x(DSP_SAMPLE *mem, const DSP_SAMPLE in1, const DSP_SAMPLE in2);
 
 /*
  * Sampling rate, Center frequency, Ripple %, Lowpass?
@@ -238,7 +238,7 @@ do_biquad(float x, Biquad_t *f, int c)
 */
 
 static inline float
-convolve(const float *a, const float *b, int len) {
+convolve(const float *a, const float *b, const int len) {
     __m128 r;
     float dot = 0.0;
     int i;
@@ -278,7 +278,7 @@ convolve(const float *a, const float *b, int len) {
 #else
 
 static inline DSP_SAMPLE
-convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
+convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
     int i;
     DSP_SAMPLE dot = 0;
     for (i = 0; i < len; i += 1)
@@ -294,11 +294,9 @@ convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, int len) {
 #define DENORMAL_BIAS   1E-5
 
 static inline float
-do_biquad(float x, Biquad_t *f, int c)
+do_biquad(const float x, Biquad_t *f, const int c)
 {
     float          y;
-    if(isnan(x))
-	x=0;
     y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
         + f->mem[c][2] * f->a1 + f->mem[c][3] * f->a2 + DENORMAL_BIAS;
     if(isnan(y))

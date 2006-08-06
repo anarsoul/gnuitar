@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.29  2006/08/06 20:57:46  alankila
+ * - pepper with const declarations
+ *
  * Revision 1.28  2006/07/08 18:11:33  alankila
  * - reduce overdrive effect cpu drain by implementing low-pass filtering
  *   in resampler and reusing the static 720 Hz lowpass filter as decimating
@@ -140,14 +143,14 @@
 
 /* peaking band equalizer */
 void
-set_peq_biquad(double Fs, double Fc, double BW, double G, Biquad_t *f)
+set_peq_biquad(const double Fs, const double Fc, const double BW, const double G, Biquad_t *f)
 {
-    double          k, om, alpha, a0;
+    double          k, om, alpha, a0, BWoct;
     
     k = pow(10, G / 40);	/* relative gain */
-    BW = BW / (Fc - BW / 2);	/* bandwidth in octaves */
+    BWoct = BW / (Fc - BW / 2);	/* bandwidth in octaves */
     om = 2 * M_PI * Fc / Fs;	/* normalized frequency in radians */
-    alpha = sinh(log(2) / 2 * BW * om / sin(om)) * sin(om);
+    alpha = sinh(log(2) / 2 * BWoct * om / sin(om)) * sin(om);
     
     a0 = 1 + alpha / k;
     f->b0 = (1 + alpha * k) / a0;
@@ -159,7 +162,7 @@ set_peq_biquad(double Fs, double Fc, double BW, double G, Biquad_t *f)
 
 /* low pass filter */
 void
-set_lpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
+set_lpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f)
 {
     double om, alpha, a0;
     
@@ -176,7 +179,7 @@ set_lpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
 
 /* band pass filter */
 void
-set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
+set_bpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f)
 {
     double om, alpha, a0;
     
@@ -193,7 +196,7 @@ set_bpf_biquad(double Fs, double Fc, double BW, Biquad_t *f)
 
 /* 2nd order allpass filter, delay can vary from 0 to 1 */
 void
-set_phaser_biquad(double a, Biquad_t *f)
+set_phaser_biquad(const double a, Biquad_t *f)
 {
     f->b0 = a * a;
     f->b1 = a;
@@ -204,7 +207,7 @@ set_phaser_biquad(double a, Biquad_t *f)
 
 /* A 2nd order allpass, delay can vary from 0 to 1 */
 void
-set_2nd_allpass_biquad(double a, Biquad_t *f)
+set_2nd_allpass_biquad(const double a, Biquad_t *f)
 {
     f->b0 = a * a;
     f->b1 = 0;
@@ -214,7 +217,7 @@ set_2nd_allpass_biquad(double a, Biquad_t *f)
 }
 
 void
-set_rc_lowpass_biquad(double sample_rate, double freq, Biquad_t *f)
+set_rc_lowpass_biquad(const double sample_rate, const double freq, Biquad_t *f)
 {
     double rc = 1 / (2 * M_PI * freq);
     double ts = 1.0 / sample_rate;
@@ -227,7 +230,7 @@ set_rc_lowpass_biquad(double sample_rate, double freq, Biquad_t *f)
 }
 
 void
-set_rc_highpass_biquad(double sample_rate, double freq, Biquad_t *f)
+set_rc_highpass_biquad(const double sample_rate, const double freq, Biquad_t *f)
 {
     double rc = 1 / (2 * M_PI * freq);
     double ts = 1.0 / sample_rate;
@@ -240,7 +243,7 @@ set_rc_highpass_biquad(double sample_rate, double freq, Biquad_t *f)
 }
 
 void
-set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t *f)
+set_chebyshev1_biquad(const double Fs, const double Fc, const double ripple, const int lowpass, Biquad_t *f)
 {
     double          x, y, z, c, v, t, r, om, m, x0, y1p, y2, k, d, tt, tt2, a0;
     
@@ -286,7 +289,7 @@ set_chebyshev1_biquad(double Fs, double Fc, double ripple, int lowpass, Biquad_t
 }
 
 void
-set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f)
+set_lsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f)
 {
     double b0, b1, b2, a0, a1, a2, omega, cs, sn, beta, A;
 
@@ -312,7 +315,7 @@ set_lsh_biquad(double Fs, double Fc, double G, Biquad_t *f)
 
 /* input is input, output is x0 and x1 with 90° phase separation between them */
 void
-hilbert_transform(DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h, int curr_channel)
+hilbert_transform(const DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h, const int curr_channel)
 {
     int i;
     DSP_SAMPLE x0i, x1i;
@@ -368,7 +371,7 @@ hilbert_init(Hilbert_t *h)
  * out2 is "delayed" by 3.5 samples.
  */
 void
-fir_interpolate_2x(DSP_SAMPLE *history, DSP_SAMPLE in, DSP_SAMPLE *out1, DSP_SAMPLE *out2)
+fir_interpolate_2x(DSP_SAMPLE *history, const DSP_SAMPLE in, DSP_SAMPLE *out1, DSP_SAMPLE *out2)
 {
     *out1 = history[2];
     *out2 = 0.6147129043790 * (history[2] + history[3])
@@ -396,7 +399,7 @@ fir_interpolate_2x(DSP_SAMPLE *history, DSP_SAMPLE in, DSP_SAMPLE *out1, DSP_SAM
  * and ignoring out1, but this is more efficient. The decimator also delays input by
  * 1.5 samples in output rate. */
 DSP_SAMPLE
-fir_decimate_2x(DSP_SAMPLE *history, DSP_SAMPLE in1, DSP_SAMPLE in2)
+fir_decimate_2x(DSP_SAMPLE *history, const DSP_SAMPLE in1, const DSP_SAMPLE in2)
 {
     DSP_SAMPLE out;
     
