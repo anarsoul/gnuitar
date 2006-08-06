@@ -23,8 +23,8 @@
 #ifndef _REVERB_H_
 #define _REVERB_H_ 1
 
+#include "effect.h"
 #include "backbuf.h"
-#include "pump.h"
 
 effect_t *   reverb_create();
 

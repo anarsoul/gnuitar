@@ -24,7 +24,7 @@
 #define _GUI_H_ 1
 
 #include <gtk/gtk.h>
-#include "pump.h"
+#include "effect.h"
 #include "glib12-compat.h"
 
 #ifdef __cplusplus
@@ -50,15 +50,15 @@ void		init_gui(void);
 gint            delete_event(GtkWidget *, GdkEvent *, gpointer);
 void            toggle_effect(GtkWidget *, effect_t *);
 void            bank_append_entry(gchar *entry);
+void            set_vumeter_in_value(double power);
+void            set_vumeter_out_value(double power);
+void            gnuitar_printf(char *fmt, ...);
 
 extern GtkWidget *processor;
 extern double master_volume;
 extern double input_volume;
 extern GtkObject* adj_input;
 extern GtkObject* adj_master;
-extern void set_vumeter_in_value(double power);
-extern void set_vumeter_out_value(double power);
-
 
 
 #endif

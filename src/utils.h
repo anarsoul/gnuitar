@@ -23,7 +23,6 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_ 1
 
-#include "pump.h"
 #ifdef _WIN32
 #  ifndef M_PI
 #    define M_PI 3.1415926535897932384626433832795

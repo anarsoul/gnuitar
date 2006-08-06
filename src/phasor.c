@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.42  2006/07/29 12:04:36  alankila
  * - effect lickup:
  *   * stereo phaser has less severe phase cancellation effects
@@ -341,7 +348,7 @@ phasor_init(struct effect *p)
 }
 
 static void
-phasor_filter_mono(struct effect *p, struct data_block *db)
+phasor_filter_mono(struct effect *p, data_block_t *db)
 {
     struct phasor_params *params = p->params;
     DSP_SAMPLE     *s, tmp;
@@ -381,7 +388,7 @@ phasor_filter_mono(struct effect *p, struct data_block *db)
 }
 
 static void
-phasor_filter_stereo(struct effect *p, struct data_block *db)
+phasor_filter_stereo(struct effect *p, data_block_t *db)
 {
     struct phasor_params *params = p->params;
     float f, Dry, Wet, sinval=0, cosval=0;
@@ -423,7 +430,7 @@ phasor_filter_stereo(struct effect *p, struct data_block *db)
 }
 
 static void
-phasor_filter(struct effect *p, struct data_block *db)
+phasor_filter(struct effect *p, data_block_t *db)
 {
     struct phasor_params *params = p->params;
 

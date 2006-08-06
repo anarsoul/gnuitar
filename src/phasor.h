@@ -23,7 +23,7 @@
 #ifndef _PHASOR_H_
 #define _PHASOR_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "biquad.h"
 
 #define MAX_PHASOR_FILTERS  24

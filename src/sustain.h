@@ -23,7 +23,7 @@
 #ifndef _SUSTAIN_H_
 #define _SUSTAIN_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 
 effect_t *   sustain_create();
 

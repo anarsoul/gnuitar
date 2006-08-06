@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.68  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.67  2006/07/29 15:16:28  alankila
  * - remember presets between gnuitar invocations
  * - remember effect settings between gnuitar invocations
@@ -313,9 +320,16 @@
 #endif
 
 #include "main.h"
+#include "pump.h"
+#include "audio-midi.h"
+#include "audio-alsa.h"
+#include "audio-oss.h"
+#include "audio-jack.h"
+#include "audio-winmm.h"
+#include "audio-dsound.h"
 #include "gui.h"
 
-volatile audio_driver_t  *audio_driver = NULL;
+audio_driver_t  *audio_driver = NULL;
 char            version[13] = "GNUitar "VERSION;
 
 #ifndef _WIN32
@@ -399,14 +413,13 @@ main(int argc, char **argv)
     if (audio_driver == NULL)
 	gnuitar_printf("warning: no usable audio driver found.\n");
 
-    pump_start(argc, argv);    
-
+    pump_start();
     if (audio_driver && (error = audio_driver->init()) != ERR_NOERROR) {
         gnuitar_printf("warning: unable to begin audio processing (code %d)\n", error);
     }
 
     init_gui();
-    load_initial_state();
+    load_initial_state(argv, argc);
     gtk_main();
 
     if (audio_driver && audio_driver->enabled)

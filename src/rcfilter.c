@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2006/08/06 20:14:55  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.11  2005/09/01 16:09:54  alankila
  * - make rcfilter and autowah multichannel ready. In addition, autowah
  *   now performs linear sweep in logarithmic domain rather than exponential.
@@ -63,7 +70,6 @@
  */
 
 #include "rcfilter.h"
-#include "pump.h"
 #include <math.h>
 #include <string.h>
 #ifdef _WIN32
@@ -71,7 +77,7 @@
 #endif
 
 void
-LC_filter(struct data_block *db, int filter_no, double freq,
+LC_filter(data_block_t *db, int filter_no, double freq,
 	  struct filter_data *pp)
 {
     double          R,
@@ -143,7 +149,7 @@ RC_set_freq(double f, struct filter_data *pp)
 }
 
 void
-RC_filter(struct data_block *db, int mode, int filter_no,
+RC_filter(data_block_t *db, int mode, int filter_no,
 	  struct filter_data *pp)
 {
     double          du,
@@ -182,7 +188,7 @@ RC_filter(struct data_block *db, int mode, int filter_no,
 }
 
 void
-RC_bandpass(struct data_block *db, struct filter_data *pp)
+RC_bandpass(data_block_t *db, struct filter_data *pp)
 {
     int             a;
 
@@ -193,7 +199,7 @@ RC_bandpass(struct data_block *db, struct filter_data *pp)
 }
 
 void
-RC_highpass(struct data_block *db, struct filter_data *pp)
+RC_highpass(data_block_t *db, struct filter_data *pp)
 {
     int             a;
 
@@ -202,7 +208,7 @@ RC_highpass(struct data_block *db, struct filter_data *pp)
 }
 
 void
-RC_lowpass(struct data_block *db, struct filter_data *pp)
+RC_lowpass(data_block_t *db, struct filter_data *pp)
 {
     int             a;
 

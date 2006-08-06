@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.17  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.16  2006/08/03 05:20:02  alankila
  * - don't crash on missing midi device
  * - alsa: keep on going if fragment number can't be set
@@ -107,9 +114,13 @@
 #include <jack/jack.h>
 #ifdef HAVE_ALSA /* for midi -- it seems JACK doesn't have its own midi system. */
 #include <alsa/asoundlib.h>
+#include "audio-midi.h"
 #endif
-#include "pump.h"
+
+#include "audio-jack.h"
 #include "main.h"
+#include "gui.h"
+#include "pump.h"
 
 static char *jack_server_name = NULL; /* in the future, maybe something else? */
 //static jack_options_t options = JackNullOption;
@@ -164,7 +175,7 @@ static int
 process (jack_nframes_t nframes, void *arg)
 {
     int i,j,k;
-    static struct data_block db = {
+    data_block_t db = {
         .data = procbuf,
         .data_swap = procbuf2,
     };

@@ -23,7 +23,7 @@
 #ifndef _TUBEAMP_H_
 #define _TUBEAMP_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "biquad.h"
 
 extern effect_t *tubeamp_create();

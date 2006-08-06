@@ -23,7 +23,7 @@
 #ifndef _ECHO_H_
 #define _ECHO_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "backbuf.h"
 
 #define MAX_ECHO_COUNT  4

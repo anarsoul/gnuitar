@@ -23,7 +23,7 @@
 #ifndef _CHORUS_H_
 #define _CHORUS_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "backbuf.h"
 
 effect_t *   chorus_create();

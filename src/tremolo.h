@@ -22,7 +22,8 @@
 
 #ifndef _TREMOLO_H_
 #define _TREMOLO_H_ 1
-#include "pump.h"
+
+#include "effect.h"
 
 effect_t *   tremolo_create();
 

@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.4  2006/07/26 23:09:09  alankila
  * - DirectSound may be buggy; MMSystem at least worked in mingw build.
  * - remove some sound-specific special cases in gui and main code.
@@ -54,7 +61,7 @@
 
 #ifdef HAVE_ALSA
 
-#include "pump.h"
+#include "audio-driver.h"
 
 int                 alsa_available();
 extern audio_driver_t alsa_driver;

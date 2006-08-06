@@ -195,7 +195,7 @@ comb_filter(double input, double factor, int delay, Backbuf_t *history)
 }
 
 static void
-reverb_filter(struct effect *p, struct data_block *db)
+reverb_filter(struct effect *p, data_block_t *db)
 {
     struct reverb_params *params = p->params;
     DSP_SAMPLE     *s;

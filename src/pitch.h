@@ -11,6 +11,7 @@
 #ifndef _PITCH_H_
 #define _PITCH_H_ 1
 
+#include "effect.h"
 #include "backbuf.h"
 
 extern effect_t *   pitch_create();

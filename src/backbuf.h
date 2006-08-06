@@ -23,20 +23,20 @@
 #ifndef _BACKBUF_H_
 #define _BACKBUF_H_ 1
 
-#include "pump.h"		/* for DSP_SAMPLE */
+#include "audio-driver.h"   /* for DSP_SAMPLE */
 
 #define BUF_TYPE DSP_SAMPLE
 typedef struct Backbuf {
     BUF_TYPE       *storage;
     unsigned int    mask, nstor, curpos;
     /* method slots */
-    void	(*add)		    (struct Backbuf *, BUF_TYPE);
-    BUF_TYPE	(*get)		    (struct Backbuf *, unsigned int);
-    BUF_TYPE	(*get_interpolated) (struct Backbuf *, double);
-    void	(*clear)	    (struct Backbuf *);
+    void	(*add)		    (struct Backbuf *b, const BUF_TYPE value);
+    BUF_TYPE	(*get)		    (struct Backbuf *b, const unsigned int pos);
+    BUF_TYPE	(*get_interpolated) (struct Backbuf *b, float pos);
+    void	(*clear)	    (struct Backbuf *b);
 } Backbuf_t;
 
-Backbuf_t * new_Backbuf(unsigned int);
-void	    del_Backbuf(Backbuf_t *);
+Backbuf_t * new_Backbuf(const unsigned int size);
+void	    del_Backbuf(Backbuf_t *b);
 
 #endif

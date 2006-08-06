@@ -20,6 +20,13 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.8  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.7  2006/08/02 18:52:21  alankila
  * - upsample equaliser 2x for improved precision, also add static
  *   declarations and rename some variables
@@ -49,12 +56,8 @@
 #ifndef _EQBANK_H_
 #define _EQBANK_H_ 1
 
-
-#include "pump.h"
-
-#ifndef _BIQUAD_H_
-	#include "biquad.h"
-#endif
+#include "effect.h"
+#include "biquad.h"
 
 effect_t *   eqbank_create(void);
 

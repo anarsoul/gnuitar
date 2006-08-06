@@ -23,7 +23,7 @@
 #ifndef _AUTOWAH_H_
 #define _AUTOWAH_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "backbuf.h"
 #include "biquad.h"
 #include "rcfilter.h"

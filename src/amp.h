@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.3  2006/08/02 19:21:04  alankila
  * - add static declarations
  *
@@ -31,8 +38,7 @@
 #ifndef _AMP_H_
 #define _AMP_H_ 1
 
-#include "pump.h"
-
+#include "effect.h"
 
 effect_t *   amp_create();
 

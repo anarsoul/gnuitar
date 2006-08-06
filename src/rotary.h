@@ -9,7 +9,7 @@
 #ifndef _ROTARY_H_
 #define _ROTARY_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "biquad.h"
 
 extern effect_t *rotary_create();

@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.109  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.108  2006/08/03 08:22:15  alankila
  * - doh! forgot HAVE_GTK2 around text buffer adjustment when I shuffled
  *   the code around.
@@ -473,14 +480,21 @@
 #    include <unistd.h>
 #    include "gnuitar.xpm"
 #endif
+#include <stdarg.h>
 
 #include "gui.h"
-#include "stdarg.h"
+#include "audio-midi.h"
 #include "authors_text.h"
 #include "about_text.h"
 #include "license_text.h"
 #include "pump.h"
 #include "main.h"
+#include "audio-midi.h"
+#include "audio-alsa.h"
+#include "audio-oss.h"
+#include "audio-jack.h"
+#include "audio-winmm.h"
+#include "audio-dsound.h"
 #include "tracker.h"
 #include "utils.h"
 

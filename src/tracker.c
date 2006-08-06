@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2006/08/06 20:14:55  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.20  2006/07/26 17:13:05  alankila
  * - win32 build fixes
  *
@@ -115,24 +122,25 @@
  */
 
 #include "tracker.h"
-#include "pump.h"
+#include "gui.h"
+#include "effect.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <string.h>
 #ifndef _WIN32
-#     include <unistd.h>
-#     include <sys/ioctl.h>
-#ifdef HAVE_SNDFILE
-#     include <sndfile.h>
-#endif
+#   include <unistd.h>
+#   include <sys/ioctl.h>
+#   ifdef HAVE_SNDFILE
+#       include <sndfile.h>
+#   else
+#       include <fcntl.h>
+#   endif
 #else
 #     include <io.h>
 #     include <string.h>
 #     include <windows.h>
 #     include <mmsystem.h>
 #endif
-#include <sys/stat.h>
 #include <sys/types.h>
 
 #ifndef _WIN32

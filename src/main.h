@@ -23,16 +23,6 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_ 1
 
-#include "pump.h"
-#include "utils.h"
-
-/* compile-time decision is easier to make working first */
-#include "audio-alsa.h"
-#include "audio-oss.h"
-#include "audio-jack.h"
-#include "audio-dsound.h"
-#include "audio-winmm.h"
-
 typedef enum {
     ERR_NOERROR = 0,
     ERR_THREAD, 		/* cannot create audio thread */
@@ -57,17 +47,5 @@ typedef enum {
 } GnuitarErr;
 
 extern char version[];
-
-extern volatile audio_driver_t *audio_driver;
-#ifndef _WIN32
-extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
-#else
-/* sadly, Windows and Linux have a different idea what the size of the buffer is.
- * Linux world talks about size in frames because that is most convenient for ALSA
- * and JACK (but less so for OSS). */
-extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-#endif
 
 #endif

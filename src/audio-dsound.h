@@ -21,6 +21,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.1  2006/07/27 18:31:15  alankila
  * - split dsound and winmm into separate drivers.
  *
@@ -30,7 +37,7 @@
 #define _AUDIO_DSOUND_H_ 1
 #ifdef HAVE_DSOUND
 
-#include "pump.h"
+#include "audio-driver.h"
 audio_driver_t dsound_driver;
 
 #endif

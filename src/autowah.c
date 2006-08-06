@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.40  2006/07/28 20:38:55  alankila
  * - midi control into autowah, parameter lickup
  *
@@ -168,8 +175,8 @@
  */
 
 #include "autowah.h"
-#include "glib12-compat.h"
 #include "gui.h"
+#include "audio-midi.h"
 #include <math.h>
 #include <stdlib.h>
 #ifndef _WIN32
@@ -179,7 +186,6 @@
 #    include "utils.h"
 #endif
 #include <string.h>
-#include <gtk/gtk.h>
 
 /* these thresholds are used to trigger the sweep. The system accumulates
  * time-weighted average of square difference between samples ("delta") and
@@ -454,7 +460,7 @@ power2db(double power)
 }
 
 static void
-autowah_filter(struct effect *p, struct data_block *db)
+autowah_filter(struct effect *p, data_block_t *db)
 {
     struct autowah_params *ap;
     int             i, curr_channel = 0, delay_time;

@@ -23,8 +23,8 @@
 #ifndef _VIBRATO_H_
 #define _VIBRATO_H_ 1
 
+#include "effect.h"
 #include "biquad.h"
-#include "pump.h"
 
 #define MAX_VIBRATO_BUFSIZE 16384
 

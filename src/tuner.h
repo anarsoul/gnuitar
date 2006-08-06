@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.8  2006/08/06 20:14:55  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.7  2006/07/18 21:35:59  alankila
  * - add optional FFT-based implementation -- it is several times faster
  *   than the time-domain version and nearly as good.
@@ -54,6 +61,7 @@
 #ifndef _TUNER_H_
 #define _TUNER_H_ 1
 
+#include "effect.h"
 #ifdef HAVE_FFTW3
 #include "fftw3.h"
 #endif

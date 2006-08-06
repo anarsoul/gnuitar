@@ -57,6 +57,13 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.31  2006/08/06 20:14:55  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.30  2006/08/02 19:07:57  alankila
  * - add missing static declarations
  *
@@ -164,7 +171,6 @@
  */
 
 #include "gui.h"
-#include "pump.h"
 #include "tuner.h"
 #include <math.h>
 #include <stdio.h>
@@ -460,7 +466,7 @@ cmp_double(const void *a, const void *b)
 }
 
 static void
-tuner_filter(struct effect *p, struct data_block *db)
+tuner_filter(struct effect *p, data_block_t *db)
 {
     struct tuner_params *params;
     int			i, j;

@@ -8,6 +8,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.41  2006/08/06 20:14:55  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.40  2006/07/27 19:24:42  alankila
  * - aligned memory needs aligned free operation.
  *
@@ -174,7 +181,6 @@
 #include "gui.h"
 #include <stdlib.h>
 
-#include "pump.h"
 #include "biquad.h"
 #include "tubeamp.h"
 
@@ -469,7 +475,7 @@ F_tube(float in, float r_i)
 }
 
 static void
-tubeamp_filter(struct effect *p, struct data_block *db)
+tubeamp_filter(struct effect *p, data_block_t *db)
 {
     int i, j, k, curr_channel = 0;
     DSP_SAMPLE *ptr1;

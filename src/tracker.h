@@ -23,7 +23,7 @@
 #ifndef _TRACKER_H_
 #define _TRACKER_H_ 1
 
-#include "pump.h"
+#include "audio-driver.h"
 
 extern void     tracker_out(const char *outfile);
 // extern void tracker_in(const char *infile);

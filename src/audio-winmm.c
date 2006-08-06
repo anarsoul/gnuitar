@@ -21,6 +21,13 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.3  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.2  2006/07/27 19:15:35  alankila
  * - split windows driver architecture now compiles and runs.
  *
@@ -42,12 +49,10 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#include "pump.h"
+#include "audio-winmm.h"
 #include "main.h"
-#include "tracker.h"
 #include "gui.h"
 #include "utils.h"
-#include "audio-winmm.h"
 
 static volatile int keepthreadrunning = 0;
 static HANDLE       input_bufs_done = 0, output_bufs_done = 0, audio_thread = 0;

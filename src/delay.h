@@ -23,7 +23,7 @@
 #ifndef _DELAY_H_
 #define _DELAY_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 
 #define MAX_COUNT 10
 #define MAX_SECONDS 10

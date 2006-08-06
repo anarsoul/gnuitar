@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.30  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.29  2006/08/02 19:07:56  alankila
  * - add missing static declarations
  *
@@ -294,7 +301,7 @@ distort_init(struct effect *p)
 }
 
 static void
-distort_filter(struct effect *p, struct data_block *db)
+distort_filter(struct effect *p, data_block_t *db)
 {
     int             count,
                     currchannel = 0;

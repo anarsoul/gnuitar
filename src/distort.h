@@ -23,7 +23,7 @@
 #ifndef _DISTORT_H_
 #define _DISTORT_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "rcfilter.h"
 
 effect_t * distort_create();

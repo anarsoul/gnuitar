@@ -23,7 +23,7 @@
 #ifndef _DISTORT2_H_
 #define _DISTORT2_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 #include "biquad.h"
 
 effect_t *distort2_create();

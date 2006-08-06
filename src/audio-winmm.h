@@ -19,6 +19,13 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.3  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.2  2006/07/27 19:15:35  alankila
  * - split windows driver architecture now compiles and runs.
  *
@@ -32,8 +39,7 @@
 #define _AUDIO_WINDOWS_H_ 1
 #ifdef HAVE_WINMM
 
-#include "pump.h"
-
+#include "audio-driver.h"
 audio_driver_t winmm_driver;
 
 #endif

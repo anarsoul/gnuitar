@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.9  2005/09/16 20:40:18  alankila
  * - increase backbuf performance by allocating to nearest exponent of 2
  *
@@ -56,14 +63,14 @@
 #include <assert.h>
 
 void
-backbuf_add(Backbuf_t *b, BUF_TYPE d)
+backbuf_add(Backbuf_t *b, const BUF_TYPE d)
 {
     b->curpos += 1;
     b->storage[b->curpos & b->mask] = d;
 }
 
 BUF_TYPE
-backbuf_get(Backbuf_t *b, unsigned int delay)
+backbuf_get(Backbuf_t *b, const unsigned int delay)
 {
     assert(delay < b->nstor);
     return b->storage[(b->curpos - delay) & b->mask];
@@ -71,7 +78,7 @@ backbuf_get(Backbuf_t *b, unsigned int delay)
 
 /* XXX optimize this a bit */
 BUF_TYPE
-backbuf_get_interpolated(Backbuf_t *b, double delay)
+backbuf_get_interpolated(Backbuf_t *b, float delay)
 {
     unsigned int delay_int = delay;
     unsigned int getpos;
@@ -88,7 +95,7 @@ backbuf_clear(Backbuf_t *b)
 }
 
 Backbuf_t *
-new_Backbuf(unsigned int max_delay)
+new_Backbuf(const unsigned int max_delay)
 {
     int size;
     

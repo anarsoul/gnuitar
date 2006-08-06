@@ -23,7 +23,7 @@
 #ifndef _NOISE_H_
 #define _NOISE_H_ 1
 
-#include "pump.h"
+#include "effect.h"
 
 effect_t *   noise_create();
 

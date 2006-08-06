@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.82  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.81  2006/08/02 19:21:23  alankila
  * - clarify that amp is a digital amplification, not analog simulation
  *
@@ -370,9 +377,15 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include "pump.h"
-#include "main.h"
 #include "gui.h"
 #include "glib12-compat.h"
+#include "main.h"
+#include "audio-midi.h"
+#include "audio-alsa.h"
+#include "audio-oss.h"
+#include "audio-jack.h"
+#include "audio-winmm.h"
+#include "audio-dsound.h"
 
 #include "amp.h"
 #include "autowah.h"
@@ -417,6 +430,8 @@ unsigned int    nbuffers = MAX_BUFFERS;
 #endif
 
 float sin_lookup_table[SIN_LOOKUP_SIZE + 1];
+
+void pump_cmdline(char **argv, int argc);
 
 /* from JACK -- blindingly fast */
 static inline unsigned int
@@ -644,7 +659,7 @@ discover_preset_path(void) {
 }
 
 void
-load_initial_state(void)
+load_initial_state(char **argv, int argc)
 {
     char *path = discover_preset_path();
     DIR *dir;
@@ -687,9 +702,11 @@ load_initial_state(void)
 
     /* iterate the entires now, add into preset list */
     for (cur = g_list_first(list); cur != NULL; cur = g_list_next(cur)) {
-        if (strstr(cur->data, "__default__.gnuitar") != NULL) {
-            /* if the entry is the default entry, load it, don't append it */
-            load_pump(cur->data);
+        if (strstr(cur->data, FILESEP "__default__.gnuitar") != NULL) {
+            /* if the entry is the default entry, load it, don't append it.
+             * If user gave cmdline arguments, load the effects from cmdline. */
+            if (argc < 2)
+                load_pump(cur->data);
         } else {
             /* add it to preset list */
             bank_append_entry(cur->data);
@@ -698,6 +715,8 @@ load_initial_state(void)
     }
     /* free GList memory */
     g_list_free(list);
+
+    pump_cmdline(argv, argc);
 }
 
 void
@@ -827,19 +846,20 @@ save_settings(void) {
 }
 
 void
-pump_start(int argc, char **argv)
+pump_start()
 {
-    int             i,
-                    j;
-
-    effect_t *      (*create_f[10])();
-
     my_create_mutex(&effectlist_lock);
     init_sin_lookup_table();
 
     master_volume = 0.0;
     input_volume = 0.0;
-    j = 0;
+    write_track = 0;
+}
+
+void
+pump_cmdline(char **argv, int argc)
+{
+    int i;
 
     if (argc == 1) {
 	int             k = 0;
@@ -855,20 +875,16 @@ pump_start(int argc, char **argv)
 	    k++;
 	}
 	if (effect_list[k].str) {
-	    create_f[j++] = effect_list[k].create_f;
 	    printf("\nadding %s", effect_list[k].str);
+	    effects[effects_n] = effect_list[k].create_f();
+	    effects[effects_n]->proc_init(effects[effects_n]);
+            effects_n += 1;
 	    gtk_clist_append(GTK_CLIST(processor), &effect_list[k].str);
+            if (effects_n == MAX_EFFECTS)
+                break;
 	} else {
 	    printf("\n%s is not a known effect", argv[i]);
 	}
-    }
-    create_f[j++] = NULL;
-
-    memset(effects, 0, sizeof(effects));
-    while (effects_n < MAX_EFFECTS && create_f[effects_n]) {
-	effects[effects_n] = create_f[effects_n]();
-	effects[effects_n]->proc_init(effects[effects_n]);
-	effects_n++;
     }
 }
 

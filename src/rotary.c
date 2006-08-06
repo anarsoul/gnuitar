@@ -13,7 +13,6 @@
 #include <stdlib.h>
 
 #include "biquad.h"
-#include "pump.h"
 #include "rotary.h"
 
 static void
@@ -73,7 +72,7 @@ rotary_init(struct effect *p)
 
 /* this is a single-channel to two-channel effect */
 static void
-rotary_filter(struct effect *p, struct data_block *db)
+rotary_filter(struct effect *p, data_block_t *db)
 {
     struct rotary_params *params = p->params;
     int i;

@@ -18,6 +18,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.30  2006/08/06 20:14:54  alankila
+ * - split pump.h into several domain-specific headers to reduce file
+ *   interdependencies (everyone included pump.h). New files are:
+ *   - effect.h for effect definitions
+ *   - audio-driver.h for work relating to audio drivers
+ *   - audio-midi.h for MIDI interaction.
+ *
  * Revision 1.29  2006/07/27 19:38:14  alankila
  * - disable SSE convolve for mingw32 for now
  * - fix type of non-SSE convolve() routine
@@ -145,7 +152,7 @@
 #ifndef _BIQUAD_H_
 #define _BIQUAD_H_ 1
 
-#include "pump.h"
+#include "audio-driver.h"
 #include "utils.h"
 
 /* empty are used to align the structure to 16 byte boundary */
