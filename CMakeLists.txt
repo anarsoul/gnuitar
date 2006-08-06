@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.20  2006/08/06 01:18:34  alankila
+# - pass the linker option --as-needed to reduce crazy dependencies
+#
 # Revision 1.19  2006/07/27 18:31:15  alankila
 # - split dsound and winmm into separate drivers.
 #
@@ -183,6 +186,7 @@ ADD_EXECUTABLE(gnuitar
     src/audio-alsa.h src/audio-oss.c src/audio-oss.h src/pitch.c src/pitch.h
     src/glib12-compat.c src/glib12-compat.h src/audio-jack.c src/audio-jack.h
     src/audio-winmm.h src/audio-winmm.c src/audio-dsound.h src/audio-dsound.c)
+SET_TARGET_PROPERTIES(gnuitar PROPERTIES LINK_FLAGS "-Wl,--as-needed")
 TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 
 INSTALL(TARGETS gnuitar RUNTIME DESTINATION bin)
