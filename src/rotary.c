@@ -99,7 +99,7 @@ rotary_filter(struct effect *p, data_block_t *db)
 
         /* update the approximation of sin and cos values to avoid
          * discontinuities between audio blocks */
-        if (i % 16 == 0) {
+        if (i % 8 == 0) {
             sinval = sin_lookup(pha);
             cosval = cos_lookup(pha);
             pha += (float) 16 / sample_rate * 1000.0 / params->speed;

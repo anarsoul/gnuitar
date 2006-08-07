@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.33  2006/08/07 21:43:29  alankila
+ * - committing a hopefully working version of biquads on SSE now. Had to
+ *   rename struct members for this to succeed, though. :-(
+ *
  * Revision 1.32  2006/08/07 20:01:07  alankila
  * - gcc attribute aligned shot me in the foot.
  *   Removed that and attempts to use SSE-based biquad implementation.
@@ -162,11 +166,30 @@
 #include "audio-driver.h"
 #include "utils.h"
 
+#if defined(__SSE__) && defined(FLOAT_DSP) && !defined(__MINGW32__)
+#include <xmmintrin.h>
+
 typedef struct {
-    float       b1, b2, a1, a2;
-    float       mem[MAX_CHANNELS][4];
-    float       b0;
+    union {
+        float b[4]; /* b1, b2, a1, a2 -- sorry about this, especially b0 vs. b[0] :-( */
+        __m128 b4;
+    };
+    union {
+        float mem[MAX_CHANNELS][4];
+        __m128 mem4[MAX_CHANNELS];
+    };
+    float b0;
 } Biquad_t;
+
+#else
+
+typedef struct {
+    float b[4];
+    float mem[MAX_CHANNELS][4];
+    float b0;
+} Biquad_t;
+
+#endif
 
 typedef struct {
     Biquad_t        a1[4], a2[4];
@@ -198,32 +221,26 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 
 /* use SSE if available -- doesn't work on mingw (gcc 3.4), don't know why */
 #if defined(__SSE__) && defined(FLOAT_DSP) && !defined(__MINGW32__)
-#include <xmmintrin.h>
 
-/*
 static inline float
-do_biquad(float x, Biquad_t *f, int c)
+do_biquad(const float x, Biquad_t *f, const int c)
 {
     __m128          r;
-    float           y;
-    float           *mem = f->mem[c];
-    float           *b1 = &f->b1;
+    float          *mem = f->mem[c], y;
 
-    // use SSE to calculate 4 of the biquad terms
-    asm("movaps     (%%edx), %%xmm0             \n"
-"        mulps      (%%ecx), %%xmm0             \n"
-"        movaps     %%xmm0, %[r]                \n"
-        :
-        : "d"(b1), "c"(mem), [r]"m"(r)
-        : "cc", "xmm0");
-    
+    /* struct is arranged so that b1 and a1 terms coincide
+     * with the locations of the historic values in *mem.
+     * Therefore the multiplication can be performed through SSE. */
+    r = _mm_mul_ps(f->b4, f->mem4[c]);
+    /* sum all the values together */
     r = _mm_add_ps(_mm_movehl_ps(r, r), r);
     r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
+    /* store result in y */
     _mm_store_ss(&y, r);
-
-    // add the last term
+    /* add the final term */
     y += f->b0 * x;
     
+    /* update history. This could also be done through _mm_shuffle_ps. */
     mem[1] = mem[0];
     mem[0] = x;
     mem[3] = mem[2];
@@ -231,7 +248,6 @@ do_biquad(float x, Biquad_t *f, int c)
 
     return y;
 }
-*/
 
 static inline float
 convolve(const float *a, const float *b, const int len) {
@@ -282,9 +298,6 @@ convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
     return dot;
 }
 
-#endif
-
-
 /* Denormals are small numbers that force FPU into slow mode.
  * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
 #define DENORMAL_BIAS   1E-5
@@ -293,8 +306,8 @@ static inline float
 do_biquad(const float x, Biquad_t *f, const int c)
 {
     float          y;
-    y = x * f->b0 + f->mem[c][0] * f->b1 + f->mem[c][1] * f->b2
-        + f->mem[c][2] * f->a1 + f->mem[c][3] * f->a2 + DENORMAL_BIAS;
+    y = x * f->b0 + f->mem[c][0] * f->b[0] + f->mem[c][1] * f->b[1]
+        + f->mem[c][2] * f->b[2] + f->mem[c][3] * f->b[3] + DENORMAL_BIAS;
     if(isnan(y))
 	y=0;
     f->mem[c][1] = f->mem[c][0];
@@ -303,5 +316,7 @@ do_biquad(const float x, Biquad_t *f, const int c)
     f->mem[c][2] = y;
     return y;
 }
+
+#endif
 
 #endif

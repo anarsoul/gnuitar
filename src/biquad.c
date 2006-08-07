@@ -19,6 +19,10 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.30  2006/08/07 21:43:29  alankila
+ * - committing a hopefully working version of biquads on SSE now. Had to
+ *   rename struct members for this to succeed, though. :-(
+ *
  * Revision 1.29  2006/08/06 20:57:46  alankila
  * - pepper with const declarations
  *
@@ -154,10 +158,10 @@ set_peq_biquad(const double Fs, const double Fc, const double BW, const double G
     
     a0 = 1 + alpha / k;
     f->b0 = (1 + alpha * k) / a0;
-    f->b1 = -2 * cos(om)    / a0;
-    f->b2 = (1 - alpha * k) / a0;
-    f->a1 = -f->b1;
-    f->a2 = -(1 - alpha / k) / a0;
+    f->b[0] = -2 * cos(om)    / a0;
+    f->b[1] = (1 - alpha * k) / a0;
+    f->b[2] = -f->b[0];
+    f->b[3] = -(1 - alpha / k) / a0;
 }
 
 /* low pass filter */
@@ -171,10 +175,10 @@ set_lpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f)
     
     a0 = 1 + alpha;
     f->b0 = (1 - cos(om)) / 2 / a0;
-    f->b1 = 1 - cos(om);
-    f->b2 = f->b0;
-    f->a1 = 2 * cos(om) / a0;
-    f->a2 = -(1 - alpha)  / a0;
+    f->b[0] = 1 - cos(om);
+    f->b[1] = f->b0;
+    f->b[2] = 2 * cos(om) / a0;
+    f->b[3] = -(1 - alpha)  / a0;
 }
 
 /* band pass filter */
@@ -188,10 +192,10 @@ set_bpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f)
     
     a0 = 1 + alpha;
     f->b0 = alpha        / a0;
-    f->b1 = 0;
-    f->b2 = -f->b0;
-    f->a1 = 2 * cos(om) / a0;
-    f->a2 = -(1 - alpha)  / a0;
+    f->b[0] = 0;
+    f->b[1] = -f->b0;
+    f->b[2] = 2 * cos(om) / a0;
+    f->b[3] = -(1 - alpha)  / a0;
 }
 
 /* 2nd order allpass filter, delay can vary from 0 to 1 */
@@ -199,10 +203,10 @@ void
 set_phaser_biquad(const double a, Biquad_t *f)
 {
     f->b0 = a * a;
-    f->b1 = a;
-    f->b2 = 1;
-    f->a1 = -a;
-    f->a2 = -a * a;
+    f->b[0] = a;
+    f->b[1] = 1;
+    f->b[2] = -a;
+    f->b[3] = -a * a;
 }
 
 /* A 2nd order allpass, delay can vary from 0 to 1 */
@@ -210,10 +214,10 @@ void
 set_2nd_allpass_biquad(const double a, Biquad_t *f)
 {
     f->b0 = a * a;
-    f->b1 = 0;
-    f->b2 = -1;
-    f->a1 = 0;
-    f->a2 = f->b0;
+    f->b[0] = 0;
+    f->b[1] = -1;
+    f->b[2] = 0;
+    f->b[3] = f->b0;
 }
 
 void
@@ -223,10 +227,10 @@ set_rc_lowpass_biquad(const double sample_rate, const double freq, Biquad_t *f)
     double ts = 1.0 / sample_rate;
 
     f->b0 = ts / (ts + rc);
-    f->b1 = f->b2 = f->a2 = 0;
-    f->b2 = 0;
-    f->a1 = rc / (ts + rc);
-    f->a2 = 0;
+    f->b[0] = 0;
+    f->b[1] = 0;
+    f->b[2] = rc / (ts + rc);
+    f->b[3] = 0;
 }
 
 void
@@ -236,10 +240,10 @@ set_rc_highpass_biquad(const double sample_rate, const double freq, Biquad_t *f)
     double ts = 1.0 / sample_rate;
 
     f->b0 = 1;
-    f->b1 = -1;
-    f->b2 = f->a2 = 0;
-    f->a1 = rc / (ts + rc);
-    f->a2 = 0;
+    f->b[0] = -1;
+    f->b[1] = 0;
+    f->b[2] = rc / (ts + rc);
+    f->b[3] = 0;
 }
 
 void
@@ -278,13 +282,13 @@ set_chebyshev1_biquad(const double Fs, const double Fc, const double ripple, con
     
     a0 = 1 + k * (y1p - y2 * k);
     f->b0 = (x0 - k * (2 - k) * x0)             / a0;
-    f->b1 = 2 * f->b0;
-    f->b2 =     f->b0;
-    f->a1 = (k * (2 + y1p * k - 2 * y2) + y1p) / a0;
-    f->a2 = (-k * (k + y1p) + y2)              / a0;
+    f->b[0] = 2 * f->b0;
+    f->b[1] =     f->b0;
+    f->b[2] = (k * (2 + y1p * k - 2 * y2) + y1p) / a0;
+    f->b[3] = (-k * (k + y1p) + y2)              / a0;
     if (!lowpass) {
-        f->b1 = -f->b1;
-        f->a1 = -f->a1;
+        f->b[0] = -f->b[0];
+        f->b[2] = -f->b[2];
     }
 }
 
@@ -307,10 +311,10 @@ set_lsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f)
     a2 = (A + 1) + (A - 1) * cs - beta * sn;
 
     f->b0 = b0 / a0;
-    f->b1 = b1 / a0;
-    f->b2 = b2 / a0;
-    f->a1 = -a1 / a0;
-    f->a2 = -a2 / a0;
+    f->b[0] = b1 / a0;
+    f->b[1] = b2 / a0;
+    f->b[2] = -a1 / a0;
+    f->b[3] = -a2 / a0;
 }
 
 /* input is input, output is x0 and x1 with 90° phase separation between them */
