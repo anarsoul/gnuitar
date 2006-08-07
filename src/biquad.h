@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.32  2006/08/07 20:01:07  alankila
+ * - gcc attribute aligned shot me in the foot.
+ *   Removed that and attempts to use SSE-based biquad implementation.
+ *
  * Revision 1.31  2006/08/06 20:57:46  alankila
  * - pepper with const declarations
  *
@@ -158,19 +162,11 @@
 #include "audio-driver.h"
 #include "utils.h"
 
-/* empty are used to align the structure to 16 byte boundary */
-#ifdef __SSE__
 typedef struct {
     float       b1, b2, a1, a2;
     float       mem[MAX_CHANNELS][4];
     float       b0;
-} Biquad_t __attribute__((aligned(16)));
-#else
-typedef struct {
-    float       b0, b1, b2, a1, a2;
-    float       mem[MAX_CHANNELS][4];
 } Biquad_t;
-#endif
 
 typedef struct {
     Biquad_t        a1[4], a2[4];
