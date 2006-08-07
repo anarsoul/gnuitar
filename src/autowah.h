@@ -26,7 +26,6 @@
 #include "effect.h"
 #include "backbuf.h"
 #include "biquad.h"
-#include "rcfilter.h"
 
 effect_t *   autowah_create();
 
@@ -49,13 +48,13 @@ struct autowah_params {
     
     double          f, smoothed_f, freq_vibrato;
     int             dir;
-    struct filter_data *fd;
     double          ya[MAX_CHANNELS];
     double          yb[MAX_CHANNELS];
     double          yc[MAX_CHANNELS];
     double          yd[MAX_CHANNELS];
 
     Biquad_t        lpf;
+    Biquad_t        bpf;
 };
 
 #endif

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.42  2006/08/07 20:15:41  alankila
+ * - remove dependency on rcfilter: use biquad band-pass instead of the
+ *   repeated RC pass filter.
+ *
  * Revision 1.41  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -559,9 +563,11 @@ autowah_filter(struct effect *p, data_block_t *db)
         break;
         
       case 1: 
-        /* old gnuitar bandpass */
-        RC_set_freq(freq, ap->fd);
-        RC_bandpass(db, ap->fd);
+        set_bpf_biquad(sample_rate, freq, 1.1 + -ap->res / 100.0, &ap->bpf);
+        for (i = 0; i < db->len; i += 1) {
+            db->data[i] = do_biquad(db->data[i], &ap->bpf, curr_channel);
+            curr_channel = (curr_channel + 1) % db->channels;
+        }
         break;
 
       case 2:
@@ -614,11 +620,9 @@ autowah_filter(struct effect *p, data_block_t *db)
 static void
 autowah_done(struct effect *p)
 {
-    struct autowah_params *ap;
-    ap = (struct autowah_params *) p->params;
+    struct autowah_params *params = p->params;
 
-    free(ap->fd);
-    del_Backbuf(ap->history);
+    del_Backbuf(params->history);
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -667,8 +671,6 @@ autowah_create()
     p->proc_done = autowah_done;
     p->proc_save = autowah_save;
     p->proc_load = autowah_load;
-    ap->fd = calloc(1, sizeof(struct filter_data));
-    RC_setup(2, 1.48, ap->fd);
     ap->history = new_Backbuf(MAX_SAMPLE_RATE * AUTOWAH_HISTORY_LENGTH / 1000);
     
     ap->method = 0; /* low-pass resonant filter */
