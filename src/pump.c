@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.85  2006/08/07 20:01:50  alankila
+ * - move all modifications of effect list structures into effect.c.
+ *
  * Revision 1.84  2006/08/07 13:20:42  alankila
  * - group all effects through effect.h rather than enumerating them in
  *   pump.c.
@@ -440,13 +443,12 @@ triangular_dither(data_block_t *db)
  * or so. */
 static void
 bias_elimination(data_block_t *db) {
-    static double bias_s[MAX_CHANNELS] = { 0, 0, 0, 0 };
+    static DSP_SAMPLE bias_s[MAX_CHANNELS] = { 0, 0, 0, 0 };
     static int    bias_n[MAX_CHANNELS] = { 10, 10, 10, 10 };
 
-    int             i, biasadj;
-    int             curr_channel = 0;
-
-    biasadj = bias_s[curr_channel] / bias_n[curr_channel];
+    int i;
+    int curr_channel = 0;
+    DSP_SAMPLE biasadj = bias_s[curr_channel] / bias_n[curr_channel];
     
     for (i = 0; i < db->len; i += 1) {
         bias_s[curr_channel] += db->data[i];
@@ -454,9 +456,9 @@ bias_elimination(data_block_t *db) {
         db->data[i] -= biasadj;
         curr_channel = (curr_channel + 1) % db->channels;
     }
-    /* keep bias within computable value */
+    /* keep bias within limits of shortest type (int_least32_t) */
     for (i = 0; i < MAX_CHANNELS; i += 1) {
-	if (fabs(bias_s[i]) > 1E12) {
+	if (fabs(bias_s[i]) > 1E10) {
 	    bias_s[i] /= 2;
 	    bias_n[i] /= 2;
 	}
@@ -560,32 +562,27 @@ adapt_to_output(data_block_t *db)
             db->channels, n_output_channels);
 }
 
+/* function called on each effect during processing */
+static void
+run_effects(effect_t *effect, int idx, void *data) {
+    data_block_t *db = (data_block_t *) data;
+    if (effect->toggle)
+        effect->proc_filter(effect, db);
+}
+
 void
 pump_sample(data_block_t *db)
 {
-    int             i;
-
-    /* NR is enabled only experimentally until
-     * the noise filter will have been implemented */
-     
     bias_elimination(db);
     adjust_input_volume(db);
     set_vumeter_in_value(vu_meter(db));
-
-    my_lock_mutex(effectlist_lock);
-    for (i = 0; i < effects_n; i++) {
-        if (effects[i]->toggle)
-            effects[i]->proc_filter(effects[i], db);
-    }
-    my_unlock_mutex(effectlist_lock);
-
+    effect_iterate(run_effects, db);
     adjust_master_volume(db);
     set_vumeter_out_value(vu_meter(db));
     
     adapt_to_output(db);
-    if (write_track) {
+    if (write_track)
 	track_write(db->data, db->len);
-    }
 }
 
 static void
@@ -774,9 +771,9 @@ save_settings(void) {
 }
 
 void
-pump_start()
+pump_start(void)
 {
-    my_create_mutex(&effectlist_lock);
+    effect_start();
     init_sin_lookup_table();
 
     master_volume = 0.0;
@@ -790,54 +787,56 @@ pump_cmdline(char **argv, int argc)
     int i;
 
     if (argc == 1) {
-	int             k = 0;
-	printf("\nPossible effects:");
-	while (effect_list[k].str) {
-	    printf("\n  %s", effect_list[k].str);
-	    k++;
-	}
+	printf("Possible effects:\n");
+        effect_list_print_all();
     }
     for (i = 1; i < argc; i++) {
-	int             k = 0;
-	while (effect_list[k].str && strcmp(argv[i], effect_list[k].str)) {
-	    k++;
-	}
-	if (effect_list[k].str) {
-	    printf("\nadding %s", effect_list[k].str);
-	    effects[effects_n] = effect_list[k].create_f();
-	    effects[effects_n]->proc_init(effects[effects_n]);
-            effects_n += 1;
-	    gtk_clist_append(GTK_CLIST(processor), &effect_list[k].str);
-            if (effects_n == MAX_EFFECTS)
-                break;
-	} else {
-	    printf("\n%s is not a known effect", argv[i]);
-	}
+        effect_t *effect;
+        int k = effect_list_find_by_name(argv[i]);
+        if (k == -1) {
+	    gnuitar_printf("%s is not a known effect\n", argv[i]);
+            continue;
+        }
+        effect = effect_create(k);
+        effect_insert(effect, -1);
+        gtk_clist_append(GTK_CLIST(processor), &argv[i]);
     }
 }
 
 void
 pump_stop(void)
 {
-    int             i;
-
     if (write_track) {
         write_track = 0;
         tracker_done();
     }
-    for (i = 0; i < effects_n; i++)
-	effects[i]->proc_done(effects[i]);
-    effects_n = 0;
 
-    my_close_mutex(effectlist_lock);
+    effect_stop();
+}
+
+static void
+save_effect_states(effect_t *effect, int idx, void *data) {
+    GKeyFile       *preset = data;
+    gchar	   *gtmp, *effect_name;
+
+    g_key_file_set_integer(preset, "global", "effects", idx + 1); /* last set will win */
+    gtmp = g_strdup_printf("effect%d", idx + 1);
+    gtk_clist_get_text(GTK_CLIST(processor), idx, 0, &effect_name);
+    g_key_file_set_string(preset, "global", gtmp, effect_name);
+    /* save enabled flag */
+    g_key_file_set_integer(preset, gtmp, "enabled", effect->toggle);
+    /* save effect-specific settings */
+    if (effect->proc_save != NULL)
+        effect->proc_save(effect, preset, gtmp);
+    free(gtmp);
 }
 
 void
 save_pump(const char *fname)
 {
-    int             i, fd, w_length;
+    int             fd, w_length;
     gsize           length;
-    gchar	   *gtmp, *key_file_as_str, *effect_name;
+    gchar	   *key_file_as_str;
     GKeyFile	   *preset;
 
     if ((fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE)) < 0) {
@@ -850,21 +849,7 @@ save_pump(const char *fname)
     /* record software version */
     g_key_file_set_string(preset, "global", "version", version);
 
-    my_lock_mutex(effectlist_lock);
-    g_key_file_set_integer(preset, "global", "effects", effects_n);
-    for (i = 0; i < effects_n; i++) {
-	gtmp = g_strdup_printf("effect%d", i+1);
-        gtk_clist_get_text(GTK_CLIST(processor), i, 0, &effect_name);
-	g_key_file_set_string(preset, "global", gtmp, effect_name);
-	/* save enabled flag */
-	g_key_file_set_integer(preset, gtmp, "enabled", effects[i]->toggle);
-	/* save effect-specific settings */
-	if (effects[i]->proc_save != NULL)
-	    effects[i]->proc_save(effects[i], preset, gtmp);
-	free(gtmp);
-    }
-    my_unlock_mutex(effectlist_lock);
-
+    effect_iterate(save_effect_states, preset);
     g_key_file_set_double(preset, "global", "volume", master_volume);
     g_key_file_set_double(preset, "global", "input_volume", input_volume);
 
@@ -881,7 +866,7 @@ save_pump(const char *fname)
 void
 load_pump(const char *fname)
 {
-    int		    i, j, effects_to_load, tmp_n;
+    int		    i, j, effects_to_load;
     GKeyFile	   *preset;
     GError	   *error = NULL;
     gchar	   *gtmp, *effect_name;
@@ -900,6 +885,7 @@ load_pump(const char *fname)
 	gnuitar_printf( "warning: version number mismatch: %s vs. %s\n", version, gtmp);
     }
     free(gtmp);
+    effect_clear();
 
     effects_to_load = g_key_file_get_integer(preset, "global", "effects", &error);
     if (error != NULL) {
@@ -908,45 +894,33 @@ load_pump(const char *fname)
 	return;
     }
 
-    /* we do not take effectlist lock. I have carefully built this code to not need it. */
-
     gtk_clist_clear(GTK_CLIST(processor));
 
-    /* this lock is only taken for a split second in order to ensure that n=0
-     * is seen by audio thread. Otherwise we might destroy memory used by the thread. */
-    my_lock_mutex(effectlist_lock);
-    tmp_n = effects_n;
-    effects_n = 0;
-    my_unlock_mutex(effectlist_lock);
-    for (i = 0; i < tmp_n; i++)
-	effects[i]->proc_done(effects[i]);
-
     for (i = 0; i < effects_to_load; i += 1) {
+        effect_t *effect;
+
 	gtmp = g_strdup_printf("effect%d", i+1);
 	effect_name = g_key_file_get_string(preset, "global", gtmp, &error);
 	if (error != NULL) {
-	    gnuitar_printf( "warning: effect tag '%s' not found\n", gtmp);
+	    gnuitar_printf("warning: effect tag '%s' not found\n", gtmp);
 	    error = NULL;
 	    free(gtmp);
 	    continue;
 	}
-	for (j = 0; effect_list[j].str != NULL; j += 1) {
-	    if (strcmp(effect_list[j].str, effect_name) == 0)
-		break;
-	}
-	if (effect_list[j].str == NULL) {
-	    gnuitar_printf( "warning: no effect called '%s'\n", effect_name);
+        j = effect_list_find_by_name(effect_name);
+        if (j == -1) {
+	    gnuitar_printf("warning: no effect called '%s'\n", effect_name);
 	    free(effect_name);
 	    free(gtmp);
 	    continue;
 	}
 
-	effects[effects_n] = effect_list[j].create_f();
+        effect = effect_create_without_init(j);
 
 	/* read enabled flag */
-	effects[effects_n]->toggle = g_key_file_get_integer(preset, gtmp, "enabled", &error);
+	effect->toggle = g_key_file_get_integer(preset, gtmp, "enabled", &error);
 	if (error != NULL) {
-	    gnuitar_printf( "warning: no state flag in '%s'\n", effect_name);
+	    gnuitar_printf("warning: no state flag in '%s'\n", effect_name);
 	    error = NULL;
 	    free(effect_name);
 	    free(gtmp);
@@ -954,12 +928,12 @@ load_pump(const char *fname)
 	}
 
 	/* load effect specific settings */
-	if (effects[effects_n]->proc_load != NULL)
-	    effects[effects_n]->proc_load(effects[effects_n], preset, gtmp, &error);
+	if (effect->proc_load != NULL)
+	    effect->proc_load(effect, preset, gtmp, &error);
 
-	effects[effects_n]->proc_init(effects[effects_n]);
-	gtk_clist_append(GTK_CLIST(processor), &effect_list[j].str);
-	effects_n += 1;
+	effect->proc_init(effect);
+        effect_insert(effect, -1);
+	gtk_clist_append(GTK_CLIST(processor), &effect_name);
 
 	free(effect_name);
 	free(gtmp);

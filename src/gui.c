@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.113  2006/08/07 20:01:50  alankila
+ * - move all modifications of effect list structures into effect.c.
+ *
  * Revision 1.112  2006/08/07 13:20:42  alankila
  * - group all effects through effect.h rather than enumerating them in
  *   pump.c.
@@ -813,25 +816,17 @@ toggle_effect(GtkWidget *widget, effect_t *p)
 gint
 delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 {
-    struct effect  *p = data;
+    effect_t       *effect = data;
     int             i;
 
-    my_lock_mutex(effectlist_lock);
-    for (i = 0; i < effects_n; i++) {
-        if (effects[i] == p)
-            break;
-    }
-    if (i == effects_n) {
+    i = effect_find(effect);
+    if (i == -1) {
         gnuitar_printf("hmm, can't find effect to destroy in subwindow delete\n");
         return TRUE;
     }
-    effects[i]->proc_done(effects[i]);
+    effect_delete(i);
+    effect_destroy(effect);
     gtk_clist_remove(GTK_CLIST(processor), i);
-    for (; i < effects_n-1; i += 1)
-        effects[i] = effects[i+1];
-    effects[effects_n--] = NULL;
-    my_unlock_mutex(effectlist_lock);
-
     return TRUE;
 }
 
@@ -872,41 +867,15 @@ selectrow_effects(GtkWidget *widget, gint row, gint col,
 static void
 rowmove_processor(GtkWidget *widget, gint start, gint end, gpointer data)
 {
-    effect_t   *swap;
-    int         i;
-
-    assert(start >= 0);
-    assert(end <= effects_n);
-
-    my_lock_mutex(effectlist_lock);
-    if (start < end) {
-        swap = effects[start];
-        for (i = start; i < end; i += 1)
-            effects[i] = effects[i+1];
-        effects[end] = swap;
-    } else if (start > end) {
-        swap = effects[start];
-        for (i = start; i > end; i -= 1)
-            effects[i] = effects[i-1];
-        effects[end] = swap;
-    }
-    my_unlock_mutex(effectlist_lock);
+    effect_move(start, end);
 }
 
 static void
 up_pressed(GtkWidget *widget, gpointer data)
 {
-    effect_t       *swap;
     gchar          *name_above, *name_selected;
 
-    if (curr_row > 0 && curr_row < effects_n) {
-	swap = effects[curr_row - 1];
-
-        my_lock_mutex(effectlist_lock);
-        effects[curr_row - 1] = effects[curr_row];
-	effects[curr_row] = swap;
-	my_unlock_mutex(effectlist_lock);
-
+    if (effect_move(curr_row, curr_row - 1)) {
 	gtk_clist_freeze(GTK_CLIST(processor));
         gtk_clist_get_text(GTK_CLIST(processor), curr_row-1, 0, &name_above);
         gtk_clist_get_text(GTK_CLIST(processor), curr_row, 0, &name_selected);
@@ -923,19 +892,11 @@ up_pressed(GtkWidget *widget, gpointer data)
 }
 
 static void
-down_pressed(GtkWidget * widget, gpointer data)
+down_pressed(GtkWidget *widget, gpointer data)
 {
-    effect_t       *swap;
     gchar          *name_below, *name_selected;
 
-    if (curr_row >= 0 && curr_row < effects_n - 1) {
-	swap = effects[curr_row + 1];
-
-	my_lock_mutex(effectlist_lock);
-	effects[curr_row + 1] = effects[curr_row];
-	effects[curr_row] = swap;
-	my_unlock_mutex(effectlist_lock);
-
+    if (effect_move(curr_row, curr_row + 1)) {
 	gtk_clist_freeze(GTK_CLIST(processor));
         gtk_clist_get_text(GTK_CLIST(processor), curr_row, 0, &name_selected);
         gtk_clist_get_text(GTK_CLIST(processor), curr_row+1, 0, &name_below);
@@ -954,56 +915,29 @@ down_pressed(GtkWidget * widget, gpointer data)
 static void
 del_pressed(GtkWidget *widget, gpointer data)
 {
-    int             i;
-
-    if (curr_row >= 0 && curr_row < effects_n) {
-        my_lock_mutex(effectlist_lock);
-	effects[curr_row]->proc_done(effects[curr_row]);
-	for (i = curr_row; i < effects_n; i++)
-	    effects[i] = effects[i + 1];
-	effects[effects_n--] = NULL;
-        my_unlock_mutex(effectlist_lock);
-
-	gtk_clist_remove(GTK_CLIST(processor), curr_row);
-	if (curr_row == effects_n - 1 && curr_row > 0)
-	    curr_row--;
-	gtk_clist_select_row(GTK_CLIST(processor), curr_row, 0);
-    }
+    effect_t *effect = effect_delete(curr_row);
+    if (effect)
+        effect_destroy(effect);
+    gtk_clist_remove(GTK_CLIST(processor), curr_row);
+    gtk_clist_select_row(GTK_CLIST(processor), curr_row, 0);
 }
 
 static void
 add_pressed(GtkWidget *widget, gpointer data)
 {
-    int             idx, i;
-    effect_t       *tmp_effect;
+    int             idx;
     gchar          *name;
     GtkWidget      *known_effects = data;
 
-    if (effects_n < MAX_EFFECTS && effects_row >= 0) {
-	tmp_effect = effect_list[effects_row].create_f();
-	tmp_effect->proc_init(tmp_effect);
+    effect_t *effect = effect_create(effects_row);
+    idx = effect_insert(effect, curr_row);
 
-        gtk_clist_get_text(GTK_CLIST(known_effects), effects_row, 0, &name);
-        name = strdup(name);
+    gtk_clist_get_text(GTK_CLIST(known_effects), effects_row, 0, &name);
+    name = strdup(name);
 
-	my_lock_mutex(effectlist_lock);
-	if (curr_row >= 0 && curr_row < effects_n) {
-	    idx = curr_row + 1;
-	    for (i = effects_n; i > idx; i--) {
-		effects[i] = effects[i - 1];
-	    }
-	    effects_n += 1;
-	} else {
-	    idx = effects_n;
-	    effects_n += 1;
-	}
-	effects[idx] = tmp_effect;
-        my_unlock_mutex(effectlist_lock);
-
-	gtk_clist_insert(GTK_CLIST(processor), idx, &name);
-	free(name);
-        gtk_clist_select_row(GTK_CLIST(processor), idx, 0);
-    }
+    gtk_clist_insert(GTK_CLIST(processor), idx, &name);
+    free(name);
+    gtk_clist_select_row(GTK_CLIST(processor), idx, 0);
 }
 
 /*
@@ -1059,7 +993,7 @@ bank_perform_add(GtkWidget *widget, GtkFileSelection *filesel)
 }
 
 static void
-destroy_widget(GtkWidget * widget, GtkWidget * gallowman)
+destroy_widget(GtkWidget *widget, GtkWidget *gallowman)
 {
     gtk_widget_destroy(gallowman);
 }
@@ -1721,7 +1655,6 @@ init_gui(void)
     GtkWidget	   *master;
     GtkWidget      *input;
 
-    int             i;
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
     char           *processor_titles[] = { "Current effects", NULL };
@@ -1806,9 +1739,7 @@ init_gui(void)
 	"To apply effects to the sound, you need to add the effects" \
 	"to the \"Current Effects\" list." \
 	"You can use Add/Up/Down/Delete buttons to do this.",NULL);
-
-    for (i = 0; effect_list[i].str; i++)
-	gtk_clist_append(GTK_CLIST(known_effects), &effect_list[i].str);
+    effect_list_add_to_clist(known_effects);
 
     bank = gtk_clist_new_with_titles(1, bank_titles);
     gtk_clist_set_selection_mode(GTK_CLIST(bank), GTK_SELECTION_SINGLE);

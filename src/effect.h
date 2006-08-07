@@ -100,11 +100,6 @@ cos_lookup(float pos) {
         return sin_lookup(pos + 0.25);
 }
 
-extern int    effects_n;
-extern struct effect *effects[MAX_EFFECTS];
-extern struct effect_creator effect_list[];
-extern my_mutex effectlist_lock;
-
 #ifdef __SSE__
 
 /* for SSE we need aligned memory */
@@ -153,5 +148,24 @@ gnuitar_free(void *memory) {
 }
 #endif
 
-#endif
+// global initialisers
+void effect_start(void);
+void effect_stop(void);
 
+// effect list operations
+void effect_list_print_all(void);
+void effect_list_add_to_clist(GtkWidget *w);
+int effect_list_find_by_name(char *name);
+
+// effect operations
+effect_t *effect_create(int idx);
+effect_t *effect_create_without_init(int idx);
+void effect_iterate(void (*func)(effect_t *effect, int idx, void *data), void *data);
+void effect_clear(void);
+int effect_insert(effect_t *effect, int idx);
+int effect_move(int start, int end);
+int effect_find(effect_t *effect);
+void effect_destroy(effect_t *effect);
+effect_t *effect_delete(int idx);
+
+#endif
