@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.110  2006/08/07 12:18:41  alankila
+ * - document GTK+ bug at lack of initial scrolling of debug window
+ *
  * Revision 1.109  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -1931,7 +1934,10 @@ init_gui(void)
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(status_window), GTK_SHADOW_IN);
 #endif
     status_text = gnuitar_gtk_text_view_new(GTK_CONTAINER(status_window));
-    /* Side effect: update container data with text buffered before the window existed. */
+    /* Side effect: update container data with text buffered before the window existed.
+     * Scrolling to window end doesn't work though. Blame this on GTK+. My guess is that
+     * the widgets are not properly realized yet and the scrolling adjustment isn't
+     * updated until everything has been drawn properly. */
     gnuitar_printf("");
     
     gtk_widget_set_sensitive(GTK_WIDGET(
