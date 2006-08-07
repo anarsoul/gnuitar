@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2006/08/07 23:52:51  alankila
+ * - fix priority level setting
+ *
  * Revision 1.5  2006/08/07 23:39:55  alankila
  * - the repeated reconfigurings of directsound were a problem at least for
  *   me. It now produces some kind of buggy, snapping playback.
@@ -588,17 +591,14 @@ dsound_init_sound(void)
             dserror(res,"\nProbe: error destroying DirectSound notifier.");
     }
 
-    /*
-     * Try to set primary mixing privileges
-     */
-    window = GetActiveWindow();
-    if (window != NULL) {
-        res = IDirectSound_SetCooperativeLevel(snd, window, DSSCL_PRIORITY);
-        if (res != DS_OK) {
-            dserror(res, "\nError setting up the cooperative level: ");
-            dsound_driver_cleanup();
-            return ERR_DSCOOPLEVEL;
-        }
+    /* Try to set primary mixing privileges. We don't have our own window
+     * yet, so Desktop will have to do. I hate Windows programming. */
+    window = GetDesktopWindow();
+    res = IDirectSound_SetCooperativeLevel(snd, window, DSSCL_PRIORITY);
+    if (res != DS_OK) {
+	dserror(res, "\nError setting up the cooperative level: ");
+	dsound_driver_cleanup();
+	return ERR_DSCOOPLEVEL;
     }
 
     dsound_driver.enabled = 1;
