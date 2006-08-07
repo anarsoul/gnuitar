@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.69  2006/08/07 12:19:19  alankila
+ * - linux cpufreq can cause latency issues for JACK and other operation.
+ *   Write a test that emits a warning to user if cpufreq is not set to
+ *   performance mode.
+ *
  * Revision 1.68  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -340,6 +345,40 @@ DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 #endif
 
+#ifndef _WIN32
+/* Low-latency operation is improved if the CPUs do not change speed.
+ * Especially with JACK it is problematic because JACK tends to quit
+ * if the system doesn't seem fast enough. JACK should be smarter
+ * about cpufreq. */
+static void
+test_linux_cpufreq()
+{
+    int i;
+    FILE           *cpufd;
+    char            entry[100];
+
+    /* examine sysfs and try to determine the used scaling governor. This might
+     * fail for any number of reasons, so I'm pretty silent about errors. */
+    for (i = 0; i < 8; i += 1) {
+        char cpuentry[100];
+        sprintf(cpuentry, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor", i);
+        if ((cpufd = fopen(cpuentry, "r")) != NULL) {
+            size_t bytes = fread(entry, sizeof(entry[0]), sizeof(entry), cpufd);
+            if (bytes > 0 && bytes < sizeof(entry)) {
+                if (entry[bytes-1] == '\n')
+                    entry[bytes-1] = '\0';
+                else
+                    entry[bytes] = '\0';
+                if (strncmp(entry, "performance", bytes) != 0)
+                    gnuitar_printf("warning: CPU%d not set to performance mode by cpufreq driver (mode is: %s).\n", i, entry);
+            }
+            fclose(cpufd);
+        }
+    }
+    /* we could change the scaling governor temporarily, but that would be impolite. */
+}
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -356,23 +395,23 @@ main(int argc, char **argv)
 	gnuitar_printf("warning: unable to set realtime priority (needs root privileges)\n");
     }
 
-    /*
-     * We were running to this point as setuid root program.
-     * Switching to our native user id
-     */
+    /* We might have been running to this point as setuid root program.
+     * Switching to real user id. */
     setuid(getuid());
-
+ 
     /* JACK can give us PIPE if the server terminates abruptly,
      * ignoring it allows us to avoid exit(). */
     sigemptyset(&ignore_set);
     sigaddset(&ignore_set, SIGPIPE);
     sigprocmask(SIG_BLOCK, &ignore_set, NULL);
 #endif
-
     printf(COPYRIGHT
        "This program is a free software under the GPL;\n"
        "see Help->About for details.\n");
     gnuitar_printf("GNUitar " VERSION " debug window.\n");
+#ifndef _WIN32
+    test_linux_cpufreq();
+#endif
 
     /* GTK+ manual suggests this regarding threads:
      * http://developer.gimp.org/api/2.0/gdk/gdk-Threads.html
@@ -430,4 +469,3 @@ main(int argc, char **argv)
 
     return ERR_NOERROR;
 }
-
