@@ -21,6 +21,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2006/08/07 23:39:55  alankila
+ * - the repeated reconfigurings of directsound were a problem at least for
+ *   me. It now produces some kind of buggy, snapping playback.
+ *
  * Revision 1.4  2006/08/07 22:06:27  alankila
  * - make win32 compile again.
  * - utils.h now loads math.h also for win side; makes sense with mingw
@@ -304,12 +308,12 @@ dsound_audio_thread(void *V)
         for (i = 0, j = 0, k = 0; i < count / sizeof(SAMPLE16); i++) {
             SAMPLE16       *curpos = NULL;
 
-            if (j * sizeof(SAMPLE16) >= len1 && pos2 != NULL && k * sizeof(SAMPLE16) < len2) {
+            if (j >= len1 && pos2 != NULL && k < len2) {
                 curpos = pos2 + k;
-                k++;
+                k += sizeof(SAMPLE16);
             } else if (pos1 != NULL) {
                 curpos = pos1 + j;
-                j++;
+                j += sizeof(SAMPLE16);
             } else {
                 /* curpos is rubbish if neither condition is true */
                 continue;
@@ -379,12 +383,12 @@ dsound_audio_thread(void *V)
             DSP_SAMPLE      W = (SAMPLE32)db.data[i] >> 8;
             SAMPLE16       *curpos = NULL;
 
-            if (j * sizeof(SAMPLE16) >= len1 && pos2 != NULL && k * sizeof(SAMPLE16) < len2) {
+            if (j >= len1 && pos2 != NULL && k < len2) {
                 curpos = pos2 + k;
-                k++;
+                k += sizeof(SAMPLE16);
             } else if (pos1 != NULL) {
                 curpos = pos1 + j;
-                j++;
+                j += sizeof(SAMPLE16);
             } else {
                 /* curpos is rubbish if neither condition is true */
                 continue;
@@ -514,30 +518,31 @@ dsound_init_sound(void)
     notify_event = CreateEvent(NULL,FALSE,FALSE,NULL);
 
     nbuffers = bufsize/buffer_size;
+    if ((res=DirectSoundCaptureCreate(NULL, &capture, NULL)) != DS_OK) {
+	dserror(res, "\nError opening DirectSound capture object: ");
+	dsound_driver_cleanup();
+	return ERR_DSOUNDOPEN;
+    }
+
     while (nattempts++ <= MAX_PROBE_ATTEMPTS) {
         int total_read=0;   /* for buffer size probe; total read bytes */
         read_pos=old_read_pos=nreads=0;
+    
+	/* Create the capture buffer */
+	ZeroMemory(&capture_desc, sizeof(DSCBUFFERDESC));
+	capture_desc.dwSize = sizeof(DSCBUFFERDESC);
+	capture_desc.dwFlags = 0;
+	capture_desc.dwBufferBytes = bufsize;
+	capture_desc.lpwfxFormat = &format;
 
-        /*
-         * open the capture DirectSound interface
-         */
-        ZeroMemory(&capture_desc, sizeof(DSCBUFFERDESC));
-        capture_desc.dwSize = sizeof(DSCBUFFERDESC);
-        capture_desc.dwFlags = 0;
-        capture_desc.dwBufferBytes = bufsize;
-        capture_desc.lpwfxFormat = &format;
-        if ((res=DirectSoundCaptureCreate(NULL, &capture, NULL)) != DS_OK) {
-            dserror(res, "\nError opening DirectSound capture object !");
-            dsound_driver_cleanup();
-            return ERR_DSOUNDOPEN;
-        }
+	if ((res=IDirectSoundCapture_CreateCaptureBuffer(capture, &capture_desc, &cbuffer, NULL)) != DS_OK) {
+	    dserror(res, "Error creating DirectSound capture buffer: ");
+	    dsound_driver_cleanup();
+	    return ERR_DSOUNDBUFFER;
+	}
 
-        if ((res=IDirectSoundCapture_CreateCaptureBuffer(capture, &capture_desc, &cbuffer, NULL)) != DS_OK) {
-            dserror(res, "\nError creating DirectSound capture buffer !");
-            return ERR_DSOUNDBUFFER;
-        }
         if ((res = IDirectSoundCaptureBuffer_QueryInterface(cbuffer,&IID_IDirectSoundNotify, (LPVOID) &notify)) != S_OK) {
-            gnuitar_printf( "\nError creating DirectSound notifier !");
+            gnuitar_printf( "\nError creating DirectSound notifier: ");
             dsound_driver_cleanup();
             return ERR_DSOUNDBUFFER;
         }
@@ -553,14 +558,14 @@ dsound_init_sound(void)
          * positions and always notify me after 882 bytes read. */
         res = IDirectSoundCaptureBuffer_Start(cbuffer, DSCBSTART_LOOPING);
         if (res != DS_OK)
-            dserror(res,"\nProbe: cannot start capture via DirectSound.");
+            dserror(res,"\nProbe: cannot start capture via DirectSound: ");
         for (i = 0; i < 5; i++) {
             /* must wait here until the buffer gets filled */
             WaitForSingleObject(notify_event,INFINITE);
             old_read_pos=read_pos;
             res = IDirectSoundCaptureBuffer_GetCurrentPosition(cbuffer, NULL, &read_pos);
             if (res!=DS_OK)
-                dserror(res,"\nError getting capture position via DirectSound.");
+                dserror(res,"\nError getting capture position via DirectSound: ");
             else if(old_read_pos && read_pos>old_read_pos) {
                 total_read+=read_pos-old_read_pos;
                 nreads++;
@@ -570,6 +575,7 @@ dsound_init_sound(void)
             probed_bufsize=buffer_size=total_read/nreads;
             nbuffers=MIN_BUFFER_SIZE * MAX_BUFFERS / buffer_size;
             bufsize=buffer_size*nbuffers;
+	    break;
         }
         /* destroy capture buffer to adjust the bufsize for the new attempt */
         if(nattempts<MAX_PROBE_ATTEMPTS) {
