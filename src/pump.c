@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.86  2006/08/07 22:05:53  alankila
+ * - store 0 as effects number if effect list is empty
+ *
  * Revision 1.85  2006/08/07 20:01:50  alankila
  * - move all modifications of effect list structures into effect.c.
  *
@@ -849,6 +852,7 @@ save_pump(const char *fname)
     /* record software version */
     g_key_file_set_string(preset, "global", "version", version);
 
+    g_key_file_set_integer(preset, "global", "effects", 0);
     effect_iterate(save_effect_states, preset);
     g_key_file_set_double(preset, "global", "volume", master_volume);
     g_key_file_set_double(preset, "global", "input_volume", input_volume);
