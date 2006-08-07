@@ -23,7 +23,6 @@
  */
 
 #include "pitch.h"
-#include "glib12-compat.h"
 #include "gui.h"
 #include <assert.h>
 #include <math.h>

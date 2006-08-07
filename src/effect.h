@@ -33,7 +33,10 @@
 #include <stdio.h>
 
 #include <gtk/gtk.h>
+#include "glib12-compat.h"
+
 #include "audio-driver.h"
+#include "utils.h"
 
 struct effect {
     void           *params;
@@ -100,6 +103,7 @@ cos_lookup(float pos) {
 extern int    effects_n;
 extern struct effect *effects[MAX_EFFECTS];
 extern struct effect_creator effect_list[];
+extern my_mutex effectlist_lock;
 
 #ifdef __SSE__
 

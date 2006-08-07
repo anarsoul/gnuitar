@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2006/08/07 13:20:43  alankila
+ * - group all effects through effect.h rather than enumerating them in
+ *   pump.c.
+ *
  * Revision 1.21  2006/08/06 20:14:55  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -123,7 +127,6 @@
 
 #include "tracker.h"
 #include "gui.h"
-#include "effect.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

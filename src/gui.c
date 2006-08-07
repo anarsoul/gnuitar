@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.112  2006/08/07 13:20:42  alankila
+ * - group all effects through effect.h rather than enumerating them in
+ *   pump.c.
+ *
  * Revision 1.111  2006/08/07 12:55:30  alankila
  * - construct audio-driver.c to hold globals and provide some utility
  *   functions to its users. This slashes interdependencies somewhat.
@@ -574,8 +578,6 @@ static gint            curr_row = -1;
 static gint            effects_row = -1;
 /* current row in bank list */
 static gint            bank_row = -1;
-extern my_mutex effectlist_lock;/* sorry for this - when I'm trying to export it in pump.h,
-                                 * MSVC 6.0 complains: identifier effectlist_lock: */
 
 //function for printing debuging messages
 //if GUI isn't created, text will be buffered

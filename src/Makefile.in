@@ -56,7 +56,7 @@ am_gnuitar_OBJECTS = amp.$(OBJEXT) main.$(OBJEXT) pump.$(OBJEXT) \
 	noise.$(OBJEXT) biquad.$(OBJEXT) eqbank.$(OBJEXT) \
 	tuner.$(OBJEXT) audio-alsa.$(OBJEXT) audio-oss.$(OBJEXT) \
 	pitch.$(OBJEXT) glib12-compat.$(OBJEXT) audio-jack.$(OBJEXT) \
-	audio-driver.$(OBJEXT)
+	audio-driver.$(OBJEXT) effect.$(OBJEXT)
 gnuitar_OBJECTS = $(am_gnuitar_OBJECTS)
 am__DEPENDENCIES_1 =
 gnuitar_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -177,7 +177,7 @@ gnuitar_SOURCES = amp.c main.c pump.c chorus.c delay.c echo.c tracker.c tremolo.
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h \
 	tuner.c tuner.h audio-alsa.c audio-alsa.h audio-oss.c audio-oss.h \
 	pitch.c pitch.h glib12-compat.c glib12-compat.h audio-jack.c \
-	audio-jack.h audio-driver.c audio-driver.h audio-midi.h effect.h
+	audio-jack.h audio-driver.c audio-driver.h audio-midi.h effect.c effect.h
 
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 INCLUDES = \
@@ -270,6 +270,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/distort.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/distort2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/echo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/effect.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eqbank.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/glib12-compat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gui.Po@am__quote@

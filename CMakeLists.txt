@@ -3,6 +3,10 @@
 # $Id$
 #
 # $Log$
+# Revision 1.23  2006/08/07 13:20:42  alankila
+# - group all effects through effect.h rather than enumerating them in
+#   pump.c.
+#
 # Revision 1.22  2006/08/07 12:55:30  alankila
 # - construct audio-driver.c to hold globals and provide some utility
 #   functions to its users. This slashes interdependencies somewhat.
@@ -197,7 +201,7 @@ ADD_EXECUTABLE(gnuitar
     src/audio-alsa.h src/audio-oss.c src/audio-oss.h src/pitch.c src/pitch.h
     src/glib12-compat.c src/glib12-compat.h src/audio-jack.c src/audio-jack.h
     src/audio-winmm.h src/audio-winmm.c src/audio-dsound.h src/audio-dsound.c
-    src/audio-driver.h src/audio-driver.c src/audio-midi.h src/effect.h)
+    src/audio-driver.h src/audio-driver.c src/audio-midi.h src/effect.c src/effect.h)
 SET_TARGET_PROPERTIES(gnuitar PROPERTIES LINK_FLAGS "-Wl,--as-needed")
 TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 
