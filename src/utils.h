@@ -23,6 +23,7 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_ 1
 
+#include <math.h>
 #ifdef _WIN32
 #  ifndef M_PI
 #    define M_PI 3.1415926535897932384626433832795
@@ -47,7 +48,6 @@ typedef HANDLE  my_mutex;
 #else
 #    define FILESEP "/"
 
-#include <math.h>
 #include <glib.h>
 typedef GMutex* my_mutex;
 

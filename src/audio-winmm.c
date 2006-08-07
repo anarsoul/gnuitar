@@ -21,6 +21,11 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.4  2006/08/07 22:06:27  alankila
+ * - make win32 compile again.
+ * - utils.h now loads math.h also for win side; makes sense with mingw
+ *   at least.
+ *
  * Revision 1.3  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -51,6 +56,7 @@
 
 #include "audio-winmm.h"
 #include "main.h"
+#include "pump.h"
 #include "gui.h"
 #include "utils.h"
 
@@ -83,7 +89,7 @@ winmm_audio_thread(void *V)
     MSG             msg;
 
     /* read/write cursors and lengths for DS calls */
-    struct data_block db;
+    data_block_t db;
 
     /*
      * Wait for a message sent to me by the audio driver
