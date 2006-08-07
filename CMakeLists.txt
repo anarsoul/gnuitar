@@ -3,6 +3,10 @@
 # $Id$
 #
 # $Log$
+# Revision 1.22  2006/08/07 12:55:30  alankila
+# - construct audio-driver.c to hold globals and provide some utility
+#   functions to its users. This slashes interdependencies somewhat.
+#
 # Revision 1.21  2006/08/06 20:14:54  alankila
 # - split pump.h into several domain-specific headers to reduce file
 #   interdependencies (everyone included pump.h). New files are:
@@ -193,7 +197,7 @@ ADD_EXECUTABLE(gnuitar
     src/audio-alsa.h src/audio-oss.c src/audio-oss.h src/pitch.c src/pitch.h
     src/glib12-compat.c src/glib12-compat.h src/audio-jack.c src/audio-jack.h
     src/audio-winmm.h src/audio-winmm.c src/audio-dsound.h src/audio-dsound.c
-    src/audio-driver.h src/audio-midi.h src/effect.h)
+    src/audio-driver.h src/audio-driver.c src/audio-midi.h src/effect.h)
 SET_TARGET_PROPERTIES(gnuitar PROPERTIES LINK_FLAGS "-Wl,--as-needed")
 TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 

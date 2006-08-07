@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.83  2006/08/07 12:55:30  alankila
+ * - construct audio-driver.c to hold globals and provide some utility
+ *   functions to its users. This slashes interdependencies somewhat.
+ *
  * Revision 1.82  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -381,11 +385,7 @@
 #include "glib12-compat.h"
 #include "main.h"
 #include "audio-midi.h"
-#include "audio-alsa.h"
-#include "audio-oss.h"
-#include "audio-jack.h"
-#include "audio-winmm.h"
-#include "audio-dsound.h"
+#include "audio-driver.h"
 
 #include "amp.h"
 #include "autowah.h"
@@ -410,25 +410,13 @@
 
 effect_t       *effects[MAX_EFFECTS];
 int             effects_n = 0;
+my_mutex        effectlist_lock;
 
 /* flag for whether we are creating .wav */
 volatile unsigned short  write_track = 0;
+/* midi datastructure lives here for now */
 volatile midictrl_t midictrl = { 0, 0, 0 };
-
-/* default settings */
-char            alsadevice_str[64];
-unsigned short  n_input_channels = 1;
-unsigned short  n_output_channels = 2;
-unsigned int    sample_rate = 44100;
-unsigned int    buffer_size = MIN_BUFFER_SIZE * 2;
-my_mutex        effectlist_lock = NULL;
-#ifndef _WIN32
-unsigned int    fragments = 2;
-#else
-unsigned int    overrun_threshold = 4;
-unsigned int    nbuffers = MAX_BUFFERS;
-#endif
-
+/* sin table */
 float sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
 void pump_cmdline(char **argv, int argc);
@@ -736,26 +724,7 @@ load_settings(void) {
     error = NULL;
     gstr = g_key_file_get_string(file, "global", "driver", &error);
     if (error == NULL) {
-#ifdef HAVE_JACK
-        if (strcmp(gstr, "JACK") == 0)
-            audio_driver = &jack_driver;
-#endif
-#ifdef HAVE_ALSA
-        if (strcmp(gstr, "ALSA") == 0)
-            audio_driver = &alsa_driver;
-#endif
-#ifdef HAVE_OSS
-        if (strcmp(gstr, "OSS") == 0)
-            audio_driver = &oss_driver;
-#endif
-#ifdef HAVE_WINMM
-        if (strcmp(gstr, "MMSystem") == 0)
-            audio_driver = &winmm_driver;
-#endif
-#ifdef HAVE_DSOUND
-        if (strcmp(gstr, "DirectX") == 0)
-            audio_driver = &dsound_driver;
-#endif
+        set_audio_driver_from_str(gstr);
 	free(gstr);
     }
     

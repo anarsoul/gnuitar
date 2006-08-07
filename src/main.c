@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.70  2006/08/07 12:55:30  alankila
+ * - construct audio-driver.c to hold globals and provide some utility
+ *   functions to its users. This slashes interdependencies somewhat.
+ *
  * Revision 1.69  2006/08/07 12:19:19  alankila
  * - linux cpufreq can cause latency issues for JACK and other operation.
  *   Write a test that emits a warning to user if cpufreq is not set to
@@ -326,24 +330,10 @@
 
 #include "main.h"
 #include "pump.h"
-#include "audio-midi.h"
-#include "audio-alsa.h"
-#include "audio-oss.h"
-#include "audio-jack.h"
-#include "audio-winmm.h"
-#include "audio-dsound.h"
 #include "gui.h"
+#include "audio-driver.h"
 
-audio_driver_t  *audio_driver = NULL;
 char            version[13] = "GNUitar "VERSION;
-
-#ifndef _WIN32
-DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE * MAX_CHANNELS];
-DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
-#else
-DSP_SAMPLE      procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-DSP_SAMPLE      procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
-#endif
 
 #ifndef _WIN32
 /* Low-latency operation is improved if the CPUs do not change speed.
@@ -425,29 +415,7 @@ main(int argc, char **argv)
     /* choose audio driver if not given in config */
     if (audio_driver == NULL) {
         gnuitar_printf("Discovering audio driver.\n");
-#    ifdef HAVE_JACK
-        if (jack_available()) {
-            audio_driver = &jack_driver;
-        } else
-#    endif
-#    ifdef HAVE_ALSA
-        if (alsa_available()) {
-            audio_driver = &alsa_driver;
-        } else
-#    endif
-#    ifdef HAVE_OSS
-        if (oss_available()) {
-            audio_driver = &oss_driver;
-        }
-#    endif
-#    ifdef HAVE_DSOUND
-	if (audio_driver == NULL)
-	    audio_driver = &dsound_driver;
-#    endif
-#    ifdef HAVE_WINMM
-	if (audio_driver == NULL)
-	    audio_driver = &winmm_driver;
-#    endif
+        guess_audio_driver();
     }
     if (audio_driver == NULL)
 	gnuitar_printf("warning: no usable audio driver found.\n");

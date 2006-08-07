@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2006/08/07 12:55:30  alankila
+ * - construct audio-driver.c to hold globals and provide some utility
+ *   functions to its users. This slashes interdependencies somewhat.
+ *
  * Revision 1.44  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -239,6 +243,7 @@
 
 #include "audio-alsa.h"
 #include "audio-midi.h"
+#include "audio-driver.h"
 #include "main.h"
 #include "gui.h"
 #include "pump.h"

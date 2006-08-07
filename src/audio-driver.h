@@ -3,6 +3,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2006/08/07 12:55:30  alankila
+ * - construct audio-driver.c to hold globals and provide some utility
+ *   functions to its users. This slashes interdependencies somewhat.
+ *
  * Revision 1.2  2006/08/06 20:45:52  alankila
  * - use stdint type rather than glib type
  *
@@ -85,5 +89,8 @@ extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE * MAX_CHANNELS];
 extern DSP_SAMPLE       procbuf[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 #endif
+
+void guess_audio_driver(void);
+void set_audio_driver_from_str(const char const *str);
 
 #endif

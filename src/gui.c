@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.111  2006/08/07 12:55:30  alankila
+ * - construct audio-driver.c to hold globals and provide some utility
+ *   functions to its users. This slashes interdependencies somewhat.
+ *
  * Revision 1.110  2006/08/07 12:18:41  alankila
  * - document GTK+ bug at lack of initial scrolling of debug window
  *
@@ -493,11 +497,7 @@
 #include "pump.h"
 #include "main.h"
 #include "audio-midi.h"
-#include "audio-alsa.h"
-#include "audio-oss.h"
-#include "audio-jack.h"
-#include "audio-winmm.h"
-#include "audio-dsound.h"
+#include "audio-driver.h"
 #include "tracker.h"
 #include "utils.h"
 
@@ -1358,34 +1358,12 @@ update_driver(GtkWidget *widget, gpointer data)
     sample_params_t *sparams = (sample_params_t *) data;
 
     tmp = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sparams->driver)->entry));
-    if(tmp == NULL)
+    if (tmp == NULL)
 	return;
-#ifdef HAVE_JACK
-    if (strcmp(tmp,"JACK")==0) {
-        audio_driver = &jack_driver;
-    }
-#endif
-#ifdef HAVE_ALSA
-    if (strcmp(tmp,"ALSA")==0) {
-        audio_driver = &alsa_driver;
-    }
-#endif
-#ifdef HAVE_OSS
-    if (strcmp(tmp,"OSS")==0) {
-        audio_driver = &oss_driver;
-    }
-#endif
-#ifdef HAVE_DSOUND
-    if(strcmp(tmp,"DirectX")==0) {
-        audio_driver = &dsound_driver;
-    }
-#endif
-#ifdef HAVE_WINMM
-    if(strcmp(tmp,"MMSystem")==0) {
-        audio_driver = &winmm_driver;
+    set_audio_driver_from_str(tmp);
+    if (strcmp(tmp, "MMSystem") == 0) {
         buffer_size = pow(2, (int) (log(buffer_size) / log(2)));
     }
-#endif
     populate_sparams_channels(sparams->channels);
 }
 

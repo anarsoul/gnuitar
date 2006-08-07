@@ -10,7 +10,7 @@ gnuitar_SOURCES =  amp.c main.c pump.c chorus.c delay.c echo.c tracker.c tremolo
 	noise.c noise.h biquad.c biquad.h eqbank.c eqbank.h \
 	tuner.c tuner.h audio-alsa.c audio-alsa.h audio-oss.c audio-oss.h \
 	pitch.c pitch.h glib12-compat.c glib12-compat.h audio-jack.c \
-	audio-jack.h audio-driver.h audio-midi.h effect.h
+	audio-jack.h audio-driver.c audio-driver.h audio-midi.h effect.h
 
 EXTRA_DIST = *.c *.h Makefile* *.rc *.xpm
 
