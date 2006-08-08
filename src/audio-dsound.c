@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2006/08/08 21:21:53  alankila
+ * - skip dithering for now on this driver
+ *
  * Revision 1.6  2006/08/07 23:52:51  alankila
  * - fix priority level setting
  *
@@ -335,7 +338,7 @@ dsound_audio_thread(void *V)
         db.len = count/sizeof(SAMPLE16);
         db.channels = n_input_channels;
         pump_sample(&db);
-        triangular_dither(&db);
+        //triangular_dither(&db);
 
         /*
          * DirectSound output:
