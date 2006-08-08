@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.44  2006/08/08 22:36:33  alankila
+ * - use aligned memory for autowah due to biquads
+ *
  * Revision 1.43  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -664,7 +667,7 @@ autowah_create()
     struct autowah_params *ap;
 
     p = calloc(1, sizeof(effect_t));
-    p->params = calloc(1, sizeof(struct autowah_params));
+    p->params = gnuitar_memalign(1, sizeof(struct autowah_params));
     ap = p->params;
     p->proc_init = autowah_init;
     p->proc_filter = autowah_filter;
