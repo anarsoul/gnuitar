@@ -29,8 +29,8 @@
 effect_t *distort2_create();
 
 struct distort2_params {
-    double      drive, clip, treble;
-    double 	last[MAX_CHANNELS];
+    float       drive, clip, treble;
+    float 	last[MAX_CHANNELS];
 
     DSP_SAMPLE  interpolate_firmem[MAX_CHANNELS][8];
     Biquad_t    feedback_minus_loop, output_bass_cut,

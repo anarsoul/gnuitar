@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.114  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.113  2006/08/07 20:01:50  alankila
  * - move all modifications of effect list structures into effect.c.
  *
@@ -567,14 +570,14 @@ static GtkWidget      *status_window = NULL;
 GtkWidget      *processor;
 /* master volume and its current value */
 GtkObject      *adj_master;
-double		master_volume;
+float		master_volume;
 GtkObject      *adj_input;
-double		input_volume;
+float		input_volume;
 
 
 /* vumeter state */
-static double vumeter_in_power  = -96;
-static double vumeter_out_power = -96;
+static float vumeter_in_power  = -96;
+static float vumeter_out_power = -96;
 /* current row in processor list */
 static gint            curr_row = -1;
 /* current row in known effects list */
@@ -1177,26 +1180,26 @@ typedef struct sample_params {
 } sample_params_t;
 
 void
-set_vumeter_in_value(double power) {
-    vumeter_in_power = 3 * (vumeter_in_power + power) / 4;
+set_vumeter_in_value(float power) {
+    vumeter_in_power = (3.0f * vumeter_in_power + power) / 4.f;
 }
 
 void
-set_vumeter_out_value(double power) {
-    vumeter_out_power = 3 * (vumeter_out_power + power) / 4;
+set_vumeter_out_value(float power) {
+    vumeter_out_power = (3.0 * vumeter_out_power + power) / 4;
 }
 
 static gboolean
 timeout_update_vumeter_in(gpointer vumeter) {
-    double power  = -96;
+    float power  = -96.f;
 
-    if (vumeter_in_power != 0) {
-        power = log(vumeter_in_power) / log(10) * 10;
+    if (vumeter_in_power != 0.f) {
+        power = log(vumeter_in_power) / log(10) * 10.f;
         /* 16 bits hold ~96 dB resolution */
-        if (power > 0)
-            power = 0;
-        if (power < -96)
-            power = -96;
+        if (power > 0.f)
+            power = 0.f;
+        if (power < -96.f)
+            power = -96.f;
     }
     
     gtk_progress_set_value(GTK_PROGRESS(vumeter), power);
@@ -1205,15 +1208,15 @@ timeout_update_vumeter_in(gpointer vumeter) {
 
 static gboolean
 timeout_update_vumeter_out(gpointer vumeter) {
-    double power  = -96;
+    float power  = -96.f;
 
-    if (vumeter_out_power != 0) {
-        power = log(vumeter_out_power) / log(10) * 10;
+    if (vumeter_out_power != 0.f) {
+        power = log(vumeter_out_power) / log(10) * 10.f;
         /* 16 bits hold ~96 dB resolution */
-        if (power > 0)
-            power = 0;
-        if (power < -96)
-            power = -96;
+        if (power > 0.f)
+            power = 0.f;
+        if (power < -96.f)
+            power = -96.f;
     }
     
     gtk_progress_set_value(GTK_PROGRESS(vumeter), power);

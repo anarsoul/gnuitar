@@ -34,7 +34,6 @@ void     save_pump(const char *fname);
 void     load_pump(const char *fname);
 void     load_settings(void);
 void     save_settings(void);
-void     triangular_dither(data_block_t *db);
 void     load_initial_state(char **argv, int argc);
 char    *discover_preset_path(void);
 

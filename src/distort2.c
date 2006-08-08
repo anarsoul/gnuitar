@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.66  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.65  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -364,7 +367,8 @@
 
 /* Check if the compiler is Visual C or GCC */
 #if defined(_MSC_VER)
-#   pragma intrinsic (exp,log)
+#   pragma intrinsic (exp)
+#   define expf(x) exp(x)
 #endif
 
 static void
@@ -501,18 +505,18 @@ static void
 distort2_filter(struct effect *p, data_block_t *db)
 {
 
-    int			i,count,bailout;
-    int		        curr_channel = 0;
+    int_fast32_t        i,count,bailout;
+    int_fast8_t	        curr_channel = 0;
     DSP_SAMPLE 	       *s;
     struct distort2_params *dp = p->params;
-    static double	x,y,x1,x2,f,df,dx,e1,e2;
+    float x,y,x1,x2,f,df,dx,e1,e2;
     DSP_SAMPLE upsample[UPSAMPLING_RATE];
-    double DRIVE = DRIVE_STATIC + dp->drive / 100.0 * DRIVE_LOG;
-    double mUt = (20.0 + 100 - 70) * 1e-3;
+    float DRIVE = (float) DRIVE_STATIC + dp->drive / 100.0f * (float) DRIVE_LOG;
+    float mUt = (20.0f + 100.f - 70.f) * 1e-3f;
     /* correct Is with mUt to approximately keep drive the
      * same. Original parameters said Is is 10e-12 and mUt 30e-3.
      * If mUt grows, Is must shrink. 0.39 is experimental */
-    double Is = 10e-12 * exp(0.39/30e-3 - 0.39/mUt);
+    float Is = 10e-12f * expf(0.39f/30e-3f - 0.39f/mUt);
     count = db->len;
     s = db->data;
 
@@ -540,21 +544,21 @@ distort2_filter(struct effect *p, data_block_t *db)
         fir_interpolate_2x(dp->interpolate_firmem[curr_channel],
                            *s, &upsample[2], &upsample[0]);
         /* estimate the rest, this should be good enough for our purposes. */
-        upsample[1] = (upsample[0] + upsample[2]) / 2;
+        upsample[1] = (upsample[0] + upsample[2]) / (DSP_SAMPLE) 2;
         /* looking into firmem is a gross violation of interface. This will
          * go away once I design fir_interpolate_4x. */
-        upsample[3] = (3 * upsample[2] + dp->interpolate_firmem[curr_channel][2]) / 4;
+        upsample[3] = ((DSP_SAMPLE) 3 * upsample[2] + dp->interpolate_firmem[curr_channel][2]) / (DSP_SAMPLE) 4;
 
 	/* Now the actual upsampled processing */
 	for (i = 0; i < UPSAMPLING_RATE; i++)
 	{
             /* scale down to -1 .. 1 range */
-            x = upsample[i] * DIST2_DOWNSCALE;
+            x = upsample[i] * (float) DIST2_DOWNSCALE;
             
 	    /* first compute the linear rc filter current output */
 	    x2 = do_biquad(x, &dp->feedback_minus_loop, curr_channel);
             
-            x1 = (x - x2) / RC_FEEDBACK_R;
+            x1 = (x - x2) / (float) RC_FEEDBACK_R;
             
 	    /* start searching from time previous point , improves speed */
 	    y = dp->last[curr_channel];
@@ -563,26 +567,26 @@ distort2_filter(struct effect *p, data_block_t *db)
 	    do {
 		/* f(y) = 0 , y= ? */
                 /* e^3 ~ 20 */
-                e1 = exp((x - y) / mUt);
-                e2 = 1.0 / e1;
+                e1 = expf((x - y) / mUt);
+                e2 = 1.0f / e1;
 		/* f=x1+(x-y)/DRIVE+Is*(exp((x-y)/mUt)-exp((y-x)/mUt));  optimized makes : */
 		f = x1 + (x - y) / DRIVE + Is * (e1 - e2);
 	
 		/* df/dy */
 		/*df=-1.0/DRIVE-Is/mUt*(exp((x-y)/mUt)+exp((y-x)/mUt)); optimized makes : */
-		df = -1.0 / DRIVE - Is / mUt * (e1 + e2);
+		df = -1.0f / DRIVE - Is / mUt * (e1 + e2);
 	
 		/* This is the newton's algo, it searches a root of a function,
 		 * f here, which must equal 0, using it's derivate. */
 		dx = f/df;
 		y -= dx;
 	    }
-	    while (fabs(dx) > EFFECT_PRECISION && --bailout);
+	    while (fabs(dx) > (float) EFFECT_PRECISION && --bailout);
 	    /* when dx gets very small, we found a solution. */
 	    
             /* Ensure that the value gets reset if something goes wrong */
-            if (isnan(y) || ! (y >= -2.0 && y <= 2.0))
-                y = 0;
+            if (isnan(y) || ! (y >= -2.0f && y <= 2.0f))
+                y = 0.f;
             
 	    dp->last[curr_channel] = y;
             /* static lowpass filtering -- this doubles as our decimation filter
@@ -590,11 +594,11 @@ distort2_filter(struct effect *p, data_block_t *db)
             y = do_biquad(y, &dp->rolloff, curr_channel);
 	}
         /* treble control + other final output filtering */
-        y += (y - do_biquad(y, &dp->treble_highpass, curr_channel)) * dp->treble / 3.0;
+        y += (y - do_biquad(y, &dp->treble_highpass, curr_channel)) * dp->treble / 3.0f;
         y = do_biquad(y, &dp->output_bass_cut, curr_channel);
 	
         /* scale up from -1..1 range */
-	*s = y * DIST2_UPSCALE * (dp->clip / 100.0);
+	*s = y * (float) DIST2_UPSCALE * (dp->clip / 100.0f);
 
 	/*if(*s > MAX_SAMPLE)
 	    *s=MAX_SAMPLE;

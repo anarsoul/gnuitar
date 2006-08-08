@@ -32,26 +32,26 @@ effect_t *   autowah_create();
 struct autowah_params {
     Backbuf_t       *history;
     
-    double          sweep_time;
-    double          freq_low;
-    double          freq_high;
-    double          res;
-    double	    drywet;
+    float           sweep_time;
+    float           freq_low;
+    float           freq_high;
+    float           res;
+    float 	    drywet;
     int             sync;
     int             method;
 
-    double          fresh_accum_delta;
-    double          fresh_accum_power;
-    double          delayed_accum_delta;
-    double          delayed_accum_power;
+    float           fresh_accum_delta;
+    float           fresh_accum_power;
+    float           delayed_accum_delta;
+    float           delayed_accum_power;
     int             accum_n;
     
-    double          f, smoothed_f, freq_vibrato;
+    float           f, smoothed_f, freq_vibrato;
     int             dir;
-    double          ya[MAX_CHANNELS];
-    double          yb[MAX_CHANNELS];
-    double          yc[MAX_CHANNELS];
-    double          yd[MAX_CHANNELS];
+    float           ya[MAX_CHANNELS];
+    float           yb[MAX_CHANNELS];
+    float           yc[MAX_CHANNELS];
+    float           yd[MAX_CHANNELS];
 
     Biquad_t        lpf;
     Biquad_t        bpf;

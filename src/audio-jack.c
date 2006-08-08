@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.19  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.18  2006/08/07 12:55:30  alankila
  * - construct audio-driver.c to hold globals and provide some utility
  *   functions to its users. This slashes interdependencies somewhat.
@@ -155,7 +158,7 @@ alsa_midi_event(void)
         switch (ev->type) {
             /* foot pedal */
             case SND_SEQ_EVENT_PITCHBEND:
-                midictrl.pitchbend = (float) ev->data.control.value / 8192;
+                midictrl.pitchbend = (float) ev->data.control.value / (float) 8192;
                 break;
             /* any kind of key event: note press */
             case SND_SEQ_EVENT_NOTEON:
@@ -202,7 +205,7 @@ process (jack_nframes_t nframes, void *arg)
         
         k = i;
         for (j = 0; j < nframes; j += 1) {
-            db.data[k] = buf[j] * (1 << 23);
+            db.data[k] = buf[j] * (jack_default_audio_sample_t) (1 << 23);
             k += n_input_channels;
         }
     }
@@ -223,7 +226,7 @@ process (jack_nframes_t nframes, void *arg)
 	
         k = i;
         for (j = 0; j < nframes; j += 1) {
-            buf[j] = (jack_default_audio_sample_t) db.data[k] / (1 << 23);
+            buf[j] = (jack_default_audio_sample_t) db.data[k] / (jack_default_audio_sample_t) (1 << 23);
             k += n_output_channels;
         }
     }

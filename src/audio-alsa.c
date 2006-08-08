@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.46  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.45  2006/08/07 12:55:30  alankila
  * - construct audio-driver.c to hold globals and provide some utility
  *   functions to its users. This slashes interdependencies somewhat.
@@ -363,9 +366,7 @@ alsa_audio_thread(void *V)
 	    for (i = 0; i < db.len; i++)
 		wrbuf32[i] = (SAMPLE32) db.data[i] << 8;
         } else {
-            triangular_dither(&db);
-	    for (i = 0; i < db.len; i++)
-		wrbuf16[i] = (SAMPLE32) db.data[i] >> 8;
+            triangular_dither(&db, wrbuf16);
         }
 
         /* write output */

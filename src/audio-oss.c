@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.31  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.30  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -299,9 +302,7 @@ oss_audio_thread(void *V)
         /* Ensure that pump adapted us to output */
         assert(db.channels == n_output_channels);
         assert(db.len == buffer_size * n_output_channels);
-        triangular_dither(&db);
-	for (i = 0; i < db.len; i++)
-	    rwbuf[i] = (SAMPLE32) db.data[i] >> 8;
+        triangular_dither(&db, rwbuf);
 
 	count = write(fd, rwbuf, buffer_size * n_output_channels * 2);
         /*

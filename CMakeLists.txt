@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.24  2006/08/08 21:05:31  alankila
+# - optimize gnuitar: this breaks dsound, I'll fix it later
+#
 # Revision 1.23  2006/08/07 13:20:42  alankila
 # - group all effects through effect.h rather than enumerating them in
 #   pump.c.
@@ -89,12 +92,15 @@
 
 PROJECT(GNUitar)
 
-# force optimizings on... We put yet more optimizing options later.
+# user serviceable parts begin
+
 SET(CMAKE_BUILD_TYPE RELEASE)
-# default to floating-point DSP
+SET(OPT_FLAGS "-ffast-math -ftree-vectorize -march=athlon64 -mfpmath=sse")
 ADD_DEFINITIONS(-DFLOAT_DSP)
-# other useful flags...
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -ffast-math -msse -msse2 -mfpmath=sse")
+
+# end of user serviceable parts
+
+MESSAGE("Note: I am assuming that these parameters generate valid code for you.\n${OPT_FLAGS}\n")
 
 INCLUDE(UsePkgConfig)
 PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
@@ -186,6 +192,9 @@ IF (FFTW3_LIBRARY)
 ELSE (FFTW3_LIBRARY)
     MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
 ENDIF (FFTW3_LIBRARY)
+
+# set final C flags
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall ${OPT_FLAGS}")
 
 # setup complete: define build targets and build files
 ADD_EXECUTABLE(gnuitar

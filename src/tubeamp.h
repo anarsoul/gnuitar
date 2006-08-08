@@ -23,13 +23,13 @@
 #ifndef _TUBEAMP_H_
 #define _TUBEAMP_H_ 1
 
+#include <stdint.h>
 #include "effect.h"
 #include "biquad.h"
 
 extern effect_t *tubeamp_create();
 
 #define MAX_STAGES 4
-#define MAX_IMPULSE_LENGTH 512
 
 struct tubeamp_params {
     int         stages, impulse_model, impulse_quality;
@@ -45,8 +45,8 @@ struct tubeamp_params {
     
     float       in[MAX_CHANNELS];
     /* convolution buffer */
-    DSP_SAMPLE  buf[MAX_CHANNELS][MAX_IMPULSE_LENGTH * 2];
-    int         bufidx[MAX_CHANNELS];
+    DSP_SAMPLE  *buf[MAX_CHANNELS];
+    int_fast16_t    bufidx[MAX_CHANNELS];
     
     Biquad_t    decimation_filter;
 };

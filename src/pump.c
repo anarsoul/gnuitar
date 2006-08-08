@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.87  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.86  2006/08/07 22:05:53  alankila
  * - store 0 as effects number if effect list is empty
  *
@@ -389,6 +392,7 @@
 #endif
 #include <assert.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include "pump.h"
 #include "gui.h"
@@ -409,48 +413,14 @@ float sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 
 void pump_cmdline(char **argv, int argc);
 
-/* from JACK -- blindingly fast */
-static inline unsigned int
-prng(void)
-{
-    static unsigned int seed = 22222;
-    seed = (seed * 96314165) + 907633515;
-    return seed;
-}
-
-/* This is triangular correlated noise with frequency spectrum that increases
- * 6 dB per octave, thus most noise occurs at high frequencies. The probability
- * distribution still looks like triangle. Idea and implementation borrowed from
- * JACK. */
-void
-triangular_dither(data_block_t *db)
-{
-    static int correlated_noise[MAX_CHANNELS] = { 0, 0, 0, 0 };
-    int i, current_channel = 0;
-    
-    for (i = 0; i < db->len; i += 1) {
-        DSP_SAMPLE tmp = db->data[i];
-        int noise = (prng() & 0x1ff) - 256; /* -256 to 255 */
-        
-        tmp += noise - correlated_noise[current_channel];
-        correlated_noise[current_channel] = noise;
-        
-        CLIP_SAMPLE(tmp);
-        db->data[i] = tmp;
-        current_channel = (current_channel + 1) % db->channels;
-    }
-}
-
 /* If the long-term average of input data does not exactly equal to 0,
  * compensate. Some soundcards would also need highpass filtering ~20 Hz
  * or so. */
 static void
 bias_elimination(data_block_t *db) {
-    static DSP_SAMPLE bias_s[MAX_CHANNELS] = { 0, 0, 0, 0 };
-    static int    bias_n[MAX_CHANNELS] = { 10, 10, 10, 10 };
-
-    int i;
-    int curr_channel = 0;
+    static DSP_SAMPLE       bias_s[MAX_CHANNELS] = { 0, 0, 0, 0 };
+    static int_least32_t    bias_n[MAX_CHANNELS] = { 10, 10, 10, 10 };
+    int_fast16_t i, curr_channel = 0;
     DSP_SAMPLE biasadj = bias_s[curr_channel] / bias_n[curr_channel];
     
     for (i = 0; i < db->len; i += 1) {
@@ -461,40 +431,36 @@ bias_elimination(data_block_t *db) {
     }
     /* keep bias within limits of shortest type (int_least32_t) */
     for (i = 0; i < MAX_CHANNELS; i += 1) {
-	if (fabs(bias_s[i]) > 1E10) {
-	    bias_s[i] /= 2;
+	if (fabs(bias_s[i]) > (DSP_SAMPLE) 1E10 || bias_n[i] > (int_least32_t) 1E10) {
+	    bias_s[i] /= (DSP_SAMPLE) 2;
 	    bias_n[i] /= 2;
 	}
     }
 }
 
 /* accumulate power estimate and monitor clipping */
-static double
+static float
 vu_meter(data_block_t *db) {
     int             i;
-    DSP_SAMPLE      sample, max_sample = 0;
+    DSP_SAMPLE      sample;
     float           power = 0;
 
     for (i = 0; i < db->len; i += 1) {
         sample = db->data[i];
-        power += (float) sample * (float) sample;
-        if (sample < 0)
-            sample = -sample;
-        if (sample > max_sample)
-            max_sample = sample;
+        power += (float) (sample * sample);
     }
     /* energy per sample scaled down to 0.0 - 1.0 */
-    return power / db->len / MAX_SAMPLE / MAX_SAMPLE;
+    return power / (float) db->len / (float) MAX_SAMPLE / (float) MAX_SAMPLE;
 }
 
 /* adjust master volume according to the main window slider and clip */
 static void
 adjust_master_volume(data_block_t *db) {
     int		    i;
-    double	    volume = pow(10, master_volume / 20.0);
+    float	    volume = pow(10, master_volume / 20.0);
 
     for (i = 0; i < db->len; i += 1) {
-	double val = db->data[i] * volume;
+	float val = db->data[i] * volume;
         CLIP_SAMPLE(val);
         db->data[i] = val;
     }
@@ -503,12 +469,10 @@ adjust_master_volume(data_block_t *db) {
 static void
 adjust_input_volume(data_block_t *db) {
     int		    i;
-    double	    volume = pow(10, input_volume / 20.0);
+    float	    volume = pow(10, input_volume / 20.0);
 
-    for (i = 0; i < db->len; i += 1) {
-	double val = db->data[i] * volume;
-        db->data[i] = val;
-    }
+    for (i = 0; i < db->len; i += 1)
+        db->data[i] = db->data[i] * volume;
 }
 
 

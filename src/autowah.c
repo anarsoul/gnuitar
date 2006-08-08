@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.42  2006/08/07 20:15:41  alankila
  * - remove dependency on rcfilter: use biquad band-pass instead of the
  *   repeated RC pass filter.
@@ -183,13 +186,12 @@
 #include "audio-midi.h"
 #include <math.h>
 #include <stdlib.h>
-#ifndef _WIN32
-#    include <unistd.h>
-#else
-#    include <io.h>
-#    include "utils.h"
-#endif
 #include <string.h>
+
+#ifdef _MSC_VER
+#define tanhf(x) tanh(x)
+#define expf(x) exp(x)
+#endif
 
 /* these thresholds are used to trigger the sweep. The system accumulates
  * time-weighted average of square difference between samples ("delta") and
@@ -468,7 +470,7 @@ autowah_filter(struct effect *p, data_block_t *db)
 {
     struct autowah_params *ap;
     int             i, curr_channel = 0, delay_time;
-    double          freq;
+    float           freq, g;
 
     ap = (struct autowah_params *) p->params;
 
@@ -479,14 +481,14 @@ autowah_filter(struct effect *p, data_block_t *db)
         if (ap->dir == 0)
             ap->dir = 1.0;
         
-        if (ap->f > 1.0 && ap->dir > 0)
+        if (ap->f > 1.0f && ap->dir > 0)
             ap->dir = -1;
-        if (ap->f < 0.0 && ap->dir < 0)
+        if (ap->f < 0.0f && ap->dir < 0)
             ap->dir = 1;
     }
     if (ap->sync == 0) { /* envelope detect */
         /* Firstly, quiesce wah if we have reached the end of sweep */
-        if (ap->f < 0.0) {
+        if (ap->f < 0.0f) {
             ap->f = 0.0;
             ap->dir = 0;
         }
@@ -526,7 +528,7 @@ autowah_filter(struct effect *p, data_block_t *db)
                                               + AUTOWAH_DISCANT_TRIGGER) ||
             (power2db(ap->fresh_accum_power) > power2db(ap->delayed_accum_power)
                                               + AUTOWAH_BASS_TRIGGER)) {
-            ap->f = 1.0;
+            ap->f = 1.0f;
             ap->dir = -1.0;
         }
     }
@@ -544,13 +546,13 @@ autowah_filter(struct effect *p, data_block_t *db)
      * a = freq_low, and b = log2(freq_high / freq_low)
      */
 
-    ap->smoothed_f = (ap->f + ap->smoothed_f) / 2;
-    freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->smoothed_f + 0.2 * sin(ap->freq_vibrato));
-    ap->f += ap->dir * 1000.0 / ap->sweep_time * db->len / (sample_rate * db->channels) * 2;
+    ap->smoothed_f = (ap->f + ap->smoothed_f) / 2.f;
+    freq = ap->freq_low * pow(2, log(ap->freq_high / ap->freq_low)/log(2) * ap->smoothed_f + 0.2 * sin_lookup(ap->freq_vibrato));
+    ap->f += ap->dir * 1000.0f / ap->sweep_time * db->len / (sample_rate * db->channels) * 2;
 
-    ap->freq_vibrato += 1000.0 / ap->sweep_time * db->len / (sample_rate * db->channels) * M_PI;
-    if (ap->freq_vibrato >= 2 * M_PI)
-        ap->freq_vibrato -= 2 * M_PI;
+    ap->freq_vibrato += 1000.0f / ap->sweep_time * db->len / (sample_rate * db->channels) / 2.0f;
+    if (ap->freq_vibrato >= 1.0f)
+        ap->freq_vibrato -= 1.0f;
     
     switch (ap->method) {
       case 0:
@@ -584,26 +586,25 @@ autowah_filter(struct effect *p, data_block_t *db)
  *
  * Wx = tanh(Yx(n) / (2 * Vt)) */
 
+        g = 1.f - expf((float) (-2.0 * M_PI) * freq / sample_rate);
         for (i = 0; i < db->len; i += 1) {
-
 #define PARAM_V (MAX_SAMPLE * 1.0) /* the sound gets dirtier if the factor gets small */
-            float g = 1 - exp(-2 * M_PI * freq / sample_rate);
-            ap->ya[curr_channel] += PARAM_V * g *
-                (tanh( (db->data[i] - 4 * ap->res/100.0 * ap->yd[curr_channel]) / PARAM_V )
-                 - tanh( ap->ya[curr_channel] / PARAM_V));
-            ap->yb[curr_channel] += PARAM_V * g *
-                (tanh( ap->ya[curr_channel] / PARAM_V )
-                 - tanh( ap->yb[curr_channel] / PARAM_V ));
-            ap->yc[curr_channel] += PARAM_V * g *
-                (tanh( ap->yb[curr_channel] / PARAM_V )
-                 - tanh( ap->yc[curr_channel] / PARAM_V ));
-            ap->yd[curr_channel] += PARAM_V * g *
-                (tanh( ap->yc[curr_channel] / PARAM_V )
-                 - tanh( ap->yd[curr_channel] / PARAM_V ));
+            ap->ya[curr_channel] += (float) PARAM_V * g *
+                (tanhf( (db->data[i] - 4.f * ap->res/100.0f * ap->yd[curr_channel]) / (float) PARAM_V )
+                 - tanhf( ap->ya[curr_channel] / (float) PARAM_V));
+            ap->yb[curr_channel] += (float) PARAM_V * g *
+                (tanhf( ap->ya[curr_channel] / (float) PARAM_V )
+                 - tanhf( ap->yb[curr_channel] / (float) PARAM_V ));
+            ap->yc[curr_channel] += (float) PARAM_V * g *
+                (tanhf( ap->yb[curr_channel] / (float) PARAM_V )
+                 - tanhf( ap->yc[curr_channel] / (float) PARAM_V ));
+            ap->yd[curr_channel] += (float) PARAM_V * g *
+                (tanhf( ap->yc[curr_channel] / (float) PARAM_V )
+                 - tanhf( ap->yd[curr_channel] / (float) PARAM_V ));
 
             /* the wah causes a gain loss of 12 dB which, but due to resonance we
              * may clip; regardless I'll adjust 12 dB back. */
-            db->data[i] = ap->yd[curr_channel] * 4;
+            db->data[i] = ap->yd[curr_channel] * 4.f;
             curr_channel = (curr_channel + 1) % db->channels;
         }
         break;
@@ -614,7 +615,7 @@ autowah_filter(struct effect *p, data_block_t *db)
     
     /* mix with dry sound */
     for (i = 0; i < db->len; i++)
-        db->data[i] = (db->data[i]*ap->drywet + db->data_swap[i]*(100-ap->drywet))/100.0;
+        db->data[i] = (db->data[i]*ap->drywet + db->data_swap[i]*(100.f-ap->drywet))/100.0f;
 }
 
 static void

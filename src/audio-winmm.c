@@ -21,6 +21,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.5  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.4  2006/08/07 22:06:27  alankila
  * - make win32 compile again.
  * - utils.h now loads math.h also for win side; makes sense with mingw
@@ -140,15 +143,7 @@ winmm_audio_thread(void *V)
                         db.len = count;
                         db.channels = n_input_channels;
                         pump_sample(&db);
-                        triangular_dither(&db);
-
-                        /*
-                         * start playback - MME output
-                         */
-                        for (i = 0; i < count; i++) {
-                            DSP_SAMPLE W = (SAMPLE32)db.data[i] >> 8;
-                            ((SAMPLE16 *) (write_header[hdr_avail].lpData))[i] = W;
-                        }
+                        triangular_dither(&db, (SAMPLE16 *) (write_header[hdr_avail].lpData));
 
                         err = waveOutWrite(out, &write_header[hdr_avail],sizeof(WAVEHDR));
                         if (err) {

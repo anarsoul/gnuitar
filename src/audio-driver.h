@@ -3,6 +3,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.3  2006/08/07 12:55:30  alankila
  * - construct audio-driver.c to hold globals and provide some utility
  *   functions to its users. This slashes interdependencies somewhat.
@@ -35,8 +38,8 @@ typedef int_least32_t   DSP_SAMPLE;
 typedef struct {
     DSP_SAMPLE     *data;
     DSP_SAMPLE     *data_swap;
-    unsigned int    len;
-    unsigned int    channels;
+    int_fast32_t    len;
+    int_fast8_t     channels;
 } data_block_t;
 
 struct audio_driver_channels {
@@ -92,5 +95,6 @@ extern DSP_SAMPLE       procbuf2[MAX_BUFFER_SIZE / sizeof(SAMPLE16)];
 
 void guess_audio_driver(void);
 void set_audio_driver_from_str(const char const *str);
+void triangular_dither(data_block_t *db, SAMPLE16 *target);
 
 #endif

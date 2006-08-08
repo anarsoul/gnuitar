@@ -5,6 +5,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.1  2006/08/07 12:55:30  alankila
  * - construct audio-driver.c to hold globals and provide some utility
  *   functions to its users. This slashes interdependencies somewhat.
@@ -46,6 +49,41 @@ unsigned int    fragments = 2;
 unsigned int    overrun_threshold = 4;
 unsigned int    nbuffers = MAX_BUFFERS;
 #endif
+
+/* from JACK -- blindingly fast */
+static inline unsigned int
+prng(void)
+{
+    static unsigned int seed = 22222;
+    seed = (seed * 96314165) + 907633515;
+    return seed;
+}
+
+/* This is triangular correlated noise with frequency spectrum that increases
+ * 6 dB per octave, thus most noise occurs at high frequencies. The probability
+ * distribution still looks like triangle. Idea and implementation borrowed from
+ * JACK. */
+void
+triangular_dither(data_block_t *db, SAMPLE16 *target)
+{
+    static SAMPLE32 correlated_noise[MAX_CHANNELS] = { 0, 0, 0, 0 };
+    int_fast16_t i, current_channel = 0;
+    
+    for (i = 0; i < db->len; i += 1) {
+        SAMPLE32 tmp = db->data[i];
+        SAMPLE32 noise = (prng() & 0x1ff) - 256; /* -256 to 255 */
+        
+        tmp += noise - correlated_noise[current_channel];
+        correlated_noise[current_channel] = noise;
+        tmp >>= 8;
+        if (tmp > 32767)
+            tmp = 32767;
+        if (tmp < -32768)
+            tmp = -32768;
+        target[i] = tmp;
+        current_channel = (current_channel + 1) % db->channels;
+    }
+}
 
 void
 guess_audio_driver(void)

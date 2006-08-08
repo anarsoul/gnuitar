@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.42  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.41  2006/08/06 20:14:55  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -180,6 +183,7 @@
 #include <math.h>
 #include "gui.h"
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "biquad.h"
 #include "tubeamp.h"
@@ -453,31 +457,31 @@ static float
 F_tube(float in, float r_i)
 {
     float pos;
-    int idx;
+    int_fast32_t idx;
     
-    pos = (in / r_i) * NONLINEARITY_SCALE * NONLINEARITY_PRECISION + NONLINEARITY_SIZE / 2;
+    pos = (in / r_i) * (float) (NONLINEARITY_SCALE * NONLINEARITY_PRECISION) + (float) (NONLINEARITY_SIZE / 2);
     
     /* This safety catch should be made unnecessary.
      * But it may require us to extend the nonlinearity table to ridiculously far.
      * Besides, hard blocking distortion is fairly ok as effect when you go too loud. */
-    if (pos < 0) {
+    if (pos < 0.f) {
         //printf("pos < 0!");
-        pos = 0;
+        pos = 0.f;
     }
-    if (pos > NONLINEARITY_SIZE - 2) {
+    if (pos > (float) (NONLINEARITY_SIZE - 2)) {
         //printf("pos > size!");
-        pos = NONLINEARITY_SIZE - 2;
+        pos = (float) (NONLINEARITY_SIZE - 2);
     }
 
     idx = pos;
     pos -= idx;
-    return (nonlinearity[idx] * (1.0-pos) + nonlinearity[idx+1] * pos) * r_i;
+    return (nonlinearity[idx] * (1.0f-pos) + nonlinearity[idx+1] * pos) * r_i;
 }
 
 static void
 tubeamp_filter(struct effect *p, data_block_t *db)
 {
-    int i, j, k, curr_channel = 0;
+    int_fast16_t i, j, k, curr_channel = 0;
     DSP_SAMPLE *ptr1;
     struct tubeamp_params *params = p->params;
     float gain;
@@ -486,15 +490,15 @@ tubeamp_filter(struct effect *p, data_block_t *db)
     for (j = 0; j < params->stages; j += 1)
         set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 720, 500.0, params->middlefreq, &params->middlecut[j]);
     */
-    gain = pow(10, params->gain / 20);
+    gain = pow(10.f, params->gain / 20.f);
     
     /* highpass -> low shelf eq -> lowpass -> waveshaper */
     for (i = 0; i < db->len; i += 1) {
         float result;
         for (k = 0; k < UPSAMPLE_RATIO; k += 1) {
             /* IIR interpolation */
-            params->in[curr_channel] = (db->data[i] + params->in[curr_channel] * (UPSAMPLE_RATIO-1)) / UPSAMPLE_RATIO;
-            result = params->in[curr_channel] / MAX_SAMPLE;
+            params->in[curr_channel] = (db->data[i] + params->in[curr_channel] * (float) (UPSAMPLE_RATIO-1)) / (float) UPSAMPLE_RATIO;
+            result = params->in[curr_channel] / (float) MAX_SAMPLE;
             for (j = 0; j < params->stages; j += 1) {
                 /* gain of the block */
                 result *= gain;
@@ -514,8 +518,8 @@ tubeamp_filter(struct effect *p, data_block_t *db)
         ptr1 = params->buf[curr_channel] + params->bufidx[curr_channel];
         
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
-        ptr1[IMPULSE_SIZE] = ptr1[0] = result / 500 * (MAX_SAMPLE >> 13);
-        db->data[i] = convolve(ampmodels[params->impulse_model].impulse, ptr1, params->impulse_quality) / 32;
+        ptr1[IMPULSE_SIZE] = ptr1[0] = result / 500.f * (float) (MAX_SAMPLE >> 13);
+        db->data[i] = convolve(ampmodels[params->impulse_model].impulse, ptr1, params->impulse_quality) / 32.f;
         
         params->bufidx[curr_channel] -= 1;
         if (params->bufidx[curr_channel] < 0)
@@ -530,6 +534,11 @@ tubeamp_filter(struct effect *p, data_block_t *db)
 static void
 tubeamp_done(struct effect *p)
 {
+    struct tubeamp_params *params = p->params;
+    int i;
+
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        gnuitar_free(params->buf[i]);
     gnuitar_free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -641,6 +650,9 @@ tubeamp_create()
     tmp = nonlinearity[NONLINEARITY_SIZE / 2];
     for (i = 0; i < NONLINEARITY_SIZE; i += 1)
         nonlinearity[i] -= tmp;
+
+    for (i = 0; i < MAX_CHANNELS; i += 1)
+        params->buf[i] = gnuitar_memalign(IMPULSE_SIZE * 2, sizeof(DSP_SAMPLE));
 
     return p;
 }

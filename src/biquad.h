@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.34  2006/08/08 21:05:31  alankila
+ * - optimize gnuitar: this breaks dsound, I'll fix it later
+ *
  * Revision 1.33  2006/08/07 21:43:29  alankila
  * - committing a hopefully working version of biquads on SSE now. Had to
  *   rename struct members for this to succeed, though. :-(
@@ -166,8 +169,17 @@
 #include "audio-driver.h"
 #include "utils.h"
 
-#if defined(__SSE__) && defined(FLOAT_DSP) && !defined(__MINGW32__)
+/* SSE is used to compute convolutions and the biquad summation. */
+#ifdef __SSE__
 #include <xmmintrin.h>
+#endif
+
+/* SSE3 is used to replace shuffle + stuff with the horizontal summation. */
+#ifdef __SSE3__
+#include <pmmintrin.h>
+#endif
+
+#if defined(__SSE__) && defined(FLOAT_DSP)
 
 typedef struct {
     union {
@@ -219,12 +231,20 @@ DSP_SAMPLE fir_decimate_2x(DSP_SAMPLE *mem, const DSP_SAMPLE in1, const DSP_SAMP
 extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 			              int lowpass, Biquad_t *f);
 
-/* use SSE if available -- doesn't work on mingw (gcc 3.4), don't know why */
-#if defined(__SSE__) && defined(FLOAT_DSP) && !defined(__MINGW32__)
+/* Denormals are small numbers that force FPU into slow mode.
+ * Denormals tend to occur in all low-pass filters, but a DC
+ * offset can remove them. (Another way to avoid them would
+ * be to switch FPU into denormalless mode.) */
+#define DENORMAL_BIAS   1E-5
+
+#if defined(__SSE__) && defined(FLOAT_DSP)
 
 static inline float
 do_biquad(const float x, Biquad_t *f, const int c)
 {
+#ifdef __SSE3__
+    static __m128 zero = { 0, 0, 0, 0 };
+#endif
     __m128          r;
     float          *mem = f->mem[c], y;
 
@@ -233,12 +253,16 @@ do_biquad(const float x, Biquad_t *f, const int c)
      * Therefore the multiplication can be performed through SSE. */
     r = _mm_mul_ps(f->b4, f->mem4[c]);
     /* sum all the values together */
+#ifdef __SSE3__
+    r = _mm_hadd_ps(r, zero);
+#else
     r = _mm_add_ps(_mm_movehl_ps(r, r), r);
     r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
+#endif
     /* store result in y */
     _mm_store_ss(&y, r);
     /* add the final term */
-    y += f->b0 * x;
+    y += f->b0 * x + DENORMAL_BIAS;
     
     /* update history. This could also be done through _mm_shuffle_ps. */
     mem[1] = mem[0];
@@ -249,33 +273,31 @@ do_biquad(const float x, Biquad_t *f, const int c)
     return y;
 }
 
+/* important: a is aligned to 16-byte boundary but b is not.
+ * Therefore, movups must be used to access that memory. */
 static inline float
 convolve(const float *a, const float *b, const int len) {
-    __m128 r;
+#ifdef __SSE3__
+    static __m128 zero = { 0, 0, 0, 0 };
+#endif
+    __m128 r = { 0, 0, 0, 0 };
+    __m128 *a4 = (__m128 *) a;
+    const float *b4 = b;
     float dot = 0.0;
-    int i;
-  
-    i = (len / 4) * 2;
-    if (i) {
-        /* The assembly code does the convolution as fast as possible. Modelled after
-         * the algorithm in Mmmath library by Ville Tuulos, GPL license. */
+    int i4;
 
-        asm("   xorps  %%xmm0, %%xmm0               \n"
-            ".Lloop%=:                              \n"
-            "   decl   %[i]                         \n"
-            "   decl   %[i]                         \n"
-            "   movups (%%ecx, %[i], 8), %%xmm2     \n"
-            "   mulps  (%%edx, %[i], 8), %%xmm2     \n"
-            "   addps  %%xmm2, %%xmm0               \n"
-            "   cmpl   $0, %[i]                     \n"
-            "   jnz    .Lloop%=                     \n"
-            "   movaps %%xmm0, %[r]                 \n"
-            : 
-            : "d"(a), "c"(b), [r]"m"(r), [i]"a"(i)
-            : "cc", "xmm0", "xmm2");
-
+    i4 = len / 4;
+    if (i4) {
+        while (i4 --) {
+            r = _mm_add_ps(r, _mm_mul_ps(*a4++, _mm_loadu_ps(b4)));
+            b4 += 4;
+        }
+#ifdef __SSE3__
+        r = _mm_hadd_ps(r, zero);
+#else
         r = _mm_add_ps(_mm_movehl_ps(r, r), r);
         r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
+#endif
         _mm_store_ss(&dot, r);
     }
     
@@ -287,6 +309,7 @@ convolve(const float *a, const float *b, const int len) {
     
     return dot;
 }
+
 #else
 
 static inline DSP_SAMPLE
@@ -298,22 +321,18 @@ convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
     return dot;
 }
 
-/* Denormals are small numbers that force FPU into slow mode.
- * Denormals tend to occur in all low-pass filters, but a DC offset can remove them. */
-#define DENORMAL_BIAS   1E-5
-
 static inline float
 do_biquad(const float x, Biquad_t *f, const int c)
 {
-    float          y;
-    y = x * f->b0 + f->mem[c][0] * f->b[0] + f->mem[c][1] * f->b[1]
-        + f->mem[c][2] * f->b[2] + f->mem[c][3] * f->b[3] + DENORMAL_BIAS;
-    if(isnan(y))
+    float *mem = f->mem[c], y;
+    y = x * f->b0 + mem[0] * f->b[0] + mem[1] * f->b[1]
+        + mem[2] * f->b[2] + mem[3] * f->b[3] + DENORMAL_BIAS;
+    if (isnan(y))
 	y=0;
-    f->mem[c][1] = f->mem[c][0];
-    f->mem[c][0] = x;
-    f->mem[c][3] = f->mem[c][2];
-    f->mem[c][2] = y;
+    mem[1] = mem[0];
+    mem[0] = x;
+    mem[3] = mem[2];
+    mem[2] = y;
     return y;
 }
 

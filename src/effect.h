@@ -51,10 +51,10 @@ struct effect {
 typedef struct effect effect_t;
 
 #define CLIP_SAMPLE(sm) \
-    if (sm > MAX_SAMPLE) \
-        sm = MAX_SAMPLE; \
-    if (sm < -MAX_SAMPLE) \
-        sm = -MAX_SAMPLE;
+    if (sm > (typeof(sm)) MAX_SAMPLE) \
+        sm = (typeof(sm)) MAX_SAMPLE; \
+    if (sm < (typeof(sm)) -MAX_SAMPLE) \
+        sm = (typeof(sm)) -MAX_SAMPLE;
 
 /* these macros are used to save my sanity */
 #define SAVE_ARGS \
@@ -89,15 +89,15 @@ extern float sin_lookup_table[SIN_LOOKUP_SIZE+1];
 
 static inline float
 sin_lookup(float pos) {
-    return sin_lookup_table[(int) (pos * SIN_LOOKUP_SIZE)];
+    return sin_lookup_table[(int) (pos * (float) SIN_LOOKUP_SIZE)];
 }
 
 static inline DSP_SAMPLE
 cos_lookup(float pos) {
-    if (pos >= 0.75)
-        return sin_lookup(pos - 0.75);
+    if (pos >= 0.75f)
+        return sin_lookup(pos - 0.75f);
     else
-        return sin_lookup(pos + 0.25);
+        return sin_lookup(pos + 0.25f);
 }
 
 #ifdef __SSE__
