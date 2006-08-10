@@ -25,7 +25,7 @@
 
 #include "effect.h"
 
-effect_t *   tremolo_create();
+effect_t *   tremolo_create(void);
 
 struct tremolo_params {
     float	    tremolo_amplitude,

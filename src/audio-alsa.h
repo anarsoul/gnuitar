@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2006/08/10 18:52:07  alankila
+ * - declare prototypes properly
+ * - hide some accidentally global methods
+ *
  * Revision 1.5  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -63,7 +67,7 @@
 
 #include "audio-driver.h"
 
-int                 alsa_available();
+int    alsa_available(void);
 extern audio_driver_t alsa_driver;
 
 #endif

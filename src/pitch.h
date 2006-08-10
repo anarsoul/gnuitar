@@ -14,7 +14,7 @@
 #include "effect.h"
 #include "backbuf.h"
 
-extern effect_t *   pitch_create();
+effect_t *   pitch_create(void);
 
 struct pitch_params {
     Backbuf_t      *history[MAX_CHANNELS];

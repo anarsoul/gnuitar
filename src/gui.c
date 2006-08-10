@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.116  2006/08/10 18:52:07  alankila
+ * - declare prototypes properly
+ * - hide some accidentally global methods
+ *
  * Revision 1.115  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -531,20 +535,20 @@ static void     help_contents(void);
 static gchar *effects_dir = NULL;
 
 static GtkItemFactoryEntry mainGui_menu[] = {
-    {"/_File", "<alt>F", NULL, 0, "<Branch>"},
+    {"/_File", "<alt>F", NULL, 0, "<Branch>", NULL},
 
     {"/File/_Open Layout", "<control>O",
-     (GtkSignalFunc) bank_start_load, 0, NULL},
+     (GtkSignalFunc) bank_start_load, 0, NULL, NULL},
     {"/File/_Save Layout", "<control>S", (GtkSignalFunc) bank_start_save,
-     0, NULL},
-    {"/File/sep1", NULL, NULL, 0, "<Separator>"},
-    {"/File/E_xit", "<control>Q", (GtkSignalFunc) quit, 0, NULL},
-    {"/_Options", "<alt>O", NULL, 0, "<Branch>"},
+     0, NULL, NULL},
+    {"/File/sep1", NULL, NULL, 0, "<Separator>", NULL},
+    {"/File/E_xit", "<control>Q", (GtkSignalFunc) quit, 0, NULL, NULL},
+    {"/_Options", "<alt>O", NULL, 0, "<Branch>", NULL},
     {"/Options/O_ptions", "<control>P",
-     (GtkSignalFunc) sample_dlg, 0, NULL},
-    {"/_Help", NULL, NULL, 0, "<LastBranch>"},
-    {"/_Help/Contents", NULL, (GtkSignalFunc) help_contents, 0, NULL},
-    {"/_Help/About", NULL, (GtkSignalFunc) about_dlg, 0, NULL}
+     (GtkSignalFunc) sample_dlg, 0, NULL, NULL},
+    {"/_Help", NULL, NULL, 0, "<LastBranch>", NULL},
+    {"/_Help/Contents", NULL, (GtkSignalFunc) help_contents, 0, NULL, NULL},
+    {"/_Help/About", NULL, (GtkSignalFunc) about_dlg, 0, NULL, NULL}
 };
 static GtkWidget      *mainWnd;
 static GtkItemFactory *item_factory;
@@ -1664,9 +1668,9 @@ init_gui(void)
 
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);
-    char           *processor_titles[] = { "Current effects", NULL };
-    char           *effects_titles[] = { "Known effects", NULL };
-    char           *bank_titles[] = { "Preset list", NULL };
+    char     *processor_titles[] = { "Current effects", NULL };
+    char     *effects_titles[] = { "Known effects", NULL };
+    char     *bank_titles[] = { "Preset list", NULL };
 #ifdef HAVE_GTK
     GdkFont        *new_font;
 #endif
@@ -1700,8 +1704,7 @@ init_gui(void)
 
     item_factory = gtk_item_factory_new(GTK_TYPE_MENU_BAR, "<main>",
 					accel_group);
-    gtk_item_factory_create_items(item_factory, nmenu_items, mainGui_menu,
-				  NULL);
+    gtk_item_factory_create_items(item_factory, nmenu_items, mainGui_menu, NULL);
     gtk_window_add_accel_group(GTK_WINDOW(mainWnd), accel_group);
     menuBar = gtk_item_factory_get_widget(item_factory, "<main>");
 

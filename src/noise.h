@@ -25,7 +25,7 @@
 
 #include "effect.h"
 
-effect_t *   noise_create();
+effect_t *   noise_create(void);
 
 struct noise_params {
     int             threshold,

@@ -27,7 +27,7 @@
 #include "effect.h"
 #include "biquad.h"
 
-extern effect_t *tubeamp_create();
+effect_t *tubeamp_create(void);
 
 #define MAX_STAGES 4
 

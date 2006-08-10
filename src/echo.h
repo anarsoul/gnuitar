@@ -29,7 +29,7 @@
 #define MAX_ECHO_COUNT  4
 #define MAX_ECHO_LENGTH 500 /* ms */
 
-effect_t *   echo_create();
+effect_t *   echo_create(void);
 
 struct echo_params {
     Backbuf_t       *history[MAX_CHANNELS][MAX_ECHO_COUNT];

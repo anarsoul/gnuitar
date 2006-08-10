@@ -3,6 +3,10 @@
 # $Id$
 #
 # $Log$
+# Revision 1.27  2006/08/10 18:52:07  alankila
+# - declare prototypes properly
+# - hide some accidentally global methods
+#
 # Revision 1.26  2006/08/10 16:18:36  alankila
 # - improve const correctness and make gnuitar compile cleanly under
 #   increasingly pedantic warning models.
@@ -201,8 +205,7 @@ ELSE (FFTW3_LIBRARY)
 ENDIF (FFTW3_LIBRARY)
 
 # set final C flags
-SET(WARNING_FLAGS "-Wall")
-#SET(WARNING_FLAGS "-Wall -Wstrict-aliasing=2 -Wextra -Wunsafe-loop-optimizations -Wbad-function-cast -Wcast-align -Wwrite-strings -Wmissing-field-initializers -Wmissing-noreturn -Wredundant-decls -Winline -Wpointer-sign")
+SET(WARNING_FLAGS "-Wall -Wunsafe-loop-optimizations -Wbad-function-cast -Wcast-align -Wmissing-field-initializers -Wmissing-noreturn -Wredundant-decls -Winline -Wpointer-sign -Wpointer-arith -Wmissing-prototypes")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${OPT_FLAGS}")
 
 # setup complete: define build targets and build files

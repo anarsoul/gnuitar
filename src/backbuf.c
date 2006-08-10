@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.12  2006/08/10 18:52:07  alankila
+ * - declare prototypes properly
+ * - hide some accidentally global methods
+ *
  * Revision 1.11  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -66,14 +70,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-void
+static void
 backbuf_add(Backbuf_t *b, const BUF_TYPE d)
 {
     b->curpos += 1;
     b->storage[b->curpos & b->mask] = d;
 }
 
-BUF_TYPE
+static BUF_TYPE
 backbuf_get(Backbuf_t *b, const unsigned int delay)
 {
     assert(delay < b->nstor);
@@ -81,7 +85,7 @@ backbuf_get(Backbuf_t *b, const unsigned int delay)
 }
 
 /* XXX optimize this a bit */
-BUF_TYPE
+static BUF_TYPE
 backbuf_get_interpolated(Backbuf_t *b, float delay)
 {
     unsigned int delay_int = delay;
@@ -92,7 +96,7 @@ backbuf_get_interpolated(Backbuf_t *b, float delay)
     return b->storage[getpos & b->mask] * (1 - delay) + b->storage[(getpos - 1) & b->mask] * delay;
 }
 
-void
+static void
 backbuf_clear(Backbuf_t *b)
 {
     memset(b->storage, 0, (b->mask + 1) * sizeof(b->storage[0]));

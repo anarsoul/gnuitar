@@ -26,7 +26,7 @@
 #include "effect.h"
 #include "biquad.h"
 
-effect_t *distort2_create();
+effect_t *distort2_create(void);
 
 struct distort2_params {
     float       drive, clip, treble;

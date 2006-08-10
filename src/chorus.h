@@ -26,7 +26,7 @@
 #include "effect.h"
 #include "backbuf.h"
 
-effect_t *   chorus_create();
+effect_t *   chorus_create(void);
 
 struct chorus_params {
     Backbuf_t      *history[MAX_CHANNELS];

@@ -26,9 +26,7 @@
 #include "audio-driver.h"
 
 extern void     tracker_out(const char *outfile);
-// extern void tracker_in(const char *infile);
-extern void     tracker_done();
-// extern void track_read(int *s, int count);
+extern void     tracker_done(void);
 extern void     track_write(DSP_SAMPLE *s, int count);
 
 #endif

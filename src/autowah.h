@@ -27,7 +27,7 @@
 #include "backbuf.h"
 #include "biquad.h"
 
-effect_t *   autowah_create();
+effect_t *   autowah_create(void);
 
 struct autowah_params {
     Backbuf_t       *history;

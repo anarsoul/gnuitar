@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4  2006/08/10 18:52:07  alankila
+ * - declare prototypes properly
+ * - hide some accidentally global methods
+ *
  * Revision 1.3  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -48,7 +52,7 @@
 
 #include "audio-driver.h"
 
-int                 jack_available();
+int jack_available(void);
 extern audio_driver_t jack_driver;
 
 #endif

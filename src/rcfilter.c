@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.13  2006/08/10 18:52:07  alankila
+ * - declare prototypes properly
+ * - hide some accidentally global methods
+ *
  * Revision 1.12  2006/08/06 20:14:55  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -122,7 +126,7 @@ LC_filter(data_block_t *db, int filter_no, double freq,
     }
 }
 
-double
+static double
 other(double f, double x)
 {
     return 1.0 / (2 * M_PI * f * x);
@@ -148,7 +152,7 @@ RC_set_freq(double f, struct filter_data *pp)
     pp->dt_div_C = 1.0 / (sample_rate * pp->C);
 }
 
-void
+static void
 RC_filter(data_block_t *db, int mode, int filter_no,
 	  struct filter_data *pp)
 {

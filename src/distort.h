@@ -26,7 +26,7 @@
 #include "effect.h"
 #include "rcfilter.h"
 
-effect_t * distort_create();
+effect_t * distort_create(void);
 
 struct distort_params {
     int             sat,

@@ -25,7 +25,7 @@
 
 #include "effect.h"
 
-effect_t *   sustain_create();
+effect_t *   sustain_create(void);
 
 struct sustain_params {
     int             sust,

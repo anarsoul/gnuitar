@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.48  2006/08/10 18:52:07  alankila
+ * - declare prototypes properly
+ * - hide some accidentally global methods
+ *
  * Revision 1.47  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -597,7 +601,7 @@ alsa_midi_init(void)
 static int
 alsa_init_sound(void)
 {
-    char           *alsadevice_in_str;
+    const char     *alsadevice_in_str;
     int             err;
     unsigned int    bs_try, fragments_try, tries;
 

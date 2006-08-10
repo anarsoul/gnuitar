@@ -12,7 +12,7 @@
 #include "effect.h"
 #include "biquad.h"
 
-extern effect_t *rotary_create();
+effect_t *rotary_create(void);
 
 struct rotary_params {
     int         speed;
