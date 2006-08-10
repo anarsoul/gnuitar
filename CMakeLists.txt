@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.25  2006/08/10 13:57:48  alankila
+# - use fftw3f instead of fftw3 to avoid slower doubles
+#
 # Revision 1.24  2006/08/08 21:05:31  alankila
 # - optimize gnuitar: this breaks dsound, I'll fix it later
 #
@@ -185,12 +188,12 @@ IF (WIN32)
     ENDIF (NOT DSOUND_LIBRARY AND NOT WINMM_LIBRARY)
 ENDIF (WIN32)
 
-FIND_LIBRARY(FFTW3_LIBRARY NAMES fftw3)
+FIND_LIBRARY(FFTW3_LIBRARY NAMES fftw3f)
 IF (FFTW3_LIBRARY)
     ADD_DEFINITIONS(-DHAVE_FFTW3)
-    SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} fftw3)
+    SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} fftw3f)
 ELSE (FFTW3_LIBRARY)
-    MESSAGE("libfftw3 not found -- using time-domain implementations where possible.")
+    MESSAGE("libfftw3f not found -- using time-domain implementations where possible.")
 ENDIF (FFTW3_LIBRARY)
 
 # set final C flags

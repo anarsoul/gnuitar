@@ -57,6 +57,9 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.32  2006/08/10 13:57:48  alankila
+ * - use fftw3f instead of fftw3 to avoid slower doubles
+ *
  * Revision 1.31  2006/08/06 20:14:55  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -176,10 +179,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _WIN32
-#    include <unistd.h>
-#else
-#    include <io.h>
+
+#ifdef _MSC_VER
+#define logf(x) log(x)
 #endif
 
 #define GUI_UPDATE_INTERVAL	125.0 /* ms */
@@ -454,10 +456,10 @@ timeout_update_label(gpointer gp)
 }
 
 static int
-cmp_double(const void *a, const void *b)
+cmp_float(const void *a, const void *b)
 {
-    const double *da = a;
-    const double *db = b;
+    const float *da = a;
+    const float *db = b;
     if (*da < *db)
 	return -1;
     if (*da > *db)
@@ -471,7 +473,6 @@ tuner_filter(struct effect *p, data_block_t *db)
     struct tuner_params *params;
     int			i, j;
     DSP_SAMPLE	       *s;
-    DSP_SAMPLE		newval;
     float		power = 0,
 			freq = 0;
 #ifdef HAVE_FFTW3
@@ -490,7 +491,7 @@ tuner_filter(struct effect *p, data_block_t *db)
     params = p->params;
 
     for (i = 0; i < db->len; i += db->channels) {
-	newval = 0;
+	DSP_SAMPLE newval = 0;
 	for (j = 0; j < db->channels; j += 1) {
 	    newval += *s / db->channels;
             s++;
@@ -502,8 +503,8 @@ tuner_filter(struct effect *p, data_block_t *db)
 	params->oldval[1] = params->oldval[0];
 	params->oldval[0] = newval;
 	
-	newval = (params->oldval[2] + params->oldval[1] + params->oldval[1] + params->oldval[0]) / 4;
-        newval /= 256;
+	newval = (params->oldval[2] + params->oldval[1] + params->oldval[1] + params->oldval[0]) / (DSP_SAMPLE) 4;
+        newval /= (DSP_SAMPLE) 256;
 	
         power += newval * newval;
 	params->history->add(params->history, newval);
@@ -511,10 +512,10 @@ tuner_filter(struct effect *p, data_block_t *db)
     power /= db->len;
     
     /* smoothed power of the signal */
-    power = params->power = (power + params->power * 3) / 4;
+    power = params->power = (power + params->power * 3.f) / 4.f;
  
     /* don't try to analyse too quiet a signal. */
-    if (power < 1800) {
+    if (power < 1800.f) {
         /* set "no measurement" state */
         params->freq = 0;
         return;
@@ -533,23 +534,23 @@ tuner_filter(struct effect *p, data_block_t *db)
     /* fill FFT from last input */
     for (i = 0; i < FFT_SIZE; i += 1) {
         /* raised cosine window */
-        float w = 0.5 - 0.5 * sin_lookup(((i + FFT_SIZE/4) % FFT_SIZE) / (float) FFT_SIZE);
+        float w = 0.5f - 0.5f * cos_lookup(i / (float) FFT_SIZE);
         params->fftin[i][0] = params->history->get(params->history, FFT_SIZE - i) * w;
         params->fftin[i][1] = 0;
     }
 
     /* obtain spectrum of input */
-    fftw_execute(params->fftfw);
+    fftwf_execute(params->fftfw);
 
     /* obtain logaritmic magnitude of spectrum */
     for (i = 0; i < FFT_SIZE; i += 1) {
         /* abs()**2 */
-        double len = params->fftin[i][0] * params->fftin[i][0] + params->fftin[i][1] * params->fftin[i][1];
+        float len = params->fftin[i][0] * params->fftin[i][0] + params->fftin[i][1] * params->fftin[i][1];
         /* log(0) -> NaN, let's avoid NaN */
-        if (len > 0)
-            len = log(len) / 2; /* compensate for lack of sqrt with 2 */
+        if (len > 0.f)
+            len = logf(len) / 2.f; /* compensate for lack of sqrt with 2 */
         else
-            len = -999;  /* or any small value */
+            len = -999.f;  /* or any small value */
 
         /* store magnitudes */
         params->fftin[i][0] = len;
@@ -557,7 +558,7 @@ tuner_filter(struct effect *p, data_block_t *db)
     }
 
     /* obtain cepstrum of real magnitude spectrum */
-    fftw_execute(params->fftbw);
+    fftwf_execute(params->fftbw);
     /* note: the complex part should be neglible */
 
     /* search for maximum quefrency -- this analysis could be better though... */
@@ -600,11 +601,11 @@ tuner_filter(struct effect *p, data_block_t *db)
     loop_len = sample_rate / MAX_HZ - 1;
   NEXT_SEARCH:
     while (++loop_len < HISTORY_SIZE - COMPARE_LEN) {
-        double diff = 0;
-        double weight = 0;
+        float diff = 0;
+        float weight = 0;
         for (i = 0; i < COMPARE_LEN; i += 1) {
             DSP_SAMPLE tmp = params->history->get(params->history, i) - params->history->get(params->history, i + loop_len);
-            double tmp2 = tmp * tmp;
+            float tmp2 = tmp * tmp;
             diff += tmp2;
             /* give up as soon as possible */
             if (diff > max_diff || tmp2 > max_tmp2) {
@@ -616,7 +617,7 @@ tuner_filter(struct effect *p, data_block_t *db)
             }
         }
         /* weigh results by goodness of match */
-        weight = 1 - diff / max_diff + 0.001; /* guard against 0 */
+        weight = 1.f - diff / max_diff + 0.001f; /* guard against 0 */
         weight = weight * weight;
         good_loop_len   += loop_len * weight;
         good_loop_len_n += weight;
@@ -653,12 +654,12 @@ tuner_filter(struct effect *p, data_block_t *db)
 
     /* qsort and get median */
     memcpy(params->sorted_freq_history, params->freq_history, sizeof(params->sorted_freq_history));
-    qsort(&params->sorted_freq_history, FREQ_SIZE, sizeof(params->sorted_freq_history[0]), cmp_double);
+    qsort(&params->sorted_freq_history, FREQ_SIZE, sizeof(params->sorted_freq_history[0]), cmp_float);
     /* average the two at middle to eliminate bias from median calculation */
     freq = (params->sorted_freq_history[FREQ_SIZE / 2] + params->sorted_freq_history[FREQ_SIZE / 2 - 1]) / 2;
     
     /* update the exponential average from the median */
-    params->freq = (freq + 2 * params->freq) / 3;
+    params->freq = (freq + 2.f * params->freq) / 3.f;
     return;
 }
 
@@ -703,9 +704,9 @@ tuner_create()
 
 #ifdef HAVE_FFTW3
     /* prepare for FFT transforms */
-    params->fftin = fftw_malloc(sizeof(fftw_complex) * FFT_SIZE);
-    params->fftfw = fftw_plan_dft_1d(FFT_SIZE, params->fftin, params->fftin, FFTW_FORWARD, FFTW_ESTIMATE);
-    params->fftbw = fftw_plan_dft_1d(FFT_SIZE, params->fftin, params->fftin, FFTW_BACKWARD, FFTW_ESTIMATE);
+    params->fftin = fftwf_malloc(sizeof(fftwf_complex) * FFT_SIZE);
+    params->fftfw = fftwf_plan_dft_1d(FFT_SIZE, params->fftin, params->fftin, FFTW_FORWARD, FFTW_ESTIMATE);
+    params->fftbw = fftwf_plan_dft_1d(FFT_SIZE, params->fftin, params->fftin, FFTW_BACKWARD, FFTW_ESTIMATE);
 #endif
 
     return p;

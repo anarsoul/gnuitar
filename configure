@@ -6567,13 +6567,13 @@ fi
 
 
 
-{ echo "$as_me:$LINENO: checking for main in -lfftw3" >&5
-echo $ECHO_N "checking for main in -lfftw3... $ECHO_C" >&6; }
-if test "${ac_cv_lib_fftw3_main+set}" = set; then
+{ echo "$as_me:$LINENO: checking for main in -lfftw3f" >&5
+echo $ECHO_N "checking for main in -lfftw3f... $ECHO_C" >&6; }
+if test "${ac_cv_lib_fftw3f_main+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lfftw3  $LIBS"
+LIBS="-lfftw3f  $LIBS"
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -6624,21 +6624,21 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_lib_fftw3_main=yes
+  ac_cv_lib_fftw3f_main=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_fftw3_main=no
+	ac_cv_lib_fftw3f_main=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_fftw3_main" >&5
-echo "${ECHO_T}$ac_cv_lib_fftw3_main" >&6; }
-if test $ac_cv_lib_fftw3_main = yes; then
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_fftw3f_main" >&5
+echo "${ECHO_T}$ac_cv_lib_fftw3f_main" >&6; }
+if test $ac_cv_lib_fftw3f_main = yes; then
    FFTW3=1
 fi
 
@@ -6649,7 +6649,7 @@ if test "${with_fftw3+set}" = set; then
   withval=$with_fftw3;
     	if test "$withval" != "no" && test "$FFTW3" = '1'; then
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_FFTW3"
-            FFTW3_LIBS="-lfftw3"
+            FFTW3_LIBS="-lfftw3f"
 	else
 	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_FFTW3"
 	fi
@@ -6658,7 +6658,7 @@ else
 
 	if test "$FFTW3" = '1'; then
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_FFTW3"
-            FFTW3_LIBS="-lfftw3"
+            FFTW3_LIBS="-lfftw3f"
 	else
 	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_FFTW3"
 	fi

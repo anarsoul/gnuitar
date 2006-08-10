@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.9  2006/08/10 13:57:48  alankila
+ * - use fftw3f instead of fftw3 to avoid slower doubles
+ *
  * Revision 1.8  2006/08/06 20:14:55  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -80,23 +83,23 @@ struct tuner_params {
 
 #ifdef HAVE_FFTW3
     /* fftw3 state */
-    fftw_complex    *fftin;
-    fftw_plan       fftfw;
-    fftw_plan       fftbw;
+    fftwf_complex  *fftin;
+    fftwf_plan      fftfw;
+    fftwf_plan      fftbw;
     int             count;
 #endif
     
     /* signal processing helpers */
-    double	    power;
+    float	    power;
     DSP_SAMPLE	    oldval[3];
     
     /* raw measurements */
-    double	    freq_history[FREQ_SIZE];
+    float	    freq_history[FREQ_SIZE];
     int		    freq_index;
-    double	    sorted_freq_history[FREQ_SIZE];
+    float	    sorted_freq_history[FREQ_SIZE];
 
     /* final frequency */
-    double	    freq;
+    float	    freq;
     
     /* GUI */
     GtkWidget	    *label_current, *label_ideal, *ruler, *led_table, *layout_combo, *leds[MAX_STRINGS], *note_letters[MAX_STRINGS];

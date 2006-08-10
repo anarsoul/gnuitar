@@ -137,7 +137,7 @@ AC_ARG_WITH(sndfile,
 )
 AC_SUBST(SNDFILE_LIBS)
 
-AC_CHECK_LIB(fftw3, main,
+AC_CHECK_LIB(fftw3f, main,
     [ FFTW3=1 ])
 FFTW3_LIBS=""
 AC_ARG_WITH(fftw3,
@@ -145,7 +145,7 @@ AC_ARG_WITH(fftw3,
     [
     	if test "$withval" != "no" && test "$FFTW3" = '1'; then
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_FFTW3"
-            FFTW3_LIBS="-lfftw3"
+            FFTW3_LIBS="-lfftw3f"
 	else
 	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_FFTW3"
 	fi
@@ -153,7 +153,7 @@ AC_ARG_WITH(fftw3,
     [
 	if test "$FFTW3" = '1'; then
 	    CONFIG_DEFS="$CONFIG_DEFS -DHAVE_FFTW3"
-            FFTW3_LIBS="-lfftw3"
+            FFTW3_LIBS="-lfftw3f"
 	else
 	    CONFIG_DEFS="$CONFIG_DEFS -UHAVE_FFTW3"
 	fi
