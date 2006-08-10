@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.35  2006/08/10 12:24:24  alankila
+ * - fix SSE3 algorithm after I managed to misunderstand haddps
+ *
  * Revision 1.34  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -242,9 +245,6 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 static inline float
 do_biquad(const float x, Biquad_t *f, const int c)
 {
-#ifdef __SSE3__
-    static __m128 zero = { 0, 0, 0, 0 };
-#endif
     __m128          r;
     float          *mem = f->mem[c], y;
 
@@ -254,9 +254,18 @@ do_biquad(const float x, Biquad_t *f, const int c)
     r = _mm_mul_ps(f->b4, f->mem4[c]);
     /* sum all the values together */
 #ifdef __SSE3__
-    r = _mm_hadd_ps(r, zero);
+    /* horizontal add calculates
+     * { a, b, c, d }, { e, f, g, h } -> { a + b, c + d, e + f, g + h } */
+    r = _mm_hadd_ps(r, r);
+    /* r now contains { a + b, c + d, a + b, c + d }.
+     * Summing again computes a + b + c + d into all slots. */
+    r = _mm_hadd_ps(r, r);
 #else
+    /* move high quadword of r to low quadword, then add
+      * { a, b, c, d } -> { a + c, b + d, 2*c, 2*d } */
     r = _mm_add_ps(_mm_movehl_ps(r, r), r);
+    /* move second doubleword to first doubleword, then add
+     * { a + c, b + d, 2*c, 2*d } -> { a + b + c + d, b + d, 2*c, 2*d } */
     r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
 #endif
     /* store result in y */
@@ -264,7 +273,8 @@ do_biquad(const float x, Biquad_t *f, const int c)
     /* add the final term */
     y += f->b0 * x + DENORMAL_BIAS;
     
-    /* update history. This could also be done through _mm_shuffle_ps. */
+    /* update history. This could also be done through _mm_shuffle_ps
+     * if x and y were stored in some packed position. */
     mem[1] = mem[0];
     mem[0] = x;
     mem[3] = mem[2];
@@ -277,9 +287,6 @@ do_biquad(const float x, Biquad_t *f, const int c)
  * Therefore, movups must be used to access that memory. */
 static inline float
 convolve(const float *a, const float *b, const int len) {
-#ifdef __SSE3__
-    static __m128 zero = { 0, 0, 0, 0 };
-#endif
     __m128 r = { 0, 0, 0, 0 };
     __m128 *a4 = (__m128 *) a;
     const float *b4 = b;
@@ -293,7 +300,8 @@ convolve(const float *a, const float *b, const int len) {
             b4 += 4;
         }
 #ifdef __SSE3__
-        r = _mm_hadd_ps(r, zero);
+        r = _mm_hadd_ps(r, r);
+        r = _mm_hadd_ps(r, r);
 #else
         r = _mm_add_ps(_mm_movehl_ps(r, r), r);
         r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
