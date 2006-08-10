@@ -57,6 +57,10 @@
  * $Id$
  * 
  * $Log$
+ * Revision 1.33  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.32  2006/08/10 13:57:48  alankila
  * - use fftw3f instead of fftw3 to avoid slower doubles
  *
@@ -190,12 +194,13 @@
 #define NOTES_N	    12		/* the note scale */
 #define NOTES_TO_C  9		/* how many notes to C sound from MIN_HZ */
 #define MAX_STRINGS 6		/* max.number of strings */
+
 static const char *notes[] = {
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"
 };
 
 /* images */
-static char *empty_xpm[] = {	/* empty black light */
+static const char *empty_xpm[] = { /* empty black light */
 "7 7 10 1",
 " 	c None",
 ".	c #FFFFFF",
@@ -215,7 +220,7 @@ static char *empty_xpm[] = {	/* empty black light */
 "=*****=",
 " =***= "};
 
-static char * green_xpm[] = {	/* green light */
+static const char *green_xpm[] = {	/* green light */
 "7 7 4 1",
 " 	c None",
 ".	c #64A356",
@@ -316,12 +321,12 @@ tuner_init(effect_t *p)
     green.pixmap = gdk_pixmap_create_from_xpm_d( p->control->window,
 					    &(green.mask),
                                             &style->bg[GTK_STATE_NORMAL],
-                                            (gchar **)green_xpm );
+                                            (gchar **) green_xpm);
 
     black.pixmap = gdk_pixmap_create_from_xpm_d( p->control->window,
 					    &(black.mask),
                                             &style->bg[GTK_STATE_NORMAL],
-                                            (gchar **)empty_xpm );
+                                            (gchar **) empty_xpm);
     gtk_widget_show_all(p->control);
 
     params->led_table = gtk_table_new(2, MAX_STRINGS, FALSE);

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.88  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.87  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -700,8 +704,7 @@ save_settings(void) {
     const gchar    *settingspath;
     GKeyFile       *file;
     gchar          *key_file_as_str;
-    gsize           length;
-    int             w_length;
+    gsize           length, w_length;
     int             fd;
 
     settingspath = discover_settings_path();
@@ -801,8 +804,8 @@ save_effect_states(effect_t *effect, int idx, void *data) {
 void
 save_pump(const char *fname)
 {
-    int             fd, w_length;
-    gsize           length;
+    int             fd;
+    gsize           length, w_length;
     gchar	   *key_file_as_str;
     GKeyFile	   *preset;
 

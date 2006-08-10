@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.47  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.46  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -262,10 +266,10 @@ static snd_seq_t *sequencer_handle = NULL;
 static unsigned int capture_bits = 0;
 static unsigned int playback_bits = 0;
 
-void *rdbuf = NULL;
-void *wrbuf = NULL;
+static void *rdbuf = NULL;
+static void *wrbuf = NULL;
 
-volatile static int keepthreadrunning = 0;
+static volatile int keepthreadrunning = 0;
 static pthread_t audio_thread = 0;
 
 static void
@@ -307,7 +311,8 @@ alsa_midi_event(void)
 static void           *
 alsa_audio_thread(void *V)
 {
-    int             i, inframes, outframes;
+    unsigned int            i;
+    int                     inframes, outframes;
     data_block_t db = {
         .data = procbuf,
         .data_swap = procbuf2,

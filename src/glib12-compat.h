@@ -268,8 +268,6 @@ void      g_key_file_remove_group           (GKeyFile             *key_file,
 					     const gchar          *group_name,
 					     GError              **error);
 
-#endif /* HAVE_GTK */
-
 gdouble   g_key_file_get_double             (GKeyFile             *,
 					     const gchar          *,
 					     const gchar          *,
@@ -278,6 +276,8 @@ void      g_key_file_set_double             (GKeyFile             *,
 					     const gchar          *,
 					     const gchar          *,
 					     gdouble		   );
+
+#endif /* HAVE_GTK */
 
 #endif
 

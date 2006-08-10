@@ -4,6 +4,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.2  2006/08/07 20:01:50  alankila
  * - move all modifications of effect list structures into effect.c.
  *
@@ -40,7 +44,12 @@ static effect_t       *effects[MAX_EFFECTS];
 static int             effects_n = 0;
 static my_mutex        effectlist_lock;
 
-static struct effect_creator effect_list[] = {
+struct effect_creator {
+    const char           *str;
+    effect_t *          (*create_f)(void);
+};
+
+static const struct effect_creator effect_list[] = {
     {"Digital amp", amp_create},
     {"Autowah", autowah_create},
     {"Distort", distort_create},
@@ -77,12 +86,12 @@ effect_list_add_to_clist(GtkWidget *w)
 {
     int i = 0;
     for (i = 0; effect_list[i].str != NULL; i += 1) {
-        gtk_clist_append(GTK_CLIST(w), &effect_list[i].str);
+        gtk_clist_append(GTK_CLIST(w), (char **) &effect_list[i].str);
     }
 }
 
 int
-effect_list_find_by_name(char *name)
+effect_list_find_by_name(const char *name)
 {
     int k = 0;
     while (effect_list[k].str && strcmp(name, effect_list[k].str)) {
@@ -125,7 +134,7 @@ effect_clear(void)
 
 /* find index by effect identity */
 int
-effect_find(effect_t *target)
+effect_find(const effect_t *target)
 {
     int i;
 
@@ -162,7 +171,7 @@ effect_delete(int i)
  * from its position to another position, and effects in-between must
  * shift upwards/downwards. */
 int
-effect_move(int start, int end)
+effect_move(const int start, const int end)
 {
     int i;
     effect_t *swap;
@@ -189,7 +198,7 @@ effect_move(int start, int end)
 
 /* insert into effect list */
 int
-effect_insert(effect_t *effect, int curr_row)
+effect_insert(effect_t *effect, const int curr_row)
 {
     int i, idx;
 
@@ -224,7 +233,7 @@ effect_iterate(void (*func)(effect_t *effect, int idx, void *data), void *data)
 
 /* construct and destroy effects */
 effect_t *
-effect_create(int idx)
+effect_create(const int idx)
 {
     effect_t *effect = effect_list[idx].create_f();
     effect->proc_init(effect);
@@ -232,7 +241,7 @@ effect_create(int idx)
 }
 
 effect_t *
-effect_create_without_init(int idx)
+effect_create_without_init(const int idx)
 {
     return effect_list[idx].create_f();
 }

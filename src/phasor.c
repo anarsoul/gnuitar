@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.44  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -214,7 +218,7 @@ update_phasor_drywet(GtkAdjustment *adj, struct phasor_params *params)
 }
 
 static void
-toggle_stereo(GtkAdjustment *adj, struct phasor_params *params)
+toggle_stereo(GtkWidget *w, struct phasor_params *params)
 {
     params->stereo = !params->stereo;
 }

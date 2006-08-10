@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.11  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.10  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -97,7 +101,7 @@ backbuf_clear(Backbuf_t *b)
 Backbuf_t *
 new_Backbuf(const unsigned int max_delay)
 {
-    int size;
+    unsigned int size;
     
     Backbuf_t *b = calloc(1, sizeof(Backbuf_t));
 

@@ -8,6 +8,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.43  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.42  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -192,7 +196,7 @@
 #define IMPULSE_SIZE   512
 
 /* Marshall G15R */
-static DSP_SAMPLE __attribute__((aligned(16))) impulse_g15r[IMPULSE_SIZE] = {
+static const DSP_SAMPLE __attribute__((aligned(16))) impulse_g15r[IMPULSE_SIZE] = {
   4405,  17364,  30475,  33517,  28810,  20846,   9309,  -4045, -13421, -13737,  -6939,
   -644,   2381,   4726,   4890,   -577,  -8708, -13224, -11835,  -6840,   -805,   5847,
  11158,  10895,   3963,  -5524, -11923, -13616, -12717,  -9577,  -4247,   -180,    568,
@@ -243,7 +247,7 @@ static DSP_SAMPLE __attribute__((aligned(16))) impulse_g15r[IMPULSE_SIZE] = {
 };
 
 /* Princeton II */
-static DSP_SAMPLE __attribute__((aligned(16))) impulse_princeton2[IMPULSE_SIZE] = {
+static const DSP_SAMPLE __attribute__((aligned(16))) impulse_princeton2[IMPULSE_SIZE] = {
   2799,  11631,  23881,  32811,  34786,  30693,  22401,  12097,   3608,    333,   1986,
   5050,   5906,   3149,  -2263,  -7957, -11151,  -9808,  -4421,   1179,   2345,  -1974,
  -8064, -11426, -10826,  -7845,  -4476,  -2085,  -1307,  -1743,  -2306,  -2291,  -1539,
@@ -294,11 +298,11 @@ static DSP_SAMPLE __attribute__((aligned(16))) impulse_princeton2[IMPULSE_SIZE] 
 };
 
 typedef struct {
-    char       *name;
-    DSP_SAMPLE *impulse;
+    const char       *name;
+    const DSP_SAMPLE *impulse;
 } ampmodels_t;
 
-ampmodels_t ampmodels[] = {
+static const ampmodels_t ampmodels[] = {
     { "Marshall G15R", impulse_g15r,      },
     { "Princeton II",  impulse_princeton2 },
     { NULL,            NULL               }

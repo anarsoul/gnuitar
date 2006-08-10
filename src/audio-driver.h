@@ -3,6 +3,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.5  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.4  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -47,9 +51,9 @@ struct audio_driver_channels {
 };
 
 typedef struct {
-    char    *str;
+    const char *str;
     int     enabled;
-    struct audio_driver_channels *channels;
+    const struct audio_driver_channels *channels;
     
     int     (*init)(void);
     void    (*finish)(void);

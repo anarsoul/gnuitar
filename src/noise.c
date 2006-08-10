@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.20  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -336,18 +340,18 @@ static void
 noise_filter(struct effect *p, data_block_t *db)
 {
 
-    int             	 count;
-    DSP_SAMPLE     	 *s;
-    struct noise_params  *dn;
-    static unsigned int  hold_counter=0;    /* how much longer before we start 
+    int             	count;
+    DSP_SAMPLE     	*s;
+    struct noise_params *dn;
+    int                 hold_counter=0;    /* how much longer before we start 
 					     * to supress the signal */
-    static unsigned int  release_counter=0; /* how much longer before we 
+    int                 release_counter=0; /* how much longer before we 
 					     * fade out to nothing - 
 					     * fadeout counter */
-    static float    	 release_amp = 1.0;
-    static float	 attack_amp = 1.0;
-    static unsigned int  attack_counter = 0;
-    static short         fadeout = 0;	/* if non-zero, we use hysteresis to
+    float    	        release_amp = 1.0;
+    float	        attack_amp = 1.0;
+    int                 attack_counter = 0;
+    short               fadeout = 0;	/* if non-zero, we use hysteresis to
 					 * suppress the sound.
 					 * Otherwise, we use the threshold.  */
 

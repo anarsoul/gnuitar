@@ -28,7 +28,7 @@
 
 #define MAX_PHASOR_FILTERS  24
 
-extern effect_t *   phasor_create();
+extern effect_t *   phasor_create(void);
 
 struct phasor_params {
     double          depth, sweep_time, drywet, f;

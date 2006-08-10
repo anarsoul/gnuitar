@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.115  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.114  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -588,7 +592,7 @@ static gint            bank_row = -1;
 //function for printing debuging messages
 //if GUI isn't created, text will be buffered
 void 
-gnuitar_printf(char *frm, ...)
+gnuitar_printf(const char *frm, ...)
 {
     va_list args;
     static GList *bufferedmsgs = NULL;
@@ -1946,7 +1950,7 @@ init_gui(void)
 #else
     style = gtk_widget_get_style(mainWnd);
     app_icon = gdk_pixmap_create_from_xpm_d(mainWnd->window, &mask,
-					    &style->white, gnuitar_xpm);
+					    &style->white, (gchar **) gnuitar_xpm);
     gdk_window_set_icon(mainWnd->window, mainWnd->window, app_icon, mask);
 #endif
 }

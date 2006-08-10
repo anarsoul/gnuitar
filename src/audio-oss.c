@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.32  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.31  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -184,7 +188,7 @@
 static SAMPLE16 *rwbuf = NULL;
 static int fd = 0, midi_fd = 0;
 
-volatile static int keepthreadrunning = 0;
+static volatile int keepthreadrunning = 0;
 static pthread_t audio_thread = 0;
 
 static void
@@ -277,7 +281,7 @@ oss_audio_thread(void *V)
             if (count < 0) {
                 perror("error reading from sound device: ");
                 break;
-            } else if (count != buffer_size * n_output_channels * 2) {
+            } else if (count != (int) buffer_size * n_output_channels * 2) {
                 //gnuitar_printf( "warning: short read (%d/%d) from sound device\n", count, buffer_size);
                 break;
 	    }
@@ -429,7 +433,7 @@ oss_available() {
     return 1;
 }
 
-static struct audio_driver_channels oss_channels_cfg[] = {
+static const struct audio_driver_channels oss_channels_cfg[] = {
     { 1, 1 },
     { 1, 2 },
     { 2, 2 },

@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.20  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.19  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -182,7 +186,8 @@ alsa_midi_event(void)
 static int 
 process (jack_nframes_t nframes, void *arg)
 {
-    int i,j,k;
+    int i, k;
+    jack_nframes_t j;
     data_block_t db = {
         .data = procbuf,
         .data_swap = procbuf2,
@@ -448,7 +453,7 @@ jack_available()
     
 }
 
-static struct audio_driver_channels jack_channels_cfg[] = {
+static const struct audio_driver_channels jack_channels_cfg[] = {
     { 1, 1 },
     { 1, 2 },
     { 1, 4 },

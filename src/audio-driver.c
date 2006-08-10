@@ -5,6 +5,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.3  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.2  2006/08/08 21:05:31  alankila
  * - optimize gnuitar: this breaks dsound, I'll fix it later
  *
@@ -114,7 +118,7 @@ guess_audio_driver(void)
 	audio_driver = &winmm_driver;
     } else
 #endif
-        ; /* nothing */
+        return;
 }
 
 void
@@ -146,5 +150,5 @@ set_audio_driver_from_str(const char const *tmp)
         buffer_size = pow(2, (int) (log(buffer_size) / log(2)));
     } else
 #endif
-        ; /* nothing */
+        return;
 }

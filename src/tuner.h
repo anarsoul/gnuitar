@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.10  2006/08/10 16:18:36  alankila
+ * - improve const correctness and make gnuitar compile cleanly under
+ *   increasingly pedantic warning models.
+ *
  * Revision 1.9  2006/08/10 13:57:48  alankila
  * - use fftw3f instead of fftw3 to avoid slower doubles
  *
@@ -71,7 +75,7 @@
 
 #include "backbuf.h"
 
-extern effect_t *   tuner_create();
+extern effect_t *   tuner_create(void);
 
 #define FREQ_SIZE 16        /* frequency measurements history buffer size */
 #define MAX_STRINGS 6	    /* max.number of strings */

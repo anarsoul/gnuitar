@@ -52,7 +52,7 @@ void            toggle_effect(GtkWidget *, effect_t *);
 void            bank_append_entry(gchar *entry);
 void            set_vumeter_in_value(float power);
 void            set_vumeter_out_value(float power);
-void            gnuitar_printf(char *fmt, ...);
+void            gnuitar_printf(const char *fmt, ...);
 
 extern GtkWidget *processor;
 extern float master_volume;
