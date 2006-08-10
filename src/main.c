@@ -20,6 +20,13 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.71  2006/08/10 12:54:58  alankila
+ * - denormal number avoidance routine contained a double constant instead
+ *   of float constant. Ouch. This removes a truckload of unnecessary
+ *   datatype conversions.
+ * - in addition, SSE gnuitar now emits manual code to turn denormal number
+ *   avoidance flags on. This may be unnecessary due to -ffast-math, though.
+ *
  * Revision 1.70  2006/08/07 12:55:30  alankila
  * - construct audio-driver.c to hold globals and provide some utility
  *   functions to its users. This slashes interdependencies somewhat.
@@ -333,9 +340,16 @@
 #include "gui.h"
 #include "audio-driver.h"
 
+#ifdef __SSE__
+#include <xmmintrin.h>
+#endif
+#ifdef __SSE3__
+#include <pmmintrin.h>
+#endif
+
 char            version[13] = "GNUitar "VERSION;
 
-#ifndef _WIN32
+#ifdef linux
 /* Low-latency operation is improved if the CPUs do not change speed.
  * Especially with JACK it is problematic because JACK tends to quit
  * if the system doesn't seem fast enough. JACK should be smarter
@@ -399,8 +413,17 @@ main(int argc, char **argv)
        "This program is a free software under the GPL;\n"
        "see Help->About for details.\n");
     gnuitar_printf("GNUitar " VERSION " debug window.\n");
-#ifndef _WIN32
+#ifdef linux
     test_linux_cpufreq();
+#endif
+
+    /* Some FPU flags for faster performance. It is likely that
+     * -ffast-math already generates code to turn these on, though. */
+#ifdef __SSE__
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+#endif
+#ifdef __SSE3__
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 #endif
 
     /* GTK+ manual suggests this regarding threads:

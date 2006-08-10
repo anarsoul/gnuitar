@@ -18,6 +18,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.36  2006/08/10 12:54:58  alankila
+ * - denormal number avoidance routine contained a double constant instead
+ *   of float constant. Ouch. This removes a truckload of unnecessary
+ *   datatype conversions.
+ * - in addition, SSE gnuitar now emits manual code to turn denormal number
+ *   avoidance flags on. This may be unnecessary due to -ffast-math, though.
+ *
  * Revision 1.35  2006/08/10 12:24:24  alankila
  * - fix SSE3 algorithm after I managed to misunderstand haddps
  *
@@ -238,8 +245,6 @@ extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
  * Denormals tend to occur in all low-pass filters, but a DC
  * offset can remove them. (Another way to avoid them would
  * be to switch FPU into denormalless mode.) */
-#define DENORMAL_BIAS   1E-5
-
 #if defined(__SSE__) && defined(FLOAT_DSP)
 
 static inline float
@@ -271,7 +276,7 @@ do_biquad(const float x, Biquad_t *f, const int c)
     /* store result in y */
     _mm_store_ss(&y, r);
     /* add the final term */
-    y += f->b0 * x + DENORMAL_BIAS;
+    y += f->b0 * x;
     
     /* update history. This could also be done through _mm_shuffle_ps
      * if x and y were stored in some packed position. */
@@ -319,6 +324,11 @@ convolve(const float *a, const float *b, const int len) {
 }
 
 #else
+
+/* SSE operates in either denormals-are-zero or flush-zero mode.
+ * Additionally, gnuitar is compiled with -ffast-math. Perhaps
+ * this constant isn't necessary. */
+#define DENORMAL_BIAS   1E-5f
 
 static inline DSP_SAMPLE
 convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
