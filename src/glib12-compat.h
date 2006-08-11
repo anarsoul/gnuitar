@@ -270,7 +270,7 @@ void      g_key_file_remove_group           (GKeyFile             *key_file,
 
 #endif /* HAVE_GTK */
 
-#if (GTK_MAJOR_VERSION == 1) || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION < 10)
+#if defined(HAVE_GTK) || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION < 10)
 gdouble   g_key_file_get_double             (GKeyFile             *,
 					     const gchar          *,
 					     const gchar          *,

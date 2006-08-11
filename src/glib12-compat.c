@@ -50,7 +50,7 @@ gnuitar_gtk_text_view_append(GtkWidget *tw, gchar *text) {
 #include <stdio.h>
 #include <stdlib.h>
 
-#if (GTK_MINOR_VERSION == 1) || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION < 10)
+#if defined(HAVE_GTK) || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION < 10)
 void
 g_key_file_set_double(GKeyFile *kf, const gchar *grp, const gchar *name, gdouble val)
 {
