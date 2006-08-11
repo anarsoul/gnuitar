@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.117  2006/08/11 16:08:53  alankila
+ * - don't crash if no audio driver can be opened.
+ *
  * Revision 1.116  2006/08/10 18:52:07  alankila
  * - declare prototypes properly
  * - hide some accidentally global methods
@@ -611,6 +614,7 @@ gnuitar_printf(const char *frm, ...)
     va_end(args);
    
     if (status_text == NULL) {
+        fprintf(stderr, "%s", tmp);
         bufferedmsgs = g_list_append(bufferedmsgs, tmp);
 	return;
     }
@@ -1612,13 +1616,12 @@ start_stop(GtkWidget *widget, gpointer data)
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), 0);
 	gtk_widget_set_sensitive(GTK_WIDGET
 				 (gtk_item_factory_get_widget
-				  (item_factory, "/Options/Options")),
-				 !audio_driver->enabled);
+				  (item_factory, "/Options/Options")), TRUE);
 	gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child),
-                    audio_driver->enabled ? "Stop" : "ERROR\nNo audio driver");
+                           "ERROR\nNo audio driver");
         return;
     }
-    
+ 
     if (! audio_driver->enabled) {
         /* don't allow user to press us into active state if we can't play */
         if (! GTK_TOGGLE_BUTTON(widget)->active) {
@@ -1864,9 +1867,9 @@ init_gui(void)
     gtk_widget_set_sensitive(GTK_WIDGET(
                                 gtk_item_factory_get_widget(
                                     item_factory, "/Options/Options")),
-			     !audio_driver->enabled);
+			     !audio_driver || !audio_driver->enabled);
     gtk_label_set_text(GTK_LABEL(GTK_BIN(start)->child),
-                    audio_driver->enabled ? "Stop" : "ERROR\nPush to retry");
+                    audio_driver && audio_driver->enabled ? "Stop" : "ERROR\nPush to retry");
     
     gtk_table_attach(GTK_TABLE(tbl), status_window, 0 ,7, 7, 9,
     		     __GTKATTACHOPTIONS(GTK_SHRINK | GTK_FILL),
