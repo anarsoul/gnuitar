@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.21  2006/08/11 16:18:39  alankila
+ * - ensure that the physical in/out ports are of correct type
+ *
  * Revision 1.20  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -377,7 +380,7 @@ jack_init_sound(void)
     /* Connecting capture ports to our ports. I think gnuitar might be
      * used as an effect processor even when there is no actual sound
      * hardware, so some errors are not fatal. */
-    ports = jack_get_ports(client, NULL, NULL,
+    ports = jack_get_ports(client, NULL, JACK_DEFAULT_AUDIO_TYPE,
                            JackPortIsPhysical|JackPortIsOutput);
 		
     if (ports == NULL) {
@@ -403,7 +406,7 @@ jack_init_sound(void)
     }
     
     // Connecting our ports to playback ports
-    ports = jack_get_ports(client, NULL, NULL,
+    ports = jack_get_ports(client, NULL, JACK_DEFAULT_AUDIO_TYPE,
 		           JackPortIsPhysical|JackPortIsInput);
 		
     if (ports == NULL) {
