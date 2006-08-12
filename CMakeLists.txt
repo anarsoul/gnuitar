@@ -3,6 +3,10 @@
 # $Id$
 #
 # $Log$
+# Revision 1.28  2006/08/12 14:35:59  alankila
+# - add version test for cmake
+# - document the intended cpu optimisation flags
+#
 # Revision 1.27  2006/08/10 18:52:07  alankila
 # - declare prototypes properly
 # - hide some accidentally global methods
@@ -101,17 +105,29 @@
 # - commit an experimental exit from autotools hell
 #
 
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+
 PROJECT(GNUitar)
 
 # user serviceable parts begin
 
 SET(CMAKE_BUILD_TYPE RELEASE)
-SET(OPT_FLAGS "-ffast-math -ftree-vectorize -march=athlon64 -mfpmath=sse")
+SET(OPT_FLAGS "-ffast-math -frename-registers -ftree-vectorize -march=athlon64")
 ADD_DEFINITIONS(-DFLOAT_DSP)
+
+# GNUitar should always be optimised for the host cpu it runs on. Failing
+# that, a SSE/SSE2/SSE3 capable machine should be used. It is assumed that
+# correct -march=foo line will turn appropriate instruction set extensions on.
+# In the future, gcc may get -march=local that optimises for compile host.
+# -ftree-vectorize does not do many significant things currently, but GCC
+# may get smarter in the future. -frename-registers may be dangerous for
+# GCC versions before 4.0. In all cases, -ffast-math should be kept on for
+# the performance benefit it brings, and even if disabled, gnuitar sets
+# some SSE/SSE2 flags for faster denormal number handling.
 
 # end of user serviceable parts
 
-MESSAGE("Note: I am assuming that these parameters generate valid code for you.\n${OPT_FLAGS}\n")
+MESSAGE("*** Note: I am assuming that these parameters generate valid code for you.\n${OPT_FLAGS}\n")
 
 INCLUDE(UsePkgConfig)
 PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
