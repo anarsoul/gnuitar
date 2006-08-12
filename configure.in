@@ -85,7 +85,14 @@ dnl By default, prefer GTK1 over GTK2, GLIB1 over GLIB2
 )
 
 AC_ARG_ENABLE(float,
-    [  --enable-float          Do DSP processing in floats rather in int's],
+    [  --enable-float          Process in floats rather ints (enabled by default)],
+    [
+	if test "$enableval" != "no"; then
+	    CONFIG_DEFS="$CONFIG_DEFS -DFLOAT_DSP"
+	else
+	    CONFIG_DEFS="$CONFIG_DEFS -UFLOAT_DSP"
+	fi
+    ],
     [ CONFIG_DEFS="$CONFIG_DEFS -DFLOAT_DSP"]
 )
 
