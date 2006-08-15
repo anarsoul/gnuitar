@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.89  2006/08/15 15:46:00  alankila
+ * - move typecast to not overflow DSP_SAMPLE if it is integer. Shit.
+ *
  * Revision 1.88  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -451,7 +454,7 @@ vu_meter(data_block_t *db) {
 
     for (i = 0; i < db->len; i += 1) {
         sample = db->data[i];
-        power += (float) (sample * sample);
+        power += (float) sample * (float) sample;
     }
     /* energy per sample scaled down to 0.0 - 1.0 */
     return power / (float) db->len / (float) MAX_SAMPLE / (float) MAX_SAMPLE;
