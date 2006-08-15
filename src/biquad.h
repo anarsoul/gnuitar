@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.37  2006/08/15 15:45:00  alankila
+ * - use native operators instead of functions for loop
+ *
  * Revision 1.36  2006/08/10 12:54:58  alankila
  * - denormal number avoidance routine contained a double constant instead
  *   of float constant. Ouch. This removes a truckload of unnecessary
@@ -256,7 +259,7 @@ do_biquad(const float x, Biquad_t *f, const int c)
     /* struct is arranged so that b1 and a1 terms coincide
      * with the locations of the historic values in *mem.
      * Therefore the multiplication can be performed through SSE. */
-    r = _mm_mul_ps(f->b4, f->mem4[c]);
+    r = f->b4 * f->mem4[c];
     /* sum all the values together */
 #ifdef __SSE3__
     /* horizontal add calculates
@@ -301,7 +304,7 @@ convolve(const float *a, const float *b, const int len) {
     i4 = len / 4;
     if (i4) {
         while (i4 --) {
-            r = _mm_add_ps(r, _mm_mul_ps(*a4++, _mm_loadu_ps(b4)));
+            r += *a4++ * _mm_loadu_ps(b4);
             b4 += 4;
         }
 #ifdef __SSE3__
@@ -330,12 +333,13 @@ convolve(const float *a, const float *b, const int len) {
  * this constant isn't necessary. */
 #define DENORMAL_BIAS   1E-5f
 
-static inline DSP_SAMPLE
+static inline float
 convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
     int i;
-    DSP_SAMPLE dot = 0;
+    /* a long int type would be needed to hold the value in integer dsp */
+    float dot = 0;
     for (i = 0; i < len; i += 1)
-            dot += a[i] * b[i];
+            dot += (float) a[i] * (float) b[i];
     return dot;
 }
 
