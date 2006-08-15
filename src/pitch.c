@@ -86,7 +86,7 @@ pitch_init(struct effect *p)
 
     parmTable = gtk_table_new(3, 3, FALSE);
 
-    adj_halfnote = gtk_adjustment_new(params->halfnote, -12.0,
+    adj_halfnote = gtk_adjustment_new(params->halfnote, -24.0,
                                12.0, 1.0, 1.0, 0.0);
     halfnote_label = gtk_label_new("Pitch\n(halfnotes)");
     gtk_table_attach(GTK_TABLE(parmTable), halfnote_label, 0, 1, 0, 1,
@@ -229,12 +229,11 @@ pitch_filter(effect_t *p, data_block_t *db)
     int i;
     float depth, Wet, Dry, output_inc;
 
-    depth = powf(2.f, (params->halfnote + params->finetune) / 12.f) - 1.f;
-    if (depth < -0.5f)
-       depth = -0.5f;
-    if (depth > 1.0f)
-       depth = 1.0f;
-    depth += 1.f;
+    depth = powf(2.f, (params->halfnote + params->finetune) / 12.f);
+    if (depth < 0.25f)
+       depth = 0.25f;
+    if (depth > (float) MAX_RESAMPLING_FACTOR)
+       depth = (float) MAX_RESAMPLING_FACTOR;
 
     Wet = params->drywet / 100.0f;
     Dry = 1.f - Wet;
