@@ -32,9 +32,9 @@
 #include "biquad.h"
 #include "gui.h"
 
-#define LOOP_LENGTH 384
-#define MEMORY_LENGTH 1024
-#define NEARNESS_BIAS   ((float) MAX_SAMPLE * 768)
+#define LOOP_LENGTH 400
+#define MEMORY_LENGTH 1200
+#define NEARNESS_RAMP   0.95    /* weigh from this value to 1.0 */
 #define MAX_RESAMPLING_FACTOR 2.0
 #define MAX_OUTPUT_BUFFER (MAX_RESAMPLING_FACTOR * (MEMORY_LENGTH + LOOP_LENGTH))
 
@@ -167,7 +167,7 @@ pitch_init(struct effect *p)
 }
 
 static int
-estimate_best_correlation(DSP_SAMPLE *data, int frames, DSP_SAMPLE *ref, const int looplen)
+estimate_best_correlation(DSP_SAMPLE *data, const int frames, DSP_SAMPLE *ref, const int looplen)
 {
     int i, best = 0;
     float goodness = 0;
@@ -175,14 +175,15 @@ estimate_best_correlation(DSP_SAMPLE *data, int frames, DSP_SAMPLE *ref, const i
     for (i = 0; i < frames - looplen; i += 1) {
         /* compute correlation term. The aim is to maximise this value. */
         float goodness_try = convolve(ref, data + i, looplen);
-        if (goodness_try >= goodness) {
+        if (goodness_try >= goodness *
+        /* reduce goodness slightly over time to favour close matches.
+         * This change helps avoid the jarring error that occurs on longish
+         * memory lengths. Unfortunately it is not perfect. */
+                ((float) NEARNESS_RAMP + (1.f - (float) NEARNESS_RAMP) *
+                 (float) i / (frames - looplen))) {
             goodness = goodness_try;
             best = i;
         }
-        /* reduce goodness slightly over time to favour close matches.
-         * This change gets rid of the jarring error that occurs on longish
-         * memory lengths. */
-        goodness -= (float) NEARNESS_BIAS * looplen;
     }
     return best;
 }
@@ -383,8 +384,8 @@ pitch_create()
     if (window_memory == NULL) {
         /* I will never free this memory -- some effects should have
          * a global init and destroy funcs and I don't have them. */
-        window_memory = gnuitar_memalign(LOOP_LENGTH / 2, sizeof(float));
-        for (i = 0; i < LOOP_LENGTH / 2; i += 1)
+        window_memory = gnuitar_memalign(LOOP_LENGTH, sizeof(float));
+        for (i = 0; i < LOOP_LENGTH; i += 1)
             window_memory[i] = 0.5f-0.5f * cos_lookup((float) i / LOOP_LENGTH);
     }
     
