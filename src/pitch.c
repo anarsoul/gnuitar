@@ -34,7 +34,7 @@
 
 #define LOOP_LENGTH 384
 #define MEMORY_LENGTH 1024
-#define NEARNESS_BIAS   ((float) MAX_SAMPLE * 512)
+#define NEARNESS_BIAS   ((float) MAX_SAMPLE * 768)
 #define MAX_RESAMPLING_FACTOR 2.0
 #define MAX_OUTPUT_BUFFER (MAX_RESAMPLING_FACTOR * (MEMORY_LENGTH + LOOP_LENGTH))
 
@@ -192,11 +192,11 @@ copy_to_output_buffer(DSP_SAMPLE *in, DSP_SAMPLE *out, float *wp, const int leng
 {
     int i;
 
-    /* sum the first half with the tail of a recent buffer, but overwrite
+    /* sum the first half with the tail of previous buffer, but overwrite
      * with the second half because the data on that side is old. */
     for (i = 0; i < length / 2; i += 1) {
         float w = wp[i];
-        out[i] = w * in[i] + (1.f - w) * out[i];
+        out[i] = w * in[i] + (1.f - w) * out[i + length/2];
     }
     for (i = length / 2; i < length; i += 1) {
         out[i] = in[i];
@@ -294,10 +294,6 @@ pitch_filter(effect_t *p, data_block_t *db)
              * I should probably produce full length resampled stream and
              * then do the resampling in one step. */
             resample_to_output(params->history[i], params->output_pos, params->output_pos + output_inc, params->output_memory[i], LOOP_LENGTH / 2);
-
-            /* copy the latter half over the first half for the next chunk. See
-             * copy_to_output_buffer for reason why. */
-            memcpy(params->output_memory[i], params->output_memory[i] + LOOP_LENGTH / 2, sizeof(float) * LOOP_LENGTH / 2);
         }
         
         params->output_pos += output_inc;
