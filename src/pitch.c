@@ -34,11 +34,11 @@
 
 #define LOOP_LENGTH 384
 #define MEMORY_LENGTH 1024
-#define NEARNESS_BIAS   ((float) MAX_SAMPLE * 3072)
+#define NEARNESS_BIAS   ((float) MAX_SAMPLE * 512)
 #define MAX_RESAMPLING_FACTOR 2.0
 #define MAX_OUTPUT_BUFFER (MAX_RESAMPLING_FACTOR * (MEMORY_LENGTH + LOOP_LENGTH))
 
-static float *window_memory;
+static float *window_memory = NULL;
 
 static void
 update_pitch_halfnote(GtkAdjustment *adj, struct pitch_params *params)
