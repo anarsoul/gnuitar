@@ -588,22 +588,22 @@ useful before and after distortion effects.
 
 <h2><a name=pitch>Pitch shifter</a></h2>
 
-<p>Pitch shifter alters audible pitch by dividing the input into several small
-buffers and playing through them in a different rate, causing the pitch
-alteration. Because rate shifting implies generating new sample data or
-omitting some of the sample data, there is a discontinuity problem at buffer
-edges which is handled through weighting the buffer data with windowing
-function and overlapping the buffers in such a way that sample amplitude
-remains fairly constant.  </p>
+<p>Pitch shifter is a modified version of WSOLA (Waveform Similarity
+Overlap-Add) algorithm. Waveform similarity looks at repeating waveform shapes
+and then does some "cut and paste" to build lengthened or shortened version of
+the original waveform without affecting the sound pitch.  The effect first
+lengthens or shortens the play length of the sound without, then resamples the
+audio to the desired playback rate, causing the actual pitch shift effect.</p>
 
-<p><strong>Bugs</strong> With many pitch shifting values several frequencies
-encounter difficult phase cancellation that may render some notes almost
-inaudible or significantly alter their characteristics. Additionally, as the
-new sample data is "generated" from audio data across several hundred
-milliseconds, there will be echo effects when adjusting the rate upwards.
-Finally, the dry signal is delayed by this effect to control some of the phase
-cancellation during wet/dry mixing phase. The latency introduced depends
-on the amount of rate shifting.  </p>
+<p><strong>Bugs</strong>
+This pitch shifter is not suitable for generic music rekeying, but should be
+suitable for simple instruments such as human voice or guitar. Complex
+polyharmonic sounds combine to complicated waveform, where it will be
+difficult to find a suitable "copy" of the input signal.</p>
+
+<p>This version does not suffer from latency problems of the earlier 
+(unreleased) version on CVS, and has similar "sound colouring" drawbacks for
+any complicated signal.</p>
 
 <dl>
 <dt>halfnote</dt><dd>how many half-notes to adjust upwards or downwards</dd>

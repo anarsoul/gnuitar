@@ -5,34 +5,40 @@
  *
  * See COPYING about details for license.
  *
- * This work is based on Tom Szilagyi's tap-plugin's pitch shifter effect.
+ * New, better algorithm replacing the earlier overlapping cosine-windowed
+ * rather simplistic approach.
  *
- * In short, the pitch shifter works by compressing or expanding the audio data
- * over short intervals (interval length defined by PITCH_MODULATION_FREQUENCY)
- * and summing these fragments into output signal modulated with a windowing
- * function that in this case is simply sin(x) over 0 <= x <= pi.
+ * This is a modified WSOLA algorithm. Waveform similarity is estimated
+ * through cross-correlation with x[n] * y[n] function. SSE acceleration is
+ * provided.
  *
- * To control phase effects, some number of these fragments is required, and
- * the optimum seems to be 3. If anyone can improve the windowing function
- * then please be my guest. With a good window it may be possible to reduce
- * PITCH_PHASES to two. That would reduce phase problems that plague this
- * shifter. You find the windowing function at "gain =" line, and a description
- * of requirements.
+ * The modification I made is that near (low-latency) matches of waveform
+ * similarity are preferred. This is implemented with NEARNESS_BIAS constant.
  *
+ * Overlap-add is implemented with tabularised Hann window. The overlap
+ * factor is 2.
+ * 
  * $Id$
  */
 
-#include "pitch.h"
-#include "gui.h"
 #include <assert.h>
 #include <math.h>
 #include <string.h>
 #include <gtk/gtk.h>
 #include <stdlib.h>
 
-#define PITCH_PHASES                3
-#define PITCH_MODULATION_FREQUENCY_MIN  2 /* Hz */
-#define PITCH_BUFFER_SIZE           (MAX_SAMPLE_RATE / PITCH_MODULATION_FREQUENCY_MIN)
+#include "pitch.h"
+#include "backbuf.h"
+#include "biquad.h"
+#include "gui.h"
+
+#define LOOP_LENGTH 384
+#define MEMORY_LENGTH 1024
+#define NEARNESS_BIAS   ((float) MAX_SAMPLE * 3072)
+#define MAX_RESAMPLING_FACTOR 2.0
+#define MAX_OUTPUT_BUFFER (MAX_RESAMPLING_FACTOR * (MEMORY_LENGTH + LOOP_LENGTH))
+
+static float *window_memory;
 
 static void
 update_pitch_halfnote(GtkAdjustment *adj, struct pitch_params *params)
@@ -53,13 +59,6 @@ update_pitch_drywet(GtkAdjustment *adj, struct pitch_params *params)
 }
 
 static void
-update_pitch_buffer(GtkAdjustment *adj, struct pitch_params *params)
-{
-    params->buffer = adj->value;
-}
-
-
-static void
 pitch_init(struct effect *p)
 {
     struct pitch_params *params = p->params;
@@ -75,10 +74,6 @@ pitch_init(struct effect *p)
     GtkWidget      *drywet_label;
     GtkWidget      *drywet;
     GtkObject      *adj_drywet;
-
-    GtkWidget      *buffer_label;
-    GtkWidget      *buffer;
-    GtkObject      *adj_buffer;
 
     GtkWidget      *parmTable, *button;
     
@@ -133,26 +128,6 @@ pitch_init(struct effect *p)
 		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
 					GTK_SHRINK), 0, 0);
 
-    adj_buffer = gtk_adjustment_new(params->buffer,
-				     4.0, 16.0, 1.0, 1.0, 0.0);
-    buffer_label = gtk_label_new("Latency\n(Hz)");
-    gtk_table_attach(GTK_TABLE(parmTable), buffer_label, 2, 3, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-
-
-    gtk_signal_connect(GTK_OBJECT(adj_buffer), "value_changed",
-		       GTK_SIGNAL_FUNC(update_pitch_buffer), params);
-
-    buffer = gtk_vscale_new(GTK_ADJUSTMENT(adj_buffer));
-    gtk_table_attach(GTK_TABLE(parmTable), buffer, 2, 3, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-
     adj_drywet = gtk_adjustment_new(params->drywet,
 				     0, 100.0, 1.0, 1.0, 0.0);
     drywet_label = gtk_label_new("Dry / Wet\n(%)");
@@ -191,110 +166,177 @@ pitch_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
+static int
+estimate_best_correlation(DSP_SAMPLE *data, int frames, DSP_SAMPLE *ref, const int looplen)
+{
+    int i, best = 0;
+    float goodness = 0;
+
+    for (i = 0; i < frames - looplen; i += 1) {
+        /* compute correlation term. The aim is to maximise this value. */
+        float goodness_try = convolve(ref, data + i, looplen);
+        if (goodness_try >= goodness) {
+            goodness = goodness_try;
+            best = i;
+        }
+        /* reduce goodness slightly over time to favour close matches.
+         * This change gets rid of the jarring error that occurs on longish
+         * memory lengths. */
+        goodness -= (float) NEARNESS_BIAS * looplen;
+    }
+    return best;
+}
+
+static void
+copy_to_output_buffer(DSP_SAMPLE *in, DSP_SAMPLE *out, float *wp, const int length)
+{
+    int i;
+
+    /* sum the first half with the tail of a recent buffer, but overwrite
+     * with the second half because the data on that side is old. */
+    for (i = 0; i < length / 2; i += 1) {
+        float w = wp[i];
+        out[i] = w * in[i] + (1.f - w) * out[i];
+    }
+    for (i = length / 2; i < length; i += 1) {
+        out[i] = in[i];
+    }
+    /* output buffer can now be read from 0 to length / 2 */
+}
+
+static void
+resample_to_output(Backbuf_t *history, const int deststart, const int destend, DSP_SAMPLE *input, const int sourcelength)
+{
+    int i;
+    int destlength = destend - deststart;
+    float factor = (float) sourcelength / destlength;
+
+    /* very primitive resampler but it should be good enough for now */
+    for (i = 0; i < destlength; i += 1) {
+        float pos = i * factor;
+        float mid = pos - (int) pos;
+        int idx = pos;
+        history->add(history, (1.f - mid) * input[idx] + mid * input[idx + 1]);
+    }
+}
+
 static void
 pitch_filter(effect_t *p, data_block_t *db)
 {
     struct pitch_params *params = p->params;
-    DSP_SAMPLE     *s, tmp, tmp2;
-    double          pitch_modulation_frequency, phase_inc, phase_tmp, Dry, Wet, gain;
-    double          depth = 0;
-    int             count, c = 0, dir = 0, i;
+    DSP_SAMPLE *s = db->data;
+    int count = db->len / db->channels;
+    int i;
+    float depth, Wet, Dry, output_inc;
 
-    s = db->data;
-    count = db->len;
+    depth = powf(2.f, (params->halfnote + params->finetune) / 12.f) - 1.f;
+    if (depth < -0.5f)
+       depth = -0.5f;
+    if (depth > 1.0f)
+       depth = 1.0f;
+    depth += 1.f;
 
-    depth = pow(2, (params->halfnote + params->finetune) / 12) - 1;
-    if (depth < -0.5)
-       depth = -0.5;
-    if (depth > 1.0)
-       depth = 1.0;
+    Wet = params->drywet / 100.0f;
+    Dry = 1.f - Wet;
 
-    /* use intelligent modulation frequency that keeps latency close to
-     * user specified value */
-    pitch_modulation_frequency = fabs(depth) * params->buffer;
-
-    if (pitch_modulation_frequency < PITCH_MODULATION_FREQUENCY_MIN) {
-        pitch_modulation_frequency = PITCH_MODULATION_FREQUENCY_MIN;
-    }
-    
-    /* because we are eventually going to multiply input waveform with
-     * a sin waveform oscillating at half of pitch_modulation_frequency, the
-     * the entire frequency spectrum upwards by the modulation frequency.
-     * 
-     * (This effect can not be used to do wideband pitch shifting because
-     *  it performs f' = f + c, not f' = f * c.)
-     * 
-     * The code here would compensate the error for the bass string at
-     * the cost of distorting the higher notes' frequencies. No single
-     * frequency is entirely satisfactory. A sane value would be halfway
-     * between guitar's frequency band, at 330 Hz. */
-    /* depth *= 1 + pitch_modulation_frequency / 83.2 / 2.0; */
-    
-    depth = depth * sample_rate / pitch_modulation_frequency;
-    if (depth < 0) {
-        depth = -depth;
-        dir = 1;
-    }
-
-    Dry = 1 - params->drywet / 100.0;
-    Wet =     params->drywet / 100.0;
- 
-    phase_inc = (double) pitch_modulation_frequency / sample_rate;
-    while (count) {
-        params->history[c]->add(params->history[c], *s);
-
-        tmp = 0;
-        phase_tmp = params->phase;
-        for (i = 0; i < PITCH_PHASES; i += 1) {
-            /* Repeatedly weigh pieces of "accelerated" history through
-	     * windowing function that ought to satisfy the following 
-	     * constraints:
-	     *
-	     * f(0)   = 0
-	     * f(1/2) = 1
-	     * f(1/4) = 1/2
-	     * f(x)   = f(1-x)        , 0 <= x <= 1/2
-	     * f(x)   = 1 - f(x + 1/2), 0 <= x <= 1/2
-	     *
-             * An arbitrary function will do provided you use it to construct
-             * the range from 0 <= x <= 1/4 and use the above identities to
-             * construct the rest.
-             * 
-	     * Thanks to Ilmari Karonen for making me understand the
-	     * form of the original function used by Tom Szilagyi. */
-            // gain = (1 - cos(phase_tmp * M_PI * 2)) / 2.0;
-            gain = pow(sin_lookup(phase_tmp / 2), 2); /* Tom's but sin() */
-            tmp += gain *
-                params->history[c]->get_interpolated(params->history[c], 
-                        depth * (dir ? phase_tmp : 1 - phase_tmp));
-            phase_tmp += 1.0 / PITCH_PHASES;
-            if (phase_tmp >= 1.0)
-                phase_tmp -= 1.0;
+    output_inc = LOOP_LENGTH / 2 / depth; 
+    while (count --) {
+        /* uninterleave channel data */
+        for (i = 0; i < db->channels; i += 1) {
+            params->channel_memory[i][params->memory_index] =
+            params->channel_memory[i][params->memory_index + MEMORY_LENGTH] =
+                *s++;
         }
-        /* gain_sum normalizes the windowing function, so it need not fulfill
-         * all the constraints specified above. However, if the function is
-         * bad there will be all sorts of weird distortion... */
-        
-        /* we could try to pick the history a bit more forward at cost of
-         * some more echoing in average but less latency when dry is not 0 */
-        tmp2 = params->history[c]->get(params->history[c], depth / 2);
-        *s = tmp2 * Dry + tmp * Wet;
-        
-        c = (c + 1) % db->channels;
-        if (c == 0) {
-            params->phase += phase_inc;
-            if (params->phase >= 1.0)
-                params->phase -= 1.0;
-        }
-        s++;
-        count--;
-    }
+        params->memory_index += 1;
+        if (params->memory_index == MEMORY_LENGTH)
+            params->memory_index = 0;
+       
+        /* test whether we have advanced enough to do chunk of output */ 
+        params->output_buffer_trigger -= 1;
+        if (params->output_buffer_trigger >= 0.f)
+            continue;
 
+        /* the factor 2.0 comes from doing 2x overlap with Hann window. */
+        params->output_buffer_trigger += LOOP_LENGTH / depth / 2.0f;
+
+        /* at this point, all data from memory-index forward in each buffer
+         * is the oldest data recalled. There is exactly MEMORY_LENGTH
+         * frames of valid data forward from that point as continuous chunk. */
+
+        /* the aim now is to produce LOOP_LENGTH of data in the output buffer
+         * and sum the first half using some window with the old data,
+         * and overwrite the other half. After this, data from
+         * position 0 to LOOP_LEN/2 can be resampled to output. */
+
+        /* We start by searching for data in the input that looks like the
+         * last chunk we put into output. Output is split into two parts:
+         * the data mixed with the "tail" of the previous buffer and
+         * pristine input data. At each iteration, we use only half of the
+         * output buffer for actual output, and copy the latter half as the
+         * first half for next iteration. */
+        for (i = 0; i < db->channels; i += 1) {
+            int bestpos = estimate_best_correlation(
+                params->channel_memory[i] + params->memory_index,
+                MEMORY_LENGTH - LOOP_LENGTH / 2, /* look at next stmt */
+                params->output_memory[i],
+                LOOP_LENGTH);
+            
+            /* copy the data after the best match into the output buffer. The
+             * 0..length/2 part is windowed with the previous part, and the
+             * length/2 .. length part is new. So by advanging forwards by
+             * LOOP_LENGTH / 2 we start mixing over the part that the previous
+             * memcpy() left us (see end of this loop). */
+            bestpos += LOOP_LENGTH / 2;
+
+            copy_to_output_buffer(params->channel_memory[i] + params->memory_index + bestpos, params->output_memory[i], window_memory, LOOP_LENGTH);
+
+            /* write to output from memory -- this algorithm is rubbish.
+             * I should probably produce full length resampled stream and
+             * then do the resampling in one step. */
+            resample_to_output(params->history[i], params->output_pos, params->output_pos + output_inc, params->output_memory[i], LOOP_LENGTH / 2);
+
+            /* copy the latter half over the first half for the next chunk. See
+             * copy_to_output_buffer for reason why. */
+            memcpy(params->output_memory[i], params->output_memory[i] + LOOP_LENGTH / 2, sizeof(float) * LOOP_LENGTH / 2);
+        }
+        
+        params->output_pos += output_inc;
+    }
+    /* now output_memory holds the resampled output. The trouble is, there
+     * might not be enough bytes to fill the final output buffer. At least
+     * one LOOP_LENGTH / RESAMPLE_RATIO bytes should be kept extra... */
+
+    s = db->data; 
+    count = db->len / db->channels;
+    while (count --) {
+        /* don't consume until we have enough for full fill. This should
+         * not trigger after the first few startup frames. It might be
+         * best to do this initially as a small hack during initializing. */
+        if (params->output_pos < count) {
+            for (i = 0; i < db->channels; i += 1)
+                *s++ = 0;
+            continue;
+        }
+        /* consume history now. */
+        for (i = 0; i < db->channels; i += 1) {
+            *s = Dry * *s + Wet * params->history[i]->get(params->history[i], (int) params->output_pos);
+            s++;
+        }
+        params->output_pos -= 1.f;
+    }
 }
 
 static void
 pitch_done(struct effect *p)
 {
+    struct pitch_params *params = p->params;
+    int i;
+    
+    for (i = 0; i < MAX_CHANNELS; i += 1) {
+        gnuitar_free(params->channel_memory[i]);
+        gnuitar_free(params->output_memory[i]);
+        del_Backbuf(params->history[i]);
+    }
     free(p->params);
     gtk_widget_destroy(p->control);
     free(p);
@@ -307,7 +349,6 @@ pitch_save(effect_t *p, SAVE_ARGS)
 
     SAVE_INT("halfnote", params->halfnote);
     SAVE_DOUBLE("finetune", params->finetune);
-    SAVE_DOUBLE("buffer", params->buffer);
     SAVE_DOUBLE("drywet", params->drywet);
 }
 
@@ -318,7 +359,6 @@ pitch_load(effect_t *p, LOAD_ARGS)
     
     LOAD_INT("halfnote", params->halfnote);
     LOAD_DOUBLE("finetune", params->finetune);
-    LOAD_DOUBLE("buffer", params->buffer);
     LOAD_DOUBLE("drywet", params->drywet);
 }
 
@@ -339,10 +379,20 @@ pitch_create()
     p->proc_load = pitch_load;
 
     params = p->params;
+    
     for (i = 0; i < MAX_CHANNELS; i += 1) {
-        params->history[i] = new_Backbuf(PITCH_BUFFER_SIZE);
+        params->channel_memory[i] = gnuitar_memalign(MEMORY_LENGTH * 2, sizeof(float));
+        params->output_memory[i] = gnuitar_memalign(LOOP_LENGTH, sizeof(float));
+        params->history[i] = new_Backbuf(MAX_OUTPUT_BUFFER);
     }
+    if (window_memory == NULL) {
+        /* I will never free this memory -- some effects should have
+         * a global init and destroy funcs and I don't have them. */
+        window_memory = gnuitar_memalign(LOOP_LENGTH / 2, sizeof(float));
+        for (i = 0; i < LOOP_LENGTH / 2; i += 1)
+            window_memory[i] = 0.5f-0.5f * cos_lookup((float) i / LOOP_LENGTH);
+    }
+    
     params->drywet = 100;
-    params->buffer = 10.0;
     return p;
 }
