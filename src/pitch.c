@@ -8,12 +8,9 @@
  * New, better algorithm replacing the earlier overlapping cosine-windowed
  * rather simplistic approach.
  *
- * This is a modified WSOLA algorithm. Waveform similarity is estimated
+ * This should be the stock WSOLA algorithm. Waveform similarity is estimated
  * through cross-correlation with x[n] * y[n] function. SSE acceleration is
  * provided.
- *
- * The modification I made is that near (low-latency) matches of waveform
- * similarity are preferred. This is implemented with NEARNESS_BIAS constant.
  *
  * Overlap-add is implemented with tabularised Hann window. The overlap
  * factor is 2.
@@ -34,10 +31,18 @@
 
 /* CPU time is spent in correlation scan function.
  * It has cost that follows loop_length * (memory_length - loop_length * 1.5)
- * This function has maximum is memory length is 3x loop length. */
-#define LOOP_LENGTH 512
-#define MEMORY_LENGTH 1536
-#define NEARNESS_RAMP   0.95   /* weigh from this value to 1.0 */
+ * This function has maximum is memory length is 3x loop length.
+ *
+ * The guitar can produce combined tones with very low frequency oscillating pattern.
+ * For instance, just striking E and A strings simultaneously causes 27 Hz modulation.
+ * I designed this effect to handle that case, which is fairly common in powerful
+ * chords. It seems that LOOP_LENGTH needs to be at least half of repeating
+ * pattern length, and MEMORY_LENGTH must naturally contain at least one copy of the
+ * data looked for. Some part of the memory is sacrificed (precisely LOOP_LENGTH/3*2)
+ * which needs to be accounted for.
+ * */
+#define LOOP_LENGTH 1000
+#define MEMORY_LENGTH (1500 + LOOP_LENGTH * 3 / 2) /* 1500 ~ 30 Hz at 48 kHz */
 #define MAX_RESAMPLING_FACTOR 2.0
 #define MAX_OUTPUT_BUFFER (MAX_RESAMPLING_FACTOR * (MEMORY_LENGTH + LOOP_LENGTH))
 
@@ -178,12 +183,7 @@ estimate_best_correlation(DSP_SAMPLE *data, const int frames, DSP_SAMPLE *ref, c
     for (i = 0; i < frames - looplen; i += 1) {
         /* compute correlation term. The aim is to maximise this value. */
         float goodness_try = convolve(ref, data + i, looplen);
-        if (goodness_try >= goodness *
-        /* reduce goodness slightly over time to favour close matches.
-         * This change helps avoid the jarring error that occurs on longish
-         * memory lengths. Unfortunately it is not perfect. */
-                ((float) NEARNESS_RAMP + (1.f - (float) NEARNESS_RAMP) *
-                 (float) i / (frames - looplen))) {
+        if (goodness_try >= goodness) {
             goodness = goodness_try;
             best = i;
         }
