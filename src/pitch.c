@@ -32,9 +32,12 @@
 #include "biquad.h"
 #include "gui.h"
 
-#define LOOP_LENGTH 400
-#define MEMORY_LENGTH 1200
-#define NEARNESS_RAMP   0.95    /* weigh from this value to 1.0 */
+/* CPU time is spent in correlation scan function.
+ * It has cost that follows loop_length * (memory_length - loop_length * 1.5)
+ * This function has maximum is memory length is 3x loop length. */
+#define LOOP_LENGTH 512
+#define MEMORY_LENGTH 1536
+#define NEARNESS_RAMP   0.95   /* weigh from this value to 1.0 */
 #define MAX_RESAMPLING_FACTOR 2.0
 #define MAX_OUTPUT_BUFFER (MAX_RESAMPLING_FACTOR * (MEMORY_LENGTH + LOOP_LENGTH))
 
