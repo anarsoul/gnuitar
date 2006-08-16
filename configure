@@ -1281,7 +1281,7 @@ Optional Features:
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --disable-glibtest       Do not try to compile and run a test GLIB program
   --disable-gtktest       Do not try to compile and run a test GTK program
-  --enable-float          Do DSP processing in floats rather in int's
+  --enable-float          Process in floats rather ints (enabled by default)
   --enable-clip-everywhere    Clip sound to min/max possible value in every effect (by default only on output)
   --enable-debug          Add debug code (disabled by default)
 
@@ -6268,7 +6268,15 @@ fi
 
 # Check whether --enable-float was given.
 if test "${enable_float+set}" = set; then
-  enableval=$enable_float;  CONFIG_DEFS="$CONFIG_DEFS -DFLOAT_DSP"
+  enableval=$enable_float;
+	if test "$enableval" != "no"; then
+	    CONFIG_DEFS="$CONFIG_DEFS -DFLOAT_DSP"
+	else
+	    CONFIG_DEFS="$CONFIG_DEFS -UFLOAT_DSP"
+	fi
+
+else
+   CONFIG_DEFS="$CONFIG_DEFS -DFLOAT_DSP"
 
 fi
 
