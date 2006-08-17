@@ -588,27 +588,25 @@ useful before and after distortion effects.
 
 <h2><a name=pitch>Pitch shifter</a></h2>
 
-<p>Pitch shifter is a modified version of WSOLA (Waveform Similarity
-Overlap-Add) algorithm. Waveform similarity looks at repeating waveform shapes
-and then does some "cut and paste" to build lengthened or shortened version of
-the original waveform without affecting the sound pitch.  The effect first
-lengthens or shortens the play length of the sound without, then resamples the
-audio to the desired playback rate, causing the actual pitch shift effect.</p>
+<p>Pitch shifter is a stock WSOLA (Waveform Similarity Overlap-Add) algorithm.
+Waveform similarity looks at repeating waveform shapes and then does some
+"cut and paste" to build lengthened or shortened version of the original waveform
+without affecting the sound pitch.  The effect first lengthens or shortens the
+play length of the sound without, then resamples the audio to the desired playback
+rate, causing the actual pitch shift effect.
 
-<p><strong>Bugs</strong>
-This pitch shifter is not suitable for generic music rekeying, but should be
+<p>This pitch shifter is not suitable for general music rekeying, but should be
 suitable for simple instruments such as human voice or guitar. Complex
-polyharmonic sounds combine to complicated waveform, where it will be
-difficult to find a suitable "copy" of the input signal.</p>
-
-<p>This version does not suffer from latency problems of the earlier 
-(unreleased) version on CVS, and has similar "sound colouring" drawbacks for
-any complicated signal.</p>
+polyharmonic sounds combine to a complicated waveform, making it difficult to
+find an appropriate "copy" of the input signal for duplication. This condition
+shows as frequency wavering effects and pre-echo type of artifacts. Secondly, the
+effect processes all inputs channels independently, leading to phase errors in
+stereo music.</p>
 
 <dl>
 <dt>halfnote</dt><dd>how many half-notes to adjust upwards or downwards</dd>
 <dt>finetune</dt><dd>adjust for in-between tones for half-notes</dd>
-<dt>wet/dry</dt><dd>select mix % between unprocessed and processed signal</dd>
+<dt>wet/dry</dt><dd>select mix % between unprocessed and processed signal for chorus-like effect</dd>
 </dl>
 <h2><a name=tuner>Tuner</a></h2>
 
