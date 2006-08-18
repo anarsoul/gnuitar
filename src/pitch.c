@@ -42,7 +42,7 @@
  * which needs to be accounted for.
  * */
 #define LOOP_LENGTH 1000
-#define MEMORY_LENGTH (1500 + LOOP_LENGTH * 3 / 2) /* 1500 ~ 30 Hz at 48 kHz */
+#define MEMORY_LENGTH (1800 + LOOP_LENGTH * 3 / 2) /* 1800 ~ 26.7 Hz at 48 kHz */
 #define MAX_RESAMPLING_FACTOR 2.0
 #define MAX_OUTPUT_BUFFER (MAX_RESAMPLING_FACTOR * (MEMORY_LENGTH + LOOP_LENGTH))
 
@@ -174,20 +174,49 @@ pitch_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
+static inline int
+min(a, b) {
+    return a < b ? a : b;
+}
+
+static inline int
+max(a, b) {
+    return a > b ? a : b;
+}
+
+
 static int
 estimate_best_correlation(DSP_SAMPLE *data, const int frames, DSP_SAMPLE *ref, const int looplen)
 {
-    int i, best = 0;
+    int i = 0, best = 0;
     float goodness = 0;
 
-    for (i = 0; i < frames - looplen; i += 1) {
+    /* find the local maximum with skip-by-4 */
+    while (i < frames - looplen) {
         /* compute correlation term. The aim is to maximise this value. */
+        float goodness_try = convolve(ref, data + i, looplen);
+        /* HACK: skip forward faster if currently anticorrelated. This is purely
+         * for performance: we want as long convolution buffers as possible without
+         * paying so much for them. Since the max guitar frequency is roughly
+         * 1.2 kHz we can assume that the output oscillates at roughly 40 sample long
+         * patterns. If we are negative, it is almost certain that about 10 samples
+         * one quarter of that can be skipped forward without bypassing any peak. */
+        if (goodness_try >= goodness) {
+            goodness = goodness_try;
+            best = i;
+        }
+        i += 4;
+    }
+
+    /* now look around the estimated maximum for the best match */
+    for (i = max(best - 3, 0); i <= min(best + 3, frames-looplen); i += 1) {
         float goodness_try = convolve(ref, data + i, looplen);
         if (goodness_try >= goodness) {
             goodness = goodness_try;
             best = i;
         }
     }
+
     return best;
 }
 
