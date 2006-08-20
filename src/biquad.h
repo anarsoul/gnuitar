@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.38  2006/08/20 10:25:12  alankila
+ * - use aligned convolution in the fast scan -- this seems to give almost 2x
+ *   performance boost on AMD64
+ *
  * Revision 1.37  2006/08/15 15:45:00  alankila
  * - use native operators instead of functions for loop
  *
@@ -299,9 +303,7 @@ convolve(const float *a, const float *b, const int len) {
     __m128 *a4 = (__m128 *) a;
     const float *b4 = b;
     float dot = 0.0;
-    int i4;
-
-    i4 = len / 4;
+    int i4 = len / 4;
     if (i4) {
         while (i4 --) {
             r += *a4++ * _mm_loadu_ps(b4);
@@ -326,6 +328,36 @@ convolve(const float *a, const float *b, const int len) {
     return dot;
 }
 
+static inline float
+convolve_aligned (const float *a, const float *b, const int len) {
+    __m128 r = { 0, 0, 0, 0 };
+    __m128 *a4 = (__m128 *) a;
+    __m128 *b4 = (__m128 *) b;
+    float dot = 0.0;
+    int i4 = len / 4;
+    if (i4) {
+        while (i4 --)
+            r += *a4++ * *b4++;
+#ifdef __SSE3__
+        r = _mm_hadd_ps(r, r);
+        r = _mm_hadd_ps(r, r);
+#else
+        r = _mm_add_ps(_mm_movehl_ps(r, r), r);
+        r = _mm_add_ss(_mm_shuffle_ps(r, r, 1), r);
+#endif
+        _mm_store_ss(&dot, r);
+    }
+    
+    switch (len % 4) {
+        case 3: dot += a[len - 3] * b[len - 3];
+        case 2: dot += a[len - 2] * b[len - 2];
+        case 1: dot += a[len - 1] * b[len - 1];
+    }
+    
+    return dot;
+}
+
+
 #else
 
 /* SSE operates in either denormals-are-zero or flush-zero mode.
@@ -341,6 +373,11 @@ convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
     for (i = 0; i < len; i += 1)
             dot += (float) a[i] * (float) b[i];
     return dot;
+}
+
+static inline float
+convolve_aligned(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
+    return convolve(a, b, len);
 }
 
 static inline float

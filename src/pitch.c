@@ -18,6 +18,11 @@
  * $Id$
  */
 
+/* nag about correct compilation options. */
+#if !defined(FLOAT_DSP) && !defined(__SSE__)
+    #warning "warning: pitch.c: floating point (-DFLOAT_DSP) and SSE (-march=something) recommended for performance."
+#endif
+
 #include <assert.h>
 #include <math.h>
 #include <string.h>
@@ -184,17 +189,21 @@ max(a, b) {
     return a > b ? a : b;
 }
 
-
+/* this function scans only about 1/4th of the full range of possible
+ * offsets, allowing us to work realtime on somewhat worse hardware.
+ * GNUitar is however becoming very SSE dependant. */
 static int
-estimate_best_correlation(DSP_SAMPLE *data, const int frames, DSP_SAMPLE *ref, const int looplen)
+estimate_best_correlation(DSP_SAMPLE *data, const int frames, const int alignoff, DSP_SAMPLE *ref, const int looplen)
 {
-    int i = 0, best = 0;
+    int i = alignoff, best = 0, apprx;
     float goodness = 0;
+    /* i is chosen so that data + i is aligned by 16, which allows the
+     * use of optimum assembly instructions in the faster scan. */
 
-    /* find the local maximum with skip-by-4 */
+    /* estimate the position of a local maximum */
     while (i < frames - looplen) {
         /* compute correlation term. The aim is to maximise this value. */
-        float goodness_try = convolve(ref, data + i, looplen);
+        float goodness_try = convolve_aligned(ref, data + i, looplen);
         /* HACK: skip forward faster if currently anticorrelated. This is purely
          * for performance: we want as long convolution buffers as possible without
          * paying so much for them. Since the max guitar frequency is roughly
@@ -205,11 +214,16 @@ estimate_best_correlation(DSP_SAMPLE *data, const int frames, DSP_SAMPLE *ref, c
             goodness = goodness_try;
             best = i;
         }
+        /* increment by 4 keeps data+i aligned by 16 */
         i += 4;
     }
+    apprx = best;
 
     /* now look around the estimated maximum for the best match */
     for (i = max(best - 3, 0); i <= min(best + 3, frames-looplen); i += 1) {
+        /* don't recompute the convolution we already know */
+        if (i == apprx)
+            continue;
         float goodness_try = convolve(ref, data + i, looplen);
         if (goodness_try >= goodness) {
             goodness = goodness_try;
@@ -310,6 +324,7 @@ pitch_filter(effect_t *p, data_block_t *db)
             int bestpos = estimate_best_correlation(
                 params->channel_memory[i] + params->memory_index,
                 MEMORY_LENGTH - LOOP_LENGTH / 2, /* look at next stmt */
+                (4 - (params->memory_index % 4)) % 4, /* alignment 0..3 */
                 params->output_memory[i],
                 LOOP_LENGTH);
             
