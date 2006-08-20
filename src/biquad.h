@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.39  2006/08/20 10:55:04  alankila
+ * - improve whitespace usage / parameter naming consistency
+ *
  * Revision 1.38  2006/08/20 10:25:12  alankila
  * - use aligned convolution in the fast scan -- this seems to give almost 2x
  *   performance boost on AMD64
@@ -225,36 +228,29 @@ typedef struct {
     DSP_SAMPLE      x0_tmp;
 } Hilbert_t;
 
-/*
- * Sampling rate, Center frequency, Bandwidth, Gain (decibels) 
- */
-void     set_peq_biquad(const double Fs, const double Fc, const double BW, const double, Biquad_t *f);
+/* Fs = sampling rate, Fc = center frequency, BW = bandwidth (octaves),
+ * G = gain (dB), ripple = 0=butterw, 1-100=cheb (s-domain ellipticity %),
+ * delay = unitless 0 .. 1, lowpass = flag whether cheb is lowpass filter */
+void     set_peq_biquad(const double Fs, const double Fc, const double BW, const double G, Biquad_t *f);
 void     set_bpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f);
 void     set_lpf_biquad(const double Fs, const double Fc, const double BW, Biquad_t *f);
 void     set_phaser_biquad(const double delay, Biquad_t *f);
 void     set_2nd_allpass_biquad(const double delay, Biquad_t *f);
-void     set_rc_lowpass_biquad(const double fs, const double fc, Biquad_t *f);
-void     set_rc_highpass_biquad(const double fs, const double fc, Biquad_t *f);
+void     set_rc_lowpass_biquad(const double Fs, const double Fc, Biquad_t *f);
+void     set_rc_highpass_biquad(const double Fs, const double Fc, Biquad_t *f);
 void     set_lsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f);
+void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
+			       int lowpass, Biquad_t *f);
 
 void     hilbert_transform(const DSP_SAMPLE in, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilbert_t *h, const int curr_channel);
 void     hilbert_init(Hilbert_t *h);
 void     fir_interpolate_2x(DSP_SAMPLE *mem, const DSP_SAMPLE in, DSP_SAMPLE *o1, DSP_SAMPLE *o2);
 DSP_SAMPLE fir_decimate_2x(DSP_SAMPLE *mem, const DSP_SAMPLE in1, const DSP_SAMPLE in2);
 
-/*
- * Sampling rate, Center frequency, Ripple %, Lowpass?
- */
-extern void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
-			              int lowpass, Biquad_t *f);
-
-/* Denormals are small numbers that force FPU into slow mode.
- * Denormals tend to occur in all low-pass filters, but a DC
- * offset can remove them. (Another way to avoid them would
- * be to switch FPU into denormalless mode.) */
 #if defined(__SSE__) && defined(FLOAT_DSP)
 
 static inline float
+__attribute__ ((nonnull(2)))
 do_biquad(const float x, Biquad_t *f, const int c)
 {
     __m128          r;
@@ -298,7 +294,9 @@ do_biquad(const float x, Biquad_t *f, const int c)
 /* important: a is aligned to 16-byte boundary but b is not.
  * Therefore, movups must be used to access that memory. */
 static inline float
-convolve(const float *a, const float *b, const int len) {
+__attribute__ ((nonnull(1, 2)))
+convolve(const float *a, const float *b, const int len)
+{
     __m128 r = { 0, 0, 0, 0 };
     __m128 *a4 = (__m128 *) a;
     const float *b4 = b;
@@ -329,7 +327,9 @@ convolve(const float *a, const float *b, const int len) {
 }
 
 static inline float
-convolve_aligned (const float *a, const float *b, const int len) {
+__attribute__ ((nonnull(1, 2)))
+convolve_aligned (const float *a, const float *b, const int len)
+{
     __m128 r = { 0, 0, 0, 0 };
     __m128 *a4 = (__m128 *) a;
     __m128 *b4 = (__m128 *) b;
@@ -360,13 +360,17 @@ convolve_aligned (const float *a, const float *b, const int len) {
 
 #else
 
-/* SSE operates in either denormals-are-zero or flush-zero mode.
- * Additionally, gnuitar is compiled with -ffast-math. Perhaps
- * this constant isn't necessary. */
+/* Denormals are small numbers that force FPU into slow mode.
+ * Denormals tend to occur in all low-pass filters, but a DC
+ * offset can remove them. SSE code is denormalless due to
+ * FPU setting (which should also be enforced by -ffast-math).
+ * I'm playing it safe if non-SSE codepaths are used. */
 #define DENORMAL_BIAS   1E-5f
 
 static inline float
-convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
+__attribute__ ((nonnull(1, 2)))
+convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len)
+{
     int i;
     /* a long int type would be needed to hold the value in integer dsp */
     float dot = 0;
@@ -376,11 +380,14 @@ convolve(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
 }
 
 static inline float
-convolve_aligned(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len) {
+__attribute__ ((nonnull(1, 2)))
+convolve_aligned(const DSP_SAMPLE *a, const DSP_SAMPLE *b, const int len)
+{
     return convolve(a, b, len);
 }
 
 static inline float
+__attribute__ ((nonnull(2)))
 do_biquad(const float x, Biquad_t *f, const int c)
 {
     float *mem = f->mem[c], y;
