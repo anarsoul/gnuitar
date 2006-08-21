@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.29  2006/08/21 21:59:14  alankila
+# - selfishly enable SSE3
+#
 # Revision 1.28  2006/08/12 14:35:59  alankila
 # - add version test for cmake
 # - document the intended cpu optimisation flags
@@ -112,7 +115,7 @@ PROJECT(GNUitar)
 # user serviceable parts begin
 
 SET(CMAKE_BUILD_TYPE RELEASE)
-SET(OPT_FLAGS "-ffast-math -frename-registers -ftree-vectorize -march=athlon64")
+SET(OPT_FLAGS "-ffast-math -frename-registers -ftree-vectorize -march=athlon64 -msse3")
 ADD_DEFINITIONS(-DFLOAT_DSP)
 
 # GNUitar should always be optimised for the host cpu it runs on. Failing
