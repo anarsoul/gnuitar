@@ -179,15 +179,20 @@ pitch_init(struct effect *p)
     gtk_widget_show_all(p->control);
 }
 
+/* might be defined by compiler or some included thingy, might be not... */
+#ifndef min
 static inline int
 min(a, b) {
     return a < b ? a : b;
 }
+#endif
 
+#ifndef max
 static inline int
 max(a, b) {
     return a > b ? a : b;
 }
+#endif
 
 /* this function scans only about 1/4th of the full range of possible
  * offsets, allowing us to work realtime on somewhat worse hardware.
