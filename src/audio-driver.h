@@ -3,6 +3,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.6  2006/08/22 06:40:05  alankila
+ * - inform gcc on the rare case where it may be helpful that
+ *   data and data_swap pointers do not alias.
+ *
  * Revision 1.5  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -31,6 +35,11 @@
 
 #include <stdint.h>
 
+/* get rid of __restrict__ type qualifier for MS Visual C */
+#ifdef _MSC_VER
+#define __restrict__
+#endif
+
 #define MAX_SAMPLE (32767 << 8)
 
 #ifdef FLOAT_DSP
@@ -40,8 +49,8 @@ typedef int_least32_t   DSP_SAMPLE;
 #endif
 
 typedef struct {
-    DSP_SAMPLE     *data;
-    DSP_SAMPLE     *data_swap;
+    DSP_SAMPLE * __restrict__ data;
+    DSP_SAMPLE * __restrict__ data_swap;
     int_fast32_t    len;
     int_fast8_t     channels;
 } data_block_t;
