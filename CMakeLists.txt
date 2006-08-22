@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.30  2006/08/22 20:27:37  alankila
+# - detect GCC version and enable options accordingly
+#
 # Revision 1.29  2006/08/21 21:59:14  alankila
 # - selfishly enable SSE3
 #
@@ -109,28 +112,42 @@
 #
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
-
 PROJECT(GNUitar)
 
-# user serviceable parts begin
+# Get the GCC version -- this regex is pathetic.
+EXEC_PROGRAM(${CMAKE_C_COMPILER} ARGS --version OUTPUT_VARIABLE _gcc_version_info)
+STRING(REGEX REPLACE "^gcc \\(GCC\\) ([0-9]+\\.[0-9]+).*" "\\1" _gcc_version "${_gcc_version_info}")
 
+# Check that we succeeded
+IF (NOT _gcc_version)
+    MESSAGE(FATAL_ERROR "*** error: I could not determine your GCC version.\n\nThe C compiler discovered by CMake was: ${CMAKE_C_COMPILER}.\nIts output for --version was:\n${_gcc_version_info}")
+ENDIF (NOT _gcc_version)
+
+MESSAGE("*** Detected GCC version: ${_gcc_version}\n")
+
+# Compute an integer representation of the GCC version number
+STRING(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" _gcc_version_major "${_gcc_version}")
+STRING(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" _gcc_version_minor "${_gcc_version}")
+MATH(EXPR _gcc_version "${_gcc_version_major} * 100 + ${_gcc_version_minor}")
+
+SET(OPT_FLAGS "-ffast-math")
+IF (_gcc_version GREATER 399) # cmake suckage for lacking >=
+    SET(OPT_FLAGS "${OPT_FLAGS} -frename-registers -ftree-vectorize")
+ENDIF (_gcc_version GREATER 399)
+
+# user serviceable parts begin
 SET(CMAKE_BUILD_TYPE RELEASE)
-SET(OPT_FLAGS "-ffast-math -frename-registers -ftree-vectorize -march=athlon64 -msse3")
+SET(ARCH_FLAGS "-march=athlon64 -msse3")
 ADD_DEFINITIONS(-DFLOAT_DSP)
 
 # GNUitar should always be optimised for the host cpu it runs on. Failing
 # that, a SSE/SSE2/SSE3 capable machine should be used. It is assumed that
 # correct -march=foo line will turn appropriate instruction set extensions on.
 # In the future, gcc may get -march=local that optimises for compile host.
-# -ftree-vectorize does not do many significant things currently, but GCC
-# may get smarter in the future. -frename-registers may be dangerous for
-# GCC versions before 4.0. In all cases, -ffast-math should be kept on for
-# the performance benefit it brings, and even if disabled, gnuitar sets
-# some SSE/SSE2 flags for faster denormal number handling.
 
 # end of user serviceable parts
 
-MESSAGE("*** Note: I am assuming that these parameters generate valid code for you.\n${OPT_FLAGS}\n")
+MESSAGE("*** Note: I am assuming that these parameters generate valid code for you:\n    ${ARCH_FLAGS}\n")
 
 INCLUDE(UsePkgConfig)
 PKGCONFIG(gtk+-2.0    GTK2_INCLUDE_DIR    GTK2_LINK_DIR    GTK2_LINK_FLAGS    GTK2_CFLAGS)
@@ -140,7 +157,7 @@ IF (GTK2_INCLUDE_DIR)
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GTK2_CFLAGS} ${GTHREAD_CFLAGS}")
     SET(GTK_LIBRARIES ${GTK2_LINK_FLAGS} ${GTHREAD_LINK_FLAGS})
     ADD_DEFINITIONS(-DHAVE_GTK2)
-    MESSAGE("GTK 2.x found and used as GUI\n")
+    MESSAGE("*** GTK 2.x found and used as GUI\n")
     SET(GTK2_FOUND 1)
 ENDIF (GTK2_INCLUDE_DIR)
 
@@ -149,12 +166,12 @@ IF (NOT GTK2_FOUND)
     IF (GTK_FOUND)
         INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIR})
         ADD_DEFINITIONS(-DHAVE_GTK)
-        MESSAGE("GTK 1.x found and used as GUI\n")
+        MESSAGE("*** GTK 1.x found and used as GUI\n")
     ENDIF (GTK_FOUND)
 ENDIF (NOT GTK2_FOUND)
 
 IF (NOT GTK_FOUND AND NOT GTK2_FOUND)
-    MESSAGE(FATAL_ERROR "Please install gtk 2.x or gtk 1.x development files")
+    MESSAGE(FATAL_ERROR "*** Error: please install gtk 2.x or gtk 1.x development files")
 ENDIF (NOT GTK_FOUND AND NOT GTK2_FOUND)
 
 SET(OTHER_LIBRARIES m)
@@ -172,7 +189,7 @@ IF (UNIX)
         ADD_DEFINITIONS(-DHAVE_JACK)
         SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} jack)
     ELSE (JACK_LIBRARY)
-        MESSAGE("libjack not found -- not compiling jack support.")
+        MESSAGE("*** Warning: libjack not found -- not compiling jack support.")
     ENDIF (JACK_LIBRARY)
 
     FIND_LIBRARY(ALSA_LIBRARY NAMES asound)
@@ -180,7 +197,7 @@ IF (UNIX)
         ADD_DEFINITIONS(-DHAVE_ALSA)
         SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} asound)
     ELSE (ALSA_LIBRARY)
-        MESSAGE("libasound not found -- not compiling ALSA support.")
+        MESSAGE("*** Warning: libasound not found -- not compiling ALSA support.")
     ENDIF (ALSA_LIBRARY)
 
     # sndfile is only required for unix
@@ -189,7 +206,7 @@ IF (UNIX)
         ADD_DEFINITIONS(-DHAVE_SNDFILE)
         SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} sndfile)
     ELSE (SNDFILE_LIBRARY)
-        MESSAGE("libsndfile not found -- .wav export not possible.")
+        MESSAGE("*** Warning: libsndfile not found -- .wav export not possible.")
     ENDIF (SNDFILE_LIBRARY)
 ENDIF (UNIX)
 
@@ -199,7 +216,7 @@ IF (WIN32)
         ADD_DEFINITIONS(-DHAVE_DSOUND)
         SET (OTHER_LIBRARIES ${OTHER_LIBRARIES} dsound dxguid)
     ELSE (DSOUND_LIBRARY)
-        MESSAGE("dsound not found -- disabling DirectSound output.")
+        MESSAGE("*** Warning: dsound not found -- disabling DirectSound output.")
     ENDIF (DSOUND_LIBRARY)
 
     FIND_LIBRARY(WINMM_LIBRARY NAMES winmm)
@@ -207,11 +224,11 @@ IF (WIN32)
         ADD_DEFINITIONS(-DHAVE_WINMM)
         SET (OTHER_LIBRARIES ${OTHER_LIBRARIES} winmm)
     ELSE (WINMM_LIBRARY)
-        MESSAGE("winmm not found -- disabling MMSystem output.")
+        MESSAGE("*** Warning: winmm not found -- disabling MMSystem output.")
     ENDIF (WINMM_LIBRARY)
 
     IF (NOT DSOUND_LIBRARY AND NOT WINMM_LIBRARY)
-        MESSAGE(FATAL_ERROR "Neither DirectSound or WinMM libraries could be found for audio playback.")
+        MESSAGE(FATAL_ERROR "*** Error: Neither DirectSound or WinMM libraries could be found for audio playback.")
     ENDIF (NOT DSOUND_LIBRARY AND NOT WINMM_LIBRARY)
 ENDIF (WIN32)
 
@@ -220,12 +237,12 @@ IF (FFTW3_LIBRARY)
     ADD_DEFINITIONS(-DHAVE_FFTW3)
     SET(OTHER_LIBRARIES ${OTHER_LIBRARIES} fftw3f)
 ELSE (FFTW3_LIBRARY)
-    MESSAGE("libfftw3f not found -- using time-domain implementations where possible.")
+    MESSAGE("*** Warning: libfftw3f not found -- using time-domain implementations where possible.")
 ENDIF (FFTW3_LIBRARY)
 
 # set final C flags
 SET(WARNING_FLAGS "-Wall -Wunsafe-loop-optimizations -Wbad-function-cast -Wcast-align -Wmissing-field-initializers -Wmissing-noreturn -Wredundant-decls -Winline -Wpointer-sign -Wpointer-arith -Wmissing-prototypes")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${OPT_FLAGS}")
+SET(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${OPT_FLAGS}")
 
 # setup complete: define build targets and build files
 ADD_EXECUTABLE(gnuitar
