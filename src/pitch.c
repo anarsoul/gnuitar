@@ -239,10 +239,30 @@ estimate_best_correlation(DSP_SAMPLE *data, const int frames, const int alignoff
     return best;
 }
 
+#ifdef __SSE__
 static void
 copy_to_output_buffer(DSP_SAMPLE *in, DSP_SAMPLE *out, float *wp, const int length)
 {
-    int i;
+    const __m128 ones = { 1.f, 1.f, 1.f, 1.f };
+    __m128 * __restrict__ out4 = (__m128 * __restrict__) out;
+    const __m128 * __restrict__ wp4 = (const __m128 * __restrict__) wp;
+    int_fast16_t i;
+
+    /* sum the first half with the tail of previous buffer, but overwrite
+     * with the second half because the data on that side is old. */
+    for (i = 0; i < length / 2 / 4; i += 1) {
+        __m128 w = wp4[i];
+        /* unfortunately we must take the performance hit of unaligned load */
+        out4[i] = w * _mm_loadu_ps(in + i * 4) + (ones - w) * out4[i + length / 2 / 4];
+    }
+    memcpy(out + length / 2, in + length / 2, sizeof(float) * length / 2);
+    /* output buffer can now be read from 0 to length / 2 */
+}
+#else
+static void
+copy_to_output_buffer(DSP_SAMPLE *in, DSP_SAMPLE *out, float *wp, const int length)
+{
+    int_fast16_t i;
 
     /* sum the first half with the tail of previous buffer, but overwrite
      * with the second half because the data on that side is old. */
@@ -250,11 +270,10 @@ copy_to_output_buffer(DSP_SAMPLE *in, DSP_SAMPLE *out, float *wp, const int leng
         float w = wp[i];
         out[i] = w * in[i] + (1.f - w) * out[i + length/2];
     }
-    for (i = length / 2; i < length; i += 1) {
-        out[i] = in[i];
-    }
+    memcpy(out + length / 2, in + length / 2, sizeof(float) * length / 2);
     /* output buffer can now be read from 0 to length / 2 */
 }
+#endif
 
 static void
 resample_to_output(Backbuf_t *history, const int deststart, const int destend, DSP_SAMPLE *input, const int sourcelength)
