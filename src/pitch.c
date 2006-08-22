@@ -200,7 +200,7 @@ max(a, b) {
 static int
 estimate_best_correlation(DSP_SAMPLE *data, const int frames, const int alignoff, DSP_SAMPLE *ref, const int looplen)
 {
-    int i = alignoff, best = 0, apprx;
+    int_fast16_t i = alignoff, best = 0, apprx;
     float goodness = 0;
     /* i is chosen so that data + i is aligned by 16, which allows the
      * use of optimum assembly instructions in the faster scan. */
@@ -225,7 +225,7 @@ estimate_best_correlation(DSP_SAMPLE *data, const int frames, const int alignoff
     apprx = best;
 
     /* now look around the estimated maximum for the best match */
-    for (i = max(best - 3, 0); i <= min(best + 3, frames-looplen); i += 1) {
+    for (i = max(best - 3, 0); i < min(best + 4, frames - looplen); i += 1) {
         /* don't recompute the convolution we already know */
         if (i == apprx)
             continue;
@@ -278,15 +278,16 @@ copy_to_output_buffer(DSP_SAMPLE *in, DSP_SAMPLE *out, float *wp, const int leng
 static void
 resample_to_output(Backbuf_t *history, const int deststart, const int destend, DSP_SAMPLE *input, const int sourcelength)
 {
-    int i;
-    int destlength = destend - deststart;
-    float factor = (float) sourcelength / destlength;
+    int_fast16_t i;
+    const int_fast16_t destlength = destend - deststart;
+    float factor = (float) sourcelength / destlength, pos = 0;
 
     /* very primitive resampler but it should be good enough for now */
     for (i = 0; i < destlength; i += 1) {
-        float pos = i * factor;
-        float mid = pos - (int) pos;
-        int idx = pos;
+        ptrdiff_t idx;
+        pos += factor;
+        idx = pos;
+        float mid = pos - idx;
         history->add(history, (1.f - mid) * input[idx] + mid * input[idx + 1]);
     }
 }
