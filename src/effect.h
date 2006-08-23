@@ -50,10 +50,17 @@ struct effect {
 };
 typedef struct effect effect_t;
 
+#ifdef __GNUC__
+#define unlikely(x) __builtin_expect((x), 0)
+#else
+#warning "no unlikely"
+#define unlikely(x) !!(x)
+#endif
+
 #define CLIP_SAMPLE(sm) \
-    if (sm > (typeof(sm)) MAX_SAMPLE) \
+    if (unlikely(sm > (typeof(sm)) MAX_SAMPLE)) \
         sm = (typeof(sm)) MAX_SAMPLE; \
-    if (sm < (typeof(sm)) -MAX_SAMPLE) \
+    if (unlikely(sm < (typeof(sm)) -MAX_SAMPLE)) \
         sm = (typeof(sm)) -MAX_SAMPLE;
 
 /* these macros are used to save my sanity */

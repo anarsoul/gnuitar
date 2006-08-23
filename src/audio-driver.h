@@ -3,6 +3,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.7  2006/08/23 08:11:23  alankila
+ * - add unlikely to hopefully speed up if() test
+ *
  * Revision 1.6  2006/08/22 06:40:05  alankila
  * - inform gcc on the rare case where it may be helpful that
  *   data and data_swap pointers do not alias.
@@ -45,7 +48,7 @@
 #ifdef FLOAT_DSP
 typedef float           DSP_SAMPLE;
 #else
-typedef int_least32_t   DSP_SAMPLE;
+typedef int32_t         DSP_SAMPLE;
 #endif
 
 typedef struct {
