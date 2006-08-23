@@ -26,6 +26,7 @@
 
 #define MAX_EFFECTS 50
 
+#include <malloc.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -102,20 +103,32 @@ cos_lookup(float pos) {
 }
 
 #ifdef __SSE__
-#include <mm_malloc.h>
 
 /* for SSE we need aligned memory */
 static inline void *
 gnuitar_memalign(size_t num, size_t bytes) {
-    void *mem = _mm_malloc(num * bytes, 16);
+    void *mem = NULL;
+#ifndef __MINGW32__
+    if (posix_memalign(&mem, 16, num * bytes)) {
+        fprintf(stderr, "failed to allocate aligned memory.\n");
+        exit(1);
+    }
+#else
+    mem = __mingw_aligned_malloc(num * bytes, 16);
+#endif
     assert(mem != NULL);
+
     memset(mem, 0, num * bytes);
     return mem;
 }
 
 static inline void
 gnuitar_free(void *memory) {
-    _mm_free(memory);
+#ifndef __MINGW32__
+    free(memory);
+#else
+    __mingw_aligned_free(memory);
+#endif
 }
 
 #else
