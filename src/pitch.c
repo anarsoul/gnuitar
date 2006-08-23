@@ -56,12 +56,14 @@ static float *window_memory = NULL;
 static void
 update_pitch_halfnote(GtkAdjustment *adj, struct pitch_params *params)
 {
+    params->output_pos = 0;
     params->halfnote = adj->value;
 }
 
 static void
 update_pitch_finetune(GtkAdjustment *adj, struct pitch_params *params)
 {
+    params->output_pos = 0;
     params->finetune = adj->value;
 }
 
