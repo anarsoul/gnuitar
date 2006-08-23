@@ -26,7 +26,9 @@
 
 #define MAX_EFFECTS 50
 
+#ifdef __MINGW32__
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
