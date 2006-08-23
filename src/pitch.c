@@ -284,7 +284,7 @@ resample_to_output(Backbuf_t *history, const int deststart, const int destend, D
 
     /* very primitive resampler but it should be good enough for now */
     for (i = 0; i < destlength; i += 1) {
-        ptrdiff_t idx;
+        int idx;
         pos += factor;
         idx = pos;
         float mid = pos - idx;
