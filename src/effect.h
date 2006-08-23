@@ -104,7 +104,8 @@ cos_lookup(float pos) {
         return sin_lookup(pos + 0.25f);
 }
 
-#ifdef __SSE__
+/* FreeBSD's malloc is aligned by 16 */
+#if defined(__SSE__) && !defined(__FreeBSD__)
 
 /* for SSE we need aligned memory */
 static inline void *
