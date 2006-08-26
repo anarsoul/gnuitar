@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.31  2006/08/26 15:56:09  alankila
+# - add rudimentary host system type and gcc parameter selection logic
+#
 # Revision 1.30  2006/08/22 20:27:37  alankila
 # - detect GCC version and enable options accordingly
 #
@@ -135,16 +138,25 @@ IF (_gcc_version GREATER 399) # cmake suckage for lacking >=
     SET(OPT_FLAGS "${OPT_FLAGS} -frename-registers -ftree-vectorize")
 ENDIF (_gcc_version GREATER 399)
 
+# guess something rather conservative. We wamt SSE. hence we specify at least pentium3
+SET(ARCH_FLAGS "-march=pentium3 -mtune=generic")
+IF (UNIX) # IF (LINUX) ?
+    # read cpuinfo on linux to improve guess
+    FILE(READ "/proc/cpuinfo" _cpuinfo)
+    IF (_cpuinfo MATCHES "AuthenticAMD")
+        SET(ARCH_FLAGS "-march=athlon-xp")
+        IF (_cpuinfo MATCHES "Athlon\\(tm\\) 64")
+            SET(ARCH_FLAGS "-march=athlon64 -msse3")
+        ENDIF (_cpuinfo MATCHES "Athlon\\(tm\\) 64")
+    ENDIF (_cpuinfo MATCHES "AuthenticAMD")
+    IF (_cpuinfo MATCHES "GenuineIntel")
+        SET(ARCH_FLAGS "-march=pentium4 -mtune=prescott")
+    ENDIF (_cpuinfo MATCHES "GenuineIntel")
+ENDIF (UNIX)
+
 # user serviceable parts begin
 SET(CMAKE_BUILD_TYPE RELEASE)
-SET(ARCH_FLAGS "-march=athlon64 -msse3")
 ADD_DEFINITIONS(-DFLOAT_DSP)
-
-# GNUitar should always be optimised for the host cpu it runs on. Failing
-# that, a SSE/SSE2/SSE3 capable machine should be used. It is assumed that
-# correct -march=foo line will turn appropriate instruction set extensions on.
-# In the future, gcc may get -march=local that optimises for compile host.
-
 # end of user serviceable parts
 
 MESSAGE("*** Note: I am assuming that these parameters generate valid code for you:\n    ${ARCH_FLAGS}\n")
