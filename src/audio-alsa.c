@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.49  2006/08/29 09:57:29  alankila
+ * - disallow resampling in ALSA
+ * - add some gnuitar_printf metadata into the errors/warnings/infos
+ * - prefer hw:0,0 as alsa device over default that may be dmix or something
+ *
  * Revision 1.48  2006/08/10 18:52:07  alankila
  * - declare prototypes properly
  * - hide some accidentally global methods
@@ -464,12 +469,13 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
     }
 
     if ((err = snd_pcm_hw_params_set_access(device, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-        gnuitar_printf( "can't set access type RW_INTERLEAVE (try using plughw): %s\n",
+        gnuitar_printf("can't set access type RW_INTERLEAVE (try using plughw): %s\n",
                  snd_strerror(err));
         snd_pcm_hw_params_free(hw_params);
 	return 1;
     }
 
+    /* XXX we should support floating-point sample format */
     if ((err = snd_pcm_hw_params_set_format(device, hw_params, SND_PCM_FORMAT_S32)) < 0) {
         if ((err = snd_pcm_hw_params_set_format(device, hw_params, SND_PCM_FORMAT_S16)) < 0) {
             gnuitar_printf("can't set sample format to neither 32 nor 16 bits: %s\n",
@@ -490,6 +496,13 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 	return 1;
     }
 
+    /* ALSA has poor quality resampling. User is much better off without
+     * resampling and GNUitar adapted to proper frequency than with it. */
+    if ((err = snd_pcm_hw_params_set_rate_resample(device, hw_params, 0)) < 0) {
+        gnuitar_printf("warning: can't disallow ALSA-lib resampling: %s\n", snd_strerror(err));
+        /* this isn't fatal, though. We'll just continue. */
+    }
+
     if (adapting) {
         /* Adapting path: choose values for the tunables:
          * sampling rate, fragment size, number of fragments. */
@@ -501,23 +514,24 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
             return 1;
         }
         if (tmp != sample_rate) {
-            gnuitar_printf( "can't set requested sample rate, asked for %d got %d\n", sample_rate, tmp);
+            gnuitar_printf("info: hardware adjusted sample rate to %d.\n", tmp);
             sample_rate = tmp;
         }
 
         /* tell alsa how many periods we would like to have */
         if ((err = snd_pcm_hw_params_set_periods(device, hw_params, *fragments, 0)) < 0) {
-	    gnuitar_printf("can't set fragments %d value on ALSA device: %s\n",
+	    gnuitar_printf("warning: can't set fragments %d value on ALSA device: %s\n",
                            *fragments, snd_strerror(err));
-            //snd_pcm_hw_params_free(hw_params);
-            //return 1;
+            /* If it doesn't work, well, no matter. Next time *fragments will have
+             * another value which hopefully works. And set_buffer_time_near() may
+             * still work. The message to take home is: ALSA is difficult to program. */
         }
 
         /* let the sound driver pick period size as appropriate. */
         tmp = (float) (*frames * *fragments) / sample_rate * 1E6;
 
         if ((err = snd_pcm_hw_params_set_buffer_time_near(device, hw_params, &tmp, NULL)) < 0) {
-            gnuitar_printf( "can't set buffer time near %d: %s\n", tmp,
+            gnuitar_printf("can't set buffer time near %d: %s\n", tmp,
                     snd_strerror(err));
             snd_pcm_hw_params_free(hw_params);
             return 1;

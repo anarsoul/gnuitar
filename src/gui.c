@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.118  2006/08/29 09:57:29  alankila
+ * - disallow resampling in ALSA
+ * - add some gnuitar_printf metadata into the errors/warnings/infos
+ * - prefer hw:0,0 as alsa device over default that may be dmix or something
+ *
  * Revision 1.117  2006/08/11 16:08:53  alankila
  * - don't crash if no audio driver can be opened.
  *
@@ -1388,6 +1393,7 @@ sample_dlg(GtkWidget *widget, gpointer data)
 		     
     sparams.alsadevice = gtk_combo_new();
     
+    alsadevice_list = g_list_append(alsadevice_list, "hw:0,0");
     alsadevice_list = g_list_append(alsadevice_list, "default");
     alsadevice_list = g_list_append(alsadevice_list, "guitar");
     alsadevice_list = g_list_append(alsadevice_list, "surround40");
