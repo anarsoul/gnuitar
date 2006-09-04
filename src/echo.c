@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.26  2006/09/04 14:25:10  alankila
+ * - hide multichannel GUI if input channels != 1
+ *
  * Revision 1.25  2006/08/02 19:07:57  alankila
  * - add missing static declarations
  *
@@ -253,7 +256,7 @@ echo_init(struct effect *p)
 		     __GTKATTACHOPTIONS
 		     (GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
 
-    if (n_output_channels > 1) {
+    if (n_output_channels > 1 && n_input_channels == 1) {
         mcbutton = gtk_check_button_new_with_label("Multichannel");
         if (params->multichannel)
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mcbutton), TRUE);
