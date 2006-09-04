@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.31  2006/09/04 14:42:03  alankila
+ * - fix hilbert-transform for > 1 channel: forgot x0_tmp
+ *
  * Revision 1.30  2006/08/07 21:43:29  alankila
  * - committing a hopefully working version of biquads on SSE now. Had to
  *   rename struct members for this to succeed, though. :-(
@@ -324,8 +327,8 @@ hilbert_transform(const DSP_SAMPLE input, DSP_SAMPLE *x0, DSP_SAMPLE *x1, Hilber
     int i;
     DSP_SAMPLE x0i, x1i;
 
-    x0i = h->x0_tmp;
-    h->x0_tmp = input;
+    x0i = h->x0_tmp[curr_channel];
+    h->x0_tmp[curr_channel] = input;
     x1i = input;
 
     for (i = 0; i < 4; i += 1) {

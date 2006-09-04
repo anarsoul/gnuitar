@@ -31,11 +31,11 @@
 effect_t *   vibrato_create(void);
 
 struct vibrato_params {
+    Hilbert_t       hilbert;
     float           vibrato_amplitude, vibrato_base,
        		    vibrato_speed,
                     vibrato_phase,
                     phase;
-    Hilbert_t       hilbert;
 };
 
 #endif

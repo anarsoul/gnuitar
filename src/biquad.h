@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.40  2006/09/04 14:42:04  alankila
+ * - fix hilbert-transform for > 1 channel: forgot x0_tmp
+ *
  * Revision 1.39  2006/08/20 10:55:04  alankila
  * - improve whitespace usage / parameter naming consistency
  *
@@ -224,8 +227,8 @@ typedef struct {
 #endif
 
 typedef struct {
-    Biquad_t        a1[4], a2[4];
-    DSP_SAMPLE      x0_tmp;
+    Biquad_t        a1[MAX_CHANNELS], a2[MAX_CHANNELS];
+    DSP_SAMPLE      x0_tmp[MAX_CHANNELS];
 } Hilbert_t;
 
 /* Fs = sampling rate, Fc = center frequency, BW = bandwidth (octaves),
