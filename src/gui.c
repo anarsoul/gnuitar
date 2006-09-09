@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.119  2006/09/09 19:14:59  alankila
+ * make VU meter react faster
+ *
  * Revision 1.118  2006/08/29 09:57:29  alankila
  * - disallow resampling in ALSA
  * - add some gnuitar_printf metadata into the errors/warnings/infos
@@ -1198,12 +1201,12 @@ typedef struct sample_params {
 
 void
 set_vumeter_in_value(float power) {
-    vumeter_in_power = (3.0f * vumeter_in_power + power) / 4.f;
+    vumeter_in_power = (vumeter_in_power + power) / 2.f;
 }
 
 void
 set_vumeter_out_value(float power) {
-    vumeter_out_power = (3.0 * vumeter_out_power + power) / 4;
+    vumeter_out_power = (vumeter_out_power + power) / 2.f;
 }
 
 static gboolean
