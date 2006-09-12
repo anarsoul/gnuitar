@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.120  2006/09/12 16:06:40  alankila
+ * - make the master controls way finer: 0.1 microsteps to adjust to 0.0 and
+ *   1.0 dB steps for jumps
+ *
  * Revision 1.119  2006/09/09 19:14:59  alankila
  * make VU meter react faster
  *
@@ -1841,8 +1845,8 @@ init_gui(void)
     gtk_progress_set_format_string(GTK_PROGRESS(vumeter_out), "%v dB");
     gtk_progress_configure(GTK_PROGRESS(vumeter_out), -96, -96, 0);
     gtk_progress_set_show_text(GTK_PROGRESS(vumeter_out), TRUE);
-    adj_master = gtk_adjustment_new(master_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
-    adj_input = gtk_adjustment_new(input_volume, -30.0, 30.0, 1.0, 5.0, 0.0);
+    adj_master = gtk_adjustment_new(master_volume, -30.0, 30.0, 0.1, 1.0, 0.0);
+    adj_input = gtk_adjustment_new(input_volume, -30.0, 30.0, 0.1, 1.0, 0.0);
     
 
     master = gtk_hscale_new(GTK_ADJUSTMENT(adj_master));
