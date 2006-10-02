@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.50  2006/10/02 12:04:44  fonin
+ * ALSA do not have snd_pcm_params_set_rate_resample() before 1.0.8.
+ *
  * Revision 1.49  2006/08/29 09:57:29  alankila
  * - disallow resampling in ALSA
  * - add some gnuitar_printf metadata into the errors/warnings/infos
@@ -498,10 +501,12 @@ alsa_configure_audio(snd_pcm_t *device, unsigned int *fragments, unsigned int *f
 
     /* ALSA has poor quality resampling. User is much better off without
      * resampling and GNUitar adapted to proper frequency than with it. */
+#if(SND_LIB_MAJOR >=1 && SND_LIB_MINOR >= 0 && SND_LIB_SUBMINOR >8)
     if ((err = snd_pcm_hw_params_set_rate_resample(device, hw_params, 0)) < 0) {
         gnuitar_printf("warning: can't disallow ALSA-lib resampling: %s\n", snd_strerror(err));
         /* this isn't fatal, though. We'll just continue. */
     }
+#endif
 
     if (adapting) {
         /* Adapting path: choose values for the tunables:
