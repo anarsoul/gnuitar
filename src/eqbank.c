@@ -20,6 +20,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.31  2006/10/21 18:23:49  alankila
+ * - how embarrassing, I put the decimate direction terms in wrong order
+ *
  * Revision 1.30  2006/08/06 20:14:54  alankila
  * - split pump.h into several domain-specific headers to reduce file
  *   interdependencies (everyone included pump.h). New files are:
@@ -316,7 +319,7 @@ eqbank_filter(struct effect *p, data_block_t *db)
             out2 = do_biquad(out2, &params->filters[i], cchannel);
         }
         /* downsample back to 1x -- observe reversed ordering */
-        *s = fir_decimate_2x(params->history_out[cchannel], out2, out1) * ocoeff;
+        *s = fir_decimate_2x(params->history_out[cchannel], out1, out2) * ocoeff;
 
 	cchannel = (cchannel + 1) % db->channels;
 	s++;
