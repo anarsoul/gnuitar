@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2006/10/27 18:16:39  alankila
+ * - new GUI that will replace all effect GUIs in GNUitar with time. It needs
+ *   some abstracting now.
+ *
  * Revision 1.44  2006/08/08 22:36:33  alankila
  * - use aligned memory for autowah due to biquads
  *
@@ -213,9 +217,9 @@ static const char *methods[] = {
 };
 
 static const char *syncs[] = {
-    "envelope",
-    "continuous",
-    "midi",
+    "Envelope",
+    "Continuous",
+    "MIDI continous control",
     NULL
 };
 
@@ -265,6 +269,9 @@ update_wah_sync(GtkWidget *w, struct autowah_params *params)
 	    break;
 	}
     }
+
+    /* disable sweep time if MIDI method is chosen */
+    gtk_widget_set_sensitive(GTK_WIDGET(params->w_sweep), params->sync != 2);
 }
 
 static void
@@ -283,181 +290,170 @@ update_method(GtkWidget *w, struct autowah_params *params)
 	    break;
 	}
     }
+    
+    /* if bandpass method is chosen, disable the resonance control */
+    gtk_widget_set_sensitive(GTK_WIDGET(params->w_resonance), params->method != 1);
+}
+
+static void toggle_effect_custom(GtkWidget *w, effect_t *p) {
+    struct autowah_params *params = p->params;
+    toggle_effect(w, p);
+    gtk_widget_set_sensitive(GTK_WIDGET(params->w_control), p->toggle);
+}
+
+/* lame func that violates layering */    
+static void tblattach(GtkWidget *table, GtkWidget *widget, int x, int y) {
+    int attachopts = GTK_EXPAND;
+    if ((x == 0 || x == 2)
+        && !(y == 0 && x == 2)) { /* omit On toggle */
+        attachopts = 0;
+        gtk_misc_set_alignment(GTK_MISC(widget), 0, 0.5); /* left */
+    }
+
+    gtk_table_attach(GTK_TABLE(table), (widget), (x), (x)+1, (y), (y)+1,
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK | attachopts),
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 3, 3);
 }
 
 static void
 autowah_init(struct effect *p)
 {
     int i;
-    struct autowah_params *params;
+    struct autowah_params *params = p->params;
 
-    GtkWidget      *speed_label;
-    GtkWidget      *speed;
-    GtkObject      *adj_speed;
-
-    GtkWidget      *freq_low;
-    GtkWidget      *freqlow_label;
-    GtkObject      *adj_freqlow;
-
-    GtkWidget      *freq_high;
-    GtkWidget      *freqhi_label;
-    GtkObject      *adj_freqhi;
-    
-    GtkWidget      *res;
-    GtkObject	   *adj_res;
-    GtkWidget      *res_label;
+    GtkWidget      *label;
+    GtkWidget      *widget;
+    GtkObject      *adj;
 
     GtkWidget      *button;
-    GtkWidget      *drywet;
-    GtkObject	   *adj_drywet;
-    GtkWidget      *drywet_label;
-    GtkWidget      *parmTable;
+    GtkWidget      *table;
 
-    GtkWidget      *sync;
-    GtkWidget      *method;
     GList          *glist_methods = NULL;
 
-    params = (struct autowah_params *) p->params;
-
-    /*
-     * GUI Init
-     */
+    /* construct main window, attach delete event */
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
-
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
 
-    parmTable = gtk_table_new(5, 3, FALSE);
+    /* widget layout plan
+     *
+     * label1: control1 unit
+     * label2: control2
+     * label3: control3
+     * [ ] on
+     */
 
-    adj_speed = gtk_adjustment_new(params->sweep_time, 100.0,
-                               10000.0, 1.0, 10.0, 0.0);
-    speed_label = gtk_label_new("Period\nms");
-    gtk_table_attach(GTK_TABLE(parmTable), speed_label, 0, 1, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+    table = gtk_table_new(3, 6, FALSE);
 
-    gtk_signal_connect(GTK_OBJECT(adj_speed), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_speed), params);
-
-    speed = gtk_vscale_new(GTK_ADJUSTMENT(adj_speed));
-    gtk_widget_set_size_request(GTK_WIDGET(speed),0,100);
-    gtk_table_attach(GTK_TABLE(parmTable), speed, 0, 1, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-
-
-    adj_freqlow = gtk_adjustment_new(params->freq_low,
-				     80.0, 330.0, 1.0, 1.0, 0.0);
-    freqlow_label = gtk_label_new("Lower freq\n(Hz)");
-    gtk_table_attach(GTK_TABLE(parmTable), freqlow_label, 1, 2, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-
-    gtk_signal_connect(GTK_OBJECT(adj_freqlow), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_freqlow), params);
-
-    freq_low = gtk_vscale_new(GTK_ADJUSTMENT(adj_freqlow));
-    gtk_table_attach(GTK_TABLE(parmTable), freq_low, 1, 2, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-
-    adj_freqhi = gtk_adjustment_new(params->freq_high,
-				    500.0, 2000.0, 1.0, 1.0, 0.0);
-    freqhi_label = gtk_label_new("Higher freq\n(Hz)");
-    gtk_table_attach(GTK_TABLE(parmTable), freqhi_label, 2, 3, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-
-
-    gtk_signal_connect(GTK_OBJECT(adj_freqhi), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_freqhi), params);
-
-    freq_high = gtk_vscale_new(GTK_ADJUSTMENT(adj_freqhi));
-    gtk_table_attach(GTK_TABLE(parmTable), freq_high, 2, 3, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
-
+    /* Wah control: [combo] */
+    label = gtk_label_new("Wah control:");
+    tblattach(table, label, 0, 0);
     for (i = 0; syncs[i] != NULL; i += 1)
         glist_methods = g_list_append(glist_methods, (gchar *) syncs[i]);
-    sync = gtk_combo_new();
-    gtk_combo_set_popdown_strings(GTK_COMBO(sync), glist_methods);
+    widget = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(widget), glist_methods);
     g_list_free(glist_methods);
-    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sync)->entry), FALSE);
-    gtk_table_attach(GTK_TABLE(parmTable), sync, 1, 3, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(sync)->entry),
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(widget)->entry), FALSE);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(widget)->entry), syncs[params->sync]);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(widget)->entry),
 		       "changed", GTK_SIGNAL_FUNC(update_wah_sync), params);
-    glist_methods = NULL; /* reused below */
+    tblattach(table, widget, 1, 0);
+
+    params->w_control = widget; /* control combo box */
     
     button = gtk_check_button_new_with_label("On");
     if (p->toggle)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(toggle_effect), p);
-    gtk_table_attach(GTK_TABLE(parmTable), button, 0, 1, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
+		       GTK_SIGNAL_FUNC(toggle_effect_custom), p);
+    tblattach(table, button, 2, 0);
+    gtk_widget_set_sensitive(GTK_WIDGET(params->w_control), p->toggle);
 
-    drywet_label = gtk_label_new("Dry/Wet\n(%)");
-    gtk_table_attach(GTK_TABLE(parmTable), drywet_label, 4, 5, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-    adj_drywet = gtk_adjustment_new(params->drywet,
-				    0.0, 100.0, 1.0, 5.0, 0.0);
-    drywet = gtk_vscale_new(GTK_ADJUSTMENT(adj_drywet));
-    gtk_signal_connect(GTK_OBJECT(adj_drywet), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_drywet), params);
-    gtk_table_attach(GTK_TABLE(parmTable), drywet, 4, 5, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK), 0, 0);
+    /* Period [slider] ms */
+    label = gtk_label_new("Period:");
+    tblattach(table, label, 0, 1);
+    adj = gtk_adjustment_new(params->sweep_time, 100.0,
+                             10000.0, 1.0, 10.0, 0.0);
+    gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_speed), params);
+    widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
+    gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
+    tblattach(table, widget, 1, 1);
+    label = gtk_label_new("ms");
+    tblattach(table, label, 2, 1);
     
-    res_label = gtk_label_new("Resonance\n(%)");
-    gtk_table_attach(GTK_TABLE(parmTable), res_label, 3, 4, 0, 1,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND |
-					GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL |
-					GTK_SHRINK), 0, 0);
-    adj_res = gtk_adjustment_new(params->res,
-				    30.0, 100.0, 10, 30, 0.0);
-    res = gtk_vscale_new(GTK_ADJUSTMENT(adj_res));
-    gtk_signal_connect(GTK_OBJECT(adj_res), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_res), params);
-    gtk_table_attach(GTK_TABLE(parmTable), res, 3, 4, 1, 2,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
+    params->w_sweep = widget; /* period sliding widget */
+    gtk_widget_set_sensitive(GTK_WIDGET(params->w_sweep), params->sync != 2);
 
+    /* Frequency [slider] Hz */
+    label = gtk_label_new("Start frequency:");
+    tblattach(table, label, 0, 2);
+    adj = gtk_adjustment_new(params->freq_low,
+			     80.0, 330.0, 1.0, 1.0, 0.0);
+    gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_freqlow), params);
+    widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
+    gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
+    tblattach(table, widget, 1, 2);
+    label = gtk_label_new("Hz");
+    tblattach(table, label, 2, 2);
+
+    /* Frequency [slider] Hz */
+    label = gtk_label_new("End frequency:");
+    tblattach(table, label, 0, 3);
+    adj = gtk_adjustment_new(params->freq_high,
+			     500.0, 2000.0, 1.0, 1.0, 0.0);
+    gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_freqhi), params);
+    widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
+    gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
+    tblattach(table, widget, 1, 3);
+    label = gtk_label_new("Hz");
+    tblattach(table, label, 2, 3);
+
+    label = gtk_label_new("Wah type:");
+    tblattach(table, label, 0, 4);
+    glist_methods = NULL;
     for (i = 0; methods[i] != NULL; i += 1)
         glist_methods = g_list_append(glist_methods, (gchar *) methods[i]);
-    method = gtk_combo_new();
-    gtk_combo_set_popdown_strings(GTK_COMBO(method), glist_methods);
+    widget = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(widget), glist_methods);
     g_list_free(glist_methods);
-    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(method)->entry), FALSE);
-    gtk_table_attach(GTK_TABLE(parmTable), method, 3, 5, 2, 3,
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK), 0, 0);
-    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(method)->entry),
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(widget)->entry), FALSE);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(widget)->entry), methods[params->method]);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(widget)->entry),
 		       "changed", GTK_SIGNAL_FUNC(update_method), params);
+    tblattach(table, widget, 1, 4);
+
+    label = gtk_label_new("Filter resonance:");
+    tblattach(table, label, 0, 5);
+    adj = gtk_adjustment_new(params->res,
+			     30.0, 100.0, 10, 30, 0.0);
+    widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
+    gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
+    gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_res), params);
+    tblattach(table, widget, 1, 5);
+    label = gtk_label_new("%");
+    tblattach(table, label, 2, 5);
     
-    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Wah-wah"));
-    gtk_container_add(GTK_CONTAINER(p->control), parmTable);
+    params->w_resonance = widget; /* resonance widget */
+    gtk_widget_set_sensitive(GTK_WIDGET(params->w_resonance), params->method != 1);
+    
+    label = gtk_label_new("Dry / Wet:");
+    tblattach(table, label, 0, 6);
+    adj = gtk_adjustment_new(params->drywet,
+		             0.0, 100.0, 1.0, 5.0, 0.0);
+    widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
+    gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
+    gtk_signal_connect(GTK_OBJECT(widget), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_drywet), params);
+    tblattach(table, widget, 1, 6);
+    label = gtk_label_new("%");
+    tblattach(table, label, 2, 6);
+    
+    gtk_window_set_title(GTK_WINDOW(p->control), "Autowah");
+    gtk_container_add(GTK_CONTAINER(p->control), table);
 
     gtk_widget_show_all(p->control);
 }
@@ -658,6 +654,15 @@ autowah_load(effect_t *p, LOAD_ARGS)
     LOAD_DOUBLE("drywet", params->drywet);
     LOAD_INT("sync", params->sync);
     LOAD_INT("method", params->method);
+
+    if (params->sync < 0 || params->sync > 2) {
+        fprintf(stderr, "autowah: invalid value for sync: %d\n", params->sync);
+        params->sync = 0;
+    }
+    if (params->method < 0 || params->method > 2) {
+        params->method = 0;
+        fprintf(stderr, "autowah: invalid value for method: %d\n", params->method);
+    }
 }
 
 effect_t *

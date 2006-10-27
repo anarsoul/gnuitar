@@ -31,6 +31,11 @@ effect_t *   autowah_create(void);
 
 struct autowah_params {
     Backbuf_t       *history;
+
+    /* keep some widgets so we can toggle their enabled state */
+    GtkWidget       *w_control;
+    GtkWidget       *w_sweep;
+    GtkWidget       *w_resonance;
     
     float           sweep_time;
     float           freq_low;
