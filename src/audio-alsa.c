@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.53  2006/10/27 22:02:39  alankila
+ * - remove support for pitch bend for now
+ *
  * Revision 1.52  2006/10/27 21:54:46  alankila
  * - new source file: audio-midi.c. Do some data abstraction, prepare to
  *   support multiple midi continuous controls.
@@ -305,17 +308,13 @@ alsa_midi_event(void)
         /* obtain an event */
         snd_seq_event_input(sequencer_handle, &ev);
         switch (ev->type) {
-            /* pitch bend control pedal -- untested, hopefully this works!*/
-            case SND_SEQ_EVENT_PITCHBEND:
-                midi_set_continuous_control(0, ev->data.control.value / 8191.f);
-                break;
             /* program change events */
             case SND_SEQ_EVENT_PGMCHANGE:
                 midi_set_program(ev->data.control.value);
                 break;
             /* controller (this is the thing that does the magic on FC-200)*/
             case SND_SEQ_EVENT_CONTROLLER:
-                midi_set_continuous_control(0, ev->data.control.value / 127.f);
+                midi_set_continuous_control(ev->data.control.param, ev->data.control.value / 127.f);
                 break;
             default:
                 break;

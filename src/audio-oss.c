@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.35  2006/10/27 22:02:39  alankila
+ * - remove support for pitch bend for now
+ *
  * Revision 1.34  2006/10/27 21:54:46  alankila
  * - new source file: audio-midi.c. Do some data abstraction, prepare to
  *   support multiple midi continuous controls.
@@ -240,6 +243,7 @@ oss_midi_event(void)
             current += 1;
             continue;
         }
+
         /* this debug is there to help until I've had chance
          * to ensure this actually works. */
         fprintf(stderr, "oss midi event: (%x, %x, %x) [%d/%d]\n",
@@ -265,18 +269,6 @@ oss_midi_event(void)
                 break;
             }
             midi_set_continuous_control(midi_events[current + 1], midi_events[current + 2] / 127.f);
-            current += 3;
-            continue;
-        }
-        /* pitch bend (7-bit hi, 7-bit lo) */
-        if ((midi_events[current] & 0x70) == 0x60) {
-            if (current + 2 > maxevents) {
-                fprintf(stderr, "partial read of midi pw -- ignored.\n");
-                break;
-            }
-            midi_set_continuous_control(0, 
-                (((midi_events[current    ] & 0x7f) << 7)
-                + (midi_events[current + 1] & 0x7f)) / 8191.f);
             current += 3;
             continue;
         }
