@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.46  2006/10/27 21:54:46  alankila
+ * - new source file: audio-midi.c. Do some data abstraction, prepare to
+ *   support multiple midi continuous controls.
+ *
  * Revision 1.45  2006/10/27 18:16:39  alankila
  * - new GUI that will replace all effect GUIs in GNUitar with time. It needs
  *   some abstracting now.
@@ -532,7 +536,7 @@ autowah_filter(struct effect *p, data_block_t *db)
         }
     }
     if (ap->sync == 2) { /* midi control, from Roland FC-200 or somesuch */
-        ap->f = midictrl.pitchbend;
+        ap->f = midi_get_continuous_control(-1);
         ap->dir = 0;
         ap->freq_vibrato = 0;
     }

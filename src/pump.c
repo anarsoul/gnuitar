@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.90  2006/10/27 21:54:46  alankila
+ * - new source file: audio-midi.c. Do some data abstraction, prepare to
+ *   support multiple midi continuous controls.
+ *
  * Revision 1.89  2006/08/15 15:46:00  alankila
  * - move typecast to not overflow DSP_SAMPLE if it is integer. Shit.
  *
@@ -413,8 +417,6 @@
 
 /* flag for whether we are creating .wav */
 volatile unsigned short  write_track = 0;
-/* midi datastructure lives here for now */
-volatile midictrl_t midictrl = { 0, 0, 0 };
 /* sin table */
 float sin_lookup_table[SIN_LOOKUP_SIZE + 1];
 

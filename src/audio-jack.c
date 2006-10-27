@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.23  2006/10/27 21:54:46  alankila
+ * - new source file: audio-midi.c. Do some data abstraction, prepare to
+ *   support multiple midi continuous controls.
+ *
  * Revision 1.22  2006/10/27 15:54:43  alankila
  * - FC-200 support now tested & works
  *
@@ -168,16 +172,15 @@ alsa_midi_event(void)
         switch (ev->type) {
             /* pitch bend control pedal -- untested, hopefully this works! */
             case SND_SEQ_EVENT_PITCHBEND:
-                midictrl.pitchbend = (float) ev->data.control.value / 8191.f;
+                midi_set_continuous_control(0, ev->data.control.value / 8191.f);
                 break;
             /* program change events */
             case SND_SEQ_EVENT_PGMCHANGE:
-                midictrl.key = ev->data.control.value;
-                midictrl.keyevent = 1;
+                midi_set_program(ev->data.control.value);
                 break;
             /* controller (this is the thing that does the magic on FC-200) */
             case SND_SEQ_EVENT_CONTROLLER:
-                midictrl.pitchbend = (float) ev->data.control.value / 127.f;
+                midi_set_continuous_control(0, ev->data.control.value / 127.f);
                 break;
             default:
                 break;

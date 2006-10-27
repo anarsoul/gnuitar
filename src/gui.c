@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.122  2006/10/27 21:54:46  alankila
+ * - new source file: audio-midi.c. Do some data abstraction, prepare to
+ *   support multiple midi continuous controls.
+ *
  * Revision 1.121  2006/10/27 18:44:27  alankila
  * - reduce the visibility of a shitload of public widgets
  *
@@ -1233,12 +1237,13 @@ timeout_update_vumeter_out(gpointer vumeter) {
 
 static gboolean
 timeout_update_bank(gpointer whatever) {
+    int program;
     char *fname;
 
-    if (! midictrl.keyevent)
+    program = midi_get_program();
+    if (program < 0)
         return TRUE;
-    midictrl.keyevent = 0;
-    bank_row = midictrl.key;
+    bank_row = program;
 
     fname = gtk_clist_get_row_data(GTK_CLIST(bank), bank_row);
     if (fname == NULL)

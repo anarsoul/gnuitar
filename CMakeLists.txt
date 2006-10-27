@@ -3,6 +3,10 @@
 # $Id$
 #
 # $Log$
+# Revision 1.32  2006/10/27 21:54:46  alankila
+# - new source file: audio-midi.c. Do some data abstraction, prepare to
+#   support multiple midi continuous controls.
+#
 # Revision 1.31  2006/08/26 15:56:09  alankila
 # - add rudimentary host system type and gcc parameter selection logic
 #
@@ -270,7 +274,8 @@ ADD_EXECUTABLE(gnuitar
     src/audio-alsa.h src/audio-oss.c src/audio-oss.h src/pitch.c src/pitch.h
     src/glib12-compat.c src/glib12-compat.h src/audio-jack.c src/audio-jack.h
     src/audio-winmm.h src/audio-winmm.c src/audio-dsound.h src/audio-dsound.c
-    src/audio-driver.h src/audio-driver.c src/audio-midi.h src/effect.c src/effect.h)
+    src/audio-driver.h src/audio-driver.c src/audio-midi.h src/audio-midi.c
+    src/effect.c src/effect.h)
 SET_TARGET_PROPERTIES(gnuitar PROPERTIES LINK_FLAGS "-Wl,--as-needed")
 TARGET_LINK_LIBRARIES(gnuitar ${GTK_LIBRARIES} ${OTHER_LIBRARIES})
 

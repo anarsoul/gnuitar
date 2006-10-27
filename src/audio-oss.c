@@ -20,6 +20,10 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.34  2006/10/27 21:54:46  alankila
+ * - new source file: audio-midi.c. Do some data abstraction, prepare to
+ *   support multiple midi continuous controls.
+ *
  * Revision 1.33  2006/10/27 16:23:53  alankila
  * - do not leak filehandles on midi errors
  * - make the midi code more likely to work the same way as ALSA/JACK code.
@@ -250,8 +254,7 @@ oss_midi_event(void)
                 fprintf(stderr, "partial read of midi pc -- ignored.\n");
                 break;
             }
-            midictrl.key = midi_events[current + 1];
-            midictrl.keyevent = 1;
+            midi_set_program(midi_events[current + 1]);
             current += 3;
             continue;
         }
@@ -261,7 +264,7 @@ oss_midi_event(void)
                 fprintf(stderr, "partial read of midi cc -- ignored.\n");
                 break;
             }
-            midictrl.pitchbend = midi_events[current + 2] / 127.f;
+            midi_set_continuous_control(midi_events[current + 1], midi_events[current + 2] / 127.f);
             current += 3;
             continue;
         }
@@ -271,9 +274,9 @@ oss_midi_event(void)
                 fprintf(stderr, "partial read of midi pw -- ignored.\n");
                 break;
             }
-            midictrl.pitchbend =
+            midi_set_continuous_control(0, 
                 (((midi_events[current    ] & 0x7f) << 7)
-                + (midi_events[current + 1] & 0x7f)) / 8191.f;;
+                + (midi_events[current + 1] & 0x7f)) / 8191.f);
             current += 3;
             continue;
         }
