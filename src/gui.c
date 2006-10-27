@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.121  2006/10/27 18:44:27  alankila
+ * - reduce the visibility of a shitload of public widgets
+ *
  * Revision 1.120  2006/09/12 16:06:40  alankila
  * - make the master controls way finer: 0.1 microsteps to adjust to 0.0 and
  *   1.0 dB steps for jumps
@@ -547,6 +550,12 @@ static void     quit(GtkWidget *, gpointer);
 static void     about_dlg(void);
 static void     help_contents(void);
 
+static GtkWidget      *tracker;
+static GtkWidget      *bank;
+static GtkTooltips    *tooltips;
+static GtkItemFactory *item_factory;
+static GtkWidget      *status_text = NULL;
+static GtkWidget      *status_window = NULL;
 static gchar *effects_dir = NULL;
 
 static GtkItemFactoryEntry mainGui_menu[] = {
@@ -565,30 +574,6 @@ static GtkItemFactoryEntry mainGui_menu[] = {
     {"/_Help/Contents", NULL, (GtkSignalFunc) help_contents, 0, NULL, NULL},
     {"/_Help/About", NULL, (GtkSignalFunc) about_dlg, 0, NULL, NULL}
 };
-static GtkWidget      *mainWnd;
-static GtkItemFactory *item_factory;
-static GtkWidget      *tbl;
-static GtkWidget      *menuBar;
-static GtkWidget      *processor_scroll;
-static GtkWidget      *known_effects;
-static GtkWidget      *effect_scroll;
-static GtkWidget      *bank;
-static GtkWidget      *bank_scroll;
-static GtkWidget      *bank_add;
-static GtkWidget      *bank_switch;
-static GtkWidget      *bank_del;
-static GtkWidget      *up;
-static GtkWidget      *down;
-static GtkWidget      *del;
-static GtkWidget      *add;
-static GtkWidget      *tracker;
-static GtkWidget      *start;
-static GtkTooltips    *tooltips;
-static GtkWidget      *volume_label;
-static GtkWidget      *input_label;
-static GtkWidget      *status_text = NULL;
-static GtkWidget      *status_window = NULL;
-
 /* some public GUI widgets */
 GtkWidget      *processor;
 /* master volume and its current value */
@@ -596,7 +581,6 @@ GtkObject      *adj_master;
 float		master_volume;
 GtkObject      *adj_input;
 float		input_volume;
-
 
 /* vumeter state */
 static float vumeter_in_power  = -96;
@@ -1679,8 +1663,25 @@ init_gui(void)
     GtkAccelGroup  *accel_group;
     GtkWidget      *vumeter_in;
     GtkWidget      *vumeter_out;
+    GtkWidget      *processor_scroll;
     GtkWidget	   *master;
     GtkWidget      *input;
+    GtkWidget      *mainWnd;
+    GtkWidget      *tbl;
+    GtkWidget      *menuBar;
+    GtkWidget      *known_effects;
+    GtkWidget      *effect_scroll;
+    GtkWidget      *bank_scroll;
+    GtkWidget      *bank_add;
+    GtkWidget      *bank_switch;
+    GtkWidget      *bank_del;
+    GtkWidget      *up;
+    GtkWidget      *down;
+    GtkWidget      *del;
+    GtkWidget      *add;
+    GtkWidget      *start;
+    GtkWidget      *volume_label;
+    GtkWidget      *input_label;
 
     gint            nmenu_items =
 	sizeof(mainGui_menu) / sizeof(mainGui_menu[0]);

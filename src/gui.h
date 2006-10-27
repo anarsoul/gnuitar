@@ -60,5 +60,4 @@ extern float input_volume;
 extern GtkObject* adj_input;
 extern GtkObject* adj_master;
 
-
 #endif
