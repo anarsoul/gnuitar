@@ -20,6 +20,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.33  2006/10/27 16:23:53  alankila
+ * - do not leak filehandles on midi errors
+ * - make the midi code more likely to work the same way as ALSA/JACK code.
+ *   I'm unable to cause OSS to make midi events, though. :-(
+ *
  * Revision 1.32  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -191,6 +196,9 @@ static int fd = 0, midi_fd = 0;
 static volatile int keepthreadrunning = 0;
 static pthread_t audio_thread = 0;
 
+/* XXX this code has never been properly tested.
+ * I don't know how to cause midi events to occur on OSS.
+ * If you know how and can test this on OS X or something such, please do. */
 static void
 oss_midi_event(void)
 {
@@ -205,6 +213,7 @@ oss_midi_event(void)
         return;
     if (pollstatus == -1) {
         fprintf(stderr, "error polling for midi events: %s -- disabling midi\n", strerror(errno));
+        close(midi_fd);
         midi_fd = 0;
         return;
     }
@@ -212,30 +221,33 @@ oss_midi_event(void)
     maxevents = read(midi_fd, midi_events, sizeof(midi_events));
     if (maxevents == -1) {
         fprintf(stderr, "error reading midi events: %s -- disabling midi\n", strerror(errno));
+        close(midi_fd);
         midi_fd = 0;
         return;
     }
 
+    /* the event tests are probably on. We want to support FC-200 and maybe
+     * others. FC-200 sends CONTROL events (range 0 .. 127) when variable
+     * pedal is used. It sends PROGRAM CHANGE events (range 0 .. x) when
+     * other buttons are pressed. */
     while (current < maxevents) {
+        /* if overflow, seek until beginning of new midi event */
         if (! midi_events[current] & 0x80) {
             current += 1;
             continue;
         }
-        /* note on event */
-        if ((midi_events[current] & 0x70) == 0x10) {
-            if (current + 3 > maxevents) {
-                fprintf(stderr, "too much midi data -- ignoring command\n");
-                break;
-            }
-            midictrl.key = midi_events[current + 1] - 60;
-            midictrl.keyevent = 1;
-            current += 3;
-            continue;
-        }
-        /* control change */
-        if ((midi_events[current] & 0x70) == 0x30) {
-            if (current + 3 > maxevents) {
-                fprintf(stderr, "too much midi data -- ignoring command\n");
+        /* this debug is there to help until I've had chance
+         * to ensure this actually works. */
+        fprintf(stderr, "oss midi event: (%x, %x, %x) [%d/%d]\n",
+            midi_events[current],
+            midi_events[current+1],
+            midi_events[current+2],
+            current, maxevents);
+
+        /* patch change: (instrument #, reserved) */
+        if ((midi_events[current] & 0x70) == 0x50) {
+            if (current + 2 > maxevents) {
+                fprintf(stderr, "partial read of midi pc -- ignored.\n");
                 break;
             }
             midictrl.key = midi_events[current + 1];
@@ -243,14 +255,26 @@ oss_midi_event(void)
             current += 3;
             continue;
         }
-        /* pitch wheel */
-        if ((midi_events[current] & 0x70) == 0x60) {
+        /* continuous controller: (controller #, controller value) */
+        if ((midi_events[current] & 0x70) == 0x40) {
             if (current + 2 > maxevents) {
-                fprintf(stderr, "too much midi data -- ignoring command\n");
+                fprintf(stderr, "partial read of midi cc -- ignored.\n");
                 break;
             }
-            midictrl.pitchbend = ((midi_events[current] & 0xf) << 7) + (midi_events[current + 1] & 0x7f);
-            current += 2;
+            midictrl.pitchbend = midi_events[current + 2] / 127.f;
+            current += 3;
+            continue;
+        }
+        /* pitch bend (7-bit hi, 7-bit lo) */
+        if ((midi_events[current] & 0x70) == 0x60) {
+            if (current + 2 > maxevents) {
+                fprintf(stderr, "partial read of midi pw -- ignored.\n");
+                break;
+            }
+            midictrl.pitchbend =
+                (((midi_events[current    ] & 0x7f) << 7)
+                + (midi_events[current + 1] & 0x7f)) / 8191.f;;
+            current += 3;
             continue;
         }
         /* ignore message */
