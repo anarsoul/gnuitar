@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.22  2006/10/27 15:54:43  alankila
+ * - FC-200 support now tested & works
+ *
  * Revision 1.21  2006/08/11 16:18:39  alankila
  * - ensure that the physical in/out ports are of correct type
  *
@@ -163,20 +166,18 @@ alsa_midi_event(void)
         /* obtain an event */
         snd_seq_event_input(sequencer_handle, &ev);
         switch (ev->type) {
-            /* foot pedal */
+            /* pitch bend control pedal -- untested, hopefully this works! */
             case SND_SEQ_EVENT_PITCHBEND:
-                midictrl.pitchbend = (float) ev->data.control.value / (float) 8192;
+                midictrl.pitchbend = (float) ev->data.control.value / 8191.f;
                 break;
-            /* any kind of key event: note press */
-            case SND_SEQ_EVENT_NOTEON:
-                /* map middle C to 0 */
-                midictrl.key = ev->data.note.note - 60;
-                midictrl.keyevent = 1;
-                break;
-            /* control press */
-            case SND_SEQ_EVENT_CONTROLLER:
+            /* program change events */
+            case SND_SEQ_EVENT_PGMCHANGE:
                 midictrl.key = ev->data.control.value;
                 midictrl.keyevent = 1;
+                break;
+            /* controller (this is the thing that does the magic on FC-200) */
+            case SND_SEQ_EVENT_CONTROLLER:
+                midictrl.pitchbend = (float) ev->data.control.value / 127.f;
                 break;
             default:
                 break;
