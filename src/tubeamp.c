@@ -8,6 +8,11 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.44  2006/11/05 14:59:44  alankila
+ * - new GUI
+ * - allow specifying speaker model & model precision
+ * - reduce CPU drain for default settings
+ *
  * Revision 1.43  2006/08/10 16:18:36  alankila
  * - improve const correctness and make gnuitar compile cleanly under
  *   increasingly pedantic warning models.
@@ -308,11 +313,60 @@ static const ampmodels_t ampmodels[] = {
     { NULL,            NULL               }
 };
 
+typedef struct {
+    const char       *name;
+    const int        quality;
+} ampqualities_t;
+
+static const ampqualities_t ampqualities[] = {
+    { "Lowest",  64  },
+    { "Normal",  128 },
+    { "High",    256 },
+    { "Extreme", 512 },
+    { NULL,      0   }
+};
+
 #define NONLINEARITY_SIZE 16384      /* the bigger the table, the louder before hardclip */
 #define NONLINEARITY_PRECISION (1/16.0)   /* the bigger the value, the lower the noise */
 
 #define NONLINEARITY_SCALE 1024     /* this variable works like gain */
 static float nonlinearity[NONLINEARITY_SIZE];
+
+static void
+update_quality(GtkWidget *w, struct tubeamp_params *params)
+{
+    int i;
+    const char *tmp;
+    
+    tmp = gtk_entry_get_text(GTK_ENTRY(w));
+    if (tmp == NULL)
+        return;
+
+    for (i = 0; ampqualities[i].name != NULL; i += 1) {
+        if (strcmp(tmp, ampqualities[i].name) == 0) {
+            params->impulse_quality = i;
+            break;
+        }
+    }
+}
+
+static void
+update_model(GtkWidget *w, struct tubeamp_params *params)
+{
+    int i;
+    const char *tmp;
+    
+    tmp = gtk_entry_get_text(GTK_ENTRY(w));
+    if (tmp == NULL)
+        return;
+
+    for (i = 0; ampmodels[i].name != NULL; i += 1) {
+        if (strcmp(tmp, ampmodels[i].name) == 0) {
+            params->impulse_model = i;
+            break;
+        }
+    }
+}
 
 static void
 update_stages(GtkAdjustment *adj, struct tubeamp_params *params)
@@ -338,120 +392,99 @@ update_biasfactor(GtkAdjustment *adj, struct tubeamp_params *params)
     params->biasfactor = adj->value;
 }
 
-/*
-static void
-update_middlefreq(GtkAdjustment *adj, struct tubeamp_params *params)
-{
-    params->middlefreq = adj->value;
-}*/
+/* lame func that violates layering */    
+static void tblattach(GtkWidget *table, GtkWidget *widget, int x, int y) {
+    int attachopts = GTK_EXPAND;
+    if ((x == 0 || x == 2)
+        && !(y == 0 && x == 2)) { /* omit On toggle */
+        attachopts = 0;
+        gtk_misc_set_alignment(GTK_MISC(widget), 0, 0.5); /* left */
+    }
+
+    gtk_table_attach(GTK_TABLE(table), (widget), (x), (x)+1, (y), (y)+1,
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK | attachopts),
+                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK), 3, 3);
+}
 
 static void
 tubeamp_init(struct effect *p)
 {
-    GtkWidget      *w;
+    int i;
+    GtkWidget      *w, *table;
     GtkObject      *o;
-    GtkWidget      *parmTable;
+    GList          *list;
     struct tubeamp_params *params = p->params;
     
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
-
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
+    table = gtk_table_new(3, 5, FALSE);
 
-    parmTable = gtk_table_new(5, 2, FALSE);
+    tblattach(table, gtk_label_new("Speaker model"), 0, 0);
+    list = NULL;
+    for (i = 0; ampmodels[i].name != NULL; i += 1)
+        list = g_list_append(list, (gchar *) ampmodels[i].name);
+    w = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(w), list);
+    g_list_free(list);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(w)->entry), FALSE);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(w)->entry), (gchar *) ampmodels[params->impulse_model].name);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(w)->entry), "changed",
+                       GTK_SIGNAL_FUNC(update_model), params);
+    tblattach(table, w, 1, 0);
+    
+    tblattach(table, gtk_label_new("Model quality"), 0, 1);
+    list = NULL;
+    for (i = 0; ampqualities[i].name != NULL; i += 1)
+        list = g_list_append(list, (gchar *) ampqualities[i].name);
+    w = gtk_combo_new();
+    gtk_combo_set_popdown_strings(GTK_COMBO(w), list);
+    g_list_free(list);
+    gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(w)->entry), FALSE);
+    gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(w)->entry), (gchar *) ampqualities[params->impulse_quality].name);
+    gtk_signal_connect(GTK_OBJECT(GTK_COMBO(w)->entry), "changed",
+                       GTK_SIGNAL_FUNC(update_quality), params);
+    tblattach(table, w, 1, 1);
 
-    w = gtk_label_new("Stages\n(n)");
-    gtk_table_attach(GTK_TABLE(parmTable), w, 0, 1, 0, 1,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
-                     3, 0);
+    tblattach(table, gtk_label_new("Stages"), 0, 2);
     o = gtk_adjustment_new(params->stages, 2, MAX_STAGES, 1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_stages), params);
-    w = gtk_vscale_new(GTK_ADJUSTMENT(o));
+    w = gtk_hscale_new(GTK_ADJUSTMENT(o));
     gtk_scale_set_digits(GTK_SCALE(w), 0);
-    gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
-    gtk_table_attach(GTK_TABLE(parmTable), w, 0, 1, 1, 2,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     3, 0);
+    tblattach(table, w, 1, 2);
     
-    w = gtk_label_new("Gain\n(dB)");
-    gtk_table_attach(GTK_TABLE(parmTable), w, 1, 2, 0, 1,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
-                     3, 0);
+    tblattach(table, gtk_label_new("Gain"), 0, 3);
     o = gtk_adjustment_new(params->gain, 30.0, 50.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_gain), params);
-    w = gtk_vscale_new(GTK_ADJUSTMENT(o));
-    gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
-    gtk_table_attach(GTK_TABLE(parmTable), w, 1, 2, 1, 2,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     3, 0);
+    w = gtk_hscale_new(GTK_ADJUSTMENT(o));
+    tblattach(table, w, 1, 3);
+    tblattach(table, gtk_label_new("dB"), 2, 3);
     
-    w = gtk_label_new("Absolute bias");
-    gtk_table_attach(GTK_TABLE(parmTable), w, 2, 3, 0, 1,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
-                     3, 0);
+    tblattach(table, gtk_label_new("Absolute bias"), 0, 4);
     o = gtk_adjustment_new(params->asymmetry, -5000.0, 5000.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_asymmetry), params);
-    w = gtk_vscale_new(GTK_ADJUSTMENT(o));
-    gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
-    gtk_table_attach(GTK_TABLE(parmTable), w, 2, 3, 1, 2,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     3, 0);
+    w = gtk_hscale_new(GTK_ADJUSTMENT(o));
+    tblattach(table, w, 1, 4);
     
-    /*
-    w = gtk_label_new("Middle cut\n(dB)");
-    gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 0, 1,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
-                     3, 0);
-    o = gtk_adjustment_new(params->middlefreq, -5.0, 0.0, 0.1, 1, 0);
-    gtk_signal_connect(GTK_OBJECT(o), "value_changed",
-                       GTK_SIGNAL_FUNC(update_middlefreq), params);
-    w = gtk_vscale_new(GTK_ADJUSTMENT(o));
-    gtk_range_set_inverted(GTK_RANGE(w), TRUE);
-    gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
-    gtk_table_attach(GTK_TABLE(parmTable), w, 3, 4, 1, 2,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     3, 0);
-    */
-    
-    w = gtk_label_new("Dynamic bias");
-    gtk_table_attach(GTK_TABLE(parmTable), w, 4, 5, 0, 1,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_SHRINK),
-                     3, 0);
+    tblattach(table, gtk_label_new("Dynamic bias"), 0, 5);
     o = gtk_adjustment_new(params->biasfactor, -25.0, 25.0, 0.1, 1, 0);
     gtk_signal_connect(GTK_OBJECT(o), "value_changed",
                        GTK_SIGNAL_FUNC(update_biasfactor), params);
-    w = gtk_vscale_new(GTK_ADJUSTMENT(o));
-    gtk_widget_set_size_request(GTK_WIDGET(w), 50, 100);
-    gtk_table_attach(GTK_TABLE(parmTable), w, 4, 5, 1, 2,
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     __GTKATTACHOPTIONS(GTK_FILL | GTK_EXPAND | GTK_SHRINK),
-                     3, 0);
+    w = gtk_hscale_new(GTK_ADJUSTMENT(o));
+    tblattach(table, w, 1, 5);
     
     w = gtk_check_button_new_with_label("On");
     if (p->toggle == 1)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), TRUE);
     gtk_signal_connect(GTK_OBJECT(w), "toggled",
 		       GTK_SIGNAL_FUNC(toggle_effect), p);
-
-    gtk_table_attach(GTK_TABLE(parmTable), w, 0, 1, 3, 4,
-		     __GTKATTACHOPTIONS(GTK_EXPAND | GTK_SHRINK),
-		     __GTKATTACHOPTIONS(GTK_SHRINK), 0, 0);
-
-    gtk_window_set_title(GTK_WINDOW(p->control),
-			 (gchar *) ("Tube amplifier"));
-    gtk_container_add(GTK_CONTAINER(p->control), parmTable);
+    tblattach(table, w, 2, 0);
+    
+    gtk_window_set_title(GTK_WINDOW(p->control), (gchar *) ("Tube amplifier"));
+    gtk_container_add(GTK_CONTAINER(p->control), table);
 
     gtk_widget_show_all(p->control);
 }
@@ -523,7 +556,7 @@ tubeamp_filter(struct effect *p, data_block_t *db)
         
         /* convolve the output. We put two buffers side-by-side to avoid & in loop. */
         ptr1[IMPULSE_SIZE] = ptr1[0] = result / 500.f * (float) (MAX_SAMPLE >> 13);
-        db->data[i] = convolve(ampmodels[params->impulse_model].impulse, ptr1, params->impulse_quality) / 32.f;
+        db->data[i] = convolve(ampmodels[params->impulse_model].impulse, ptr1, ampqualities[params->impulse_quality].quality) / 32.f;
         
         params->bufidx[curr_channel] -= 1;
         if (params->bufidx[curr_channel] < 0)
@@ -570,6 +603,11 @@ tubeamp_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("biasfactor", params->biasfactor);
     LOAD_DOUBLE("asymmetry", params->asymmetry);
     LOAD_DOUBLE("gain", params->gain);
+
+    if (params->impulse_model < 0 || params->impulse_model > 1)
+        params->impulse_model = 1;
+    if (params->impulse_quality < 0 || params->impulse_quality > 2)
+        params->impulse_quality = 1;
 }
 
 effect_t *
@@ -594,7 +632,7 @@ tubeamp_create()
     params->biasfactor = -7;
     params->asymmetry = -3500;
     params->impulse_model = 1;
-    params->impulse_quality = 256;
+    params->impulse_quality = 1;
 
     /* configure the various stages */
     params->r_i[0] = 68e3 / 3000;
