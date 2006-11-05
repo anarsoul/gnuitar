@@ -19,6 +19,9 @@
  *
  * $Id$
  * $Log$
+ * Revision 1.32  2006/11/05 18:50:58  alankila
+ * - add tone controls into tubeamp and change default speaker type
+ *
  * Revision 1.31  2006/09/04 14:42:03  alankila
  * - fix hilbert-transform for > 1 channel: forgot x0_tmp
  *
@@ -313,6 +316,31 @@ set_lsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f)
     a1 = -2 * ((A - 1) + (A + 1) * cs);
     a2 = (A + 1) + (A - 1) * cs - beta * sn;
 
+    f->b0 = b0 / a0;
+    f->b[0] = b1 / a0;
+    f->b[1] = b2 / a0;
+    f->b[2] = -a1 / a0;
+    f->b[3] = -a2 / a0;
+}
+
+void
+set_hsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f)
+{
+    double b0, b1, b2, a0, a1, a2, omega, cs, sn, beta, A;
+
+    A = pow(10, G / 40);
+    omega = 2 * M_PI * Fc / Fs;
+    cs = cos(omega);
+    sn = sin(omega);
+    beta = sqrt(A + A);
+
+    b0 = A * ((A + 1) + (A - 1) * cs + beta * sn);
+    b1 = -2 * A * ((A - 1) + (A + 1) * cs);
+    b2 = A * ((A + 1) + (A - 1) * cs - beta * sn);
+    a0 = (A + 1) - (A - 1) * cs + beta * sn;
+    a1 = 2 * ((A - 1) - (A + 1) * cs);
+    a2 = (A + 1) - (A - 1) * cs - beta * sn;
+ 
     f->b0 = b0 / a0;
     f->b[0] = b1 / a0;
     f->b[1] = b2 / a0;

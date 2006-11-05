@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Log$
+ * Revision 1.41  2006/11/05 18:50:59  alankila
+ * - add tone controls into tubeamp and change default speaker type
+ *
  * Revision 1.40  2006/09/04 14:42:04  alankila
  * - fix hilbert-transform for > 1 channel: forgot x0_tmp
  *
@@ -242,6 +245,7 @@ void     set_2nd_allpass_biquad(const double delay, Biquad_t *f);
 void     set_rc_lowpass_biquad(const double Fs, const double Fc, Biquad_t *f);
 void     set_rc_highpass_biquad(const double Fs, const double Fc, Biquad_t *f);
 void     set_lsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f);
+void     set_hsh_biquad(const double Fs, const double Fc, const double G, Biquad_t *f);
 void     set_chebyshev1_biquad(double Fs, double Fc, double ripple,
 			       int lowpass, Biquad_t *f);
 

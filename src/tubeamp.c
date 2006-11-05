@@ -8,6 +8,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.45  2006/11/05 18:50:59  alankila
+ * - add tone controls into tubeamp and change default speaker type
+ *
  * Revision 1.44  2006/11/05 14:59:44  alankila
  * - new GUI
  * - allow specifying speaker model & model precision
@@ -369,6 +372,12 @@ update_model(GtkWidget *w, struct tubeamp_params *params)
 }
 
 static void
+update_tone(GtkAdjustment *adj, float *ptr)
+{
+    *ptr = adj->value;
+}
+
+static void
 update_stages(GtkAdjustment *adj, struct tubeamp_params *params)
 {
     params->stages = adj->value;
@@ -418,7 +427,7 @@ tubeamp_init(struct effect *p)
     p->control = gtk_window_new(GTK_WINDOW_DIALOG);
     gtk_signal_connect(GTK_OBJECT(p->control), "delete_event",
 		       GTK_SIGNAL_FUNC(delete_event), p);
-    table = gtk_table_new(3, 5, FALSE);
+    table = gtk_table_new(3, 8, FALSE);
 
     tblattach(table, gtk_label_new("Speaker model"), 0, 0);
     list = NULL;
@@ -475,7 +484,28 @@ tubeamp_init(struct effect *p)
                        GTK_SIGNAL_FUNC(update_biasfactor), params);
     w = gtk_hscale_new(GTK_ADJUSTMENT(o));
     tblattach(table, w, 1, 5);
-    
+
+    tblattach(table, gtk_label_new("Tone bass"), 0, 6);
+    o = gtk_adjustment_new(params->tone_bass, -10, 10, 0.1, 1, 0);
+    gtk_signal_connect(GTK_OBJECT(o), "value_changed",
+                       GTK_SIGNAL_FUNC(update_tone), &params->tone_bass);
+    tblattach(table, gtk_hscale_new(GTK_ADJUSTMENT(o)), 1, 6);
+    tblattach(table, gtk_label_new("dB"), 2, 6);
+
+    tblattach(table, gtk_label_new("Tone middle"), 0, 7);
+    o = gtk_adjustment_new(params->tone_middle, -20, 0, 0.1, 1, 0);
+    gtk_signal_connect(GTK_OBJECT(o), "value_changed",
+                       GTK_SIGNAL_FUNC(update_tone), &params->tone_middle);
+    tblattach(table, gtk_hscale_new(GTK_ADJUSTMENT(o)), 1, 7);
+    tblattach(table, gtk_label_new("dB"), 2, 7);
+
+    tblattach(table, gtk_label_new("Tone treble"), 0, 8);
+    o = gtk_adjustment_new(params->tone_treble, -10, 10, 0.1, 1, 0);
+    gtk_signal_connect(GTK_OBJECT(o), "value_changed",
+                       GTK_SIGNAL_FUNC(update_tone), &params->tone_treble);
+    tblattach(table, gtk_hscale_new(GTK_ADJUSTMENT(o)), 1, 8);
+    tblattach(table, gtk_label_new("dB"), 2, 8);
+
     w = gtk_check_button_new_with_label("On");
     if (p->toggle == 1)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), TRUE);
@@ -523,10 +553,11 @@ tubeamp_filter(struct effect *p, data_block_t *db)
     struct tubeamp_params *params = p->params;
     float gain;
 
-    /*
-    for (j = 0; j < params->stages; j += 1)
-        set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 720, 500.0, params->middlefreq, &params->middlecut[j]);
-    */
+    /* update bq states from tone controls */
+    set_lsh_biquad(sample_rate * UPSAMPLE_RATIO, 500, params->tone_bass, &params->bq_bass);
+    set_peq_biquad(sample_rate * UPSAMPLE_RATIO, 650, 500.0, params->tone_middle, &params->bq_middle);
+    set_hsh_biquad(sample_rate * UPSAMPLE_RATIO, 800, params->tone_treble, &params->bq_treble);
+
     gain = pow(10.f, params->gain / 20.f);
     
     /* highpass -> low shelf eq -> lowpass -> waveshaper */
@@ -547,8 +578,13 @@ tubeamp_filter(struct effect *p, data_block_t *db)
                 params->bias[j] = do_biquad((params->asymmetry - params->biasfactor * result) * params->r_k_p[j], &params->biaslowpass[j], curr_channel);
                 /* high pass filter to remove bias from the current stage */
                 result = do_biquad(result, &params->highpass[j], curr_channel);
-                /* middlecut for user tone control, for the "metal crunch" sound */
-                //result = do_biquad(result, &params->middlecut[j], curr_channel);
+                
+                /* run tone controls after second stage */
+                if (j == 1) {
+                    result = do_biquad(result, &params->bq_bass, curr_channel);
+                    result = do_biquad(result, &params->bq_middle, curr_channel);
+                    result = do_biquad(result, &params->bq_treble, curr_channel);
+                }
             }
             result = do_biquad(result, &params->decimation_filter, curr_channel);
         }
@@ -564,8 +600,6 @@ tubeamp_filter(struct effect *p, data_block_t *db)
         
         curr_channel = (curr_channel + 1) % db->channels;
     }
-//    for (i = 0; i < params->stages; i += 1)
-//        printf("%d. bias=%.1f\n", i, params->bias[i]);
 }
 
 static void
@@ -591,6 +625,9 @@ tubeamp_save(struct effect *p, SAVE_ARGS)
     SAVE_DOUBLE("biasfactor", params->biasfactor);
     SAVE_DOUBLE("asymmetry", params->asymmetry);
     SAVE_DOUBLE("gain", params->gain);
+    SAVE_DOUBLE("tone_bass", params->tone_bass);
+    SAVE_DOUBLE("tone_middle", params->tone_middle);
+    SAVE_DOUBLE("tone_treble", params->tone_treble);
 }
 
 static void
@@ -603,9 +640,12 @@ tubeamp_load(struct effect *p, LOAD_ARGS)
     LOAD_DOUBLE("biasfactor", params->biasfactor);
     LOAD_DOUBLE("asymmetry", params->asymmetry);
     LOAD_DOUBLE("gain", params->gain);
+    LOAD_DOUBLE("tone_bass", params->tone_bass);
+    LOAD_DOUBLE("tone_middle", params->tone_middle);
+    LOAD_DOUBLE("tone_treble", params->tone_treble);
 
     if (params->impulse_model < 0 || params->impulse_model > 1)
-        params->impulse_model = 1;
+        params->impulse_model = 0;
     if (params->impulse_quality < 0 || params->impulse_quality > 2)
         params->impulse_quality = 1;
 }
@@ -628,11 +668,14 @@ tubeamp_create()
     p->proc_done = tubeamp_done;
 
     params->stages = 4;
-    params->gain = 32.0;
+    params->gain = 35.0; /* dB */
     params->biasfactor = -7;
     params->asymmetry = -3500;
-    params->impulse_model = 1;
+    params->impulse_model = 0;
     params->impulse_quality = 1;
+
+    params->tone_bass = +3; /* dB */
+    params->tone_middle = -10; /* dB */
 
     /* configure the various stages */
     params->r_i[0] = 68e3 / 3000;
