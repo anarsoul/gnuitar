@@ -3,6 +3,9 @@
 # $Id$
 #
 # $Log$
+# Revision 1.33  2006/11/11 12:29:56  alankila
+# - repair MSYS/MinGW build
+#
 # Revision 1.32  2006/10/27 21:54:46  alankila
 # - new source file: audio-midi.c. Do some data abstraction, prepare to
 #   support multiple midi continuous controls.
@@ -123,7 +126,7 @@ PROJECT(GNUitar)
 
 # Get the GCC version -- this regex is pathetic.
 EXEC_PROGRAM(${CMAKE_C_COMPILER} ARGS --version OUTPUT_VARIABLE _gcc_version_info)
-STRING(REGEX REPLACE "^gcc \\(GCC\\) ([0-9]+\\.[0-9]+).*" "\\1" _gcc_version "${_gcc_version_info}")
+STRING(REGEX REPLACE "^[a-z.]+ \\(GCC\\) ([0-9]+\\.[0-9]+).*" "\\1" _gcc_version "${_gcc_version_info}")
 
 # Check that we succeeded
 IF (NOT _gcc_version)
@@ -138,12 +141,14 @@ STRING(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" _gcc_version_minor "${_gcc_versio
 MATH(EXPR _gcc_version "${_gcc_version_major} * 100 + ${_gcc_version_minor}")
 
 SET(OPT_FLAGS "-ffast-math")
+SET(WARNING_FLAGS "-Wall -Wbad-function-cast -Wcast-align -Wmissing-noreturn -Wredundant-decls -Winline -Wpointer-arith -Wmissing-prototypes")
 IF (_gcc_version GREATER 399) # cmake suckage for lacking >=
     SET(OPT_FLAGS "${OPT_FLAGS} -frename-registers -ftree-vectorize")
+    SET(WARNING_FLAGS "${WARNING_FLAGS} -Wpointer-sign -Wunsafe-loop-optimizations -Wmissing-field-initializers")
 ENDIF (_gcc_version GREATER 399)
 
 # guess something rather conservative. We wamt SSE. hence we specify at least pentium3
-SET(ARCH_FLAGS "-march=pentium3 -mtune=generic")
+SET(ARCH_FLAGS "-march=pentium3")
 IF (UNIX) # IF (LINUX) ?
     # read cpuinfo on linux to improve guess
     FILE(READ "/proc/cpuinfo" _cpuinfo)
@@ -257,7 +262,6 @@ ELSE (FFTW3_LIBRARY)
 ENDIF (FFTW3_LIBRARY)
 
 # set final C flags
-SET(WARNING_FLAGS "-Wall -Wunsafe-loop-optimizations -Wbad-function-cast -Wcast-align -Wmissing-field-initializers -Wmissing-noreturn -Wredundant-decls -Winline -Wpointer-sign -Wpointer-arith -Wmissing-prototypes")
 SET(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${OPT_FLAGS}")
 
 # setup complete: define build targets and build files
