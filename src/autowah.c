@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.47  2006/12/01 13:21:25  alankila
+ * - reduce autowah gain to avoid clipping so harshly
+ *
  * Revision 1.46  2006/10/27 21:54:46  alankila
  * - new source file: audio-midi.c. Do some data abstraction, prepare to
  *   support multiple midi continuous controls.
@@ -559,10 +562,11 @@ autowah_filter(struct effect *p, data_block_t *db)
     
     switch (ap->method) {
       case 0:
-        /* lowpass resonant filter -- we must avoid setting value 0 to resonance */
+        /* lowpass resonant filter -- we must avoid setting value 0 to
+         * resonance. We also drop level by 6 dB to leave some room for it. */
         set_lpf_biquad(sample_rate, freq, 1.1 + -ap->res / 100.0, &ap->lpf);
         for (i = 0; i < db->len; i += 1) {
-            db->data[i] = do_biquad(db->data[i], &ap->lpf, curr_channel);
+            db->data[i] = do_biquad(db->data[i], &ap->lpf, curr_channel) / 2;
             curr_channel = (curr_channel + 1) % db->channels;
         }
         break;
@@ -605,9 +609,9 @@ autowah_filter(struct effect *p, data_block_t *db)
                 (tanhf( ap->yc[curr_channel] / (float) PARAM_V )
                  - tanhf( ap->yd[curr_channel] / (float) PARAM_V ));
 
-            /* the wah causes a gain loss of 12 dB which, but due to resonance we
-             * may clip; regardless I'll adjust 12 dB back. */
-            db->data[i] = ap->yd[curr_channel] * 4.f;
+            /* the wah causes a gain loss of 12 dB which, but due to
+             * resonance we may clip; to compromise I'll adjust 6 dB back. */
+            db->data[i] = ap->yd[curr_channel] * 2.f;
             curr_channel = (curr_channel + 1) % db->channels;
         }
         break;
