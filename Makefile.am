@@ -1,6 +1,6 @@
 SUBDIRS = src
-a1dir = $(datadir)/doc/gnuitar/docs
-a1_DATA = docs
+#a1dir = $(datadir)/doc/gnuitar/docs
+#a1_DATA = docs
 docdir = $(datadir)/doc/gnuitar
 doc_DATA = docs/*.html NEWS ChangeLog FAQ AUTHORS COPYING INSTALL README TODO
 win32 = gnuitar.ico gnuitar.dsp gnuitar.mak gnuitar_small.ico gnuitar.vcproj \
