@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.54  2009/03/09 13:27:31  alankila
+ * Prefill audio buffer more robustly.
+ *
  * Revision 1.53  2006/10/27 22:02:39  alankila
  * - remove support for pitch bend for now
  *
@@ -362,14 +365,11 @@ alsa_audio_thread(void *V)
             snd_pcm_prepare(capture_handle);
             snd_pcm_prepare(playback_handle);
 
-            /* Prefill 2 playback buffer fragments. Normally this is the
-             * maximum amount of fragments, and it ensures there's something
-             * to play while we come up with more data to play.
-             * Notice that here wrbuf16 usage doesn't imply 16-bit samples.
-             * It's just a block of memory cleared far enough. */ 
+            /* prefill audio area */
             memset(wrbuf16, 0, n_output_channels * buffer_size * (playback_bits >> 3));
             for (i = 0; i < fragments; i += 1)
-                snd_pcm_writei(playback_handle, wrbuf16, buffer_size);
+                if (snd_pcm_avail_update(playback_handle) > 0)
+                    snd_pcm_writei(playback_handle, wrbuf16, buffer_size);
         }
 
         while ((inframes = snd_pcm_readi(capture_handle, rdbuf, buffer_size)) < 0) {
