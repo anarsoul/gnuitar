@@ -20,6 +20,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.48  2009/03/09 13:27:51  alankila
+ * Add TB-303 style filter as an alternative.
+ *
  * Revision 1.47  2006/12/01 13:21:25  alankila
  * - reduce autowah gain to avoid clipping so harshly
  *
@@ -220,6 +223,7 @@ static const char *methods[] = {
     "Lowpass",
     "Bandpass",
     "Moog ladder",
+    "TB-303 style",
     NULL
 };
 
@@ -393,23 +397,10 @@ autowah_init(struct effect *p)
     gtk_widget_set_sensitive(GTK_WIDGET(params->w_sweep), params->sync != 2);
 
     /* Frequency [slider] Hz */
-    label = gtk_label_new("Start frequency:");
-    tblattach(table, label, 0, 2);
-    adj = gtk_adjustment_new(params->freq_low,
-			     80.0, 330.0, 1.0, 1.0, 0.0);
-    gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
-		       GTK_SIGNAL_FUNC(update_wah_freqlow), params);
-    widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
-    gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
-    tblattach(table, widget, 1, 2);
-    label = gtk_label_new("Hz");
-    tblattach(table, label, 2, 2);
-
-    /* Frequency [slider] Hz */
-    label = gtk_label_new("End frequency:");
+    label = gtk_label_new("First frequency:");
     tblattach(table, label, 0, 3);
     adj = gtk_adjustment_new(params->freq_high,
-			     500.0, 2000.0, 1.0, 1.0, 0.0);
+			     80.0, 5000.0, 1.0, 1.0, 0.0);
     gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 		       GTK_SIGNAL_FUNC(update_wah_freqhi), params);
     widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
@@ -417,6 +408,19 @@ autowah_init(struct effect *p)
     tblattach(table, widget, 1, 3);
     label = gtk_label_new("Hz");
     tblattach(table, label, 2, 3);
+
+    /* Frequency [slider] Hz */
+    label = gtk_label_new("Last frequency:");
+    tblattach(table, label, 0, 2);
+    adj = gtk_adjustment_new(params->freq_low,
+			     80.0, 5000.0, 1.0, 1.0, 0.0);
+    gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+		       GTK_SIGNAL_FUNC(update_wah_freqlow), params);
+    widget = gtk_hscale_new(GTK_ADJUSTMENT(adj));
+    gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
+    tblattach(table, widget, 1, 2);
+    label = gtk_label_new("Hz");
+    tblattach(table, label, 2, 2);
 
     label = gtk_label_new("Wah type:");
     tblattach(table, label, 0, 4);
@@ -476,7 +480,7 @@ autowah_filter(struct effect *p, data_block_t *db)
 {
     struct autowah_params *ap;
     int             i, curr_channel = 0, delay_time;
-    float           freq, g;
+    float           freq, g, g2;
 
     ap = (struct autowah_params *) p->params;
 
@@ -580,6 +584,7 @@ autowah_filter(struct effect *p, data_block_t *db)
         break;
 
       case 2:
+      case 3:
         /* Moog ladder filter according to Antti Huovilainen. */
 
 /* I, C, V = electrical parameters
@@ -594,9 +599,13 @@ autowah_filter(struct effect *p, data_block_t *db)
  * Wx = tanh(Yx(n) / (2 * Vt)) */
 
         g = 1.f - expf((float) (-2.0 * M_PI) * freq / sample_rate);
+        g2 = g;
+        /* TB-303 style: the first phase is one octave higher than rest */
+        if (ap->method == 3)
+            g2 = 1.f - expf((float) (-2.0 * M_PI) * 2 * freq / sample_rate);
         for (i = 0; i < db->len; i += 1) {
 #define PARAM_V (MAX_SAMPLE * 1.0) /* the sound gets dirtier if the factor gets small */
-            ap->ya[curr_channel] += (float) PARAM_V * g *
+            ap->ya[curr_channel] += (float) PARAM_V * g2 *
                 (tanhf( (db->data[i] - 4.f * ap->res/100.0f * ap->yd[curr_channel]) / (float) PARAM_V )
                  - tanhf( ap->ya[curr_channel] / (float) PARAM_V));
             ap->yb[curr_channel] += (float) PARAM_V * g *
