@@ -184,14 +184,14 @@ pitch_init(struct effect *p)
 /* might be defined by compiler or some included thingy, might be not... */
 #ifndef min
 static inline int
-min(a, b) {
+min(int a, int b) {
     return a < b ? a : b;
 }
 #endif
 
 #ifndef max
 static inline int
-max(a, b) {
+max(int a, int b) {
     return a > b ? a : b;
 }
 #endif
